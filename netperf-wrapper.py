@@ -87,11 +87,15 @@ class Aggregator(object):
             results.append(self.iterate())
         return results
 
-def format_pprint(results):
+def format_pprint(name, results):
+    print name
     pprint.pprint(results)
 
-def format_org_table(results):
+def format_org_table(name, results):
     pass
+
+formatters = {'org_table': format_org_table,
+              'pprint': format_pprint}
 
 if __name__ == "__main__":
 
@@ -108,4 +112,8 @@ if __name__ == "__main__":
                              config.get(s, 'cmd_opts'),
                              config.getint(s, 'delay'))
 
-    pprint.pprint(agg.instances)
+    results = agg.aggregate()
+    formatter = config.get('global', 'output')
+    if formatter in formatters:
+        formatters[formatter](config.get('global', 'name'),
+                              results)
