@@ -92,7 +92,17 @@ def format_pprint(name, results):
     pprint.pprint(results)
 
 def format_org_table(name, results):
-    pass
+    if not results:
+        print name, "-- empty"
+    first_row = results[0]
+    header_row = [name] + sorted(first_row.keys())
+    print "| " + " | ".join(header_row) + " |"
+    print "|-" + "-+-".join(["-"*len(i) for i in header_row]) + "-|"
+    for i,row in enumerate(results):
+        print "| Run %d |" % (i+1),
+        for c in header_row[1:]:
+            print row[c], "|",
+        print
 
 formatters = {'org_table': format_org_table,
               'pprint': format_pprint}
