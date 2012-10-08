@@ -55,7 +55,7 @@ class ProcessRunner(threading.Thread):
                          stderr=subprocess.PIPE,
                          close_fds=True)
         out,err=prog.communicate()
-        self.result = out.strip()
+        self.result = out.split()[-1].strip()
 
 class Aggregator(object):
 
