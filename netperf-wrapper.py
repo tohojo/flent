@@ -40,7 +40,7 @@ config.set('global', 'cmd_binary', '/usr/bin/netperf')
 class ProcessRunner(threading.Thread):
 
     def __init__(self, binary, options, delay, *args, **kwargs):
-        Thread.__init__(*args, **kwargs)
+        threading.Thread.__init__(self,*args, **kwargs)
         self.binary = binary
         self.options = options
         self.delay = delay
@@ -76,7 +76,7 @@ class Aggregator(object):
             threads[n] = ProcessRunner(self.binary, i['options'], i['delay'])
             threads[n].start()
         for n,t in threads.items():
-            t.wait()
+            t.join()
             result[n] = t.result
 
         return result
