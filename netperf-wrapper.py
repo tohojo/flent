@@ -3,7 +3,7 @@
 ## netperf-wrapper.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:      8 oktober 2012
+## Date:     October 8th, 2012
 ## Copyright (c) 2012, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
@@ -47,6 +47,10 @@ class ProcessRunner(threading.Thread):
         self.result = None
 
     def run(self):
+        """Runs the configured job. If a delay is set, wait for that many
+        seconds, then open the subprocess, wait for it to finish, and collect
+        the last word of the output (whitespace-separated)."""
+
         if self.delay:
             time.sleep(self.delay)
         args = [self.binary] + shlex.split(self.options)
@@ -70,6 +74,9 @@ class Aggregator(object):
                                'delay': delay}
 
     def iterate(self):
+        """Create a ProcessRunner thread for each instance and start them. Wait
+        for the threads to exit, then collect the results."""
+
         result = {}
         threads = {}
         for n,i in self.instances.items():
@@ -88,10 +95,17 @@ class Aggregator(object):
         return results
 
 def format_pprint(name, results):
+    """Use the pprint pretty-printing module to just print out the contents of
+    the results list."""
+
     print name
     pprint.pprint(results)
 
 def format_org_table(name, results):
+    """Format the output for an Org mode table. The formatter is pretty crude
+    and does not align the table properly, but it should be sufficient to create
+    something that Org mode can correctly realign."""
+
     if not results:
         print name, "-- empty"
     first_row = results[0]
