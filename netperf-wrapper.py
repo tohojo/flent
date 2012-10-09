@@ -22,14 +22,15 @@
 # Wrapper to run multiple concurrent netperf instances, in several iterations,
 # and aggregate the result.
 
-import subprocess, shlex, argparse, ConfigParser, threading, time, pprint
+import subprocess, shlex, optparse, ConfigParser, threading, time, pprint
 
-parser = argparse.ArgumentParser(description='Wrapper to run concurrent netperf instances')
+parser = optparse.OptionParser(description='Wrapper to run concurrent netperf instances',
+                               usage="usage: %prog [options] config")
 
-parser.add_argument('config', type=unicode, help='config file defining the netperf instances')
+#parser.add_option('config', type=unicode, help='config file defining the netperf instances')
 
 
-config = ConfigParser.ConfigParser({'delay': 0}, dict, True)
+config = ConfigParser.ConfigParser({'delay': 0})
 config.add_section('global')
 config.set('global', 'name', 'Netperf')
 config.set('global', 'iterations', '1')
@@ -123,8 +124,16 @@ formatters = {'org_table': format_org_table,
 
 if __name__ == "__main__":
 
-    args = parser.parse_args()
-    config.read(args.config)
+    (options,args) = parser.parse_args()
+    if len(args) < 1:
+        parser.error("Missing config file.")
+    try:
+        with open(args[0]) as fp:
+            config.readfp(fp)
+    except IOError:
+        parser.error("Config file '%s' not found" % args[0])
+    except ConfigParser.Error:
+        parser.error("Unable to parse config file '%s'" % args[0])
 
     agg = Aggregator(config.getint('global', 'iterations'),
                      config.get('global', 'cmd_binary'),
