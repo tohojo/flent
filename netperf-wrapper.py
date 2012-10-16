@@ -45,31 +45,36 @@ config.set('global', 'cmd_binary', '/usr/bin/netperf')
 
 
 if __name__ == "__main__":
-
-    (options,args) = parser.parse_args()
-    if len(args) < 1:
-        parser.error("Missing config file.")
     try:
-        with open(args[0]) as fp:
-            config.readfp(fp)
-    except IOError:
-        parser.error("Config file '%s' not found" % args[0])
-    except ConfigParser.Error:
-        parser.error("Unable to parse config file '%s'" % args[0])
 
-    aggregator_name = config.get('global', 'aggregator')
-    classname = util.classname(aggregator_name, "Aggregator")
-    if hasattr(aggregators, classname):
-        agg = getattr(aggregators, classname)(dict(config.items('global')))
-    else:
-        parser.error("Aggregator not found: '%s'" % aggregator_name)
+        (options,args) = parser.parse_args()
+        if len(args) < 1:
+            parser.error("Missing config file.")
+        try:
+            with open(args[0]) as fp:
+                config.readfp(fp)
+        except IOError:
+            parser.error("Config file '%s' not found" % args[0])
+        except ConfigParser.Error:
+            parser.error("Unable to parse config file '%s'" % args[0])
 
-    for s in config.sections():
-        if s.startswith('test_'):
-            agg.add_instance(dict(config.items(s)))
+        aggregator_name = config.get('global', 'aggregator')
+        classname = util.classname(aggregator_name, "Aggregator")
+        if hasattr(aggregators, classname):
+            agg = getattr(aggregators, classname)(dict(config.items('global')))
+        else:
+            parser.error("Aggregator not found: '%s'" % aggregator_name)
 
-    results = agg.aggregate()
-    formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
-    if hasattr(formatters, formatter_name):
-        formatter = getattr(formatters, formatter_name)(options.output)
-        formatter.format(config.get('global', 'name'), results)
+        for s in config.sections():
+            if s.startswith('test_'):
+                agg.add_instance(dict(config.items(s)))
+
+        results = agg.aggregate()
+        formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
+        if hasattr(formatters, formatter_name):
+            formatter = getattr(formatters, formatter_name)(options.output)
+            formatter.format(config.get('global', 'name'), results)
+
+    except RuntimeError, e:
+        sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
+        sys.exit(1)
