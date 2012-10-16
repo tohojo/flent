@@ -64,7 +64,7 @@ class IterationAggregator(Aggregator):
     def aggregate(self):
         results = []
         for i in range(self.iterations):
-            results.append(("Run %d"%(i+1), Aggregator.aggregate(self)))
+            results.append(((i+1), Aggregator.aggregate(self)))
         return results
 
 class TimeseriesAggregator(Aggregator):
