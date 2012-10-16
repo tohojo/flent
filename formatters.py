@@ -21,6 +21,12 @@
 
 import pprint, sys
 
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+except ImportError:
+    matplotlib = None
+
 class Formatter(object):
 
     def __init__(self, output, config):
@@ -70,3 +76,27 @@ class OrgTableFormatter(Formatter):
                 else:
                     self.output.write(unicode(row[c]) + u" | ")
             self.output.write(u"\n")
+
+class PlotFormatter(Formatter):
+
+    def format(self, name, results):
+        if matplotlib is None:
+            raise RuntimeError(u"Unable to plot -- matplotlib is missing! Please install it if you want plots.")
+
+        if not results:
+            return
+
+        t = [r[0] for r in results]
+        series_names = results[0][1].keys()
+        fig = plt.figure()
+        ax = {1:fig.add_subplot(111)}
+
+        if 2 in [self.config.getint(s, 'plot_axis', 1) for s in series_names]:
+            ax[2] = ax[1].twinx()
+
+        for s in series_names:
+            ax_no = self.config.getint(s, 'plot_axis', 1)
+            ax[ax_no].plot(t,[(r[1][s] or 0.0) for r in results], self.config.get(s, 'plot_line', ''))
+
+        if self.output == sys.stdout:
+            plt.show()
