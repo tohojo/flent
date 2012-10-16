@@ -77,7 +77,7 @@ if __name__ == "__main__":
         results = agg.aggregate()
         formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
         if hasattr(formatters, formatter_name):
-            formatter = getattr(formatters, formatter_name)(options.output)
+            formatter = getattr(formatters, formatter_name)(options.output, config)
             formatter.format(config.get('global', 'name'), results)
 
     except RuntimeError, e:

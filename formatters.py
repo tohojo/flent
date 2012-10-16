@@ -23,7 +23,8 @@ import pprint, sys
 
 class Formatter(object):
 
-    def __init__(self, output):
+    def __init__(self, output, config):
+        self.config = config
         if isinstance(output, basestring):
             if output == "-":
                 self.output = sys.stdout
