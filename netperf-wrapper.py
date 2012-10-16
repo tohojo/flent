@@ -22,13 +22,13 @@
 # Wrapper to run multiple concurrent netperf instances, in several iterations,
 # and aggregate the result.
 
-import optparse, sys
+import optparse, sys, os
 
 import aggregators, formatters, util
 
 
-parser = optparse.OptionParser(description='Wrapper to run concurrent netperf instances',
-                               usage="usage: %prog [options] config")
+parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
+                               usage="usage: %prog [options] test")
 
 parser.add_option("-o", "--output", action="store", type="string", dest="output",
                   help="file to write output to (default standard out)")
@@ -53,18 +53,22 @@ if __name__ == "__main__":
     try:
 
         (options,args) = parser.parse_args()
+
         if len(args) < 1:
-            parser.error("Missing config file.")
+            parser.error("Missing test name.")
+
 
         if options.host is not None:
             config.set('global', 'host', options.host)
+
+        test_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
         try:
-            with open(args[0]) as fp:
+            with open(os.path.join(test_path, args[0]+".ini")) as fp:
                 config.readfp(fp)
         except IOError:
-            parser.error("Config file '%s' not found" % args[0])
+            parser.error("Config file for test '%s' not found" % args[0])
         except ConfigParser.Error:
-            parser.error("Unable to parse config file '%s'" % args[0])
+            parser.error("Unable to parse config file for test '%s'" % args[0])
 
         if options.format is not None:
             config.set('global', 'output', options.format)
