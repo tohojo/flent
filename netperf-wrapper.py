@@ -26,6 +26,7 @@ import optparse, sys
 
 import aggregators, formatters, util
 
+
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf instances',
                                usage="usage: %prog [options] config")
 
@@ -33,6 +34,8 @@ parser.add_option("-o", "--output", action="store", type="string", dest="output"
                   help="file to write output to (default standard out)")
 parser.add_option("-f", "--format", action="store", type="string", dest="format",
                   help="override config file output format")
+parser.add_option("-H", "--host", action="store", type="string", dest="host",
+                  help="host to connect to for tests")
 
 parser.set_defaults(output="-")
 
@@ -52,6 +55,9 @@ if __name__ == "__main__":
         (options,args) = parser.parse_args()
         if len(args) < 1:
             parser.error("Missing config file.")
+
+        if options.host is not None:
+            config.set('global', 'host', options.host)
         try:
             with open(args[0]) as fp:
                 config.readfp(fp)
