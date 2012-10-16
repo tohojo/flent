@@ -35,8 +35,8 @@ class Aggregator(object):
         self.default_runner = config.get('runner', 'default')
         self.instances = {}
 
-    def add_instance(self, config):
-        self.instances[config['name']] = {
+    def add_instance(self, name, config):
+        self.instances[name] = {
             'options': self.global_options + " " + config.get('cmd_opts', ''),
             'delay': float(config.get('delay', 0)),
             'runner': getattr(runners, classname(config.get('runner', self.default_runner), 'Runner')),
