@@ -22,7 +22,7 @@
 # Wrapper to run multiple concurrent netperf instances, in several iterations,
 # and aggregate the result.
 
-import optparse, ConfigParser, sys
+import optparse, sys
 
 import aggregators, formatters, util
 
@@ -37,7 +37,7 @@ parser.add_option("-f", "--format", action="store", type="string", dest="format"
 parser.set_defaults(output="-")
 
 
-config = ConfigParser.ConfigParser({'delay': 0})
+config = util.DefaultConfigParser({'delay': 0})
 config.add_section('global')
 config.set('global', 'name', 'Netperf')
 config.set('global', 'iterations', '1')
