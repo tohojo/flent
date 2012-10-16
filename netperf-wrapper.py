@@ -80,11 +80,14 @@ if __name__ == "__main__":
             if s != 'global':
                 agg.add_instance(s, dict(config.items(s)))
 
-        results = agg.aggregate()
         formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
         if hasattr(formatters, formatter_name):
             formatter = getattr(formatters, formatter_name)(options.output, config)
-            formatter.format(config.get('global', 'name'), results)
+        else:
+            raise RuntimeError("Formatter not found.")
+
+        results = agg.aggregate()
+        formatter.format(config.get('global', 'name'), results)
 
     except RuntimeError, e:
         sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
