@@ -19,12 +19,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import string
-
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
     (OrgTable) for class names."""
-    return string.capwords(s, "_").replace("_", "")
+    return ''.join(x.capitalize() for x in s.split("_"))
 
 def classname(s, suffix=''):
     return uscore_to_camel(s)+suffix
