@@ -90,18 +90,45 @@ class PlotFormatter(Formatter):
         if not results:
             return
 
-        t = [r[0] for r in results]
-        series_names = results[0][1].keys()
+        # Unzip the data into time series and data dicts to allow for plotting.
+        t,data = zip(*results)
+        series_names = data[0].keys()
+
+
+        # The config file can set plot_axis to 1 or 2 for each test depending on
+        # which axis the results should be plotted. The second axis is only
+        # created if it is selected in one of the data sets selects it. The
+        # matplotlib .twinx() function creates a second axis on the right-hand
+        # side of the plot in the obvious way.
+
         fig = self.plt.figure()
         ax = {1:fig.add_subplot(111)}
-
         if 2 in [self.config.getint(s, 'plot_axis', 1) for s in series_names]:
             ax[2] = ax[1].twinx()
 
         for s in series_names:
+            # Each series is plotted on the appropriate axis with the series
+            # name as label. The line parameters are optionally set in the
+            # config file; if no value is set, matplotlib selects default
+            # colours for the lines.
             ax_no = self.config.getint(s, 'plot_axis', 1)
-            ax[ax_no].plot(t,[(r[1][s] or 0.0) for r in results], self.config.get(s, 'plot_line', ''))
+            ax[ax_no].plot(t,
+                           [(d[s] or 0.0) for d in data], # Non-existant datapoints are plotted as 0.0
+                           self.config.get(s, 'plot_line', ''),
+                           label=s,
+                )
 
+        # Each axis has a set of handles/labels for the legend; combine them
+        # into one list of handles/labels for displaying one legend that holds
+        # all plot lines
+        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
+                                 [a.get_legend_handles_labels() for a in ax.values()])
+        self.plt.legend(handles, labels)
+
+        # Since outputting image data to stdout does not make sense, we launch
+        # the interactive matplotlib viewer if stdout is set for output.
+        # Otherwise, the filename is passed to matplotlib, which selects an
+        # appropriate output format based on the file name.
         if self.output == "-":
             self.plt.show()
         else:
