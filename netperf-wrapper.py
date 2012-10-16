@@ -29,7 +29,10 @@ import aggregators, formatters, util
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf instances',
                                usage="usage: %prog [options] config")
 
-#parser.add_option('config', type=unicode, help='config file defining the netperf instances')
+parser.add_option("-o", "--output", action="store", type="string", dest="output",
+                  help="file to write output to (default standard out)")
+
+parser.set_defaults(output="-")
 
 
 config = ConfigParser.ConfigParser({'delay': 0})
@@ -68,5 +71,5 @@ if __name__ == "__main__":
     results = agg.aggregate()
     formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
     if hasattr(formatters, formatter_name):
-        formatter = getattr(formatters, formatter_name)(sys.stdout)
+        formatter = getattr(formatters, formatter_name)(options.output)
         formatter.format(config.get('global', 'name'), results)

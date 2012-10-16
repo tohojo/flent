@@ -19,12 +19,18 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint
+import pprint, sys
 
 class Formatter(object):
 
     def __init__(self, output):
-        self.output = output
+        if isinstance(output, basestring):
+            if output == "-":
+                self.output = sys.stdout
+            else:
+                self.output = open(output, "w")
+        else:
+            self.output = output
 
     def format(self, name, results):
         self.output.write(name+"\n")
@@ -52,7 +58,7 @@ class OrgTableFormatter(Formatter):
             self.output.write(unicode(name) + u" -- empty\n")
         first_row = results[0][1]
         header_row = [name] + sorted(first_row.keys())
-        self.output.write(u"| " + u" | ".join(header_row) + " u|\n")
+        self.output.write(u"| " + u" | ".join(header_row) + u" |\n")
         self.output.write(u"|-" + u"-+-".join([u"-"*len(i) for i in header_row]) + u"-|\n")
         for i,row in results:
             self.output.write(u"| %s | " % i)
@@ -60,5 +66,5 @@ class OrgTableFormatter(Formatter):
                 if isinstance(row[c], float):
                     self.output.write(u"%.2f | " % row[c])
                 else:
-                    self.output.write(unicode(row[c]) + u"| ")
+                    self.output.write(unicode(row[c]) + u" | ")
             self.output.write(u"\n")
