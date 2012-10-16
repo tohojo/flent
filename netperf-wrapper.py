@@ -71,8 +71,8 @@ if __name__ == "__main__":
             parser.error("Aggregator not found: '%s'" % aggregator_name)
 
         for s in config.sections():
-            if s.startswith('test_'):
-                agg.add_instance(dict(config.items(s)))
+            if s != 'global':
+                agg.add_instance(s, dict(config.items(s)))
 
         results = agg.aggregate()
         formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
