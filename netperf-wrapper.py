@@ -31,6 +31,8 @@ parser = optparse.OptionParser(description='Wrapper to run concurrent netperf in
 
 parser.add_option("-o", "--output", action="store", type="string", dest="output",
                   help="file to write output to (default standard out)")
+parser.add_option("-f", "--format", action="store", type="string", dest="format",
+                  help="override config file output format")
 
 parser.set_defaults(output="-")
 
@@ -57,6 +59,9 @@ if __name__ == "__main__":
             parser.error("Config file '%s' not found" % args[0])
         except ConfigParser.Error:
             parser.error("Unable to parse config file '%s'" % args[0])
+
+        if options.format is not None:
+            config.set('global', 'output', options.format)
 
         aggregator_name = config.get('global', 'aggregator')
         classname = util.classname(aggregator_name, "Aggregator")
