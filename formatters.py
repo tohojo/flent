@@ -37,7 +37,6 @@ class Formatter(object):
         self.output.write(name+"\n")
         self.output.write(results+"\n")
 
-DefaultFormatter = Formatter
 
 class PprintFormatter(Formatter):
 
@@ -47,6 +46,8 @@ class PprintFormatter(Formatter):
 
         self.output.write(name+"\n")
         pprint.pprint(results, self.output)
+
+DefaultFormatter = PprintFormatter
 
 class OrgTableFormatter(Formatter):
     """Format the output for an Org mode table. The formatter is pretty crude
