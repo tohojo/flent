@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess
+import threading, time, shlex, subprocess, re
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
@@ -67,5 +67,20 @@ class NetperfDemoRunner(ProcessRunner):
             if line.startswith("Interim"):
                 parts = line.split()
                 result.append([float(parts[9]), float(parts[2])])
+
+        return result
+
+class PingRunner(ProcessRunner):
+    """Runner for ping/ping6 in timestamped (-D) mode."""
+
+    pingline_regex = re.compile(r'^\[([0-9]+\.[0-9]+)\].*time=([0-9]+(?:\.[0-9]+)?) ms$')
+
+    def parse(self, output):
+        result = []
+        lines = output.split("\n")
+        for line in lines:
+            match = self.pingline_regex.match(line)
+            if match:
+                result.append([float(match.group(1)), float(match.group(2))])
 
         return result
