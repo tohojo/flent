@@ -19,7 +19,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re
+import threading, time, shlex, subprocess, re, time
+
+from datetime import datetime
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
@@ -82,5 +84,33 @@ class PingRunner(ProcessRunner):
             match = self.pingline_regex.match(line)
             if match:
                 result.append([float(match.group(1)), float(match.group(2))])
+
+        return result
+
+class IperfCsvRunner(ProcessRunner):
+    """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
+
+    def parse(self, output):
+        result = []
+        lines = output.strip().split("\n")
+        for line in lines[:-1]: # The last line is an average over the whole test
+            parts = line.split(",")
+            if len(parts) < 8:
+                continue
+
+            timestamp = parts[0]
+            bandwidth = parts[8]
+
+            # If iperf is patched to emit sub-second resolution unix timestamps,
+            # there'll be a dot as the decimal marker; in this case, just parse
+            # the time as a float. Otherwise, assume that iperf is unpatched
+            # (and so emits YMDHMS timestamps).
+            #
+            # The patch for iperf (v2.0.5) is in the misc/ directory.
+            if "." in timestamp:
+                result.append([float(timestamp), float(bandwidth)])
+            else:
+                dt = datetime.strptime(timestamp, "%Y%m%d%H%M%S")
+                result.append([time.mktime(dt.timetuple()), float(bandwidth)])
 
         return result
