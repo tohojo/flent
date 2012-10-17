@@ -80,6 +80,20 @@ class PlotFormatter(Formatter):
         self.config = config
         try:
             import matplotlib
+            # If saving to file, try our best to set a proper backend for
+            # matplotlib according to the output file name. This helps with
+            # running matplotlib without an X server.
+            if output != "-":
+                if output.endswith('.svg') or output.endswith('.svgz'):
+                    matplotlib.use('svg')
+                elif output.endswith('.ps') or output.endswith('.eps'):
+                    matplotlib.use('ps')
+                elif output.endswith('.pdf'):
+                    matplotlib.use('pdf')
+                elif output.endswith('.png'):
+                    matplotlib.use('agg')
+                else:
+                    raise RuntimeError("Unrecognised file format for output '%s'" % output)
             import matplotlib.pyplot as plt
             self.plt = plt
         except ImportError:
