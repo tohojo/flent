@@ -111,11 +111,13 @@ class TimeseriesAggregator(Aggregator):
                             t_prev,v_prev = r[i-1]
                         t_next,v_next = r[i]
                         break
+                if t_next is None:
+                    t_next,v_next = r[-1]
                 if t_prev is None:
                     # The first data point for this measurement is after the
                     # current t. Don't interpolate, just use the value if it is
                     # within the max distance.
-                    if t_next is None or abs(t-t_next) > self.max_distance:
+                    if abs(t-t_next) > self.max_distance:
                         result[n] = None
                     else:
                         result[n] = v_next
