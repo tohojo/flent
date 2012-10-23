@@ -36,11 +36,17 @@ class Aggregator(object):
         self.instances = {}
 
     def add_instance(self, name, config):
-        self.instances[name] = {
+        instance = {
             'options': self.global_options + " " + config.get('cmd_opts', ''),
             'delay': float(config.get('delay', 0)),
             'runner': getattr(runners, classname(config.get('runner', self.default_runner), 'Runner')),
             'binary': config.get('binary', self.binary)}
+
+        # If an instance has the separate_opts set, do not combine the command
+        # options with the global options.
+        if config.get('separate_opts', False):
+            instance['options'] = config.get('cmd_opts', '')
+        self.instances[name] = instance
 
     def aggregate(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
