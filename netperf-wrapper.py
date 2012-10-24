@@ -36,6 +36,8 @@ parser.add_option("-f", "--format", action="store", type="string", dest="format"
                   help="override config file output format")
 parser.add_option("-H", "--host", action="store", type="string", dest="host",
                   help="host to connect to for tests")
+parser.add_option("-t", "--title-extra", action="store", type="string", dest="title",
+                  help="text to add to plot title")
 
 parser.set_defaults(output="-")
 
@@ -72,6 +74,10 @@ if __name__ == "__main__":
 
         if options.format is not None:
             config.set('global', 'output', options.format)
+
+        if options.title is not None:
+            config.set('global', 'plot_title',
+                       config.get('global', 'plot_title', '') + " - " + options.title)
 
         aggregator_name = config.get('global', 'aggregator')
         classname = util.classname(aggregator_name, "Aggregator")
