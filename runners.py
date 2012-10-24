@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re, time
+import threading, time, shlex, subprocess, re, time, sys
 
 from datetime import datetime
 
@@ -46,7 +46,14 @@ class ProcessRunner(threading.Thread):
                          stderr=subprocess.PIPE,
                          universal_newlines=True)
         out,err=prog.communicate()
-        self.result = self.parse(out)
+        if prog.returncode:
+            sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % " ".join(args))
+            sys.stderr.write("Program output:")
+            sys.stderr.write("  " + "\n  ".join(err.splitlines()) + "\n")
+            sys.stderr.write("  " + "\n  ".join(out.splitlines()) + "\n")
+            self.result = None
+        else:
+            self.result = self.parse(out)
 
     def parse(self, output):
         """Default parser returns the last (whitespace-separated) word of
