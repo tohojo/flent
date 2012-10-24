@@ -116,9 +116,12 @@ class PlotFormatter(Formatter):
         # side of the plot in the obvious way.
 
         fig = self.plt.figure()
+        self.plt.title(self.config.get('global', 'plot_title', ''))
         ax = {1:fig.add_subplot(111)}
+        ax[1].set_yscale(self.config.get('global', 'axis1_scale', 'linear'))
         if 2 in [self.config.getint(s, 'plot_axis', 1) for s in series_names]:
             ax[2] = ax[1].twinx()
+            ax[2].set_yscale(self.config.get('global', 'axis2_scale', 'linear'))
 
         for s in series_names:
             # Each series is plotted on the appropriate axis with the series
