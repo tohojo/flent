@@ -21,7 +21,7 @@
 
 import math
 
-import runners
+import runners, transformers
 
 from util import classname
 
@@ -46,6 +46,9 @@ class Aggregator(object):
         # options with the global options.
         if config.get('separate_opts', False):
             instance['options'] = config.get('cmd_opts', '')
+
+        if 'data_transform' in config and hasattr(transformers, config['data_transform']):
+            instance['transformer'] = getattr(transformers, config['data_transform'])
         self.instances[name] = instance
 
     def aggregate(self):
@@ -59,7 +62,12 @@ class Aggregator(object):
             threads[n].start()
         for n,t in threads.items():
             t.join()
-            result[n] = t.result
+            if t.result is None:
+                continue
+            elif 'transformer' in self.instances[n]:
+                result[n] = self.instances[n]['transformer'](t.result)
+            else:
+                result[n] = t.result
 
         return result
 
