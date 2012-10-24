@@ -119,9 +119,12 @@ class PlotFormatter(Formatter):
         self.plt.title(self.config.get('global', 'plot_title', ''))
         ax = {1:fig.add_subplot(111)}
         ax[1].set_yscale(self.config.get('global', 'axis1_scale', 'linear'))
+        ax[1].set_ylabel(self.config.get('global', 'axis1_label', ''))
+        ax[1].set_xlabel(self.config.get('global', 'x_label', ''))
         if 2 in [self.config.getint(s, 'plot_axis', 1) for s in series_names]:
             ax[2] = ax[1].twinx()
             ax[2].set_yscale(self.config.get('global', 'axis2_scale', 'linear'))
+            ax[2].set_ylabel(self.config.get('global', 'axis2_label', ''))
 
         for s in series_names:
             # Each series is plotted on the appropriate axis with the series
