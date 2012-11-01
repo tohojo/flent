@@ -142,6 +142,7 @@ class PlotFormatter(Formatter):
                            [(d[s] or 0.0) for d in data], # Non-existant datapoints are plotted as 0.0
                            self.config.get(s, 'plot_line', ''),
                            label=s,
+                           linewidth=float(self.config.get(s,'plot_linewidth', 1.0)),
                 )
 
         # Each axis has a set of handles/labels for the legend; combine them
