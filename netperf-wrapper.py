@@ -64,8 +64,12 @@ if __name__ == "__main__":
             config.set('global', 'host', options.host)
 
         test_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
+        if os.path.exists(args[0]):
+            test_file = args[0]
+        else:
+            test_file = os.path.join(test_path, args[0]+".ini")
         try:
-            with open(os.path.join(test_path, args[0]+".ini")) as fp:
+            with open(test_file) as fp:
                 config.readfp(fp)
         except IOError:
             parser.error("Config file for test '%s' not found" % args[0])
