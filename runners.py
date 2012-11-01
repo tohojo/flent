@@ -122,3 +122,44 @@ class IperfCsvRunner(ProcessRunner):
                 result.append([time.mktime(dt.timetuple()), float(bandwidth)])
 
         return result
+
+class TcRunner(ProcessRunner):
+    """Runner for iterated `tc -s qdisc`. Expects iterations to be separated by
+    '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
+    the output of `date '+Time: %s.%N'`)."""
+
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    qdisc_res = [
+        re.compile(r"Sent (?P<sent_bytes>\d+) bytes (?P<sent_pkts>\d+) pkt "
+                   r"\(dropped (?P<dropped>\d+), "
+                   r"overlimits (?P<overlimits>\d+) "
+                   r"requeues (?P<requeues>\d+)\)"),
+        re.compile(r"backlog (?P<backlog_bytes>\d+)b "
+                   r"(?P<backlog_pkts>\d+)p "
+                   r"requeues (?P<backlog_requeues>\d+)"),
+        re.compile(r"maxpacket (?P<maxpacket>\d+) "
+                   r"drop_overlimit (?P<drop_overlimit>\d+) "
+                   r"new_flow_count (?P<new_flow_count>\d+) "
+                   r"ecn_mark (?P<ecn_mark>\d+)"),
+        re.compile(r"new_flows_len (?P<new_flows_len>\d+) "
+                   r"old_flows_len (?P<old_flows_len>\d+)")
+        ]
+
+
+    def parse(self, output):
+        result = []
+        parts = output.split("\n---\n")
+        for part in parts:
+            matches = {}
+            timestamp = self.time_re.search(part)
+            if timestamp is not None:
+                timestamp = float(timestamp.group('timestamp'))
+
+            for r in self.qdisc_res:
+                m = r.search(part)
+                if m is not None:
+                    matches.update(m.groupdict())
+            key = self.config.get('tc_parameter', 'sent_bytes')
+            if timestamp and key in matches:
+                result.append([timestamp, float(matches[key])])
+        return result
