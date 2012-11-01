@@ -26,11 +26,12 @@ from datetime import datetime
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
 
-    def __init__(self, binary, options, delay, *args, **kwargs):
+    def __init__(self, binary, options, delay, config, *args, **kwargs):
         threading.Thread.__init__(self,*args, **kwargs)
         self.binary = binary
         self.options = options
         self.delay = delay
+        self.config = config
         self.result = None
 
     def run(self):

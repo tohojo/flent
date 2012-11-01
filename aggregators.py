@@ -40,7 +40,8 @@ class Aggregator(object):
             'options': self.global_options + " " + config.get('cmd_opts', ''),
             'delay': float(config.get('delay', 0)),
             'runner': getattr(runners, classname(config.get('runner', self.default_runner), 'Runner')),
-            'binary': config.get('cmd_binary', self.binary)}
+            'binary': config.get('cmd_binary', self.binary),
+            'config': config}
 
         # If an instance has the separate_opts set, do not combine the command
         # options with the global options.
@@ -58,7 +59,7 @@ class Aggregator(object):
         result = {}
         threads = {}
         for n,i in self.instances.items():
-            threads[n] = i['runner'](i['binary'], i['options'], i['delay'])
+            threads[n] = i['runner'](i['binary'], i['options'], i['delay'], i['config'])
             threads[n].start()
         for n,t in threads.items():
             t.join()
