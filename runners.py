@@ -128,7 +128,8 @@ class TcRunner(ProcessRunner):
     '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
     the output of `date '+Time: %s.%N'`)."""
 
-    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    split_re  = re.compile(r"^qdisc ", re.MULTILINE)
     qdisc_res = [
         re.compile(r"Sent (?P<sent_bytes>\d+) bytes (?P<sent_pkts>\d+) pkt "
                    r"\(dropped (?P<dropped>\d+), "
@@ -150,16 +151,30 @@ class TcRunner(ProcessRunner):
         result = []
         parts = output.split("\n---\n")
         for part in parts:
+            # Split out individual qdisc entries (in case there are more than
+            # one). If so, discard the root qdisc and sum the rest.
+            qdiscs = self.split_re.split(part)
+            if len(qdiscs) > 2:
+                part = "qdisc ".join([i for i in qdiscs if not 'root' in i])
+
             matches = {}
             timestamp = self.time_re.search(part)
-            if timestamp is not None:
-                timestamp = float(timestamp.group('timestamp'))
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
 
             for r in self.qdisc_res:
                 m = r.search(part)
-                if m is not None:
-                    matches.update(m.groupdict())
+                while m is not None:
+                    for k,v in m.groupdict().items():
+                        if not k in matches:
+                            matches[k] = float(v)
+                        else:
+                            matches[k] += float(v)
+                    m = r.search(part, m.end(0))
             key = self.config.get('tc_parameter', 'sent_bytes')
-            if timestamp and key in matches:
-                result.append([timestamp, float(matches[key])])
+            if key in matches:
+                result.append([timestamp, matches[key]])
+            else:
+                sys.stderr.write("Warning: Missing value for %s" % key)
         return result
