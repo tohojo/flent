@@ -50,7 +50,13 @@ class Aggregator(object):
 
         if 'data_transform' in config and hasattr(transformers, config['data_transform']):
             instance['transformer'] = getattr(transformers, config['data_transform'])
-        self.instances[name] = instance
+
+        duplicates = config.get('duplicates', None)
+        if duplicates is not None:
+            for i in xrange(int(duplicates)):
+                self.instances["%s - %d" % (name, i+1)] = instance
+        else:
+            self.instances[name] = instance
 
     def aggregate(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
