@@ -165,6 +165,11 @@ class TcRunner(ProcessRunner):
 
             for r in self.qdisc_res:
                 m = r.search(part)
+                # Keep searching from the end of the last match until no more
+                # matches are found; this should find all qdisc outputs in case
+                # there are several qdiscs installed on the interface. The
+                # values for the qdiscs are summed for the result (discarding
+                # what should be the root qdisc as per above).
                 while m is not None:
                     for k,v in m.groupdict().items():
                         if not k in matches:
