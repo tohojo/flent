@@ -22,7 +22,7 @@ these several runs.
 
 Output is either simple Python pretty-printed output (which can be eval'ed back
 into a Python data structure), org mode tables, or plots. The latter requires a
-functioning matplotlib installation.
+functioning matplotlib installation. You specify which output format with -f {org,plot} and for plot formats you specify -o output.{png,ps,pdf,svg}.
 
 Documentation is relatively sparse at the moment, but try having a look at the
 .ini files in the tests directory and running the main script
