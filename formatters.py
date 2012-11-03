@@ -150,8 +150,9 @@ class PlotFormatter(Formatter):
         # all plot lines
         handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
                                  [a.get_legend_handles_labels() for a in ax.values()])
-        leg = self.plt.legend(handles, labels, loc='best', fancybox=True)
-        leg.get_frame().set_alpha(0.5)
+        self.plt.legend(handles, labels,
+                              bbox_to_anchor=(0., 1.02, 1., .102),
+                              loc=3, ncol=2, mode='expand', fancybox=True)
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
