@@ -79,7 +79,7 @@ class PlotFormatter(Formatter):
         self.output = output
         self.config = config
         try:
-            import matplotlib
+            import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
             # matplotlib according to the output file name. This helps with
             # running matplotlib without an X server.
@@ -96,8 +96,52 @@ class PlotFormatter(Formatter):
                     raise RuntimeError("Unrecognised file format for output '%s'" % output)
             import matplotlib.pyplot as plt
             self.plt = plt
+            self.np = numpy
+            self._init_subplots()
         except ImportError:
             raise RuntimeError(u"Unable to plot -- matplotlib is missing! Please install it if you want plots.")
+
+
+    def _init_subplots(self):
+        series_names = [i for i in self.config.sections() if i != 'global']
+        plots = sorted(set([self.config.getint(s, 'plot_subplot', 1) for s in series_names]))
+        num_plots = len(plots)
+        if plots != range(1, num_plots+1):
+            raise RuntimeError(u"Plots are not numbered sequentially")
+
+        self.fig, axs = self.plt.subplots(num_plots, 1, sharex=True, sharey=False, squeeze=False)
+
+        ax1_limits = self.config.get('global', 'axis1_limits', None)
+        ax2_limits = self.config.get('global', 'axis2_limits', None)
+
+        # Turn the axs array into a two-dimensional array with the second
+        # dimension holding twinx() axes if selected.
+        self.axs = self.np.empty([num_plots, 2], dtype=object)
+        for i in range(num_plots):
+            a = axs[i,0]
+            a.set_yscale(self.config.get('global', 'axis1_scale', 'linear'))
+            a.set_ylabel(self.config.get('global', 'axis1_label', '')) # TODO: Different labels for subplots?
+            if ax1_limits is not None:
+                a.set_ylim([float(i) for i in ax1_limits.split(",")])
+            self.axs[i,0] = a
+
+
+        # Find any plots that have output selected on the second axis.
+        for s in series_names:
+            axis = self.config.getint(s, 'plot_axis', 1)-1
+            subplot = self.config.getint(s, 'plot_subplot', 1)-1
+            if axis == 1 and self.axs[subplot,1] is None:
+                a = self.axs[subplot-1,0].twinx()
+                a.set_yscale(self.config.get('global', 'axis2_scale', 'linear'))
+                a.set_ylabel(self.config.get('global', 'axis2_label', ''))
+                if ax2_limits is not None:
+                    a.set_ylim([float(i) for i in ax2_limits.split(",")])
+                self.axs[subplot,1] = a
+
+        self.axs[0,0].set_xlabel(self.config.get('global', 'x_label', ''))
+
+
+        self.plt.title(self.config.get('global', 'plot_title', ''))
 
 
     def format(self, name, results):
@@ -108,37 +152,20 @@ class PlotFormatter(Formatter):
         t,data = zip(*results)
         series_names = data[0].keys()
 
-
         # The config file can set plot_axis to 1 or 2 for each test depending on
         # which axis the results should be plotted. The second axis is only
         # created if it is selected in one of the data sets selects it. The
         # matplotlib .twinx() function creates a second axis on the right-hand
         # side of the plot in the obvious way.
 
-        fig = self.plt.figure()
-        self.plt.title(self.config.get('global', 'plot_title', ''))
-        ax = {1:fig.add_subplot(111)}
-        ax[1].set_yscale(self.config.get('global', 'axis1_scale', 'linear'))
-        ax[1].set_ylabel(self.config.get('global', 'axis1_label', ''))
-        ax[1].set_xlabel(self.config.get('global', 'x_label', ''))
-        limits = self.config.get('global', 'axis1_limits', None)
-        if limits is not None:
-            ax[1].set_ylim([float(i) for i in limits.split(",")])
-        if 2 in [self.config.getint(s, 'plot_axis', 1) for s in series_names]:
-            ax[2] = ax[1].twinx()
-            ax[2].set_yscale(self.config.get('global', 'axis2_scale', 'linear'))
-            ax[2].set_ylabel(self.config.get('global', 'axis2_label', ''))
-            limits = self.config.get('global', 'axis2_limits', None)
-            if limits is not None:
-                ax[2].set_ylim([float(i) for i in limits.split(",")])
-
         for s in series_names:
             # Each series is plotted on the appropriate axis with the series
             # name as label. The line parameters are optionally set in the
             # config file; if no value is set, matplotlib selects default
             # colours for the lines.
-            ax_no = self.config.getint(s, 'plot_axis', 1)
-            ax[ax_no].plot(t,
+            subfig = self.config.getint(s, 'plot_subplot', 1)-1
+            axis = self.config.getint(s, 'plot_axis', 1)-1
+            self.axs[subfig,axis].plot(t,
                            [d[s] for d in data], # Non-existant datapoints are plotted as 0.0
                            self.config.get(s, 'plot_line', ''),
                            label=s,
@@ -148,9 +175,9 @@ class PlotFormatter(Formatter):
         # Each axis has a set of handles/labels for the legend; combine them
         # into one list of handles/labels for displaying one legend that holds
         # all plot lines
-        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
-                                 [a.get_legend_handles_labels() for a in ax.values()])
-        self.plt.legend(handles, labels,
+        #        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
+        #                                 [a.get_legend_handles_labels() for a in ax.values()])
+        self.plt.legend(#handles, labels,
                               bbox_to_anchor=(0., 1.02, 1., .102),
                               loc=3, ncol=2, mode='expand', fancybox=True)
 
