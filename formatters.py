@@ -104,44 +104,63 @@ class PlotFormatter(Formatter):
 
     def _init_subplots(self):
         series_names = [i for i in self.config.sections() if i != 'global']
-        plots = sorted(set([self.config.getint(s, 'plot_subplot', 1) for s in series_names]))
+        plots = sorted(set([self.config.getint(s, 'subplot', 1) for s in series_names]))
         num_plots = len(plots)
         if plots != range(1, num_plots+1):
             raise RuntimeError(u"Plots are not numbered sequentially")
 
-        self.fig, axs = self.plt.subplots(num_plots, 1, sharex=True, sharey=False, squeeze=False)
+        self.fig, self.axs = self.plt.subplots(num_plots, 1, sharex=True, sharey=False, squeeze=False)
 
-        ax1_limits = self.config.get('global', 'axis1_limits', None)
-        ax2_limits = self.config.get('global', 'axis2_limits', None)
+
+        ## The following dual-axis stuff seems to confuse the plot layout code,
+        ## so disable multiple axes on the same plot for now.
 
         # Turn the axs array into a two-dimensional array with the second
         # dimension holding twinx() axes if selected.
-        self.axs = self.np.empty([num_plots, 2], dtype=object)
-        for i in range(num_plots):
-            a = axs[i,0]
-            a.set_yscale(self.config.get('global', 'axis1_scale', 'linear'))
-            a.set_ylabel(self.config.get('global', 'axis1_label', '')) # TODO: Different labels for subplots?
-            if ax1_limits is not None:
-                a.set_ylim([float(i) for i in ax1_limits.split(",")])
-            self.axs[i,0] = a
-
-
+        #        self.axs = self.np.empty([num_plots, 2], dtype=object)
+        #        for i in range(num_plots):
+        #            a = axs[i,0]
+        #            self.axs[i,0] = a
         # Find any plots that have output selected on the second axis.
+        #        for s in series_names:
+        #            axis = self.config.getint(s, 'plot_axis', 1)-1
+        #            subplot = self.config.getint(s, 'subplot', 1)-1
+        #            if axis == 1 and self.axs[subplot,1] is None:
+        #                self.axs[subplot,1] = self.axs[subplot-1,0].twinx()
+
         for s in series_names:
-            axis = self.config.getint(s, 'plot_axis', 1)-1
-            subplot = self.config.getint(s, 'plot_subplot', 1)-1
-            if axis == 1 and self.axs[subplot,1] is None:
-                a = self.axs[subplot-1,0].twinx()
-                a.set_yscale(self.config.get('global', 'axis2_scale', 'linear'))
-                a.set_ylabel(self.config.get('global', 'axis2_label', ''))
-                if ax2_limits is not None:
-                    a.set_ylim([float(i) for i in ax2_limits.split(",")])
-                self.axs[subplot,1] = a
+            # Each series is plotted on the appropriate axis with the series
+            # name as label. The line parameters are optionally set in the
+            # config file; if no value is set, matplotlib selects default
+            # colours for the lines.
+            subfig = self.config.getint(s, 'subplot', 1)-1
+            axis = 0
 
-        self.axs[0,0].set_xlabel(self.config.get('global', 'x_label', ''))
+            limits = self.config.get(s, 'limits', None)
+            if limits is not None:
+                l_min,l_max = [float(i) for i in limits.split(",")]
+                y_min,y_max = self.axs[subfig,axis].get_ylim()
+                self.axs[subfig,axis].set_ylim(min(y_min,l_min), max(y_max,l_max))
+
+            # Scales start out with a scale of 'linear', change it if a scale is set
+            scale = self.config.get(s, 'scale', None)
+            if scale is not None:
+                self.axs[subfig,axis].set_yscale(scale)
+
+            # Set plot axis labels to the unit of the series, if set. Detect
+            # multiple incompatibly set units and abort if found.
+            units = self.config.get(s, 'units', '')
+            label = self.axs[subfig,axis].get_ylabel()
+            if label == '':
+                self.axs[subfig,0].set_ylabel(units)
+            elif units and label != units:
+                raise RuntimeError(u"Axis units mismatch: %s and %s for subplot %d" % (units,label,subfig))
 
 
-        self.plt.title(self.config.get('global', 'plot_title', ''))
+        self.axs[-1,0].set_xlabel(self.config.get('global', 'x_label', ''))
+
+
+        self.fig.suptitle(self.config.get('global', 'plot_title', ''), fontsize=16)
 
 
     def format(self, name, results):
@@ -163,23 +182,36 @@ class PlotFormatter(Formatter):
             # name as label. The line parameters are optionally set in the
             # config file; if no value is set, matplotlib selects default
             # colours for the lines.
-            subfig = self.config.getint(s, 'plot_subplot', 1)-1
-            axis = self.config.getint(s, 'plot_axis', 1)-1
+            subfig = self.config.getint(s, 'subplot', 1)-1
+            axis = 0 #self.config.getint(s, 'plot_axis', 1)-1
+
+            # Set optional kwargs from config file
+            kwargs = {}
+            linewidth=self.config.get(s,'plot_linewidth', None)
+            if linewidth is not None:
+                kwargs['linewidth'] = float(linewidth)
+            color=self.config.get(s, 'plot_linecolor', None)
+            if color is not None:
+                kwargs['color'] = color
+
+
             self.axs[subfig,axis].plot(t,
                            [d[s] for d in data], # Non-existant datapoints are plotted as 0.0
                            self.config.get(s, 'plot_line', ''),
                            label=s,
-                           linewidth=float(self.config.get(s,'plot_linewidth', 1.0)),
+                           **kwargs
                 )
 
-        # Each axis has a set of handles/labels for the legend; combine them
-        # into one list of handles/labels for displaying one legend that holds
-        # all plot lines
-        #        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
-        #                                 [a.get_legend_handles_labels() for a in ax.values()])
-        self.plt.legend(#handles, labels,
-                              bbox_to_anchor=(0., 1.02, 1., .102),
-                              loc=3, ncol=2, mode='expand', fancybox=True)
+
+        for axs in self.axs:
+            # Each axis has a set of handles/labels for the legend; combine them
+            # into one list of handles/labels for displaying one legend that holds
+            # all plot lines
+            handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
+                                     [a.get_legend_handles_labels() for a in axs if a is not None])
+            axs[0].legend(handles, labels,
+                          bbox_to_anchor=(0., 1.02, 1., .102),
+                          loc=3, ncol=2, mode='expand', borderaxespad=0.)
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
