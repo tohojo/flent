@@ -209,9 +209,14 @@ class PlotFormatter(Formatter):
             # all plot lines
             handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
                                      [a.get_legend_handles_labels() for a in axs if a is not None])
+
+            # Shrink the current subplot by 20% in the horizontal direction, and
+            # place the legend on the right of the plot.
+            box = axs[0].get_position()
+            axs[0].set_position([box.x0, box.y0, box.width * 0.8, box.height])
             axs[0].legend(handles, labels,
-                          bbox_to_anchor=(0., 1.02, 1., .102),
-                          loc=3, ncol=2, mode='expand', borderaxespad=0.)
+                          bbox_to_anchor=(1.02, 1.0),
+                          loc='upper left', borderaxespad=0.)
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
