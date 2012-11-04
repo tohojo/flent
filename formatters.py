@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint, sys
+import pprint, sys, csv
 
 
 
@@ -61,7 +61,7 @@ class OrgTableFormatter(Formatter):
         if not results:
             self.output.write(unicode(name) + u" -- empty\n")
         first_row = results[0][1]
-        header_row = [name] + sorted(first_row.keys())
+        header_row = [name] + [i for i in self.config.sections() if i != 'global']
         self.output.write(u"| " + u" | ".join(header_row) + u" |\n")
         self.output.write(u"|-" + u"-+-".join([u"-"*len(i) for i in header_row]) + u"-|\n")
         for i,row in results:
@@ -72,6 +72,27 @@ class OrgTableFormatter(Formatter):
                 else:
                     self.output.write(unicode(row[c]) + u" | ")
             self.output.write(u"\n")
+
+class CsvFormatter(Formatter):
+    """Format the output as csv."""
+
+    def format(self, name, results):
+
+        if not results:
+            return
+
+        writer = csv.writer(self.output)
+        first_row = results[0][1]
+        header_row = [name] + [i for i in self.config.sections() if i != 'global']
+        writer.writerow(header_row)
+        for i,row in results:
+            csv_row = [unicode(i)]
+            for c in header_row[1:]:
+                if row[c] is None:
+                    csv_row.append("")
+                else:
+                    csv_row.append(unicode(row[c]))
+            writer.writerow(csv_row)
 
 class PlotFormatter(Formatter):
 
