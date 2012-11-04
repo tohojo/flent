@@ -223,12 +223,12 @@ class PlotFormatter(Formatter):
             self.axs[subfig,axis].plot(t,
                            [d[s] for d in data],
                            self.config.get(s, 'plot_line', ''),
-                           label=s,
+                           label=self.config.get(s, 'plot_label', s),
                            **kwargs
                 )
 
 
-        for axs in self.axs:
+        for n,axs in enumerate(self.axs):
             # Each axis has a set of handles/labels for the legend; combine them
             # into one list of handles/labels for displaying one legend that holds
             # all plot lines
@@ -240,9 +240,11 @@ class PlotFormatter(Formatter):
             for i in 0,1:
                 box = axs[i].get_position()
                 axs[i].set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
             axs[0].legend(handles, labels,
                           bbox_to_anchor=(1.05, 1.0),
-                          loc='upper left', borderaxespad=0.)
+                          loc='upper left', borderaxespad=0.,
+                title=self.config.get('global', 'legend%d_title'%(n+1), ''))
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
