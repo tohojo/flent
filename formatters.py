@@ -196,7 +196,7 @@ class PlotFormatter(Formatter):
 
 
             self.axs[subfig,axis].plot(t,
-                           [d[s] for d in data], # Non-existant datapoints are plotted as 0.0
+                           [d[s] for d in data],
                            self.config.get(s, 'plot_line', ''),
                            label=s,
                            **kwargs
