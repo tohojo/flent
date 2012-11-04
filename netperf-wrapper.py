@@ -60,8 +60,6 @@ if __name__ == "__main__":
             parser.error("Missing test name.")
 
 
-        if options.host is not None:
-            config.set('global', 'host', options.host)
 
         test_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
         if os.path.exists(args[0]):
@@ -82,6 +80,9 @@ if __name__ == "__main__":
         if options.title is not None:
             config.set('global', 'plot_title',
                        config.get('global', 'plot_title', '') + " - " + options.title)
+
+        if options.host is not None:
+            config._defaults['host'] = options.host
 
         aggregator_name = config.get('global', 'aggregator')
         classname = util.classname(aggregator_name, "Aggregator")
