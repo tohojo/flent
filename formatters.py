@@ -109,24 +109,12 @@ class PlotFormatter(Formatter):
         if plots != range(1, num_plots+1):
             raise RuntimeError(u"Plots are not numbered sequentially")
 
-        self.fig, self.axs = self.plt.subplots(num_plots, 1, sharex=True, sharey=False, squeeze=False)
+        self.fig, self.axs = self.plt.subplots(num_plots, 2, sharex=True, sharey=False, squeeze=False)
 
 
-        ## The following dual-axis stuff seems to confuse the plot layout code,
-        ## so disable multiple axes on the same plot for now.
-
-        # Turn the axs array into a two-dimensional array with the second
-        # dimension holding twinx() axes if selected.
-        #        self.axs = self.np.empty([num_plots, 2], dtype=object)
-        #        for i in range(num_plots):
-        #            a = axs[i,0]
-        #            self.axs[i,0] = a
-        # Find any plots that have output selected on the second axis.
-        #        for s in series_names:
-        #            axis = self.config.getint(s, 'plot_axis', 1)-1
-        #            subplot = self.config.getint(s, 'subplot', 1)-1
-        #            if axis == 1 and self.axs[subplot,1] is None:
-        #                self.axs[subplot,1] = self.axs[subplot-1,0].twinx()
+        # Hide all axes (they are then shown when used below)
+        for a in self.axs.flatten():
+            a.yaxis.set_visible(False)
 
         for s in series_names:
             # Each series is plotted on the appropriate axis with the series
@@ -134,25 +122,27 @@ class PlotFormatter(Formatter):
             # config file; if no value is set, matplotlib selects default
             # colours for the lines.
             subfig = self.config.getint(s, 'subplot', 1)-1
-            axis = 0
+            axis = self.config.getint(s, 'plot_axis', 1)-1
+            a = self.axs[subfig,axis]
+            a.yaxis.set_visible(True)
 
             limits = self.config.get(s, 'limits', None)
             if limits is not None:
                 l_min,l_max = [float(i) for i in limits.split(",")]
-                y_min,y_max = self.axs[subfig,axis].get_ylim()
-                self.axs[subfig,axis].set_ylim(min(y_min,l_min), max(y_max,l_max))
+                y_min,y_max = a.get_ylim()
+                a.set_ylim(min(y_min,l_min), max(y_max,l_max))
 
             # Scales start out with a scale of 'linear', change it if a scale is set
             scale = self.config.get(s, 'scale', None)
             if scale is not None:
-                self.axs[subfig,axis].set_yscale(scale)
+                a.set_yscale(scale)
 
             # Set plot axis labels to the unit of the series, if set. Detect
             # multiple incompatibly set units and abort if found.
             units = self.config.get(s, 'units', '')
-            label = self.axs[subfig,axis].get_ylabel()
+            label = a.get_ylabel()
             if label == '':
-                self.axs[subfig,0].set_ylabel(units)
+                a.set_ylabel(units)
             elif units and label != units:
                 raise RuntimeError(u"Axis units mismatch: %s and %s for subplot %d" % (units,label,subfig))
 
@@ -161,6 +151,20 @@ class PlotFormatter(Formatter):
 
 
         self.fig.suptitle(self.config.get('global', 'plot_title', ''), fontsize=16)
+
+        self.fig.subplots_adjust(left=0.1, right=0.9)
+
+        # Duplicate the twinx() function of axes for having the second set of
+        # axes be on top of the others, for dual-axis view
+        for axs in self.axs:
+            box = axs[0].get_position()
+            axs[0].set_position([box.x0, box.y0, box.width * 2.0, box.height])
+            axs[1].set_position(axs[0].get_position())
+            axs[1].set_frame_on(False)
+            axs[1].yaxis.tick_right()
+            axs[1].yaxis.set_label_position('right')
+            axs[1].yaxis.set_offset_position('right')
+            axs[1].xaxis.set_visible(False)
 
 
     def format(self, name, results):
@@ -183,7 +187,7 @@ class PlotFormatter(Formatter):
             # config file; if no value is set, matplotlib selects default
             # colours for the lines.
             subfig = self.config.getint(s, 'subplot', 1)-1
-            axis = 0 #self.config.getint(s, 'plot_axis', 1)-1
+            axis = self.config.getint(s, 'plot_axis', 1)-1
 
             # Set optional kwargs from config file
             kwargs = {}
@@ -212,10 +216,11 @@ class PlotFormatter(Formatter):
 
             # Shrink the current subplot by 20% in the horizontal direction, and
             # place the legend on the right of the plot.
-            box = axs[0].get_position()
-            axs[0].set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            for i in 0,1:
+                box = axs[i].get_position()
+                axs[i].set_position([box.x0, box.y0, box.width * 0.8, box.height])
             axs[0].legend(handles, labels,
-                          bbox_to_anchor=(1.02, 1.0),
+                          bbox_to_anchor=(1.05, 1.0),
                           loc='upper left', borderaxespad=0.)
 
         # Since outputting image data to stdout does not make sense, we launch
