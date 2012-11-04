@@ -139,7 +139,7 @@ class PlotFormatter(Formatter):
             # colours for the lines.
             ax_no = self.config.getint(s, 'plot_axis', 1)
             ax[ax_no].plot(t,
-                           [(d[s] or 0.0) for d in data], # Non-existant datapoints are plotted as 0.0
+                           [d[s] for d in data], # Non-existant datapoints are plotted as 0.0
                            self.config.get(s, 'plot_line', ''),
                            label=s,
                            linewidth=float(self.config.get(s,'plot_linewidth', 1.0)),
