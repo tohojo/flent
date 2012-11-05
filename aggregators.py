@@ -20,6 +20,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+from datetime import datetime
 
 import runners, transformers
 
@@ -28,12 +29,16 @@ from util import classname
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
 
-    def __init__(self, config):
+    def __init__(self, config, logfile=None):
         self.iterations = int(config['iterations'])
         self.binary = config['cmd_binary']
         self.global_options = config['cmd_opts']
         self.default_runner = config.get('runner', 'default')
         self.instances = {}
+        if logfile is None:
+            self.logfile = None
+        else:
+            self.logfile = open(logfile, "a")
 
     def add_instance(self, name, config):
         instance = {
@@ -62,6 +67,9 @@ class Aggregator(object):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
 
+        if self.logfile:
+            self.logfile.write(u"Start run at %s\n" % datetime.now())
+
         result = {}
         threads = {}
         for n,i in self.instances.items():
@@ -69,6 +77,7 @@ class Aggregator(object):
             threads[n].start()
         for n,t in threads.items():
             t.join()
+            self._log(n,t)
             if t.result is None:
                 continue
             elif 'transformer' in self.instances[n]:
@@ -77,6 +86,15 @@ class Aggregator(object):
                 result[n] = t.result
 
         return result
+
+    def _log(self, name, runner):
+        if self.logfile is None:
+            return
+        self.logfile.write("Runner: %s\nCommand: %s\nReturncode: %d\n" % (name, runner.command, runner.returncode))
+        self.logfile.write("Program stdout:\n")
+        self.logfile.write("  " + "\n  ".join(runner.out.splitlines()) + "\n")
+        self.logfile.write("Program stderr:\n")
+        self.logfile.write("  " + "\n  ".join(runner.err.splitlines()) + "\n")
 
 class IterationAggregator(Aggregator):
     """Iteration aggregator. Runs the jobs multiple times and aggregates the
@@ -95,10 +113,10 @@ class TimeseriesAggregator(Aggregator):
     Assumes each job outputs a list of pairs (time, value) where the times and
     values are floating point values."""
 
-    def __init__(self, config):
+    def __init__(self, config, *args, **kwargs):
         self.step = float(config['step'])
         self.max_distance = float(config['max_distance'])
-        Aggregator.__init__(self, config)
+        Aggregator.__init__(self, config, *args, **kwargs)
 
     def aggregate(self):
         measurements = Aggregator.aggregate(self)

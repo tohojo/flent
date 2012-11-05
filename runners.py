@@ -46,15 +46,17 @@ class ProcessRunner(threading.Thread):
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
                          universal_newlines=True)
-        out,err=prog.communicate()
+        self.out,self.err=prog.communicate()
+        self.returncode = prog.returncode
+        self.command = " ".join(args)
         if prog.returncode:
-            sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % " ".join(args))
-            sys.stderr.write("Program output:")
-            sys.stderr.write("  " + "\n  ".join(err.splitlines()) + "\n")
-            sys.stderr.write("  " + "\n  ".join(out.splitlines()) + "\n")
+            sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % self.command)
+            sys.stderr.write("Program output:\n")
+            sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
+            sys.stderr.write("  " + "\n  ".join(self.out.splitlines()) + "\n")
             self.result = None
         else:
-            self.result = self.parse(out)
+            self.result = self.parse(self.out)
 
     def parse(self, output):
         """Default parser returns the last (whitespace-separated) word of

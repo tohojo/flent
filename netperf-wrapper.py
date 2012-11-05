@@ -40,6 +40,8 @@ parser.add_option("-H", "--host", action="store", type="string", dest="host",
                   help="host to connect to for tests")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="title",
                   help="text to add to plot title")
+parser.add_option("-l", "--log-file", action="store", type="string", dest="logfile",
+                  help="write debug log (test program output) to log file")
 
 parser.set_defaults(output="-")
 
@@ -89,7 +91,7 @@ if __name__ == "__main__":
         aggregator_name = config.get('global', 'aggregator')
         classname = util.classname(aggregator_name, "Aggregator")
         if hasattr(aggregators, classname):
-            agg = getattr(aggregators, classname)(dict(config.items('global')))
+            agg = getattr(aggregators, classname)(dict(config.items('global')), logfile=options.logfile)
         else:
             parser.error("Aggregator not found: '%s'" % aggregator_name)
 
