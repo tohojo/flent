@@ -46,7 +46,6 @@ class PprintFormatter(Formatter):
         """Use the pprint pretty-printing module to just print out the contents of
         the results list."""
 
-        self.output.write(name+"\n")
         pprint.pprint(results, self.output)
 
 DefaultFormatter = PprintFormatter

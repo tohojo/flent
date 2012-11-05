@@ -27,3 +27,17 @@ functioning matplotlib installation. You specify which output format with -f {or
 Documentation is relatively sparse at the moment, but try having a look at the
 .ini files in the tests directory and running the main script
 (netperf-wrapper.py) with -h.
+
+## Saving test data for later plotting ##
+
+Reading back in test data is now supported. First, run the tests with the
+'pprint' formatter and save the output in a file (i.e. `python2
+netperf-wrapper.py -f pprint -o test.data <test>`), then read it back in using
+the -i parameter. This bypasses the actual running of the tests, but still
+requires a test config file. So for example, the data can be plotted by using
+`python2 netperf-wrapper.py -f plot -i test.data <test>` (with the same test
+name as was used to generate the data).
+
+Note that this functionality relies on the data to be eval()'ed by the python
+interpreter, so don't under any circumstances use untrusted input data, as it
+can in principle do arbitrary bad things.

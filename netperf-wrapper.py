@@ -32,6 +32,8 @@ parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-st
 
 parser.add_option("-o", "--output", action="store", type="string", dest="output",
                   help="file to write output to (default standard out)")
+parser.add_option("-i", "--input", action="store", type="string", dest="input",
+                  help="file to read input from (instead of running tests)")
 parser.add_option("-f", "--format", action="store", type="string", dest="format",
                   help="override config file output format")
 parser.add_option("-H", "--host", action="store", type="string", dest="host",
@@ -101,7 +103,14 @@ if __name__ == "__main__":
         else:
             raise RuntimeError("Formatter not found.")
 
-        results = agg.aggregate()
+        if options.input is not None:
+            try:
+                with open(options.input) as fp:
+                    results = eval(fp.read())
+            except (IOError, SyntaxError):
+                parser.error("Unable to read input file: '%s'" % options.input)
+        else:
+            results = agg.aggregate()
         formatter.format(config.get('global', 'name'), results)
 
     except RuntimeError, e:
