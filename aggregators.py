@@ -125,8 +125,12 @@ class TimeseriesAggregator(Aggregator):
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step
         # size
-        t_0 = min([i[0][0] for i in measurements.values()])
-        t_max = max([i[-1][0] for i in measurements.values()])
+        first_times = [i[0][0] for i in measurements.values() if i[0]]
+        last_times = [i[-1][0] for i in measurements.values() if i[-1]]
+        if not (first_times or last_times):
+            raise RuntimeError(u"No data to aggregate")
+        t_0 = min(first_times)
+        t_max = max(last_times)
         steps = int(math.ceil((t_max-t_0)/self.step))
 
         time_labels = []
