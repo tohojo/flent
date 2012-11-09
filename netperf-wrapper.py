@@ -112,7 +112,7 @@ if __name__ == "__main__":
             except (IOError, SyntaxError):
                 parser.error("Unable to read input file: '%s'" % options.input)
         else:
-            results = agg.aggregate()
+            results = agg.postprocess(agg.aggregate())
         formatter.format(config.get('global', 'name'), results)
 
     except RuntimeError, e:

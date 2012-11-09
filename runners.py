@@ -19,15 +19,16 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re, time, sys
+import threading, time, shlex, subprocess, re, time, sys, math
 
 from datetime import datetime
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
 
-    def __init__(self, binary, options, delay, config, *args, **kwargs):
+    def __init__(self, name, binary, options, delay, config, *args, **kwargs):
         threading.Thread.__init__(self,*args, **kwargs)
+        self.name = name
         self.binary = binary
         self.options = options
         self.delay = delay
@@ -185,3 +186,48 @@ class TcRunner(ProcessRunner):
             else:
                 sys.stderr.write("Warning: Missing value for %s" % key)
         return result
+
+class ComputingRunner(object):
+    def __init__(self, name, binary, options, delay, config, *args, **kwargs):
+        self.name = name
+        self.binary = binary
+        self.options = options
+        self.delay = delay
+        self.config = config
+        self.keys = [i.strip() for i in self.config.get('apply_to', '').split(',')]
+
+    # Emulate threading interface to fit into aggregator usage.
+    def start(self):
+        pass
+    def join(self):
+        pass
+
+    def result(self, res):
+        if not self.keys:
+            return res
+
+        new_res = []
+
+        for i,r in res:
+            new_r = dict(r)
+            values = [r[k] for k in r.keys() if k in self.keys]
+            if not values or None in values:
+                new_r[self.name] = None
+            else:
+                new_r[self.name] =  self.compute(values)
+            new_res.append((i,new_r))
+        return new_res
+
+    def compute(self, values):
+        """Compute the function on the values this runner should be applied to.
+
+        Default implementation returns None."""
+        return None
+
+class AverageRunner(ComputingRunner):
+    def compute(self,values):
+        return math.fsum(values)/len(values)
+
+class SumRunner(ComputingRunner):
+    def compute(self,values):
+        return math.fsum(values)

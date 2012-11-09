@@ -40,6 +40,8 @@ class Aggregator(object):
         else:
             self.logfile = open(logfile, "a")
 
+        self.postprocessors = []
+
     def add_instance(self, name, config):
         instance = {
             'options': self.global_options + " " + config.get('cmd_opts', ''),
@@ -73,18 +75,28 @@ class Aggregator(object):
         result = {}
         threads = {}
         for n,i in self.instances.items():
-            threads[n] = i['runner'](i['binary'], i['options'], i['delay'], i['config'])
+            threads[n] = i['runner'](n, i['binary'], i['options'], i['delay'], i['config'])
             threads[n].start()
         for n,t in threads.items():
             t.join()
             self._log(n,t)
             if t.result is None:
                 continue
+            elif callable(t.result):
+                # If the result is callable, the runner is really a
+                # post-processor (Avg etc), and should be run as such (by the
+                # postprocess() method)
+                self.postprocessors.append(t.result)
             elif 'transformer' in self.instances[n]:
                 result[n] = self.instances[n]['transformer'](t.result)
             else:
                 result[n] = t.result
 
+        return result
+
+    def postprocess(self, result):
+        for p in self.postprocessors:
+            result = p(result)
         return result
 
     def _log(self, name, runner):
