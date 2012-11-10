@@ -106,7 +106,8 @@ class Aggregator(object):
     def _log(self, name, runner):
         if self.logfile is None:
             return
-        self.logfile.write("Runner: %s\nCommand: %s\nReturncode: %d\n" % (name, runner.command, runner.returncode))
+        self.logfile.write("Runner: %s - %s\n" % (name, runner.__class__.__name__))
+        self.logfile.write("Command: %s\nReturncode: %d\n" % (runner.command, runner.returncode))
         self.logfile.write("Program stdout:\n")
         self.logfile.write("  " + "\n  ".join(runner.out.splitlines()) + "\n")
         self.logfile.write("Program stderr:\n")
