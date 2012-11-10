@@ -192,7 +192,4 @@ class TimeseriesAggregator(Aggregator):
 
             results.append(result)
 
-        import pprint
-        pprint.pprint(results)
-        pprint.pprint(measurements)
         return zip(time_labels, results)
