@@ -172,23 +172,27 @@ class TimeseriesAggregator(Aggregator):
                         break
                 if t_next is None:
                     t_next,v_next = r[-1]
-                if t_prev is None:
-                    # The first data point for this measurement is after the
-                    # current t. Don't interpolate, just use the value if it is
-                    # within the max distance.
-                    if abs(t-t_next) > self.max_distance:
-                        result[n] = None
-                    else:
+                if abs(t-t_next) <= self.max_distance:
+                    if t_prev is None:
+                        # The first data point for this measurement is after the
+                        # current t. Don't interpolate, just use the value.
                         result[n] = v_next
-                else:
-                    # We found the previous and next values; interpolate between
-                    # them. We assume that the rate of change dv/dt is constant
-                    # in the interval, and so can be calculated as
-                    # (v_next-v_prev)/(t_next-t_prev). Then the value v_t at t
-                    # can be calculated as v_t=v_prev + dv/dt*(t-t_prev)
+                    else:
+                        # We found the previous and next values; interpolate between
+                        # them. We assume that the rate of change dv/dt is constant
+                        # in the interval, and so can be calculated as
+                        # (v_next-v_prev)/(t_next-t_prev). Then the value v_t at t
+                        # can be calculated as v_t=v_prev + dv/dt*(t-t_prev)
 
-                    dv_dt = (v_next-v_prev)/(t_next-t_prev)
-                    result[n] = v_prev + dv_dt*(t-t_prev)
+                        dv_dt = (v_next-v_prev)/(t_next-t_prev)
+                        result[n] = v_prev + dv_dt*(t-t_prev)
+                else:
+                    # Interpolation distance is too long; don't use the value.
+                    result[n] = None
+
             results.append(result)
 
+        import pprint
+        pprint.pprint(results)
+        pprint.pprint(measurements)
         return zip(time_labels, results)
