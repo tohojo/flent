@@ -228,6 +228,18 @@ class AverageRunner(ComputingRunner):
     def compute(self,values):
         return math.fsum(values)/len(values)
 
+class SmoothAverageRunner(ComputingRunner):
+    def __init__(self, *args, **kwargs):
+        ComputingRunner.__init__(self, *args, **kwargs)
+        self._smooth_steps = int(self.config.get('smooth_steps', 5))
+        self._avg_values = []
+
+    def compute(self, values):
+        self._avg_values.append(math.fsum(values)/len(values))
+        while len(self._avg_values) > self._smooth_steps:
+            self._avg_values.pop(0)
+        return math.fsum(self._avg_values)/len(self._avg_values)
+
 class SumRunner(ComputingRunner):
     def compute(self,values):
         return math.fsum(values)
