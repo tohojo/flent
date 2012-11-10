@@ -56,11 +56,10 @@ class Aggregator(object):
             instance['options'] = config.get('cmd_opts', '')
 
         if 'data_transform' in config:
-            transformers = []
+            instance['transformers'] = []
             for t in [i.strip() for i in config['data_transform'].split(',')]:
                 if hasattr(transformers, t):
-                    transformers.append(getattr(transformers, t))
-            instance['transformers'] = transformers
+                    instance['transformers'].append(getattr(transformers, t))
 
         duplicates = config.get('duplicates', None)
         if duplicates is not None:
