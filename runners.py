@@ -188,6 +188,7 @@ class TcRunner(ProcessRunner):
         return result
 
 class ComputingRunner(object):
+    command = "Computed"
     def __init__(self, name, binary, options, delay, config, *args, **kwargs):
         self.name = name
         self.binary = binary
@@ -195,6 +196,11 @@ class ComputingRunner(object):
         self.delay = delay
         self.config = config
         self.keys = [i.strip() for i in self.config.get('apply_to', '').split(',')]
+
+        # These are use for debug logging
+        self.returncode = 0
+        self.out = ""
+        self.err = ""
 
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
@@ -225,10 +231,12 @@ class ComputingRunner(object):
         return None
 
 class AverageRunner(ComputingRunner):
+    command = "Average (computed)"
     def compute(self,values):
         return math.fsum(values)/len(values)
 
 class SmoothAverageRunner(ComputingRunner):
+    command = "Smooth average (computed)"
     def __init__(self, *args, **kwargs):
         ComputingRunner.__init__(self, *args, **kwargs)
         self._smooth_steps = int(self.config.get('smooth_steps', 5))
@@ -241,5 +249,6 @@ class SmoothAverageRunner(ComputingRunner):
         return math.fsum(self._avg_values)/len(self._avg_values)
 
 class SumRunner(ComputingRunner):
+    command = "Sum (computed)"
     def compute(self,values):
         return math.fsum(values)
