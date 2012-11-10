@@ -55,8 +55,12 @@ class Aggregator(object):
         if config.get('separate_opts', False):
             instance['options'] = config.get('cmd_opts', '')
 
-        if 'data_transform' in config and hasattr(transformers, config['data_transform']):
-            instance['transformer'] = getattr(transformers, config['data_transform'])
+        if 'data_transform' in config:
+            transformers = []
+            for t in [i.strip() for i in config['data_transform'].split(',')]:
+                if hasattr(transformers, t):
+                    transformers.append(getattr(transformers, t))
+            instance['transformers'] = transformers
 
         duplicates = config.get('duplicates', None)
         if duplicates is not None:
@@ -87,10 +91,11 @@ class Aggregator(object):
                 # post-processor (Avg etc), and should be run as such (by the
                 # postprocess() method)
                 self.postprocessors.append(t.result)
-            elif 'transformer' in self.instances[n]:
-                result[n] = self.instances[n]['transformer'](t.result)
             else:
                 result[n] = t.result
+                if 'transformers' in self.instances[n]:
+                    for tr in self.instances[n]['transformers']:
+                        result[n] = tr(result[n])
 
         return result
 
