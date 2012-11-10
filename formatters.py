@@ -208,6 +208,7 @@ class PlotFormatter(Formatter):
             # colours for the lines.
             subfig = self.config.getint(s, 'subplot', 1)-1
             axis = self.config.getint(s, 'plot_axis', 1)-1
+            a = self.axs[subfig,axis]
 
             # Set optional kwargs from config file
             kwargs = {}
@@ -218,12 +219,27 @@ class PlotFormatter(Formatter):
             if color is not None:
                 kwargs['color'] = color
 
+            data_points = [d[s] for d in data]
 
-            self.axs[subfig,axis].plot(t,
-                           [d[s] for d in data],
-                           self.config.get(s, 'plot_line', ''),
-                           label=self.config.get(s, 'plot_label', s),
-                           **kwargs
+            if not self.config.has_option(s, 'limits') and \
+              self.config.getboolean('global', 'plot_outlier_scaling', True):
+                # If outlier scaling is turned off and no manual scaling for the
+                # axis is specified, find the 95th and 5th percentile of data
+                # points and scale the axis to these values (plus five percent
+                # air). Use the max value for the percentiles over all data
+                # series on the current axis.
+
+                top_percentile = self.np.percentile(data_points, 95)*1.05
+                btm_percentile = self.np.percentile([d for d in data_points if d is not None], 5)*0.95
+                y_min,y_max = a.get_ylim()
+                a.set_ylim(ymin=(y_min and min(y_min,btm_percentile) or btm_percentile),
+                           ymax=max(top_percentile,y_max))
+
+            a.plot(t,
+                   data_points,
+                   self.config.get(s, 'plot_line', ''),
+                   label=self.config.get(s, 'plot_label', s),
+                   **kwargs
                 )
 
 
@@ -243,7 +259,8 @@ class PlotFormatter(Formatter):
             axs[0].legend(handles, labels,
                           bbox_to_anchor=(1.05, 1.0),
                           loc='upper left', borderaxespad=0.,
-                title=self.config.get('global', 'legend%d_title'%(n+1), ''))
+                          title=self.config.get('global', 'legend%d_title'%(n+1), ''),
+                          prop={'size':'small'})
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.

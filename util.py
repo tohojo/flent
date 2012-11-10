@@ -61,3 +61,12 @@ class DefaultConfigParser(ConfigParser.ConfigParser):
                 raise
             else:
                 return default
+
+    def getboolean(self, section, option, default=_NoDefault):
+        try:
+            return ConfigParser.ConfigParser.getboolean(self, section, option)
+        except ConfigParser.NoOptionError:
+            if default==self._NoDefault:
+                raise
+            else:
+                return default
