@@ -201,6 +201,10 @@ class PlotFormatter(Formatter):
         # matplotlib .twinx() function creates a second axis on the right-hand
         # side of the plot in the obvious way.
 
+        all_data = self.np.empty_like(self.axs, dtype=object)
+        for i in range(len(all_data.flat)):
+            all_data.flat[i] = []
+
         for s in series_names:
             # Each series is plotted on the appropriate axis with the series
             # name as label. The line parameters are optionally set in the
@@ -220,20 +224,12 @@ class PlotFormatter(Formatter):
                 kwargs['color'] = color
 
             data_points = [d[s] for d in data]
+            if self.config.has_option(s, 'limits'):
+                all_data[subfig,axis] = None
 
-            if not self.config.has_option(s, 'limits') and \
-              self.config.getboolean('global', 'plot_outlier_scaling', True):
-                # If outlier scaling is turned off and no manual scaling for the
-                # axis is specified, find the 95th and 5th percentile of data
-                # points and scale the axis to these values (plus five percent
-                # air). Use the max value for the percentiles over all data
-                # series on the current axis.
+            if all_data[subfig,axis] is not None:
+                all_data[subfig,axis] += [d for d in data_points if d is not None]
 
-                top_percentile = self.np.percentile(data_points, 95)*1.05
-                btm_percentile = self.np.percentile([d for d in data_points if d is not None], 5)*0.95
-                y_min,y_max = a.get_ylim()
-                a.set_ylim(ymin=(y_min and min(y_min,btm_percentile) or btm_percentile),
-                           ymax=max(top_percentile,y_max))
 
             a.plot(t,
                    data_points,
@@ -255,6 +251,17 @@ class PlotFormatter(Formatter):
             for i in 0,1:
                 box = axs[i].get_position()
                 axs[i].set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+                if self.config.getboolean('global', 'plot_outlier_scaling', True) \
+                  and all_data[n,i]:
+                    # If outlier scaling is turned off and no manual scaling for the
+                    # axis is specified, find the 95th and 5th percentile of data
+                    # points and scale the axis to these values (plus five percent
+                    # air).
+
+                    top_percentile = self.np.percentile(all_data[n,i], 95)*1.05
+                    btm_percentile = self.np.percentile(all_data[n,i], 5)*0.95
+                    axs[i].set_ylim(ymin=btm_percentile, ymax=top_percentile)
 
             axs[0].legend(handles, labels,
                           bbox_to_anchor=(1.05, 1.0),
