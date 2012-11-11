@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
+import math, pprint
 from datetime import datetime
 
 import runners, transformers
@@ -96,11 +96,17 @@ class Aggregator(object):
                     for tr in self.instances[n]['transformers']:
                         result[n] = tr(result[n])
 
+        if self.logfile is not None:
+            self.logfile.write("Raw aggregated data:\n")
+            pprint.pprint(result, self.logfile)
         return result
 
     def postprocess(self, result):
         for p in self.postprocessors:
             result = p(result)
+        if self.logfile is not None:
+            self.logfile.write("Postprocessed data:\n")
+            pprint.pprint(result, self.logfile)
         return result
 
     def _log(self, name, runner):
