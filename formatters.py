@@ -193,7 +193,7 @@ class PlotFormatter(Formatter):
 
         # Unzip the data into time series and data dicts to allow for plotting.
         t,data = zip(*results)
-        series_names = data[0].keys()
+        series_names = [i for i in self.config.sections() if i != 'global']
 
         # The config file can set plot_axis to 1 or 2 for each test depending on
         # which axis the results should be plotted. The second axis is only
