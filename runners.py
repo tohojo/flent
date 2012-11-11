@@ -216,8 +216,8 @@ class ComputingRunner(object):
 
         for i,r in res:
             new_r = dict(r)
-            values = [r[k] for k in r.keys() if k in self.keys]
-            if not values or None in values:
+            values = [r[k] for k in r.keys() if k in self.keys and r[k] is not None]
+            if not values:
                 new_r[self.name] = None
             else:
                 new_r[self.name] =  self.compute(values)
