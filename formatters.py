@@ -168,6 +168,10 @@ class PlotFormatter(Formatter):
 
 
         self.axs[-1,0].set_xlabel(self.config.get('global', 'x_label', ''))
+        xlimits = self.config.get('global', 'x_limits', None)
+        if xlimits is not None:
+            l_min,l_max = [float(i) for i in xlimits.split(",")]
+            self.axs[0,0].set_xlim(l_min,l_max)
 
 
         self.fig.suptitle(self.config.get('global', 'plot_title', ''), fontsize=16)
