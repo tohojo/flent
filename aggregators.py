@@ -69,6 +69,9 @@ class Aggregator(object):
             self.instances[name] = instance
 
     def aggregate(self):
+        raise NotImplementedError()
+
+    def collect(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
 
@@ -123,10 +126,10 @@ class IterationAggregator(Aggregator):
     """Iteration aggregator. Runs the jobs multiple times and aggregates the
     results. Assumes each job outputs one value."""
 
-    def aggregate(self):
-        results = []
+    def aggregate(self, results):
+        results.x_values = range(1, self.iterations+1)
         for i in range(self.iterations):
-            results.append(((i+1), Aggregator.aggregate(self)))
+            results.add_result(i+1, self.collect())
         return results
 
 class TimeseriesAggregator(Aggregator):
@@ -141,9 +144,9 @@ class TimeseriesAggregator(Aggregator):
         self.max_distance = float(config['max_distance'])
         Aggregator.__init__(self, config, *args, **kwargs)
 
-    def aggregate(self):
-        measurements = Aggregator.aggregate(self)
-        results = []
+    def aggregate(self, results):
+        measurements = self.collect(self)
+        self.results.create_series(results.keys())
 
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step
@@ -159,7 +162,7 @@ class TimeseriesAggregator(Aggregator):
         time_labels = []
 
         for s in range(steps):
-            time_labels.append(self.step*s)
+            time_label = self.step*s
             t = t_0 + self.step*s
 
             # for each step we need to find the interpolated measurement value
@@ -197,6 +200,6 @@ class TimeseriesAggregator(Aggregator):
                     # Interpolation distance is too long; don't use the value.
                     result[n] = None
 
-            results.append(result)
+            results.append_datapoint(time_label, result)
 
-        return zip(time_labels, results)
+        return results
