@@ -28,3 +28,9 @@ pip-log.txt
 
 # rope
 .ropeproject
+
+# data files
+*.json.gz
+*.csv
+*.pdf
+*.png
