@@ -77,8 +77,21 @@ class ResultSet(object):
         if data:
             raise RuntimeError("Unexpected data point(s): %s" % data.keys())
 
-    def series(self, name):
+    def series(self, name, smooth=None):
+        if smooth:
+            return self.smoothed(name, smooth)
         return self._results[name]
+
+    def smoothed(self, name, amount):
+        res = self._results[name]
+        smooth_res = []
+        for i in range(len(res)):
+            s = max(0,i-amount/2)
+            e = min(len(res),i+amount/2)
+            window = res[s:e]
+            smooth_res.append(math.fsum(window)/len(window))
+        return smooth_res
+
 
     @property
     def series_names(self):
