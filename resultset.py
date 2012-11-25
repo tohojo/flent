@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, os, gzip
+import json, os, gzip, math
 from datetime import datetime
 from dateutil.parser import parse as parse_date
 
@@ -88,8 +88,11 @@ class ResultSet(object):
         for i in range(len(res)):
             s = max(0,i-amount/2)
             e = min(len(res),i+amount/2)
-            window = res[s:e]
-            smooth_res.append(math.fsum(window)/len(window))
+            window = [i for i in res[s:e] if i is not None]
+            if window:
+                smooth_res.append(math.fsum(window)/len(window))
+            else:
+                smooth_res.append(None)
         return smooth_res
 
 
