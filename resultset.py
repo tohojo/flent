@@ -26,7 +26,7 @@ from dateutil.parser import parse as parse_date
 from ordereddict import OrderedDict
 
 # Controls pretty-printing of json dumps
-JSON_INDENT=4
+JSON_INDENT=None
 
 __all__ = ['ResultSet']
 
