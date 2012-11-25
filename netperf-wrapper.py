@@ -65,18 +65,20 @@ if __name__ == "__main__":
                     if settings.INPUT.endswith(".gz"):
                         fp = gzip.GzipFile(fileobj=fp)
                     results = ResultSet.load(fp)
+                    settings.update(results.meta())
             except (IOError, SyntaxError):
-                raise RuntimeError("Unable to read input file: '%s'" % settings.input)
+                raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
         else:
             if settings.OUTPUT and settings.OUTPUT != "-":
                 output_dir = "."
             else:
                 output_dir = os.path.dirname(settings.OUTPUT)
-            results = ResultSet(name=settings.NAME,
-                                host=settings.HOST,
-                                title=settings.TITLE,
-                                length=settings.LENGTH,
-                                step_size=settings.STEP_SIZE,
+            results = ResultSet(NAME=settings.NAME,
+                                HOST=settings.HOST,
+                                TITLE=settings.TITLE,
+                                LENGTH=settings.LENGTH,
+                                TOTAL_LENGTH=settings.TOTAL_LENGTH,
+                                STEP_SIZE=settings.STEP_SIZE,
                 )
             results = agg.postprocess(agg.aggregate(results))
             results.dump_dir(output_dir)

@@ -33,12 +33,17 @@ __all__ = ['ResultSet']
 class ResultSet(object):
     def __init__(self, **kwargs):
         self.metadata = kwargs
-        if not 'time' in self.metadata:
-            self.metadata['time'] = datetime.now()
-        if not 'name' in self.metadata:
+        if not 'TIME' in self.metadata:
+            self.metadata['TIME'] = datetime.now()
+        if not 'NAME' in self.metadata:
             raise RuntimeError("Missing name for resultset")
         self._x_values = []
         self._results = OrderedDict()
+
+    def meta(self, k=None):
+        if k:
+            return self.metadata[k]
+        return self.metadata
 
     def get_x_values(self):
         return self._x_values
@@ -93,7 +98,7 @@ class ResultSet(object):
 
     def serialise(self):
         metadata = dict(self.metadata)
-        metadata['time'] = metadata['time'].isoformat()
+        metadata['TIME'] = metadata['TIME'].isoformat()
         return {
             'metadata': metadata,
             'x_values': self._x_values,
@@ -111,15 +116,15 @@ class ResultSet(object):
         return json.dumps(self.serialise(), indent=JSON_INDENT)
 
     def dump_dir(self, dirname):
-        filename = "%s-%s.data.json.gz" % (self.metadata['name'], self.metadata['time'].isoformat())
+        filename = "%s-%s.data.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat())
         with gzip.open(os.path.join(dirname, filename), "w") as fp:
             self.dump(fp)
 
     @classmethod
     def unserialise(cls, obj):
         metadata = dict(obj['metadata'])
-        if 'time' in metadata:
-            metadata['time'] = parse_date(metadata['time'])
+        if 'TIME' in metadata:
+            metadata['TIME'] = parse_date(metadata['TIME'])
         rset = cls(**metadata)
         rset.x_values = obj['x_values']
         for k,v in obj['results'].items():
