@@ -35,6 +35,7 @@ DEFAULT_SETTINGS = {
     }
 
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
+DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
                                usage="usage: %prog [options] test")
@@ -72,7 +73,7 @@ class Settings(optparse.Values, object):
             self.TOTAL_LENGTH = self.LENGTH
 
     def __setattr__(self, k, v):
-        if k == 'DATA_SETS' and isinstance(v, list):
+        if k in DICT_SETTINGS and isinstance(v, list):
             v = OrderedDict(v)
         object.__setattr__(self, k, v)
 
