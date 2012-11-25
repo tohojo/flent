@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
+import json, os, gzip
 from datetime import datetime
 from dateutil.parser import parse as parse_date
 
@@ -35,8 +35,10 @@ class ResultSet(object):
         self.metadata = kwargs
         if not 'time' in self.metadata:
             self.metadata['time'] = datetime.now()
+        if not 'name' in self.metadata:
+            raise RuntimeError("Missing name for resultset")
         self._x_values = []
-        self._results = {}
+        self._results = OrderedDict()
 
     def get_x_values(self):
         return self._x_values
@@ -74,8 +76,20 @@ class ResultSet(object):
         return self._results[name]
 
     @property
-    def result_names(self):
+    def series_names(self):
         return self._results.keys()
+
+    def zipped(self, keys=None):
+        if keys is None:
+            keys = self.series_names
+        for i in range(len(self._x_values)):
+            yield [self._x_values[i]]+[self._results[k][i] for k in keys]
+
+    def __iter__(self):
+        return self.zipped()
+
+    def __len__(self):
+        return len(self._x_values)
 
     def serialise(self):
         metadata = dict(self.metadata)
@@ -86,20 +100,29 @@ class ResultSet(object):
             'results': self._results,
             }
 
+    @property
+    def empty(self):
+        return not self._x_values
+
     def dump(self, fp):
         return json.dump(self.serialise(), fp, indent=JSON_INDENT)
 
     def dumps(self):
         return json.dumps(self.serialise(), indent=JSON_INDENT)
 
+    def dump_dir(self, dirname):
+        filename = "%s-%s.data.json.gz" % (self.metadata['name'], self.metadata['time'].isoformat())
+        with gzip.open(os.path.join(dirname, filename), "w") as fp:
+            self.dump(fp)
+
     @classmethod
     def unserialise(cls, obj):
         metadata = dict(obj['metadata'])
         if 'time' in metadata:
             metadata['time'] = parse_date(metadata['time'])
-        rset = cls(metadata)
+        rset = cls(**metadata)
         rset.x_values = obj['x_values']
-        for k,v in obj['results']:
+        for k,v in obj['results'].items():
             rset.add_result(k,v)
         return rset
 

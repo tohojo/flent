@@ -145,8 +145,8 @@ class TimeseriesAggregator(Aggregator):
         Aggregator.__init__(self, config, *args, **kwargs)
 
     def aggregate(self, results):
-        measurements = self.collect(self)
-        self.results.create_series(results.keys())
+        measurements = self.collect()
+        results.create_series(measurements.keys())
 
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step

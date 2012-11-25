@@ -214,15 +214,15 @@ class ComputingRunner(object):
 
         new_res = []
 
-        for i,r in res:
-            new_r = dict(r)
-            values = [r[k] for k in r.keys() if k in self.keys and r[k] is not None]
+        for r in res.zipped(self.keys):
+            values = [v for v in r[1:] if v is not None]
             if not values:
-                new_r[self.name] = None
+                new_res.append(None)
             else:
-                new_r[self.name] =  self.compute(values)
-            new_res.append((i,new_r))
-        return new_res
+                new_res.append(self.compute(values))
+
+        res.add_result(self.name, new_res)
+        return res
 
     def compute(self, values):
         """Compute the function on the values this runner should be applied to.

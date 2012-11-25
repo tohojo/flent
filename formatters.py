@@ -40,15 +40,6 @@ class Formatter(object):
         self.output.write(results+"\n")
 
 
-class PprintFormatter(Formatter):
-
-    def format(self, name, results):
-        """Use the pprint pretty-printing module to just print out the contents of
-        the results list."""
-
-        pprint.pprint(results, self.output)
-
-DefaultFormatter = PprintFormatter
 
 class OrgTableFormatter(Formatter):
     """Format the output for an Org mode table. The formatter is pretty crude
@@ -59,18 +50,23 @@ class OrgTableFormatter(Formatter):
 
         if not results:
             self.output.write(unicode(name) + u" -- empty\n")
-        first_row = results[0][1]
-        header_row = [name] + [i for i in self.config.sections() if i != 'global']
+        keys = [i for i in self.config.sections() if i != 'global']
+        header_row = [name] + keys
         self.output.write(u"| " + u" | ".join(header_row) + u" |\n")
         self.output.write(u"|-" + u"-+-".join([u"-"*len(i) for i in header_row]) + u"-|\n")
-        for i,row in results:
-            self.output.write(u"| %s | " % i)
-            for c in header_row[1:]:
-                if isinstance(row[c], float):
-                    self.output.write(u"%.2f | " % row[c])
-                else:
-                    self.output.write(unicode(row[c]) + u" | ")
-            self.output.write(u"\n")
+
+        def format_item(item):
+            if isinstance(item, float):
+                return "%.2f" % item
+            return unicode(item)
+
+        for row in results.zipped(keys):
+            self.output.write(u"| ")
+            self.output.write(u" | ".join(map(format_item, row)))
+            self.output.write(u" |\n")
+
+
+DefaultFormatter = OrgTableFormatter
 
 class CsvFormatter(Formatter):
     """Format the output as csv."""
@@ -81,17 +77,17 @@ class CsvFormatter(Formatter):
             return
 
         writer = csv.writer(self.output)
-        first_row = results[0][1]
-        header_row = [name] + [i for i in self.config.sections() if i != 'global']
+        keys = [i for i in self.config.sections() if i != 'global']
+        header_row = [name] + keys
         writer.writerow(header_row)
-        for i,row in results:
-            csv_row = [unicode(i)]
-            for c in header_row[1:]:
-                if row[c] is None:
-                    csv_row.append("")
-                else:
-                    csv_row.append(unicode(row[c]))
-            writer.writerow(csv_row)
+
+        def format_item(item):
+            if item is None:
+                return ""
+            return unicode(item)
+
+        for row in results.zipped(keys):
+            writer.writerow(map(format_item, row))
 
 class PlotFormatter(Formatter):
 

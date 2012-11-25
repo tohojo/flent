@@ -22,9 +22,10 @@
 # Wrapper to run multiple concurrent netperf instances, in several iterations,
 # and aggregate the result.
 
-import optparse, sys, os
+import optparse, sys, os, gzip
 
 import aggregators, formatters, util
+from resultset import ResultSet
 
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
@@ -68,8 +69,10 @@ if __name__ == "__main__":
         test_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
         if os.path.exists(args[0]):
             test_file = args[0]
+            test_name = os.path.splitext(os.path.basename(test_file))[0]
         else:
             test_file = os.path.join(test_path, args[0]+".ini")
+            test_name = args[0]
         try:
             with open(test_file) as fp:
                 config.readfp(fp)
@@ -108,11 +111,20 @@ if __name__ == "__main__":
         if options.input is not None:
             try:
                 with open(options.input) as fp:
-                    results = eval(fp.read())
+                    if options.input.endswith(".gz"):
+                        fp = gzip.GzipFile(fileobj=fp)
+                    results = ResultSet.load(fp)
             except (IOError, SyntaxError):
                 parser.error("Unable to read input file: '%s'" % options.input)
         else:
-            results = agg.postprocess(agg.aggregate())
+            if options.output and options.output != "-":
+                output_dir = "."
+            else:
+                output_dir = os.path.dirname(options.output)
+            results = ResultSet(name=test_name,
+                                host=config.get('global', 'host'))
+            results = agg.postprocess(agg.aggregate(results))
+            results.dump_dir(output_dir)
         formatter.format(config.get('global', 'name'), results)
 
     except RuntimeError, e:
