@@ -192,7 +192,6 @@ class PlotFormatter(Formatter):
             return
 
         # Unzip the data into time series and data dicts to allow for plotting.
-        t,data = zip(*results)
         series_names = [i for i in self.config.sections() if i != 'global']
 
         # The config file can set plot_axis to 1 or 2 for each test depending on
@@ -223,16 +222,15 @@ class PlotFormatter(Formatter):
             if color is not None:
                 kwargs['color'] = color
 
-            data_points = [d[s] for d in data]
             if self.config.has_option(s, 'limits'):
                 all_data[subfig,axis] = None
 
             if all_data[subfig,axis] is not None:
-                all_data[subfig,axis] += [d for d in data_points if d is not None]
+                all_data[subfig,axis] += [d for d in results.series(s) if d is not None]
 
 
-            a.plot(t,
-                   data_points,
+            a.plot(results.x_values,
+                   results.series(s),
                    self.config.get(s, 'plot_line', ''),
                    label=self.config.get(s, 'plot_label', s),
                    **kwargs

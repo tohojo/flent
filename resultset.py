@@ -72,7 +72,7 @@ class ResultSet(object):
         if data:
             raise RuntimeError("Unexpected data point(s): %s" % data.keys())
 
-    def result(self, name):
+    def series(self, name):
         return self._results[name]
 
     @property
