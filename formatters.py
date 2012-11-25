@@ -21,12 +21,11 @@
 
 import pprint, sys, csv
 
-
+from settings import settings
 
 class Formatter(object):
 
-    def __init__(self, output, config):
-        self.config = config
+    def __init__(self, output):
         if isinstance(output, basestring):
             if output == "-":
                 self.output = sys.stdout
@@ -50,7 +49,7 @@ class OrgTableFormatter(Formatter):
 
         if not results:
             self.output.write(unicode(name) + u" -- empty\n")
-        keys = [i for i in self.config.sections() if i != 'global']
+        keys = settings.DATA_SETS.keys()
         header_row = [name] + keys
         self.output.write(u"| " + u" | ".join(header_row) + u" |\n")
         self.output.write(u"|-" + u"-+-".join([u"-"*len(i) for i in header_row]) + u"-|\n")
@@ -77,7 +76,7 @@ class CsvFormatter(Formatter):
             return
 
         writer = csv.writer(self.output)
-        keys = [i for i in self.config.sections() if i != 'global']
+        keys = settings.DATA_SETS.keys()
         header_row = [name] + keys
         writer.writerow(header_row)
 

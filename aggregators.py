@@ -26,34 +26,28 @@ import runners, transformers
 
 from util import classname
 
+from settings import settings
+
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
 
-    def __init__(self, config, logfile=None):
-        self.iterations = int(config['iterations'])
-        self.binary = config['cmd_binary']
-        self.global_options = config['cmd_opts']
-        self.default_runner = config.get('runner', 'default')
+    def __init__(self):
         self.instances = {}
-        if logfile is None:
+        if settings.LOG_FILE is None:
             self.logfile = None
         else:
-            self.logfile = open(logfile, "a")
+            self.logfile = open(settings.LOG_FILE, "a")
 
         self.postprocessors = []
 
     def add_instance(self, name, config):
-        instance = {
-            'options': self.global_options + " " + config.get('cmd_opts', ''),
-            'delay': float(config.get('delay', 0)),
-            'runner': getattr(runners, classname(config.get('runner', self.default_runner), 'Runner')),
-            'binary': config.get('cmd_binary', self.binary),
-            'config': config}
+        instance = dict(config)
 
-        # If an instance has the separate_opts set, do not combine the command
-        # options with the global options.
-        if config.get('separate_opts', False):
-            instance['options'] = config.get('cmd_opts', '')
+        if not 'delay' in instance:
+            instance['delay'] = 0
+
+
+        instance['runner'] = getattr(runners, classname(instance['runner'], 'Runner'))
 
         if 'data_transform' in config:
             instance['transformers'] = []
@@ -81,7 +75,7 @@ class Aggregator(object):
         result = {}
         threads = {}
         for n,i in self.instances.items():
-            threads[n] = i['runner'](n, i['binary'], i['options'], i['delay'], i['config'])
+            threads[n] = i['runner'](n, **i)
             threads[n].start()
         for n,t in threads.items():
             t.join()
@@ -126,6 +120,10 @@ class IterationAggregator(Aggregator):
     """Iteration aggregator. Runs the jobs multiple times and aggregates the
     results. Assumes each job outputs one value."""
 
+    def __init__(self, *args, **kwargs):
+        self.iterations = settings.ITERATIONS
+        Aggregator.__init__(self, *args, **kwargs)
+
     def aggregate(self, results):
         results.x_values = range(1, self.iterations+1)
         for i in range(self.iterations):
@@ -139,10 +137,10 @@ class TimeseriesAggregator(Aggregator):
     Assumes each job outputs a list of pairs (time, value) where the times and
     values are floating point values."""
 
-    def __init__(self, config, *args, **kwargs):
-        self.step = float(config['step'])
-        self.max_distance = float(config['max_distance'])
-        Aggregator.__init__(self, config, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        self.step = settings.STEP_SIZE
+        self.max_distance = self.step * 2.0
+        Aggregator.__init__(self, *args, **kwargs)
 
     def aggregate(self, results):
         measurements = self.collect()

@@ -26,25 +26,8 @@ import optparse, sys, os, gzip
 
 import aggregators, formatters, util
 from resultset import ResultSet
+from settings import settings, load
 
-
-parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
-                               usage="usage: %prog [options] test")
-
-parser.add_option("-o", "--output", action="store", type="string", dest="output",
-                  help="file to write output to (default standard out)")
-parser.add_option("-i", "--input", action="store", type="string", dest="input",
-                  help="file to read input from (instead of running tests)")
-parser.add_option("-f", "--format", action="store", type="string", dest="format",
-                  help="override config file output format")
-parser.add_option("-H", "--host", action="store", type="string", dest="host",
-                  help="host to connect to for tests")
-parser.add_option("-t", "--title-extra", action="store", type="string", dest="title",
-                  help="text to add to plot title")
-parser.add_option("-l", "--log-file", action="store", type="string", dest="logfile",
-                  help="write debug log (test program output) to log file")
-
-parser.set_defaults(output="-")
 
 
 config = util.DefaultConfigParser({'delay': 0})
@@ -58,75 +41,50 @@ config.set('global', 'cmd_binary', '/usr/bin/netperf')
 
 if __name__ == "__main__":
     try:
+        load()
 
-        (options,args) = parser.parse_args()
-
-        if len(args) < 1:
-            parser.error("Missing test name.")
-
-
-
-        test_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
-        if os.path.exists(args[0]):
-            test_file = args[0]
-            test_name = os.path.splitext(os.path.basename(test_file))[0]
-        else:
-            test_file = os.path.join(test_path, args[0]+".ini")
-            test_name = args[0]
-        try:
-            with open(test_file) as fp:
-                config.readfp(fp)
-        except IOError:
-            parser.error("Config file for test '%s' not found" % args[0])
-        except ConfigParser.Error:
-            parser.error("Unable to parse config file for test '%s'" % args[0])
-
-        if options.format is not None:
-            config.set('global', 'output', options.format)
-
-        if options.title is not None:
-            config.set('global', 'plot_title',
-                       config.get('global', 'plot_title', '') + " - " + options.title)
-
-        if options.host is not None:
-            config._defaults['host'] = options.host
-
-        aggregator_name = config.get('global', 'aggregator')
+        aggregator_name = settings.AGGREGATOR
         classname = util.classname(aggregator_name, "Aggregator")
         if hasattr(aggregators, classname):
-            agg = getattr(aggregators, classname)(dict(config.items('global')), logfile=options.logfile)
+            agg = getattr(aggregators, classname)()
         else:
-            parser.error("Aggregator not found: '%s'" % aggregator_name)
+            raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
 
-        for s in config.sections():
-            if s != 'global':
-                agg.add_instance(s, dict(config.items(s)))
+        for s in settings.DATA_SETS.items():
+            agg.add_instance(*s)
 
-        formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
+        formatter_name = util.classname(settings.FORMAT, 'Formatter')
         if hasattr(formatters, formatter_name):
-            formatter = getattr(formatters, formatter_name)(options.output, config)
+            formatter = getattr(formatters, formatter_name)(settings.OUTPUT)
         else:
             raise RuntimeError("Formatter not found.")
 
-        if options.input is not None:
+        if settings.INPUT is not None:
             try:
-                with open(options.input) as fp:
-                    if options.input.endswith(".gz"):
+                with open(settings.INPUT) as fp:
+                    if settings.INPUT.endswith(".gz"):
                         fp = gzip.GzipFile(fileobj=fp)
                     results = ResultSet.load(fp)
             except (IOError, SyntaxError):
-                parser.error("Unable to read input file: '%s'" % options.input)
+                raise RuntimeError("Unable to read input file: '%s'" % settings.input)
         else:
-            if options.output and options.output != "-":
+            if settings.OUTPUT and settings.OUTPUT != "-":
                 output_dir = "."
             else:
-                output_dir = os.path.dirname(options.output)
-            results = ResultSet(name=test_name,
-                                host=config.get('global', 'host'))
+                output_dir = os.path.dirname(settings.OUTPUT)
+            results = ResultSet(name=settings.NAME,
+                                host=settings.HOST,
+                                title=settings.TITLE,
+                                length=settings.LENGTH,
+                                step_size=settings.STEP_SIZE,
+                )
             results = agg.postprocess(agg.aggregate(results))
             results.dump_dir(output_dir)
-        formatter.format(config.get('global', 'name'), results)
+        formatter.format(settings.NAME, results)
 
     except RuntimeError, e:
         sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
+        sys.exit(1)
+    except AttributeError, e:
+        sys.stderr.write(u"Attribute error. Probably missing entry in config file. Error: %s\n" % unicode(e))
         sys.exit(1)

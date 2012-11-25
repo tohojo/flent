@@ -23,16 +23,16 @@ import threading, time, shlex, subprocess, re, time, sys, math
 
 from datetime import datetime
 
+from settings import settings
+
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
 
-    def __init__(self, name, binary, options, delay, config, *args, **kwargs):
-        threading.Thread.__init__(self,*args, **kwargs)
+    def __init__(self, name, command, delay, *args, **kwargs):
+        threading.Thread.__init__(self)
         self.name = name
-        self.binary = binary
-        self.options = options
+        self.command = command
         self.delay = delay
-        self.config = config
         self.result = None
 
     def run(self):
@@ -42,7 +42,7 @@ class ProcessRunner(threading.Thread):
 
         if self.delay:
             time.sleep(self.delay)
-        args = [self.binary] + shlex.split(self.options)
+        args = shlex.split(self.command)
         prog = subprocess.Popen(args,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
@@ -131,6 +131,10 @@ class TcRunner(ProcessRunner):
     '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
     the output of `date '+Time: %s.%N'`)."""
 
+    def __init__(tc_parameter, *args, **kwargs):
+        ProcessRunner.__init__(self, *args, **kwargs)
+        self.tc_parameter = tc_parameter
+
     time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     split_re  = re.compile(r"^qdisc ", re.MULTILINE)
     qdisc_res = [
@@ -180,7 +184,7 @@ class TcRunner(ProcessRunner):
                         else:
                             matches[k] += float(v)
                     m = r.search(part, m.end(0))
-            key = self.config.get('tc_parameter', 'sent_bytes')
+            key = self.tc_parameter
             if key in matches:
                 result.append([timestamp, matches[key]])
             else:
@@ -189,13 +193,9 @@ class TcRunner(ProcessRunner):
 
 class ComputingRunner(object):
     command = "Computed"
-    def __init__(self, name, binary, options, delay, config, *args, **kwargs):
+    def __init__(self, name, apply_to='', *args, **kwargs):
         self.name = name
-        self.binary = binary
-        self.options = options
-        self.delay = delay
-        self.config = config
-        self.keys = [i.strip() for i in self.config.get('apply_to', '').split(',')]
+        self.keys = [i.strip() for i in apply_to.split(',')]
 
         # These are use for debug logging
         self.returncode = 0
@@ -237,9 +237,9 @@ class AverageRunner(ComputingRunner):
 
 class SmoothAverageRunner(ComputingRunner):
     command = "Smooth average (computed)"
-    def __init__(self, *args, **kwargs):
+    def __init__(self, smooth_steps=5, *args, **kwargs):
         ComputingRunner.__init__(self, *args, **kwargs)
-        self._smooth_steps = int(self.config.get('smooth_steps', 5))
+        self._smooth_steps = smooth_steps
         self._avg_values = []
 
     def compute(self, values):
