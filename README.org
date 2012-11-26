@@ -36,8 +36,8 @@ format).
 
 The basic invocation is =./netperf-wrapper.py -H <host> <test_name>=. Various
 options to control test parameters are available; try running
-=./netperf-wrapper.py -h=. Tests can be displayed with =./netperf-wrapper.py
---list-tests= and the available plots can be displayed with
+=./netperf-wrapper.py -h=. Tests can be displayed with
+=./netperf-wrapper.py --list-tests= and the available plots can be displayed with
 =./netperf-wrapper.py --list-plots <test_name>=.
 
 Running tests and plotting/displaying the output is logically split up in two
