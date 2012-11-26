@@ -22,7 +22,6 @@
 import pprint, sys, csv, math
 
 from settings import settings
-from util import discrete_cdf, frange
 
 PLOT_KWARGS = (
     'alpha',
@@ -204,7 +203,6 @@ class PlotFormatter(Formatter):
 
         axis.set_xlabel(unit)
         axis.set_ylabel('Cumulative probability')
-        axis.set_ylim(0,1)
         config['axes'] = [axis]
 
 
@@ -263,19 +261,26 @@ class PlotFormatter(Formatter):
         max_value = 0.0
         data = []
         for s in config['series']:
-            d = sorted(filter(lambda x: x is not None, results.series(s['data'])))
-            max_value = max(max_value, max(d))
-            data.append(d)
-
-        x_values = list(frange(0, max_value, 0.1))
-        for i,s in enumerate(config['series']):
+            s_data = results.series(s['data'])
+            if 'cutoff' in config:
+                # cut off values from the beginning and end before doing the
+                # plot; for e.g. pings that run long than the streams, we don't
+                # want the unloaded ping values
+                start,end = config['cutoff']
+                s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
+            data = filter(lambda x: x is not None, s_data)
+            min_val = min(data)
+            max_val = max(data)
+            counts, bin_edges = self.np.histogram(data,
+                                                  bins=int(max_val-min_val),
+                                                  density=True)
+            cdf = self.np.cumsum(counts)
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
                     kwargs[k] = s[k]
-            cdf = discrete_cdf(data[i])
-            axis.plot(x_values,
-                      [cdf(point) for point in x_values],
+            axis.plot(bin_edges[1:],
+                      cdf,
                       **kwargs)
         self._do_legend(config)
 
