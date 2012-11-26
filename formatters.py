@@ -263,8 +263,6 @@ class PlotFormatter(Formatter):
         if config is None:
             config = self.config
 
-        max_value = 0.0
-        data = []
         for s in config['series']:
             s_data = results.series(s['data'])
             if 'cutoff' in config:
@@ -274,6 +272,8 @@ class PlotFormatter(Formatter):
                 start,end = config['cutoff']
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
             data = filter(lambda x: x is not None, s_data)
+            if not data:
+                continue
             min_val = min(data)
             max_val = max(data)
             counts, bin_edges = self.np.histogram(data,
