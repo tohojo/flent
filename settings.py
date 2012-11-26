@@ -37,6 +37,7 @@ DEFAULT_SETTINGS = {
     'DESCRIPTION': 'No description',
     'PLOTS': {},
     'IP_VERSION': None,
+    'DELAY': 5,
     }
 
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
@@ -66,6 +67,8 @@ parser.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="base test length (some tests may add some time to this)")
 parser.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
                   help="measurement data point step size")
+parser.add_option("-d", "--delay", action="store", type="int", dest="DELAY",
+                  help="number of seconds to delay second parts of test (such as bandwidth loaders)")
 parser.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
                   help="measurement data point step size")
 parser.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
