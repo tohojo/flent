@@ -54,9 +54,9 @@ parser.add_option("-H", "--host", action="store", type="string", dest="HOST",
                   help="host to connect to for tests")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
                   help="text to add to plot title")
-parser.add_option("-l", "--log-file", action="store", type="string", dest="LOG_FILE",
+parser.add_option("-L", "--log-file", action="store", type="string", dest="LOG_FILE",
                   help="write debug log (test program output) to log file")
-parser.add_option("-L", "--length", action="store", type="int", dest="LENGTH",
+parser.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="base test length (some tests may add some time to this)")
 parser.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
                   help="measurement data point step size")
