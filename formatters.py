@@ -153,79 +153,8 @@ class PlotFormatter(Formatter):
         return config
 
     def _init_plots(self):
-
         self.config = self._load_plotconfig(settings.PLOT)
         getattr(self, '_init_%s_plot' % self.config['type'])()
-
-
-        return
-
-        series_names = [i for i in self.config.sections() if i != 'global']
-        plots = sorted(set([self.config.getint(s, 'subplot', 1) for s in series_names]))
-        num_plots = len(plots)
-        if plots != range(1, num_plots+1):
-            raise RuntimeError(u"Plots are not numbered sequentially")
-
-        self.fig, self.axs = self.plt.subplots(num_plots, 2, sharex=True, sharey=False, squeeze=False)
-
-
-        # Hide all axes (they are then shown when used below)
-        for a in self.axs.flatten():
-            a.yaxis.set_visible(False)
-
-        for s in series_names:
-            # Each series is plotted on the appropriate axis with the series
-            # name as label. The line parameters are optionally set in the
-            # config file; if no value is set, matplotlib selects default
-            # colours for the lines.
-            subfig = self.config.getint(s, 'subplot', 1)-1
-            axis = self.config.getint(s, 'plot_axis', 1)-1
-            a = self.axs[subfig,axis]
-            a.yaxis.set_visible(True)
-
-            limits = self.config.get(s, 'limits', None)
-            if limits is not None:
-                l_min,l_max = [float(i) for i in limits.split(",")]
-                y_min,y_max = a.get_ylim()
-                a.set_ylim(min(y_min,l_min), max(y_max,l_max))
-
-            # Scales start out with a scale of 'linear', change it if a scale is set
-            scale = self.config.get(s, 'scale', None)
-            if scale is not None:
-                a.set_yscale(scale)
-
-            # Set plot axis labels to the unit of the series, if set. Detect
-            # multiple incompatibly set units and abort if found.
-            units = self.config.get(s, 'units', '')
-            label = a.get_ylabel()
-            if label == '':
-                a.set_ylabel(units)
-            elif units and label != units:
-                raise RuntimeError(u"Axis units mismatch: %s and %s for subplot %d" % (units,label,subfig))
-
-
-        self.axs[-1,0].set_xlabel(self.config.get('global', 'x_label', ''))
-        xlimits = self.config.get('global', 'x_limits', None)
-        if xlimits is not None:
-            l_min,l_max = [float(i) for i in xlimits.split(",")]
-            self.axs[0,0].set_xlim(l_min,l_max)
-
-
-        self.fig.suptitle(self.config.get('global', 'plot_title', ''), fontsize=16)
-
-        self.fig.subplots_adjust(left=0.1, right=0.9)
-
-        # Duplicate the twinx() function of axes for having the second set of
-        # axes be on top of the others, for dual-axis view
-        for axs in self.axs:
-            box = axs[0].get_position()
-            axs[0].set_position([box.x0, box.y0, box.width * 2.0, box.height])
-            axs[1].set_position(axs[0].get_position())
-            axs[1].set_frame_on(False)
-            axs[1].yaxis.tick_right()
-            axs[1].yaxis.set_label_position('right')
-            axs[1].yaxis.set_offset_position('right')
-            axs[1].xaxis.set_visible(False)
 
     def _init_timeseries_plot(self, config=None, axis=None):
         if axis is None:
@@ -325,51 +254,6 @@ class PlotFormatter(Formatter):
             self.plt.show()
         else:
             self.plt.savefig(self.output)
-        return
-        # Unzip the data into time series and data dicts to allow for plotting.
-        series_names = [i for i in self.config.sections() if i != 'global']
-
-        # The config file can set plot_axis to 1 or 2 for each test depending on
-        # which axis the results should be plotted. The second axis is only
-        # created if it is selected in one of the data sets selects it. The
-        # matplotlib .twinx() function creates a second axis on the right-hand
-        # side of the plot in the obvious way.
-
-        all_data = self.np.empty_like(self.axs, dtype=object)
-        for i in range(len(all_data.flat)):
-            all_data.flat[i] = []
-
-        for s in series_names:
-            # Each series is plotted on the appropriate axis with the series
-            # name as label. The line parameters are optionally set in the
-            # config file; if no value is set, matplotlib selects default
-            # colours for the lines.
-            subfig = self.config.getint(s, 'subplot', 1)-1
-            axis = self.config.getint(s, 'plot_axis', 1)-1
-            a = self.axs[subfig,axis]
-
-            # Set optional kwargs from config file
-            kwargs = {}
-            linewidth=self.config.get(s,'plot_linewidth', None)
-            if linewidth is not None:
-                kwargs['linewidth'] = float(linewidth)
-            color=self.config.get(s, 'plot_linecolor', None)
-            if color is not None:
-                kwargs['color'] = color
-
-            if self.config.has_option(s, 'limits'):
-                all_data[subfig,axis] = None
-
-            if all_data[subfig,axis] is not None:
-                all_data[subfig,axis] += [d for d in results.series(s) if d is not None]
-
-
-            a.plot(results.x_values,
-                   results.series(s),
-                   self.config.get(s, 'plot_line', ''),
-                   label=self.config.get(s, 'plot_label', s),
-                   **kwargs
-                )
 
     def _do_legend(self, config):
         axes = config['axes']
