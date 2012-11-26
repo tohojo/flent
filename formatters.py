@@ -23,6 +23,32 @@ import pprint, sys, csv
 
 from settings import settings
 
+PLOT_KWARGS = (
+    'alpha',
+    'antialiased',
+    'color',
+    'dash_capstyle',
+    'dash_joinstyle',
+    'drawstyle',
+    'fillstyle',
+    'label',
+    'linestyle',
+    'linewidth',
+    'lod',
+    'marker',
+    'markeredgecolor',
+    'markeredgewidth',
+    'markerfacecolor',
+    'markerfacecoloralt',
+    'markersize',
+    'markevery',
+    'pickradius',
+    'solid_capstyle',
+    'solid_joinstyle',
+    'visible',
+    'zorder'
+    )
+
 class Formatter(object):
 
     def __init__(self, output):
@@ -90,9 +116,8 @@ class CsvFormatter(Formatter):
 
 class PlotFormatter(Formatter):
 
-    def __init__(self, output, config):
+    def __init__(self, output):
         self.output = output
-        self.config = config
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
@@ -112,12 +137,29 @@ class PlotFormatter(Formatter):
             import matplotlib.pyplot as plt
             self.plt = plt
             self.np = numpy
-            self._init_subplots()
+            self._init_plots()
         except ImportError:
             raise RuntimeError(u"Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
 
-    def _init_subplots(self):
+    def _load_plotconfig(self, plot):
+        if not plot in settings.PLOTS:
+            raise RuntimeError(u"Unable to find plot configuration '%s'" % plot)
+        config = settings.PLOTS[plot]
+        if 'parent' in config:
+            parent_config = settings.PLOTS[config['parent']]
+            parent_config.update(config)
+            return parent_config
+        return config
+
+    def _init_plots(self):
+
+        self.config = self._load_plotconfig(settings.PLOT)
+        getattr(self, '_init_%s_plot' % self.config['type'])()
+
+
+        return
+
         series_names = [i for i in self.config.sections() if i != 'global']
         plots = sorted(set([self.config.getint(s, 'subplot', 1) for s in series_names]))
         num_plots = len(plots)
@@ -185,11 +227,91 @@ class PlotFormatter(Formatter):
             axs[1].yaxis.set_offset_position('right')
             axs[1].xaxis.set_visible(False)
 
+    def _init_timeseries_plot(self, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        if 'dual_axes' in config and config['dual_axes']:
+            second_axis = self.plt.axes(axis.get_position(), sharex=axis, frameon=False)
+            second_axis.yaxis.tick_right()
+            second_axis.yaxis.set_label_position('right')
+            second_axis.yaxis.set_offset_position('right')
+            second_axis.xaxis.set_visible(False)
+            config['axes'] = [axis,second_axis]
+        else:
+            config['axes'] = [axis]
+
+
+        unit = [None]*len(config['axes'])
+        for s in config['series']:
+            if 'axis' in s and s['axis'] == 2:
+                a = 1
+            else:
+                a = 0
+            s_unit = settings.DATA_SETS[s['data']]['units']
+            if unit[a] is not None and s_unit != unit[a]:
+                raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
+            unit[a] = s_unit
+
+        axis.set_xlabel('Time')
+        for i,u in enumerate(unit):
+            config['axes'][i].set_ylabel(unit[i])
+
+
+    def _do_timeseries_plot(self, results, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        axis.set_xlim(0, settings.TOTAL_LENGTH)
+        data = []
+        for i in range(len(self.config['axes'])):
+            data.append([])
+
+        for s in config['series']:
+            if 'smoothing' in s:
+                smooth=s['smoothing']
+            else:
+                smooth = False
+            kwargs = {}
+            for k in PLOT_KWARGS:
+                if k in s:
+                    kwargs[k] = s[k]
+
+            y_values = results.series(s['data'], smooth)
+            if 'axis' in s and s['axis'] == 2:
+                a = 1
+            else:
+                a = 0
+            data[a] += y_values
+            config['axes'][a].plot(results.x_values,
+                   y_values,
+                   **kwargs)
+
+        if 'scaling' in config:
+            for a in range(len(config['axes'])):
+                self._do_scaling(config['axes'][a], data[a], *config['scaling'])
+
+        self._do_legend(config)
 
     def format(self, name, results):
         if not results:
             return
 
+        getattr(self, '_do_%s_plot' % self.config['type'])(results)
+
+        # Since outputting image data to stdout does not make sense, we launch
+        # the interactive matplotlib viewer if stdout is set for output.
+        # Otherwise, the filename is passed to matplotlib, which selects an
+        # appropriate output format based on the file name.
+        if self.output == "-":
+            self.plt.show()
+        else:
+            self.plt.savefig(self.output)
+        return
         # Unzip the data into time series and data dicts to allow for plotting.
         series_names = [i for i in self.config.sections() if i != 'global']
 
@@ -235,42 +357,35 @@ class PlotFormatter(Formatter):
                    **kwargs
                 )
 
+    def _do_legend(self, config):
+        axes = config['axes']
 
-        for n,axs in enumerate(self.axs):
-            # Each axis has a set of handles/labels for the legend; combine them
-            # into one list of handles/labels for displaying one legend that holds
-            # all plot lines
-            handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
-                                     [a.get_legend_handles_labels() for a in axs if a is not None])
+        # Each axis has a set of handles/labels for the legend; combine them
+        # into one list of handles/labels for displaying one legend that holds
+        # all plot lines
+        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
+                                 [a.get_legend_handles_labels() for a in axes])
 
-            # Shrink the current subplot by 20% in the horizontal direction, and
-            # place the legend on the right of the plot.
-            for i in 0,1:
-                box = axs[i].get_position()
-                axs[i].set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        # Shrink the current subplot by 20% in the horizontal direction, and
+        # place the legend on the right of the plot.
+        for a in axes:
+            box = a.get_position()
+            a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
-                if self.config.getboolean('global', 'plot_outlier_scaling', True) \
-                  and all_data[n,i]:
-                    # If outlier scaling is turned off and no manual scaling for the
-                    # axis is specified, find the 95th and 5th percentile of data
-                    # points and scale the axis to these values (plus five percent
-                    # air).
 
-                    top_percentile = self.np.percentile(all_data[n,i], 95)*1.05
-                    btm_percentile = self.np.percentile(all_data[n,i], 5)*0.95
-                    axs[i].set_ylim(ymin=btm_percentile, ymax=top_percentile)
+            kwargs = {}
+            if 'legend_title' in config:
+                kwargs['title'] = config['legend_title']
 
-            axs[0].legend(handles, labels,
-                          bbox_to_anchor=(1.05, 1.0),
-                          loc='upper left', borderaxespad=0.,
-                          title=self.config.get('global', 'legend%d_title'%(n+1), ''),
-                          prop={'size':'small'})
+            a.legend(handles, labels,
+                     bbox_to_anchor=(1.05, 1.0),
+                     loc='upper left', borderaxespad=0.,
+                     prop={'size':'small'},
+                     **kwargs)
 
-        # Since outputting image data to stdout does not make sense, we launch
-        # the interactive matplotlib viewer if stdout is set for output.
-        # Otherwise, the filename is passed to matplotlib, which selects an
-        # appropriate output format based on the file name.
-        if self.output == "-":
-            self.plt.show()
-        else:
-            self.plt.savefig(self.output)
+    def _do_scaling(self, axis, data, btm, top):
+        """Scale the axis to the selected bottom/top percentile"""
+        data = filter(lambda x: x is not None, data)
+        top_percentile = self.np.percentile(data, top)*1.05
+        btm_percentile = self.np.percentile(data, btm)*0.95
+        axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
