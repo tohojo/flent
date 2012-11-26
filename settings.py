@@ -54,7 +54,7 @@ parser.add_option("-i", "--input", action="store", type="string", dest="INPUT",
 parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT",
                   help="override config file output format")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
-                  help="select which plot to output for the given test")
+                  help="select which plot to output for the given test (implies -f plot)")
 parser.add_option("-H", "--host", action="store", type="string", dest="HOST",
                   help="host to connect to for tests")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
@@ -111,6 +111,10 @@ def load():
 
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
         list_tests()
+
+    if hasattr(settings, 'PLOT'):
+        settings.FORMAT = 'plot'
+
 
     if settings.INPUT is not None:
         try:
