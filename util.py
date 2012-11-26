@@ -19,7 +19,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import ConfigParser
+import ConfigParser, math
+from bisect import bisect_left
 
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
@@ -28,8 +29,6 @@ def uscore_to_camel(s):
 
 def classname(s, suffix=''):
     return uscore_to_camel(s)+suffix
-
-
 
 class DefaultConfigParser(ConfigParser.ConfigParser):
     class _NoDefault(object):

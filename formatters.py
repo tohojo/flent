@@ -19,14 +19,39 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint, sys, csv
+import pprint, sys, csv, math
 
+from settings import settings
 
+PLOT_KWARGS = (
+    'alpha',
+    'antialiased',
+    'color',
+    'dash_capstyle',
+    'dash_joinstyle',
+    'drawstyle',
+    'fillstyle',
+    'label',
+    'linestyle',
+    'linewidth',
+    'lod',
+    'marker',
+    'markeredgecolor',
+    'markeredgewidth',
+    'markerfacecolor',
+    'markerfacecoloralt',
+    'markersize',
+    'markevery',
+    'pickradius',
+    'solid_capstyle',
+    'solid_joinstyle',
+    'visible',
+    'zorder'
+    )
 
 class Formatter(object):
 
-    def __init__(self, output, config):
-        self.config = config
+    def __init__(self, output):
         if isinstance(output, basestring):
             if output == "-":
                 self.output = sys.stdout
@@ -35,69 +60,65 @@ class Formatter(object):
         else:
             self.output = output
 
-    def format(self, name, results):
-        self.output.write(name+"\n")
-        self.output.write(results+"\n")
+    def format(self, results):
+        sys.stderr.write(u"No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results.dump_file)
 
+DefaultFormatter = Formatter
 
-class PprintFormatter(Formatter):
-
-    def format(self, name, results):
-        """Use the pprint pretty-printing module to just print out the contents of
-        the results list."""
-
-        pprint.pprint(results, self.output)
-
-DefaultFormatter = PprintFormatter
 
 class OrgTableFormatter(Formatter):
     """Format the output for an Org mode table. The formatter is pretty crude
     and does not align the table properly, but it should be sufficient to create
     something that Org mode can correctly realign."""
 
-    def format(self, name, results):
+    def format(self, results):
+        name = results.meta("NAME")
 
         if not results:
             self.output.write(unicode(name) + u" -- empty\n")
-        first_row = results[0][1]
-        header_row = [name] + [i for i in self.config.sections() if i != 'global']
+        keys = settings.DATA_SETS.keys()
+        header_row = [name] + keys
         self.output.write(u"| " + u" | ".join(header_row) + u" |\n")
         self.output.write(u"|-" + u"-+-".join([u"-"*len(i) for i in header_row]) + u"-|\n")
-        for i,row in results:
-            self.output.write(u"| %s | " % i)
-            for c in header_row[1:]:
-                if isinstance(row[c], float):
-                    self.output.write(u"%.2f | " % row[c])
-                else:
-                    self.output.write(unicode(row[c]) + u" | ")
-            self.output.write(u"\n")
+
+        def format_item(item):
+            if isinstance(item, float):
+                return "%.2f" % item
+            return unicode(item)
+
+        for row in results.zipped(keys):
+            self.output.write(u"| ")
+            self.output.write(u" | ".join(map(format_item, row)))
+            self.output.write(u" |\n")
+
+
 
 class CsvFormatter(Formatter):
     """Format the output as csv."""
 
-    def format(self, name, results):
+    def format(self, results):
+        name = results.meta("NAME")
 
         if not results:
             return
 
         writer = csv.writer(self.output)
-        first_row = results[0][1]
-        header_row = [name] + [i for i in self.config.sections() if i != 'global']
+        keys = settings.DATA_SETS.keys()
+        header_row = [name] + keys
         writer.writerow(header_row)
-        for i,row in results:
-            csv_row = [unicode(i)]
-            for c in header_row[1:]:
-                if row[c] is None:
-                    csv_row.append("")
-                else:
-                    csv_row.append(unicode(row[c]))
-            writer.writerow(csv_row)
+
+        def format_item(item):
+            if item is None:
+                return ""
+            return unicode(item)
+
+        for row in results.zipped(keys):
+            writer.writerow(map(format_item, row))
 
 class PlotFormatter(Formatter):
 
-    def __init__(self, output, config):
+    def __init__(self, output):
         self.output = output
-        self.config = config
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
@@ -117,161 +138,167 @@ class PlotFormatter(Formatter):
             import matplotlib.pyplot as plt
             self.plt = plt
             self.np = numpy
-            self._init_subplots()
+            self._init_plots()
         except ImportError:
             raise RuntimeError(u"Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
 
-    def _init_subplots(self):
-        series_names = [i for i in self.config.sections() if i != 'global']
-        plots = sorted(set([self.config.getint(s, 'subplot', 1) for s in series_names]))
-        num_plots = len(plots)
-        if plots != range(1, num_plots+1):
-            raise RuntimeError(u"Plots are not numbered sequentially")
+    def _load_plotconfig(self, plot):
+        if not plot in settings.PLOTS:
+            raise RuntimeError(u"Unable to find plot configuration '%s'" % plot)
+        config = settings.PLOTS[plot]
+        if 'parent' in config:
+            parent_config = settings.PLOTS[config['parent']]
+            parent_config.update(config)
+            return parent_config
+        return config
 
-        self.fig, self.axs = self.plt.subplots(num_plots, 2, sharex=True, sharey=False, squeeze=False)
+    def _init_plots(self):
+        self.config = self._load_plotconfig(settings.PLOT)
+        getattr(self, '_init_%s_plot' % self.config['type'])()
 
+    def _init_timeseries_plot(self, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
 
-        # Hide all axes (they are then shown when used below)
-        for a in self.axs.flatten():
-            a.yaxis.set_visible(False)
-
-        for s in series_names:
-            # Each series is plotted on the appropriate axis with the series
-            # name as label. The line parameters are optionally set in the
-            # config file; if no value is set, matplotlib selects default
-            # colours for the lines.
-            subfig = self.config.getint(s, 'subplot', 1)-1
-            axis = self.config.getint(s, 'plot_axis', 1)-1
-            a = self.axs[subfig,axis]
-            a.yaxis.set_visible(True)
-
-            limits = self.config.get(s, 'limits', None)
-            if limits is not None:
-                l_min,l_max = [float(i) for i in limits.split(",")]
-                y_min,y_max = a.get_ylim()
-                a.set_ylim(min(y_min,l_min), max(y_max,l_max))
-
-            # Scales start out with a scale of 'linear', change it if a scale is set
-            scale = self.config.get(s, 'scale', None)
-            if scale is not None:
-                a.set_yscale(scale)
-
-            # Set plot axis labels to the unit of the series, if set. Detect
-            # multiple incompatibly set units and abort if found.
-            units = self.config.get(s, 'units', '')
-            label = a.get_ylabel()
-            if label == '':
-                a.set_ylabel(units)
-            elif units and label != units:
-                raise RuntimeError(u"Axis units mismatch: %s and %s for subplot %d" % (units,label,subfig))
+        if 'dual_axes' in config and config['dual_axes']:
+            second_axis = self.plt.axes(axis.get_position(), sharex=axis, frameon=False)
+            second_axis.yaxis.tick_right()
+            second_axis.yaxis.set_label_position('right')
+            second_axis.yaxis.set_offset_position('right')
+            second_axis.xaxis.set_visible(False)
+            config['axes'] = [axis,second_axis]
+        else:
+            config['axes'] = [axis]
 
 
-        self.axs[-1,0].set_xlabel(self.config.get('global', 'x_label', ''))
-        xlimits = self.config.get('global', 'x_limits', None)
-        if xlimits is not None:
-            l_min,l_max = [float(i) for i in xlimits.split(",")]
-            self.axs[0,0].set_xlim(l_min,l_max)
+        unit = [None]*len(config['axes'])
+        for s in config['series']:
+            if 'axis' in s and s['axis'] == 2:
+                a = 1
+            else:
+                a = 0
+            s_unit = settings.DATA_SETS[s['data']]['units']
+            if unit[a] is not None and s_unit != unit[a]:
+                raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
+            unit[a] = s_unit
+
+        axis.set_xlabel('Time')
+        for i,u in enumerate(unit):
+            config['axes'][i].set_ylabel(unit[i])
+
+    def _init_cdf_plot(self, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        unit = None
+        for s in config['series']:
+            s_unit = settings.DATA_SETS[s['data']]['units']
+            if unit is not None and s_unit != unit:
+                raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit, s_unit))
+            unit = s_unit
+
+        axis.set_xlabel(unit)
+        axis.set_ylabel('Cumulative probability')
+        config['axes'] = [axis]
 
 
-        self.fig.suptitle(self.config.get('global', 'plot_title', ''), fontsize=16)
-
-        self.fig.subplots_adjust(left=0.1, right=0.9)
-
-        # Duplicate the twinx() function of axes for having the second set of
-        # axes be on top of the others, for dual-axis view
-        for axs in self.axs:
-            box = axs[0].get_position()
-            axs[0].set_position([box.x0, box.y0, box.width * 2.0, box.height])
-            axs[1].set_position(axs[0].get_position())
-            axs[1].set_frame_on(False)
-            axs[1].yaxis.tick_right()
-            axs[1].yaxis.set_label_position('right')
-            axs[1].yaxis.set_offset_position('right')
-            axs[1].xaxis.set_visible(False)
+    def _init_meta_plot(self):
+        self.configs = []
+        for i,subplot in enumerate(self.config['subplots']):
+            axis = self.plt.subplot(len(self.config['subplots']),1,i+1, sharex=self.plt.gca())
+            config = self._load_plotconfig(subplot)
+            self.configs.append(config)
+            getattr(self, '_init_%s_plot' % config['type'])(config=config, axis=axis)
+            if i < len(self.config['subplots'])-1:
+                axis.set_xlabel("")
 
 
-    def format(self, name, results):
+    def _do_timeseries_plot(self, results, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        axis.set_xlim(0, settings.TOTAL_LENGTH)
+        data = []
+        for i in range(len(config['axes'])):
+            data.append([])
+
+        for s in config['series']:
+            if 'smoothing' in s:
+                smooth=s['smoothing']
+            else:
+                smooth = False
+            kwargs = {}
+            for k in PLOT_KWARGS:
+                if k in s:
+                    kwargs[k] = s[k]
+
+            y_values = results.series(s['data'], smooth)
+            if 'axis' in s and s['axis'] == 2:
+                a = 1
+            else:
+                a = 0
+            data[a] += y_values
+            config['axes'][a].plot(results.x_values,
+                   y_values,
+                   **kwargs)
+
+        if 'scaling' in config:
+            for a in range(len(config['axes'])):
+                self._do_scaling(config['axes'][a], data[a], *config['scaling'])
+
+        self._do_legend(config)
+
+    def _do_cdf_plot(self, results, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        for s in config['series']:
+            s_data = results.series(s['data'])
+            if 'cutoff' in config:
+                # cut off values from the beginning and end before doing the
+                # plot; for e.g. pings that run long than the streams, we don't
+                # want the unloaded ping values
+                start,end = config['cutoff']
+                s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
+            data = filter(lambda x: x is not None, s_data)
+            if not data:
+                continue
+            min_val = min(data)
+            max_val = max(data)
+            counts, bin_edges = self.np.histogram(data,
+                                                  bins=int(max_val-min_val),
+                                                  density=True)
+            cdf = self.np.cumsum(counts)
+            kwargs = {}
+            for k in PLOT_KWARGS:
+                if k in s:
+                    kwargs[k] = s[k]
+            axis.plot(bin_edges[1:],
+                      cdf,
+                      **kwargs)
+        self._do_legend(config)
+
+
+    def _do_meta_plot(self, results):
+        for i,config in enumerate(self.configs):
+            getattr(self, '_do_%s_plot' % config['type'])(results, config=config)
+
+    def format(self, results):
         if not results:
             return
 
-        # Unzip the data into time series and data dicts to allow for plotting.
-        t,data = zip(*results)
-        series_names = [i for i in self.config.sections() if i != 'global']
+        getattr(self, '_do_%s_plot' % self.config['type'])(results)
 
-        # The config file can set plot_axis to 1 or 2 for each test depending on
-        # which axis the results should be plotted. The second axis is only
-        # created if it is selected in one of the data sets selects it. The
-        # matplotlib .twinx() function creates a second axis on the right-hand
-        # side of the plot in the obvious way.
-
-        all_data = self.np.empty_like(self.axs, dtype=object)
-        for i in range(len(all_data.flat)):
-            all_data.flat[i] = []
-
-        for s in series_names:
-            # Each series is plotted on the appropriate axis with the series
-            # name as label. The line parameters are optionally set in the
-            # config file; if no value is set, matplotlib selects default
-            # colours for the lines.
-            subfig = self.config.getint(s, 'subplot', 1)-1
-            axis = self.config.getint(s, 'plot_axis', 1)-1
-            a = self.axs[subfig,axis]
-
-            # Set optional kwargs from config file
-            kwargs = {}
-            linewidth=self.config.get(s,'plot_linewidth', None)
-            if linewidth is not None:
-                kwargs['linewidth'] = float(linewidth)
-            color=self.config.get(s, 'plot_linecolor', None)
-            if color is not None:
-                kwargs['color'] = color
-
-            data_points = [d[s] for d in data]
-            if self.config.has_option(s, 'limits'):
-                all_data[subfig,axis] = None
-
-            if all_data[subfig,axis] is not None:
-                all_data[subfig,axis] += [d for d in data_points if d is not None]
-
-
-            a.plot(t,
-                   data_points,
-                   self.config.get(s, 'plot_line', ''),
-                   label=self.config.get(s, 'plot_label', s),
-                   **kwargs
-                )
-
-
-        for n,axs in enumerate(self.axs):
-            # Each axis has a set of handles/labels for the legend; combine them
-            # into one list of handles/labels for displaying one legend that holds
-            # all plot lines
-            handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
-                                     [a.get_legend_handles_labels() for a in axs if a is not None])
-
-            # Shrink the current subplot by 20% in the horizontal direction, and
-            # place the legend on the right of the plot.
-            for i in 0,1:
-                box = axs[i].get_position()
-                axs[i].set_position([box.x0, box.y0, box.width * 0.8, box.height])
-
-                if self.config.getboolean('global', 'plot_outlier_scaling', True) \
-                  and all_data[n,i]:
-                    # If outlier scaling is turned off and no manual scaling for the
-                    # axis is specified, find the 95th and 5th percentile of data
-                    # points and scale the axis to these values (plus five percent
-                    # air).
-
-                    top_percentile = self.np.percentile(all_data[n,i], 95)*1.05
-                    btm_percentile = self.np.percentile(all_data[n,i], 5)*0.95
-                    axs[i].set_ylim(ymin=btm_percentile, ymax=top_percentile)
-
-            axs[0].legend(handles, labels,
-                          bbox_to_anchor=(1.05, 1.0),
-                          loc='upper left', borderaxespad=0.,
-                          title=self.config.get('global', 'legend%d_title'%(n+1), ''),
-                          prop={'size':'small'})
+        self._annotate_plot()
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
@@ -281,3 +308,56 @@ class PlotFormatter(Formatter):
             self.plt.show()
         else:
             self.plt.savefig(self.output)
+
+
+    def _annotate_plot(self):
+        plot_title = settings.DESCRIPTION
+        if 'description' in self.config:
+            plot_title += "\n" + self.config['description']
+        if settings.TITLE:
+            plot_title += "\n" + settings.TITLE
+        self.plt.suptitle(plot_title, fontsize=14)
+
+        annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
+            settings.LOCAL_HOST, settings.HOST,
+            settings.TIME,
+            settings.LENGTH, settings.STEP_SIZE)
+        self.plt.suptitle(annotation_string,
+                          x=0.5,
+                          y=0.005,
+                          horizontalalignment='center',
+                          verticalalignment='bottom',
+                          fontsize=8)
+
+    def _do_legend(self, config):
+        axes = config['axes']
+
+        # Each axis has a set of handles/labels for the legend; combine them
+        # into one list of handles/labels for displaying one legend that holds
+        # all plot lines
+        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
+                                 [a.get_legend_handles_labels() for a in axes])
+
+        # Shrink the current subplot by 20% in the horizontal direction, and
+        # place the legend on the right of the plot.
+        for a in axes:
+            box = a.get_position()
+            a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+
+            kwargs = {}
+            if 'legend_title' in config:
+                kwargs['title'] = config['legend_title']
+
+            a.legend(handles, labels,
+                     bbox_to_anchor=(1.05, 1.0),
+                     loc='upper left', borderaxespad=0.,
+                     prop={'size':'small'},
+                     **kwargs)
+
+    def _do_scaling(self, axis, data, btm, top):
+        """Scale the axis to the selected bottom/top percentile"""
+        data = filter(lambda x: x is not None, data)
+        top_percentile = self.np.percentile(data, top)*1.05
+        btm_percentile = self.np.percentile(data, btm)*0.95
+        axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)

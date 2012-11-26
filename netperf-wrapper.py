@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 ## -*- coding: utf-8 -*-
 ##
 ## netperf-wrapper.py
@@ -25,25 +26,8 @@
 import optparse, sys, os
 
 import aggregators, formatters, util
+from settings import settings, load
 
-
-parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
-                               usage="usage: %prog [options] test")
-
-parser.add_option("-o", "--output", action="store", type="string", dest="output",
-                  help="file to write output to (default standard out)")
-parser.add_option("-i", "--input", action="store", type="string", dest="input",
-                  help="file to read input from (instead of running tests)")
-parser.add_option("-f", "--format", action="store", type="string", dest="format",
-                  help="override config file output format")
-parser.add_option("-H", "--host", action="store", type="string", dest="host",
-                  help="host to connect to for tests")
-parser.add_option("-t", "--title-extra", action="store", type="string", dest="title",
-                  help="text to add to plot title")
-parser.add_option("-l", "--log-file", action="store", type="string", dest="logfile",
-                  help="write debug log (test program output) to log file")
-
-parser.set_defaults(output="-")
 
 
 config = util.DefaultConfigParser({'delay': 0})
@@ -57,64 +41,32 @@ config.set('global', 'cmd_binary', '/usr/bin/netperf')
 
 if __name__ == "__main__":
     try:
+        settings,results = load()
 
-        (options,args) = parser.parse_args()
-
-        if len(args) < 1:
-            parser.error("Missing test name.")
-
-
-
-        test_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
-        if os.path.exists(args[0]):
-            test_file = args[0]
-        else:
-            test_file = os.path.join(test_path, args[0]+".ini")
-        try:
-            with open(test_file) as fp:
-                config.readfp(fp)
-        except IOError:
-            parser.error("Config file for test '%s' not found" % args[0])
-        except ConfigParser.Error:
-            parser.error("Unable to parse config file for test '%s'" % args[0])
-
-        if options.format is not None:
-            config.set('global', 'output', options.format)
-
-        if options.title is not None:
-            config.set('global', 'plot_title',
-                       config.get('global', 'plot_title', '') + " - " + options.title)
-
-        if options.host is not None:
-            config._defaults['host'] = options.host
-
-        aggregator_name = config.get('global', 'aggregator')
+        aggregator_name = settings.AGGREGATOR
         classname = util.classname(aggregator_name, "Aggregator")
         if hasattr(aggregators, classname):
-            agg = getattr(aggregators, classname)(dict(config.items('global')), logfile=options.logfile)
+            agg = getattr(aggregators, classname)()
         else:
-            parser.error("Aggregator not found: '%s'" % aggregator_name)
+            raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
 
-        for s in config.sections():
-            if s != 'global':
-                agg.add_instance(s, dict(config.items(s)))
+        for s in settings.DATA_SETS.items():
+            agg.add_instance(*s)
 
-        formatter_name = util.classname(config.get('global', 'output'), 'Formatter')
+        formatter_name = util.classname(settings.FORMAT, 'Formatter')
         if hasattr(formatters, formatter_name):
-            formatter = getattr(formatters, formatter_name)(options.output, config)
+            formatter = getattr(formatters, formatter_name)(settings.OUTPUT)
         else:
             raise RuntimeError("Formatter not found.")
 
-        if options.input is not None:
-            try:
-                with open(options.input) as fp:
-                    results = eval(fp.read())
-            except (IOError, SyntaxError):
-                parser.error("Unable to read input file: '%s'" % options.input)
-        else:
-            results = agg.postprocess(agg.aggregate())
-        formatter.format(config.get('global', 'name'), results)
+        if not results:
+            results = agg.postprocess(agg.aggregate(results))
+            results.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
+        formatter.format(results)
 
     except RuntimeError, e:
         sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.stderr.write(u"Interrupted\n")
         sys.exit(1)

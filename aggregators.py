@@ -19,41 +19,35 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, pprint
+import math, pprint, signal
 from datetime import datetime
 
 import runners, transformers
 
 from util import classname
 
+from settings import settings
+
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
 
-    def __init__(self, config, logfile=None):
-        self.iterations = int(config['iterations'])
-        self.binary = config['cmd_binary']
-        self.global_options = config['cmd_opts']
-        self.default_runner = config.get('runner', 'default')
+    def __init__(self):
         self.instances = {}
-        if logfile is None:
+        if settings.LOG_FILE is None:
             self.logfile = None
         else:
-            self.logfile = open(logfile, "a")
+            self.logfile = open(settings.LOG_FILE, "a")
 
         self.postprocessors = []
 
     def add_instance(self, name, config):
-        instance = {
-            'options': self.global_options + " " + config.get('cmd_opts', ''),
-            'delay': float(config.get('delay', 0)),
-            'runner': getattr(runners, classname(config.get('runner', self.default_runner), 'Runner')),
-            'binary': config.get('cmd_binary', self.binary),
-            'config': config}
+        instance = dict(config)
 
-        # If an instance has the separate_opts set, do not combine the command
-        # options with the global options.
-        if config.get('separate_opts', False):
-            instance['options'] = config.get('cmd_opts', '')
+        if not 'delay' in instance:
+            instance['delay'] = 0
+
+
+        instance['runner'] = getattr(runners, classname(instance['runner'], 'Runner'))
 
         if 'data_transform' in config:
             instance['transformers'] = []
@@ -69,6 +63,9 @@ class Aggregator(object):
             self.instances[name] = instance
 
     def aggregate(self):
+        raise NotImplementedError()
+
+    def collect(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
 
@@ -78,35 +75,44 @@ class Aggregator(object):
         result = {}
         threads = {}
         for n,i in self.instances.items():
-            threads[n] = i['runner'](n, i['binary'], i['options'], i['delay'], i['config'])
+            threads[n] = i['runner'](n, **i)
             threads[n].start()
-        for n,t in threads.items():
-            t.join()
-            self._log(n,t)
-            if t.result is None:
-                continue
-            elif callable(t.result):
-                # If the result is callable, the runner is really a
-                # post-processor (Avg etc), and should be run as such (by the
-                # postprocess() method)
-                self.postprocessors.append(t.result)
-            else:
-                result[n] = t.result
-                if 'transformers' in self.instances[n]:
-                    for tr in self.instances[n]['transformers']:
-                        result[n] = tr(result[n])
+        self.threads = threads.values()
+        try:
+            for n,t in threads.items():
+                while t.isAlive():
+                    t.join(1)
+                self._log(n,t)
+                if t.result is None:
+                    continue
+                elif callable(t.result):
+                    # If the result is callable, the runner is really a
+                    # post-processor (Avg etc), and should be run as such (by the
+                    # postprocess() method)
+                    self.postprocessors.append(t.result)
+                else:
+                    result[n] = t.result
+                    if 'transformers' in self.instances[n]:
+                        for tr in self.instances[n]['transformers']:
+                            result[n] = tr(result[n])
+        except KeyboardInterrupt:
+            self.kill_runners()
+            raise
 
         if self.logfile is not None:
             self.logfile.write("Raw aggregated data:\n")
             pprint.pprint(result, self.logfile)
         return result
 
+    def kill_runners(self):
+        for t in self.threads:
+            t.killed = True
+            if hasattr(t, 'prog'):
+                t.prog.send_signal(signal.SIGINT)
+
     def postprocess(self, result):
         for p in self.postprocessors:
             result = p(result)
-        if self.logfile is not None:
-            self.logfile.write("Postprocessed data:\n")
-            pprint.pprint(result, self.logfile)
         return result
 
     def _log(self, name, runner):
@@ -123,10 +129,14 @@ class IterationAggregator(Aggregator):
     """Iteration aggregator. Runs the jobs multiple times and aggregates the
     results. Assumes each job outputs one value."""
 
-    def aggregate(self):
-        results = []
+    def __init__(self, *args, **kwargs):
+        self.iterations = settings.ITERATIONS
+        Aggregator.__init__(self, *args, **kwargs)
+
+    def aggregate(self, results):
+        results.x_values = range(1, self.iterations+1)
         for i in range(self.iterations):
-            results.append(((i+1), Aggregator.aggregate(self)))
+            results.add_result(i+1, self.collect())
         return results
 
 class TimeseriesAggregator(Aggregator):
@@ -136,14 +146,14 @@ class TimeseriesAggregator(Aggregator):
     Assumes each job outputs a list of pairs (time, value) where the times and
     values are floating point values."""
 
-    def __init__(self, config, *args, **kwargs):
-        self.step = float(config['step'])
-        self.max_distance = float(config['max_distance'])
-        Aggregator.__init__(self, config, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        self.step = settings.STEP_SIZE
+        self.max_distance = self.step * 2.0
+        Aggregator.__init__(self, *args, **kwargs)
 
-    def aggregate(self):
-        measurements = Aggregator.aggregate(self)
-        results = []
+    def aggregate(self, results):
+        measurements = self.collect()
+        results.create_series(measurements.keys())
 
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step
@@ -159,7 +169,7 @@ class TimeseriesAggregator(Aggregator):
         time_labels = []
 
         for s in range(steps):
-            time_labels.append(self.step*s)
+            time_label = self.step*s
             t = t_0 + self.step*s
 
             # for each step we need to find the interpolated measurement value
@@ -197,6 +207,6 @@ class TimeseriesAggregator(Aggregator):
                     # Interpolation distance is too long; don't use the value.
                     result[n] = None
 
-            results.append(result)
+            results.append_datapoint(time_label, result)
 
-        return zip(time_labels, results)
+        return results

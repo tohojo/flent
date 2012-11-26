@@ -23,34 +23,39 @@ import threading, time, shlex, subprocess, re, time, sys, math
 
 from datetime import datetime
 
+from settings import settings
+
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
 
-    def __init__(self, name, binary, options, delay, config, *args, **kwargs):
-        threading.Thread.__init__(self,*args, **kwargs)
+    def __init__(self, name, command, delay, *args, **kwargs):
+        threading.Thread.__init__(self)
         self.name = name
-        self.binary = binary
-        self.options = options
+        self.command = command
         self.delay = delay
-        self.config = config
         self.result = None
+        self.killed = False
 
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
         seconds, then open the subprocess, wait for it to finish, and collect
         the last word of the output (whitespace-separated)."""
 
-        if self.delay:
-            time.sleep(self.delay)
-        args = [self.binary] + shlex.split(self.options)
-        prog = subprocess.Popen(args,
+        for i in xrange(self.delay):
+            time.sleep(1)
+            if self.killed:
+                return
+        args = shlex.split(self.command)
+        self.prog = subprocess.Popen(args,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
                          universal_newlines=True)
-        self.out,self.err=prog.communicate()
-        self.returncode = prog.returncode
+        self.out,self.err=self.prog.communicate()
+        if self.killed:
+            return
+        self.returncode = self.prog.returncode
         self.command = " ".join(args)
-        if prog.returncode:
+        if self.prog.returncode:
             sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % self.command)
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
@@ -131,6 +136,10 @@ class TcRunner(ProcessRunner):
     '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
     the output of `date '+Time: %s.%N'`)."""
 
+    def __init__(tc_parameter, *args, **kwargs):
+        ProcessRunner.__init__(self, *args, **kwargs)
+        self.tc_parameter = tc_parameter
+
     time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     split_re  = re.compile(r"^qdisc ", re.MULTILINE)
     qdisc_res = [
@@ -180,7 +189,7 @@ class TcRunner(ProcessRunner):
                         else:
                             matches[k] += float(v)
                     m = r.search(part, m.end(0))
-            key = self.config.get('tc_parameter', 'sent_bytes')
+            key = self.tc_parameter
             if key in matches:
                 result.append([timestamp, matches[key]])
             else:
@@ -189,13 +198,9 @@ class TcRunner(ProcessRunner):
 
 class ComputingRunner(object):
     command = "Computed"
-    def __init__(self, name, binary, options, delay, config, *args, **kwargs):
+    def __init__(self, name, apply_to='', *args, **kwargs):
         self.name = name
-        self.binary = binary
-        self.options = options
-        self.delay = delay
-        self.config = config
-        self.keys = [i.strip() for i in self.config.get('apply_to', '').split(',')]
+        self.keys = [i.strip() for i in apply_to.split(',')]
 
         # These are use for debug logging
         self.returncode = 0
@@ -207,6 +212,8 @@ class ComputingRunner(object):
         pass
     def join(self):
         pass
+    def isAlive(self):
+        return False
 
     def result(self, res):
         if not self.keys:
@@ -214,15 +221,15 @@ class ComputingRunner(object):
 
         new_res = []
 
-        for i,r in res:
-            new_r = dict(r)
-            values = [r[k] for k in r.keys() if k in self.keys and r[k] is not None]
+        for r in res.zipped(self.keys):
+            values = [v for v in r[1:] if v is not None]
             if not values:
-                new_r[self.name] = None
+                new_res.append(None)
             else:
-                new_r[self.name] =  self.compute(values)
-            new_res.append((i,new_r))
-        return new_res
+                new_res.append(self.compute(values))
+
+        res.add_result(self.name, new_res)
+        return res
 
     def compute(self, values):
         """Compute the function on the values this runner should be applied to.
@@ -237,9 +244,9 @@ class AverageRunner(ComputingRunner):
 
 class SmoothAverageRunner(ComputingRunner):
     command = "Smooth average (computed)"
-    def __init__(self, *args, **kwargs):
+    def __init__(self, smooth_steps=5, *args, **kwargs):
         ComputingRunner.__init__(self, *args, **kwargs)
-        self._smooth_steps = int(self.config.get('smooth_steps', 5))
+        self._smooth_steps = smooth_steps
         self._avg_values = []
 
     def compute(self, values):
