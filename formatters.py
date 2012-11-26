@@ -61,10 +61,9 @@ class Formatter(object):
             self.output = output
 
     def format(self, results):
-        name = results.meta("NAME")
-        self.output.write(name+"\n")
-        self.output.write(results+"\n")
+        pass
 
+DefaultFormatter = Formatter
 
 
 class OrgTableFormatter(Formatter):
@@ -93,7 +92,6 @@ class OrgTableFormatter(Formatter):
             self.output.write(u" |\n")
 
 
-DefaultFormatter = OrgTableFormatter
 
 class CsvFormatter(Formatter):
     """Format the output as csv."""
