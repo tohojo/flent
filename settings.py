@@ -36,6 +36,7 @@ DEFAULT_SETTINGS = {
     'INPUT': None,
     'DESCRIPTION': 'No description',
     'PLOTS': {},
+    'IP_VERSION': None,
     }
 
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
@@ -64,6 +65,10 @@ parser.add_option("-L", "--log-file", action="store", type="string", dest="LOG_F
 parser.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="base test length (some tests may add some time to this)")
 parser.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
+                  help="measurement data point step size")
+parser.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
+                  help="measurement data point step size")
+parser.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
                   help="measurement data point step size")
 
 parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
