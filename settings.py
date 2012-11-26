@@ -54,7 +54,7 @@ parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT"
 parser.add_option("-i", "--input", action="store", type="string", dest="INPUT",
                   help="file to read input from (instead of running tests)")
 parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT",
-                  help="override config file output format")
+                  help="select output format")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   help="select which plot to output for the given test (implies -f plot)")
 parser.add_option("-H", "--host", action="store", type="string", dest="HOST",
@@ -70,14 +70,14 @@ parser.add_option("-s", "--step-size", action="store", type="float", dest="STEP_
 parser.add_option("-d", "--delay", action="store", type="int", dest="DELAY",
                   help="number of seconds to delay second parts of test (such as bandwidth loaders)")
 parser.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
-                  help="measurement data point step size")
+                  help="use IPv4 for tests (some tests may ignore this)")
 parser.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
-                  help="measurement data point step size")
+                  help="use IPv6 for tests (some tests may ignore this)")
 
 parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
                   help="list available tests")
 parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
-                  help="list available tests")
+                  help="list available plots for selected test")
 
 class Settings(optparse.Values, object):
 
