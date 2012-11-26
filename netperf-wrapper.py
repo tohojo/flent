@@ -66,3 +66,6 @@ if __name__ == "__main__":
     except RuntimeError, e:
         sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
         sys.exit(1)
+    except KeyboardInterrupt:
+        sys.stderr.write(u"Interrupted\n")
+        sys.exit(1)

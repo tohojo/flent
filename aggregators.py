@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, pprint
+import math, pprint, signal
 from datetime import datetime
 
 import runners, transformers
@@ -77,26 +77,38 @@ class Aggregator(object):
         for n,i in self.instances.items():
             threads[n] = i['runner'](n, **i)
             threads[n].start()
-        for n,t in threads.items():
-            t.join()
-            self._log(n,t)
-            if t.result is None:
-                continue
-            elif callable(t.result):
-                # If the result is callable, the runner is really a
-                # post-processor (Avg etc), and should be run as such (by the
-                # postprocess() method)
-                self.postprocessors.append(t.result)
-            else:
-                result[n] = t.result
-                if 'transformers' in self.instances[n]:
-                    for tr in self.instances[n]['transformers']:
-                        result[n] = tr(result[n])
+        self.threads = threads.values()
+        try:
+            for n,t in threads.items():
+                while t.isAlive():
+                    t.join(1)
+                self._log(n,t)
+                if t.result is None:
+                    continue
+                elif callable(t.result):
+                    # If the result is callable, the runner is really a
+                    # post-processor (Avg etc), and should be run as such (by the
+                    # postprocess() method)
+                    self.postprocessors.append(t.result)
+                else:
+                    result[n] = t.result
+                    if 'transformers' in self.instances[n]:
+                        for tr in self.instances[n]['transformers']:
+                            result[n] = tr(result[n])
+        except KeyboardInterrupt:
+            self.kill_runners()
+            raise
 
         if self.logfile is not None:
             self.logfile.write("Raw aggregated data:\n")
             pprint.pprint(result, self.logfile)
         return result
+
+    def kill_runners(self):
+        for t in self.threads:
+            t.killed = True
+            if hasattr(t, 'prog'):
+                t.prog.send_signal(signal.SIGINT)
 
     def postprocess(self, result):
         for p in self.postprocessors:

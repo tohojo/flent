@@ -34,23 +34,28 @@ class ProcessRunner(threading.Thread):
         self.command = command
         self.delay = delay
         self.result = None
+        self.killed = False
 
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
         seconds, then open the subprocess, wait for it to finish, and collect
         the last word of the output (whitespace-separated)."""
 
-        if self.delay:
-            time.sleep(self.delay)
+        for i in xrange(self.delay):
+            time.sleep(1)
+            if self.killed:
+                return
         args = shlex.split(self.command)
-        prog = subprocess.Popen(args,
+        self.prog = subprocess.Popen(args,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
                          universal_newlines=True)
-        self.out,self.err=prog.communicate()
-        self.returncode = prog.returncode
+        self.out,self.err=self.prog.communicate()
+        if self.killed:
+            return
+        self.returncode = self.prog.returncode
         self.command = " ".join(args)
-        if prog.returncode:
+        if self.prog.returncode:
             sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % self.command)
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
@@ -207,6 +212,8 @@ class ComputingRunner(object):
         pass
     def join(self):
         pass
+    def isAlive(self):
+        return False
 
     def result(self, res):
         if not self.keys:
