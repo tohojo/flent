@@ -39,6 +39,9 @@ DEFAULT_SETTINGS = {
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
+def include_test(name, env):
+    execfile(os.path.join(TEST_PATH, name), env)
+
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
                                usage="usage: %prog [options] test")
 
@@ -70,20 +73,23 @@ class Settings(optparse.Values, object):
 
     def load_test(self, test_name):
         self.NAME = test_name
-        settings = runpy.run_path(os.path.join(TEST_PATH, test_name + ".conf"),
-                                  self.__dict__,
+        env = self.__dict__
+        env['o'] = OrderedDict
+        env['include'] = include_test
+        s = runpy.run_path(os.path.join(TEST_PATH, test_name + ".conf"),
+                                  env,
                                   test_name)
 
-        for k,v in settings.items():
+        for k,v in s.items():
             if k == k.upper():
                 setattr(self, k, v)
 
-        if 'DEFAULTS' in settings:
-            for k,v in settings['DEFAULTS'].items():
+        if 'DEFAULTS' in s:
+            for k,v in s['DEFAULTS'].items():
                 if not hasattr(self, k):
                     setattr(self, k, v)
 
-        if not 'TOTAL_LENGTH' in settings:
+        if not 'TOTAL_LENGTH' in s:
             self.TOTAL_LENGTH = self.LENGTH
 
     def __setattr__(self, k, v):
