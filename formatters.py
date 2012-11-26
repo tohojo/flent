@@ -216,6 +216,8 @@ class PlotFormatter(Formatter):
             config = self._load_plotconfig(subplot)
             self.configs.append(config)
             getattr(self, '_init_%s_plot' % config['type'])(config=config, axis=axis)
+            if i < len(self.config['subplots'])-1:
+                axis.set_xlabel("")
 
 
     def _do_timeseries_plot(self, results, config=None, axis=None):
