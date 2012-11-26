@@ -19,9 +19,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint, sys, csv
+import pprint, sys, csv, math
 
 from settings import settings
+from util import discrete_cdf, frange
 
 PLOT_KWARGS = (
     'alpha',
@@ -188,6 +189,23 @@ class PlotFormatter(Formatter):
         for i,u in enumerate(unit):
             config['axes'][i].set_ylabel(unit[i])
 
+    def _init_cdf_plot(self, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        unit = None
+        for s in config['series']:
+            s_unit = settings.DATA_SETS[s['data']]['units']
+            if unit is not None and s_unit != unit:
+                raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit, s_unit))
+            unit = s_unit
+
+        axis.set_xlabel(unit)
+        axis.set_ylabel('Cumulative probability')
+        axis.set_ylim(0,1)
+        config['axes'] = [axis]
 
 
     def _init_meta_plot(self):
@@ -235,6 +253,34 @@ class PlotFormatter(Formatter):
                 self._do_scaling(config['axes'][a], data[a], *config['scaling'])
 
         self._do_legend(config)
+
+    def _do_cdf_plot(self, results, config=None, axis=None):
+        if axis is None:
+            axis = self.plt.gca()
+        if config is None:
+            config = self.config
+
+        max_value = 0.0
+        data = []
+        for s in config['series']:
+            d = sorted(filter(lambda x: x is not None, results.series(s['data'])))
+            max_value = max(max_value, max(d))
+            data.append(d)
+
+        x_values = list(frange(0, max_value, 0.1))
+        for i,s in enumerate(config['series']):
+            kwargs = {}
+            for k in PLOT_KWARGS:
+                if k in s:
+                    kwargs[k] = s[k]
+            cdf = discrete_cdf(data[i])
+            axis.plot(x_values,
+                      [cdf(point) for point in x_values],
+                      **kwargs)
+        self._do_legend(config)
+
+
+
 
     def _do_meta_plot(self, results):
         for i,config in enumerate(self.configs):

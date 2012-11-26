@@ -87,6 +87,3 @@ if __name__ == "__main__":
     except RuntimeError, e:
         sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
         sys.exit(1)
-    except AttributeError, e:
-        sys.stderr.write(u"Attribute error. Probably missing entry in config file. Error: %s\n" % unicode(e))
-        sys.exit(1)
