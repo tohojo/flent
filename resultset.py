@@ -131,9 +131,18 @@ class ResultSet(object):
     def dumps(self):
         return json.dumps(self.serialise(), indent=JSON_INDENT)
 
+    @property
+    def dump_file(self):
+        if hasattr(self, '_dump_file'):
+            return self._dump_file
+        return self._gen_filename()
+
+    def _gen_filename(self):
+        return "%s-%s.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat())
+
     def dump_dir(self, dirname):
-        filename = "%s-%s.data.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat())
-        with gzip.open(os.path.join(dirname, filename), "w") as fp:
+        self._dump_file = os.path.join(dirname, self._gen_filename())
+        with gzip.open(self._dump_file, "w") as fp:
             self.dump(fp)
 
     @classmethod
@@ -149,7 +158,10 @@ class ResultSet(object):
 
     @classmethod
     def load(cls, fp):
-        return cls.unserialise(json.load(fp))
+        obj = cls.unserialise(json.load(fp))
+        if hasattr(fp, 'name'):
+            obj._dump_file = fp.name
+        return obj
 
     @classmethod
     def loads(cls, s):

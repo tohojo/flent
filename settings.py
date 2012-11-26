@@ -54,7 +54,7 @@ parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT"
 parser.add_option("-i", "--input", action="store", type="string", dest="INPUT",
                   help="file to read input from (instead of running tests)")
 parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT",
-                  help="select output format")
+                  help="select output format (plot, csv, org_table)")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   help="select which plot to output for the given test (implies -f plot)")
 parser.add_option("-H", "--host", action="store", type="string", dest="HOST",

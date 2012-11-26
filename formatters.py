@@ -61,7 +61,7 @@ class Formatter(object):
             self.output = output
 
     def format(self, results):
-        pass
+        sys.stderr.write(u"No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results.dump_file)
 
 DefaultFormatter = Formatter
 
