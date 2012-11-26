@@ -308,7 +308,23 @@ class PlotFormatter(Formatter):
 
 
     def _annotate_plot(self):
-        pass
+        plot_title = settings.DESCRIPTION
+        if 'description' in self.config:
+            plot_title += "\n" + self.config['description']
+        if settings.TITLE:
+            plot_title += "\n" + settings.TITLE
+        self.plt.suptitle(plot_title, fontsize=16)
+
+        annotation_string = "Host: %s\nTime: %s\nLength: %ds Step size: %.2fs" % (settings.HOST,
+                                                                               settings.TIME,
+                                                                               settings.LENGTH,
+                                                                               settings.STEP_SIZE)
+        self.plt.suptitle(annotation_string,
+                          x=0.01,
+                          y=0.01,
+                          horizontalalignment='left',
+                          verticalalignment='bottom',
+                          fontsize=8)
 
     def _do_legend(self, config):
         axes = config['axes']
