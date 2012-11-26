@@ -187,12 +187,12 @@ PLOTS = o([
       'scaling': (5,95)}),
 
     ('all_scaled',
-     {'description': 'Download, upload, ping on same plot (scaled versions)',
+     {'description': 'Download, upload, ping (scaled versions)',
       'type': 'meta',
       'subplots': ('download_scaled', 'upload_scaled', 'ping_scaled')}),
 
     ('all',
-     {'description': 'Download, upload, ping on same plot (unscaled versions)',
+     {'description': 'Download, upload, ping (unscaled versions)',
       'type': 'meta',
       'subplots': ('download', 'upload', 'ping')}),
     ])
