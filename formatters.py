@@ -60,7 +60,8 @@ class Formatter(object):
         else:
             self.output = output
 
-    def format(self, name, results):
+    def format(self, results):
+        name = results.meta("NAME")
         self.output.write(name+"\n")
         self.output.write(results+"\n")
 
@@ -71,7 +72,8 @@ class OrgTableFormatter(Formatter):
     and does not align the table properly, but it should be sufficient to create
     something that Org mode can correctly realign."""
 
-    def format(self, name, results):
+    def format(self, results):
+        name = results.meta("NAME")
 
         if not results:
             self.output.write(unicode(name) + u" -- empty\n")
@@ -96,7 +98,8 @@ DefaultFormatter = OrgTableFormatter
 class CsvFormatter(Formatter):
     """Format the output as csv."""
 
-    def format(self, name, results):
+    def format(self, results):
+        name = results.meta("NAME")
 
         if not results:
             return
@@ -209,7 +212,7 @@ class PlotFormatter(Formatter):
     def _init_meta_plot(self):
         self.configs = []
         for i,subplot in enumerate(self.config['subplots']):
-            axis = self.plt.subplot(len(self.config['subplots']),1,i+1)
+            axis = self.plt.subplot(len(self.config['subplots']),1,i+1, sharex=self.plt.gca())
             config = self._load_plotconfig(subplot)
             self.configs.append(config)
             getattr(self, '_init_%s_plot' % config['type'])(config=config, axis=axis)
@@ -289,7 +292,7 @@ class PlotFormatter(Formatter):
         for i,config in enumerate(self.configs):
             getattr(self, '_do_%s_plot' % config['type'])(results, config=config)
 
-    def format(self, name, results):
+    def format(self, results):
         if not results:
             return
 
@@ -315,10 +318,10 @@ class PlotFormatter(Formatter):
             plot_title += "\n" + settings.TITLE
         self.plt.suptitle(plot_title, fontsize=16)
 
-        annotation_string = "Host: %s\nTime: %s\nLength: %ds Step size: %.2fs" % (settings.HOST,
-                                                                               settings.TIME,
-                                                                               settings.LENGTH,
-                                                                               settings.STEP_SIZE)
+        annotation_string = "Local: %s Remote: %s\nTime: %s\nLength: %ds Step size: %.2fs" % (
+            settings.LOCAL_HOST, settings.HOST,
+            settings.TIME,
+            settings.LENGTH, settings.STEP_SIZE)
         self.plt.suptitle(annotation_string,
                           x=0.01,
                           y=0.01,

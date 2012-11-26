@@ -19,13 +19,15 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, runpy, optparse
+import sys, os, runpy, optparse, socket, gzip
 
 from ordereddict import OrderedDict
+from resultset import ResultSet
 
 DEFAULT_SETTINGS = {
     'HOST': 'localhost',
-    'STEP_SIZE': 0.1,
+    'LOCAL_HOST': socket.gethostname(),
+    'STEP_SIZE': 0.2,
     'LENGTH': 60,
     'OUTPUT': '-',
     'FORMAT': 'default',
@@ -110,20 +112,38 @@ def load():
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
         list_tests()
 
-    if len(args) < 1:
-        parser.error("Missing test name.")
+    if settings.INPUT is not None:
+        try:
+            with open(settings.INPUT) as fp:
+                if settings.INPUT.endswith(".gz"):
+                    fp = gzip.GzipFile(fileobj=fp)
+                results = ResultSet.load(fp)
+                settings.load_test(results.meta("NAME"))
+                settings.update(results.meta())
+        except (IOError, SyntaxError):
+            raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
+    else:
+        if len(args) < 1:
+            parser.error("Missing test name.")
 
-    test_name = args[0]
+        test_name = args[0]
 
-    if os.path.exists(test_name):
-        test_name = os.path.splitext(os.path.basename(test_file))[0]
+        if os.path.exists(test_name):
+            test_name = os.path.splitext(os.path.basename(test_file))[0]
 
-    settings.load_test(test_name)
+        settings.load_test(test_name)
+        results = ResultSet(NAME=settings.NAME,
+                            HOST=settings.HOST,
+                            LOCAL_HOST=settings.LOCAL_HOST,
+                            TITLE=settings.TITLE,
+                            LENGTH=settings.LENGTH,
+                            TOTAL_LENGTH=settings.TOTAL_LENGTH,
+                            STEP_SIZE=settings.STEP_SIZE,)
 
     if hasattr(settings, 'LIST_PLOTS') and settings.LIST_PLOTS:
         list_plots()
 
-    return settings
+    return settings, results
 
 def list_tests():
     tests = sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')])

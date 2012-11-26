@@ -22,10 +22,9 @@
 # Wrapper to run multiple concurrent netperf instances, in several iterations,
 # and aggregate the result.
 
-import optparse, sys, os, gzip
+import optparse, sys, os
 
 import aggregators, formatters, util
-from resultset import ResultSet
 from settings import settings, load
 
 
@@ -41,7 +40,7 @@ config.set('global', 'cmd_binary', '/usr/bin/netperf')
 
 if __name__ == "__main__":
     try:
-        load()
+        settings,results = load()
 
         aggregator_name = settings.AGGREGATOR
         classname = util.classname(aggregator_name, "Aggregator")
@@ -59,30 +58,10 @@ if __name__ == "__main__":
         else:
             raise RuntimeError("Formatter not found.")
 
-        if settings.INPUT is not None:
-            try:
-                with open(settings.INPUT) as fp:
-                    if settings.INPUT.endswith(".gz"):
-                        fp = gzip.GzipFile(fileobj=fp)
-                    results = ResultSet.load(fp)
-                    settings.update(results.meta())
-            except (IOError, SyntaxError):
-                raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
-        else:
-            if settings.OUTPUT and settings.OUTPUT != "-":
-                output_dir = "."
-            else:
-                output_dir = os.path.dirname(settings.OUTPUT)
-            results = ResultSet(NAME=settings.NAME,
-                                HOST=settings.HOST,
-                                TITLE=settings.TITLE,
-                                LENGTH=settings.LENGTH,
-                                TOTAL_LENGTH=settings.TOTAL_LENGTH,
-                                STEP_SIZE=settings.STEP_SIZE,
-                )
+        if not results:
             results = agg.postprocess(agg.aggregate(results))
-            results.dump_dir(output_dir)
-        formatter.format(settings.NAME, results)
+            results.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
+        formatter.format(results)
 
     except RuntimeError, e:
         sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
