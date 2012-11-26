@@ -318,16 +318,16 @@ class PlotFormatter(Formatter):
             plot_title += "\n" + self.config['description']
         if settings.TITLE:
             plot_title += "\n" + settings.TITLE
-        self.plt.suptitle(plot_title, fontsize=16)
+        self.plt.suptitle(plot_title, fontsize=14)
 
-        annotation_string = "Local: %s Remote: %s\nTime: %s\nLength: %ds Step size: %.2fs" % (
+        annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
             settings.LOCAL_HOST, settings.HOST,
             settings.TIME,
             settings.LENGTH, settings.STEP_SIZE)
         self.plt.suptitle(annotation_string,
-                          x=0.01,
-                          y=0.01,
-                          horizontalalignment='left',
+                          x=0.5,
+                          y=0.005,
+                          horizontalalignment='center',
                           verticalalignment='bottom',
                           fontsize=8)
 
