@@ -101,9 +101,6 @@ class Aggregator(object):
     def postprocess(self, result):
         for p in self.postprocessors:
             result = p(result)
-        if self.logfile is not None:
-            self.logfile.write("Postprocessed data:\n")
-            pprint.pprint(result, self.logfile)
         return result
 
     def _log(self, name, runner):
