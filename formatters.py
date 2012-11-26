@@ -285,8 +285,6 @@ class PlotFormatter(Formatter):
         self._do_legend(config)
 
 
-
-
     def _do_meta_plot(self, results):
         for i,config in enumerate(self.configs):
             getattr(self, '_do_%s_plot' % config['type'])(results, config=config)
@@ -297,6 +295,8 @@ class PlotFormatter(Formatter):
 
         getattr(self, '_do_%s_plot' % self.config['type'])(results)
 
+        self._annotate_plot()
+
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
         # Otherwise, the filename is passed to matplotlib, which selects an
@@ -305,6 +305,10 @@ class PlotFormatter(Formatter):
             self.plt.show()
         else:
             self.plt.savefig(self.output)
+
+
+    def _annotate_plot(self):
+        pass
 
     def _do_legend(self, config):
         axes = config['axes']
