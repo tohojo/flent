@@ -260,6 +260,16 @@ class PlotFormatter(Formatter):
             config['axes'][i].set_ylabel(unit[i])
 
 
+
+    def _init_meta_plot(self):
+        self.configs = []
+        for i,subplot in enumerate(self.config['subplots']):
+            axis = self.plt.subplot(len(self.config['subplots']),1,i+1)
+            config = self._load_plotconfig(subplot)
+            self.configs.append(config)
+            getattr(self, '_init_%s_plot' % config['type'])(config=config, axis=axis)
+
+
     def _do_timeseries_plot(self, results, config=None, axis=None):
         if axis is None:
             axis = self.plt.gca()
@@ -268,7 +278,7 @@ class PlotFormatter(Formatter):
 
         axis.set_xlim(0, settings.TOTAL_LENGTH)
         data = []
-        for i in range(len(self.config['axes'])):
+        for i in range(len(config['axes'])):
             data.append([])
 
         for s in config['series']:
@@ -296,6 +306,10 @@ class PlotFormatter(Formatter):
                 self._do_scaling(config['axes'][a], data[a], *config['scaling'])
 
         self._do_legend(config)
+
+    def _do_meta_plot(self, results):
+        for i,config in enumerate(self.configs):
+            getattr(self, '_do_%s_plot' % config['type'])(results, config=config)
 
     def format(self, name, results):
         if not results:
