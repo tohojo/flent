@@ -149,6 +149,7 @@ def load():
         settings.load_test(test_name)
         results = ResultSet(NAME=settings.NAME,
                             HOST=settings.HOST,
+                            TIME=settings.TIME,
                             LOCAL_HOST=settings.LOCAL_HOST,
                             TITLE=settings.TITLE,
                             LENGTH=settings.LENGTH,
