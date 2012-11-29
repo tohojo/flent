@@ -181,6 +181,8 @@ class TimeseriesAggregator(Aggregator):
             # n is the name of this measurement (from the config), r is the list
             # of measurement pairs (time,value)
             for n,r in measurements.items():
+                if not r:
+                    continue
                 t_prev = v_prev = None
                 t_next = v_next = None
                 for i in range(len(r)):
