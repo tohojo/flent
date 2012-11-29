@@ -22,7 +22,7 @@
 import pprint, sys, csv, math
 
 from settings import settings
-from util import discrete_cdf, frange
+from util import cum_prob, frange
 
 PLOT_KWARGS = (
     'alpha',
@@ -282,13 +282,12 @@ class PlotFormatter(Formatter):
         for i,s in enumerate(config['series']):
             if not data[i]:
                 continue
-            cdf = discrete_cdf(data[i])
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
                     kwargs[k] = s[k]
             axis.plot(x_values,
-                      [cdf(point) for point in x_values],
+                      [cum_prob(data[i], point) for point in x_values],
                       **kwargs)
         self._do_legend(config)
 

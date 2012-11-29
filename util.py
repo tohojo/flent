@@ -31,16 +31,9 @@ def classname(s, suffix=''):
     return uscore_to_camel(s)+suffix
 
 
-# Calculate discrete cdf function using bisect_left
-# From http://stackoverflow.com/a/6150349
-class discrete_cdf:
-    def __init__(self, data):
-        self._data = data # must be sorted
-        self._data_len = float(len(data))
-
-    def __call__(self, point):
-        return (len(self._data[:bisect_left(self._data, point)]) /
-                self._data_len)
+# Calculate discrete cdf function using bisect_left.
+def cum_prob(data, val):
+    return bisect_left(data, val)/float(len(data))
 
 # from http://code.activestate.com/recipes/66472/
 def frange(limit1, limit2 = None, increment = 1.):
