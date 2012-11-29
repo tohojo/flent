@@ -22,6 +22,7 @@
 import pprint, sys, csv, math
 
 from settings import settings
+from util import discrete_cdf, frange
 
 PLOT_KWARGS = (
     'alpha',
@@ -262,6 +263,8 @@ class PlotFormatter(Formatter):
         if config is None:
             config = self.config
 
+        data = []
+        max_value = 0.0
         for s in config['series']:
             s_data = results.series(s['data'])
             if 'cutoff' in config:
@@ -270,21 +273,22 @@ class PlotFormatter(Formatter):
                 # want the unloaded ping values
                 start,end = config['cutoff']
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
-            data = filter(lambda x: x is not None, s_data)
-            if not data:
+            d = sorted(filter(lambda x: x is not None, s_data))
+            max_value = max(max_value, max(d))
+            data.append(d)
+
+        x_values = list(frange(0, max_value, 0.1))
+
+        for i,s in enumerate(config['series']):
+            if not data[i]:
                 continue
-            min_val = min(data)
-            max_val = max(data)
-            counts, bin_edges = self.np.histogram(data,
-                                                  bins=max(int(mat.ceil(max_val-min_val)),1),
-                                                  density=True)
-            cdf = self.np.cumsum(counts)
+            cdf = discrete_cdf(data[i])
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
                     kwargs[k] = s[k]
-            axis.plot(bin_edges[1:],
-                      cdf,
+            axis.plot(x_values,
+                      [cdf(point) for point in x_values],
                       **kwargs)
         self._do_legend(config)
 
