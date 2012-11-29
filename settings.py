@@ -21,6 +21,8 @@
 
 import sys, os, runpy, optparse, socket, gzip
 
+from datetime import datetime
+
 from ordereddict import OrderedDict
 from resultset import ResultSet
 
@@ -38,6 +40,7 @@ DEFAULT_SETTINGS = {
     'PLOTS': {},
     'IP_VERSION': None,
     'DELAY': 5,
+    'TIME': datetime.now(),
     }
 
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
