@@ -108,7 +108,10 @@ class Aggregator(object):
         for t in self.threads:
             t.killed = True
             if hasattr(t, 'prog'):
-                t.prog.send_signal(signal.SIGINT)
+                try:
+                    t.prog.send_signal(signal.SIGINT)
+                except OSError:
+                    pass
 
     def postprocess(self, result):
         for p in self.postprocessors:
