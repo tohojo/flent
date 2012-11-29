@@ -42,6 +42,7 @@ class discrete_cdf:
         return (len(self._data[:bisect_left(self._data, point)]) /
                 self._data_len)
 
+# from http://code.activestate.com/recipes/66472/
 def frange(limit1, limit2 = None, increment = 1.):
   """
   Range function that accepts floats (and integers).
