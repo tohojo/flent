@@ -32,7 +32,7 @@ def classname(s, suffix=''):
 
 
 # Calculate discrete cdf function using bisect_left
-# From http://stackoverflow.com/questions/3209362/how-to-plot-empirical-cdf-in-matplotlib-in-python
+# From http://stackoverflow.com/a/6150349
 class discrete_cdf:
     def __init__(self, data):
         self._data = data # must be sorted
