@@ -204,6 +204,7 @@ class PlotFormatter(Formatter):
 
         axis.set_xlabel(unit)
         axis.set_ylabel('Cumulative probability')
+        axis.set_ylim(0,1)
         config['axes'] = [axis]
 
 
@@ -275,7 +276,7 @@ class PlotFormatter(Formatter):
             min_val = min(data)
             max_val = max(data)
             counts, bin_edges = self.np.histogram(data,
-                                                  bins=int(max_val-min_val),
+                                                  bins=max(int(max_val-min_val),1),
                                                   density=True)
             cdf = self.np.cumsum(counts)
             kwargs = {}
