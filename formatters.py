@@ -276,7 +276,7 @@ class PlotFormatter(Formatter):
             min_val = min(data)
             max_val = max(data)
             counts, bin_edges = self.np.histogram(data,
-                                                  bins=max(int(max_val-min_val),1),
+                                                  bins=max(int(mat.ceil(max_val-min_val)),1),
                                                   density=True)
             cdf = self.np.cumsum(counts)
             kwargs = {}
