@@ -1,2 +1,1 @@
-* Automatically save test data with plots
-* Put dst and src host names on plots (and save them w/test data too?)
+* Create setup.py file to make netperf-wrapper installable.
