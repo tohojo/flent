@@ -56,12 +56,11 @@ class Aggregator(object):
                 if hasattr(transformers, t):
                     instance['transformers'].append(getattr(transformers, t))
 
+        self.instances[name] = instance
         duplicates = config.get('duplicates', None)
         if duplicates is not None:
             for i in xrange(int(duplicates)):
-                self.instances["%s - %d" % (name, i+1)] = instance
-        else:
-            self.instances[name] = instance
+                self.instances["%s - %d" % (name, i+2)] = instance
 
     def aggregate(self):
         raise NotImplementedError()
