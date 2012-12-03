@@ -59,7 +59,7 @@ class Aggregator(object):
         self.instances[name] = instance
         duplicates = config.get('duplicates', None)
         if duplicates is not None:
-            for i in xrange(int(duplicates)):
+            for i in xrange(int(duplicates)-1):
                 self.instances["%s - %d" % (name, i+2)] = instance
 
     def aggregate(self):
