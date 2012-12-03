@@ -33,6 +33,7 @@ class Aggregator(object):
 
     def __init__(self):
         self.instances = {}
+        self.threads = {}
         if settings.LOG_FILE is None:
             self.logfile = None
         else:
@@ -73,13 +74,11 @@ class Aggregator(object):
             self.logfile.write(u"Start run at %s\n" % datetime.now())
 
         result = {}
-        threads = {}
-        for n,i in self.instances.items():
-            threads[n] = i['runner'](n, **i)
-            threads[n].start()
-        self.threads = threads.values()
         try:
-            for n,t in threads.items():
+            for n,i in self.instances.items():
+                self.threads[n] = i['runner'](n, **i)
+                self.threads[n].start()
+            for n,t in self.threads.items():
                 while t.isAlive():
                     t.join(1)
                 self._log(n,t)
@@ -105,7 +104,7 @@ class Aggregator(object):
         return result
 
     def kill_runners(self):
-        for t in self.threads:
+        for t in self.threads.values():
             t.killed = True
             if hasattr(t, 'prog'):
                 try:

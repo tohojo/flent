@@ -20,53 +20,55 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Wrapper to run multiple concurrent netperf instances, in several iterations,
-# and aggregate the result.
+import sys
 
-import optparse, sys, os
+try:
+    import optparse, os
 
-import aggregators, formatters, util
-from settings import settings, load
-
-
-
-config = util.DefaultConfigParser({'delay': 0})
-config.add_section('global')
-config.set('global', 'name', 'Netperf')
-config.set('global', 'iterations', '1')
-config.set('global', 'output', 'org_table')
-config.set('global', 'cmd_opts', '-P 0 -v 0')
-config.set('global', 'cmd_binary', '/usr/bin/netperf')
+    import aggregators, formatters, util
+    from settings import settings, load
 
 
-if __name__ == "__main__":
+
+    config = util.DefaultConfigParser({'delay': 0})
+    config.add_section('global')
+    config.set('global', 'name', 'Netperf')
+    config.set('global', 'iterations', '1')
+    config.set('global', 'output', 'org_table')
+    config.set('global', 'cmd_opts', '-P 0 -v 0')
+    config.set('global', 'cmd_binary', '/usr/bin/netperf')
+
+    if __name__ == "__main__":
+        try:
+            settings,results = load()
+
+            aggregator_name = settings.AGGREGATOR
+            classname = util.classname(aggregator_name, "Aggregator")
+            if hasattr(aggregators, classname):
+                agg = getattr(aggregators, classname)()
+            else:
+                raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
+
+            for s in settings.DATA_SETS.items():
+                agg.add_instance(*s)
+
+            formatter_name = util.classname(settings.FORMAT, 'Formatter')
+            if hasattr(formatters, formatter_name):
+                formatter = getattr(formatters, formatter_name)(settings.OUTPUT)
+            else:
+                raise RuntimeError("Formatter not found.")
+
+            if not results:
+                results = agg.postprocess(agg.aggregate(results))
+                results.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
+            formatter.format(results)
+
+        except RuntimeError, e:
+            sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
+            sys.exit(1)
+except KeyboardInterrupt:
     try:
-        settings,results = load()
-
-        aggregator_name = settings.AGGREGATOR
-        classname = util.classname(aggregator_name, "Aggregator")
-        if hasattr(aggregators, classname):
-            agg = getattr(aggregators, classname)()
-        else:
-            raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
-
-        for s in settings.DATA_SETS.items():
-            agg.add_instance(*s)
-
-        formatter_name = util.classname(settings.FORMAT, 'Formatter')
-        if hasattr(formatters, formatter_name):
-            formatter = getattr(formatters, formatter_name)(settings.OUTPUT)
-        else:
-            raise RuntimeError("Formatter not found.")
-
-        if not results:
-            results = agg.postprocess(agg.aggregate(results))
-            results.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
-        formatter.format(results)
-
-    except RuntimeError, e:
-        sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
-        sys.exit(1)
-    except KeyboardInterrupt:
-        sys.stderr.write(u"Interrupted\n")
-        sys.exit(1)
+        agg.kill_runners()
+    except NameError:
+        pass
+    sys.exit(1)
