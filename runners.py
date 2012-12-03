@@ -231,7 +231,7 @@ class ComputingRunner(object):
             return res
 
         new_res = []
-        keys = Glob.filter_list(self.keys,res.series_names,[self.name])
+        keys = Glob.expand_list(self.keys,res.series_names,[self.name])
 
         for r in res.zipped(keys):
             values = [v for v in r[1:] if v is not None]

@@ -65,6 +65,9 @@ class Glob(object):
         exclude += self.exclude
         return filter(lambda x: fnmatch(x, self.pattern) and x not in exclude, values)
 
+    def __iter__(self):
+        return iter((self,)) # allow list(g) to return [g]
+
     @classmethod
     def filter_dict(cls, d):
         # Expand glob patterns in parameters. Go through all items in the
@@ -73,19 +76,18 @@ class Glob(object):
         for k,v in d.items():
             for g_k in v.keys():
                 try:
-                    v[g_k] = cls.filter_list(v[g_k], d.keys(), [k])
+                    v[g_k] = cls.expand_list(v[g_k], d.keys(), [k])
                 except TypeError:
                     continue
         return d
 
     @classmethod
-    def filter_list(cls, l, values, exclude=None):
+    def expand_list(cls, l, values, exclude=None):
+        l = list(l) # copy list, turns lone Glob objects into [obj]
         if exclude is None:
             exclude = []
         # Expand glob patterns in list. Go through all items in the
         # list  looking for Glob instances and expanding them.
-        if isinstance(l, cls):
-            l = [l]
         for i in range(len(l)):
             pattern = l[i]
             if isinstance(pattern, cls):
