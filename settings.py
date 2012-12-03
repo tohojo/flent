@@ -23,6 +23,8 @@ import sys, os, runpy, optparse, socket, gzip
 
 from datetime import datetime
 
+from fnmatch import fnmatch
+
 from ordereddict import OrderedDict
 from resultset import ResultSet
 
@@ -48,6 +50,39 @@ DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 def include_test(name, env):
     execfile(os.path.join(TEST_PATH, name), env)
+
+class Glob(object):
+    """Object for storing glob patterns in matches"""
+
+    def __init__(self, pattern, exclude=None):
+        if exclude is None:
+            self.exclude = []
+        else:
+            self.exclude = exclude
+        self.pattern = pattern
+
+    def filter(self, values, exclude):
+        exclude += self.exclude
+        return filter(lambda x: fnmatch(x, self.pattern) and x not in exclude, values)
+
+    @classmethod
+    def filter_dict(cls, d):
+        # Expand glob patterns in parameters. Go through all items in the
+        # dictionary looking for subkeys that is a Glob instance or a list
+        # that has a Glob instance in it.
+        for k,v in d.items():
+            for g_k in v.keys():
+                if isinstance(v[g_k], cls):
+                    v[g_k] = [v[g_k]]
+                try:
+                    l = len(v[g_k])
+                    for i in range(l):
+                        pattern = v[g_k][i]
+                        if isinstance(pattern, cls):
+                            v[g_k][i:i+1] = pattern.filter(d.keys(), exclude=[k])
+                except TypeError:
+                    continue
+        return d
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
                                usage="usage: %prog [options] test")
@@ -89,6 +124,7 @@ class Settings(optparse.Values, object):
         env = self.__dict__
         env['o'] = OrderedDict
         env['include'] = include_test
+        env['glob'] = Glob
         s = runpy.run_path(os.path.join(TEST_PATH, test_name + ".conf"),
                                   env,
                                   test_name)
@@ -108,6 +144,10 @@ class Settings(optparse.Values, object):
     def __setattr__(self, k, v):
         if k in DICT_SETTINGS and isinstance(v, list):
             v = OrderedDict(v)
+
+        if k == "DATA_SETS":
+            v = Glob.filter_dict(v)
+
         object.__setattr__(self, k, v)
 
     def update(self, values):

@@ -206,9 +206,12 @@ class TcRunner(ProcessRunner):
 
 class ComputingRunner(object):
     command = "Computed"
-    def __init__(self, name, apply_to='', *args, **kwargs):
+    def __init__(self, name, apply_to=None, *args, **kwargs):
         self.name = name
-        self.keys = [i.strip() for i in apply_to.split(',')]
+        if apply_to is None:
+            self.keys = []
+        else:
+            self.keys = apply_to
 
         # These are use for debug logging
         self.returncode = 0
