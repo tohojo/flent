@@ -23,7 +23,7 @@ import threading, time, shlex, subprocess, re, time, sys, math
 
 from datetime import datetime
 
-from settings import settings
+from settings import settings, Glob
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
@@ -231,8 +231,9 @@ class ComputingRunner(object):
             return res
 
         new_res = []
+        keys = Glob.filter_list(self.keys,res.series_names,[self.name])
 
-        for r in res.zipped(self.keys):
+        for r in res.zipped(keys):
             values = [v for v in r[1:] if v is not None]
             if not values:
                 new_res.append(None)

@@ -72,17 +72,25 @@ class Glob(object):
         # that has a Glob instance in it.
         for k,v in d.items():
             for g_k in v.keys():
-                if isinstance(v[g_k], cls):
-                    v[g_k] = [v[g_k]]
                 try:
-                    l = len(v[g_k])
-                    for i in range(l):
-                        pattern = v[g_k][i]
-                        if isinstance(pattern, cls):
-                            v[g_k][i:i+1] = pattern.filter(d.keys(), exclude=[k])
+                    v[g_k] = cls.filter_list(v[g_k], d.keys(), [k])
                 except TypeError:
                     continue
         return d
+
+    @classmethod
+    def filter_list(cls, l, values, exclude=None):
+        if exclude is None:
+            exclude = []
+        # Expand glob patterns in list. Go through all items in the
+        # list  looking for Glob instances and expanding them.
+        if isinstance(l, cls):
+            l = [l]
+        for i in range(len(l)):
+            pattern = l[i]
+            if isinstance(pattern, cls):
+                l[i:i+1] = pattern.filter(values, exclude)
+        return l
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
                                usage="usage: %prog [options] test")
@@ -144,9 +152,6 @@ class Settings(optparse.Values, object):
     def __setattr__(self, k, v):
         if k in DICT_SETTINGS and isinstance(v, list):
             v = OrderedDict(v)
-
-        if k == "DATA_SETS":
-            v = Glob.filter_dict(v)
 
         object.__setattr__(self, k, v)
 
