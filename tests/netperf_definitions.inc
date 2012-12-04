@@ -1,4 +1,4 @@
-## -*- coding: utf-8 -*-
+## -*- mode: python; coding: utf-8 -*-
 
 GLOBAL_COMMAND="netperf -P 0 -v 0 -D -%.1f" % STEP_SIZE
 PING="ping"
