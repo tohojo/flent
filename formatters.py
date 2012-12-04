@@ -280,8 +280,14 @@ class PlotFormatter(Formatter):
                 start,end = config['cutoff']
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
             d = sorted(filter(lambda x: x is not None, s_data))
-            max_value = max(max_value, max(d))
+            max_value = max([max_value]+d)
             data.append(d)
+
+            for r in settings.SCALE_DATA:
+                d_s = filter(lambda x: x is not None, r.series(s['data']))
+                if d_s:
+                    max_value = max([max_value]+d_s)
+
 
         x_values = list(frange(0, max_value, 0.1))
 
