@@ -247,13 +247,19 @@ class PlotFormatter(Formatter):
             else:
                 a = 0
             data[a] += y_values
+            for r in settings.SCALE_DATA:
+                data[a] += r.series(s['data'], smooth)
             config['axes'][a].plot(results.x_values,
                    y_values,
                    **kwargs)
 
         if 'scaling' in config:
-            for a in range(len(config['axes'])):
-                self._do_scaling(config['axes'][a], data[a], *config['scaling'])
+            btm,top = config['scaling']
+        else:
+            btm,top = 0,100
+
+        for a in range(len(config['axes'])):
+            self._do_scaling(config['axes'][a], data[a], btm, top)
 
         self._do_legend(config)
 

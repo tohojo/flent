@@ -43,6 +43,7 @@ DEFAULT_SETTINGS = {
     'IP_VERSION': None,
     'DELAY': 5,
     'TIME': datetime.now(),
+    'SCALE_DATA': [],
     }
 
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
@@ -126,6 +127,9 @@ parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
                   help="list available tests")
 parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
                   help="list available plots for selected test")
+parser.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
+                  help="additional data files to use for scaling the plot axes "
+                  "(can be supplied multiple times)")
 
 class Settings(optparse.Values, object):
 
@@ -173,7 +177,6 @@ def load():
     if hasattr(settings, 'PLOT'):
         settings.FORMAT = 'plot'
 
-
     if settings.INPUT is not None:
         try:
             with open(settings.INPUT) as fp:
@@ -202,6 +205,23 @@ def load():
                             LENGTH=settings.LENGTH,
                             TOTAL_LENGTH=settings.TOTAL_LENGTH,
                             STEP_SIZE=settings.STEP_SIZE,)
+
+    if settings.SCALE_DATA:
+        scale_data = []
+        try:
+            for filename in settings.SCALE_DATA:
+                with open(filename) as fp:
+                    if settings.INPUT.endswith(".gz"):
+                        fp = gzip.GzipFile(fileobj=fp)
+                    r = ResultSet.load(fp)
+                    if r.meta("NAME") != settings.NAME:
+                        raise RuntimeError(u"Setting name mismatch between test "
+                                           "data and scale file %s" % filename)
+                    scale_data.append(r)
+        except IOError:
+            raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
+        settings.SCALE_DATA = scale_data
+
 
     if hasattr(settings, 'LIST_PLOTS') and settings.LIST_PLOTS:
         list_plots()
