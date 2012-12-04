@@ -131,7 +131,8 @@ parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT"
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   help="select which plot to output for the given test (implies -f plot)")
 parser.add_option("-H", "--host", action="append", type="string", dest="HOSTS",
-                  help="host to connect to for tests")
+                  help="host to connect to for tests. Specify multiple hosts with multiple -H "
+                  "options (not all tests support this).")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
                   help="text to add to plot title")
 parser.add_option("-L", "--log-file", action="store", type="string", dest="LOG_FILE",
