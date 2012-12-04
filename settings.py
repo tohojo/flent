@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, runpy, optparse, socket, gzip
+import sys, os, optparse, socket, gzip
 
 from datetime import datetime
 
@@ -29,7 +29,8 @@ from ordereddict import OrderedDict
 from resultset import ResultSet
 
 DEFAULT_SETTINGS = {
-    'HOST': 'localhost',
+    'HOST': None,
+    'HOSTS': [],
     'LOCAL_HOST': socket.gethostname(),
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
@@ -49,8 +50,6 @@ DEFAULT_SETTINGS = {
 TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
-def include_test(name, env):
-    execfile(os.path.join(TEST_PATH, name), env)
 
 class Glob(object):
     """Object for storing glob patterns in matches"""
@@ -95,6 +94,31 @@ class Glob(object):
                 l[i:i+1] = pattern.filter(values, exclude)
         return l
 
+class TestEnvironment(object):
+
+    def __init__(self, env={}):
+        self.env = dict(env)
+        self.env.update({
+            'glob': Glob,
+            'o': OrderedDict,
+            'include': self.include_test,
+            'min_host_count': self.require_host_count,
+            })
+
+    def execute(self, filename):
+        try:
+            execfile(filename, self.env)
+            return self.env
+        except (IOError, SyntaxError):
+            raise RuntimeError("Unable to read test config file: '%s'" % filename)
+
+    def include_test(self, name, env=None):
+        self.execute(os.path.join(TEST_PATH, name))
+
+    def require_host_count(self, count):
+        if len(self.env['HOSTS']) < count:
+            raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
+
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
                                usage="usage: %prog [options] test")
 
@@ -106,7 +130,7 @@ parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT"
                   help="select output format (plot, csv, org_table)")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   help="select which plot to output for the given test (implies -f plot)")
-parser.add_option("-H", "--host", action="store", type="string", dest="HOST",
+parser.add_option("-H", "--host", action="append", type="string", dest="HOSTS",
                   help="host to connect to for tests")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
                   help="text to add to plot title")
@@ -135,13 +159,12 @@ class Settings(optparse.Values, object):
 
     def load_test(self, test_name):
         self.NAME = test_name
-        env = self.__dict__
-        env['o'] = OrderedDict
-        env['include'] = include_test
-        env['glob'] = Glob
-        s = runpy.run_path(os.path.join(TEST_PATH, test_name + ".conf"),
-                                  env,
-                                  test_name)
+        if not self.HOSTS:
+            raise RuntimeError("Must specify host (-H option).")
+        self.HOST = self.HOSTS[0]
+
+        test_env = TestEnvironment(self.__dict__)
+        s = test_env.execute(os.path.join(TEST_PATH, test_name + ".conf"))
 
         for k,v in s.items():
             if k == k.upper():
@@ -185,7 +208,7 @@ def load():
                 results = ResultSet.load(fp)
                 settings.load_test(results.meta("NAME"))
                 settings.update(results.meta())
-        except (IOError, SyntaxError):
+        except IOError:
             raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
     else:
         if len(args) < 1:
