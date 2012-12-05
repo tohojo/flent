@@ -27,6 +27,7 @@ from fnmatch import fnmatch
 
 from ordereddict import OrderedDict
 from resultset import ResultSet
+from build_info import DATA_DIR
 
 DEFAULT_SETTINGS = {
     'HOST': None,
@@ -47,7 +48,7 @@ DEFAULT_SETTINGS = {
     'SCALE_DATA': [],
     }
 
-TEST_PATH = os.path.join(os.path.dirname(__file__), 'tests')
+TEST_PATH = os.path.join(DATA_DIR, 'tests')
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 
@@ -116,7 +117,7 @@ class TestEnvironment(object):
         self.execute(os.path.join(TEST_PATH, name))
 
     def require_host_count(self, count):
-        if len(self.env['HOSTS']) < count:
+        if len(self.env['HOSTS']) < count and not self.env['INPUT']:
             raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
@@ -249,7 +250,7 @@ def load():
     if hasattr(settings, 'LIST_PLOTS') and settings.LIST_PLOTS:
         list_plots()
 
-    if not settings.HOSTS:
+    if not settings.HOSTS and not results:
         raise RuntimeError("Must specify host (-H option).")
 
     return settings, results

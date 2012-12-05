@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-## -*- coding: utf-8 -*-
+## -*- mode: python; coding: utf-8 -*-
 ##
 ## netperf-wrapper.py
 ##
@@ -25,9 +25,8 @@ import sys
 try:
     import optparse, os
 
-    import aggregators, formatters, util
-    from settings import settings, load
-
+    from netperf_wrapper import aggregators, formatters, util
+    from netperf_wrapper.settings import settings, load
 
 
     config = util.DefaultConfigParser({'delay': 0})
