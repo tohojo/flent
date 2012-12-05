@@ -120,7 +120,7 @@ class TestEnvironment(object):
             raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
-                               usage="usage: %prog [options] test")
+                               usage="usage: %prog [options] -H <host> test")
 
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
                   help="file to write output to (default standard out)")
@@ -130,7 +130,7 @@ parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT"
                   help="select output format (plot, csv, org_table)")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   help="select which plot to output for the given test (implies -f plot)")
-parser.add_option("-H", "--host", action="append", type="string", dest="HOSTS",
+parser.add_option("-H", "--host", action="append", type="string", dest="HOSTS", metavar='HOST',
                   help="host to connect to for tests. Specify multiple hosts with multiple -H "
                   "options (not all tests support this).")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
