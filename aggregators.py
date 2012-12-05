@@ -149,7 +149,7 @@ class TimeseriesAggregator(Aggregator):
 
     def __init__(self, *args, **kwargs):
         self.step = settings.STEP_SIZE
-        self.max_distance = self.step * 2.0
+        self.max_distance = self.step * 5.0
         Aggregator.__init__(self, *args, **kwargs)
 
     def aggregate(self, results):
