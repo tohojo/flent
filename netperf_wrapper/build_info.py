@@ -23,5 +23,5 @@
 
 import os
 
-# this value works for the git repository
+# this value works for the source distribution
 DATA_DIR=os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
