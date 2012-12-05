@@ -160,9 +160,8 @@ class Settings(optparse.Values, object):
 
     def load_test(self, test_name):
         self.NAME = test_name
-        if not self.HOSTS:
-            raise RuntimeError("Must specify host (-H option).")
-        self.HOST = self.HOSTS[0]
+        if self.HOSTS:
+            self.HOST = self.HOSTS[0]
 
         test_env = TestEnvironment(self.__dict__)
         s = test_env.execute(os.path.join(TEST_PATH, test_name + ".conf"))
@@ -249,6 +248,9 @@ def load():
 
     if hasattr(settings, 'LIST_PLOTS') and settings.LIST_PLOTS:
         list_plots()
+
+    if not settings.HOSTS:
+        raise RuntimeError("Must specify host (-H option).")
 
     return settings, results
 
