@@ -21,8 +21,9 @@
 
 import pprint, sys, csv, math
 
-from settings import settings
-from util import cum_prob, frange
+from .settings import settings
+from .util import cum_prob, frange
+from functools import reduce
 
 PLOT_KWARGS = (
     'alpha',
@@ -53,7 +54,7 @@ PLOT_KWARGS = (
 class Formatter(object):
 
     def __init__(self, output):
-        if isinstance(output, basestring):
+        if isinstance(output, str):
             if output == "-":
                 self.output = sys.stdout
             else:
@@ -62,7 +63,7 @@ class Formatter(object):
             self.output = output
 
     def format(self, results):
-        sys.stderr.write(u"No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results.dump_file)
+        sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results.dump_file)
 
 DefaultFormatter = Formatter
 
@@ -76,21 +77,21 @@ class OrgTableFormatter(Formatter):
         name = results.meta("NAME")
 
         if not results:
-            self.output.write(unicode(name) + u" -- empty\n")
-        keys = settings.DATA_SETS.keys()
+            self.output.write(str(name) + " -- empty\n")
+        keys = list(settings.DATA_SETS.keys())
         header_row = [name] + keys
-        self.output.write(u"| " + u" | ".join(header_row) + u" |\n")
-        self.output.write(u"|-" + u"-+-".join([u"-"*len(i) for i in header_row]) + u"-|\n")
+        self.output.write("| " + " | ".join(header_row) + " |\n")
+        self.output.write("|-" + "-+-".join(["-"*len(i) for i in header_row]) + "-|\n")
 
         def format_item(item):
             if isinstance(item, float):
                 return "%.2f" % item
-            return unicode(item)
+            return str(item)
 
         for row in results.zipped(keys):
-            self.output.write(u"| ")
-            self.output.write(u" | ".join(map(format_item, row)))
-            self.output.write(u" |\n")
+            self.output.write("| ")
+            self.output.write(" | ".join(map(format_item, row)))
+            self.output.write(" |\n")
 
 
 
@@ -104,17 +105,17 @@ class CsvFormatter(Formatter):
             return
 
         writer = csv.writer(self.output)
-        keys = settings.DATA_SETS.keys()
+        keys = list(settings.DATA_SETS.keys())
         header_row = [name] + keys
         writer.writerow(header_row)
 
         def format_item(item):
             if item is None:
                 return ""
-            return unicode(item)
+            return str(item)
 
         for row in results.zipped(keys):
-            writer.writerow(map(format_item, row))
+            writer.writerow(list(map(format_item, row)))
 
 class PlotFormatter(Formatter):
 
@@ -141,12 +142,12 @@ class PlotFormatter(Formatter):
             self.np = numpy
             self._init_plots()
         except ImportError:
-            raise RuntimeError(u"Unable to plot -- matplotlib is missing! Please install it if you want plots.")
+            raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
 
     def _load_plotconfig(self, plot):
         if not plot in settings.PLOTS:
-            raise RuntimeError(u"Unable to find plot configuration '%s'" % plot)
+            raise RuntimeError("Unable to find plot configuration '%s'" % plot)
         config = settings.PLOTS[plot]
         if 'parent' in config:
             parent_config = settings.PLOTS[config['parent']]
@@ -279,12 +280,12 @@ class PlotFormatter(Formatter):
                 # want the unloaded ping values
                 start,end = config['cutoff']
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
-            d = sorted(filter(lambda x: x is not None, s_data))
+            d = sorted([x for x in s_data if x is not None])
             max_value = max([max_value]+d)
             data.append(d)
 
             for r in settings.SCALE_DATA:
-                d_s = filter(lambda x: x is not None, r.series(s['data']))
+                d_s = [x for x in r.series(s['data']) if x is not None]
                 if d_s:
                     max_value = max([max_value]+d_s)
 
@@ -373,7 +374,7 @@ class PlotFormatter(Formatter):
 
     def _do_scaling(self, axis, data, btm, top):
         """Scale the axis to the selected bottom/top percentile"""
-        data = filter(lambda x: x is not None, data)
+        data = [x for x in data if x is not None]
         top_percentile = self.np.percentile(data, top)*1.05
         btm_percentile = self.np.percentile(data, btm)*0.95
         axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)

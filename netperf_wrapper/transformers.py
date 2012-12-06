@@ -22,7 +22,7 @@
 def transform_results(results, func):
     """Transform a list of (timestamp,value) pairs by applying a function to the
     value."""
-    for i in xrange(len(results)):
+    for i in range(len(results)):
         results[i][1] = func(results[i][1])
     return results
 

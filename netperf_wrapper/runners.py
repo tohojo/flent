@@ -23,7 +23,7 @@ import threading, time, shlex, subprocess, re, time, sys, math
 
 from datetime import datetime
 
-from settings import settings, Glob
+from .settings import settings, Glob
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
@@ -41,7 +41,7 @@ class ProcessRunner(threading.Thread):
         seconds, then open the subprocess, wait for it to finish, and collect
         the last word of the output (whitespace-separated)."""
 
-        for i in xrange(self.delay):
+        for i in range(self.delay):
             time.sleep(1)
             if self.killed:
                 return
@@ -191,7 +191,7 @@ class TcRunner(ProcessRunner):
                 # values for the qdiscs are summed for the result (discarding
                 # what should be the root qdisc as per above).
                 while m is not None:
-                    for k,v in m.groupdict().items():
+                    for k,v in list(m.groupdict().items()):
                         if not k in matches:
                             matches[k] = float(v)
                         else:
