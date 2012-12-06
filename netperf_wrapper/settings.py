@@ -27,7 +27,7 @@ from fnmatch import fnmatch
 
 from ordereddict import OrderedDict
 from resultset import ResultSet
-from build_info import DATA_DIR
+from build_info import DATA_DIR, VERSION
 
 DEFAULT_SETTINGS = {
     'HOST': None,
@@ -50,6 +50,10 @@ DEFAULT_SETTINGS = {
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
+
+def version(*args):
+    print "Netperf-wrapper v%s." %(VERSION)
+    sys.exit(0)
 
 
 class Glob(object):
@@ -148,6 +152,9 @@ parser.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSIO
                   help="use IPv4 for tests (some tests may ignore this)")
 parser.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
                   help="use IPv6 for tests (some tests may ignore this)")
+
+parser.add_option("-V", "--version", action="callback", callback=version,
+                  help="show netperf-wrapper version and exit")
 
 parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
                   help="list available tests")

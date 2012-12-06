@@ -22,9 +22,10 @@
 import sys, os
 from distutils.core import setup
 from distutils.command.build_py import build_py as _build_py
+from netperf_wrapper.build_info import VERSION
 from glob import glob
 
-version_string = "0.1.0"
+version_string = VERSION
 
 if sys.version_info[:2] < (2,6):
     sys.stderr.write("Sorry, netperf-wrapper requires v2.6 or later of Python\n")
@@ -39,24 +40,17 @@ class build_py(_build_py):
     """
     def build_module (self, module, module_file, package):
         orig_content = None
-        if isinstance(package, basestring):
-            package = package.split('.')
-        elif type(package) not in (ListType, TupleType):
-            raise TypeError, \
-                  "'package' must be a string (dot-separated), list, or tuple"
-
-        if ( module == 'build_info' and len(package) == 1 and
-            package[0] == 'netperf_wrapper' and 'install' in self.distribution.command_obj):
+        if ( module == 'build_info' and package == 'netperf_wrapper'
+             and 'install' in self.distribution.command_obj):
             iobj = self.distribution.command_obj['install']
             with open(module_file, 'r') as module_fp:
                 orig_content = module_fp.read()
 
             with open(module_file, 'w') as module_fp:
                 module_fp.write('# -*- coding: UTF-8 -*-\n\n')
-                module_fp.write("DATA_DIR = '%s'\n"%(
+                module_fp.write("VERSION='%s'\n"%(version_string))
+                module_fp.write("DATA_DIR='%s'\n"%(
                     os.path.join(iobj.install_data, 'share', 'netperf-wrapper')))
-                module_fp.write("LIB_DIR = '%s'\n"%(iobj.install_lib))
-                module_fp.write("SCRIPT_DIR = '%s'\n"%(iobj.install_scripts))
 
         _build_py.build_module(self, module, module_file, package)
 
@@ -69,13 +63,17 @@ data_files = [('share/netperf-wrapper/tests',
                    glob("tests/*.inc")),
               ('share/doc/netperf-wrapper',
                ['BUGS',
-                'README.org']),
+                'README.rst']),
               ('share/doc/netperf-wrapper/misc',
                glob("misc/*.patch"))]
+
+with open("README.rst") as fp:
+    long_description = "\n"+fp.read()
 
 setup(name="netperf-wrapper",
       version=version_string,
       description="Wrapper for running network tests such as netperf concurrently",
+      long_description=long_description,
       author="Toke Høiland-Jørgensen <toke@toke.dk>",
       author_email="toke@toke.dk",
       url="https://github.com/tohojo/netperf-wrapper",
