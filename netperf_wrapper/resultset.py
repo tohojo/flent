@@ -23,7 +23,10 @@ import json, os, gzip, math
 from datetime import datetime
 from dateutil.parser import parse as parse_date
 
-from ordereddict import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from .ordereddict import OrderedDict
 
 # Controls pretty-printing of json dumps
 JSON_INDENT=None
@@ -68,7 +71,7 @@ class ResultSet(object):
         """
         data = dict(data)
         self._x_values.append(x)
-        for k in self._results.keys():
+        for k in list(self._results.keys()):
             if k in data:
                 self._results[k].append(data[k])
                 del data[k]
@@ -76,7 +79,7 @@ class ResultSet(object):
                 self._results[k].append(None)
 
         if data:
-            raise RuntimeError("Unexpected data point(s): %s" % data.keys())
+            raise RuntimeError("Unexpected data point(s): %s" % list(data.keys()))
 
     def last_datapoint(self, series):
         if not self._results[series]:
@@ -92,8 +95,8 @@ class ResultSet(object):
         res = self._results[name]
         smooth_res = []
         for i in range(len(res)):
-            s = max(0,i-amount/2)
-            e = min(len(res),i+amount/2)
+            s = int(max(0,i-amount/2))
+            e = int(min(len(res),i+amount/2))
             window = [i for i in res[s:e] if i is not None]
             if window:
                 smooth_res.append(math.fsum(window)/len(window))
@@ -104,7 +107,7 @@ class ResultSet(object):
 
     @property
     def series_names(self):
-        return self._results.keys()
+        return list(self._results.keys())
 
     def zipped(self, keys=None):
         if keys is None:
@@ -148,7 +151,7 @@ class ResultSet(object):
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
-        with gzip.open(self._dump_file, "w") as fp:
+        with gzip.open(self._dump_file, "wt") as fp:
             self.dump(fp)
 
     @classmethod
@@ -158,7 +161,7 @@ class ResultSet(object):
             metadata['TIME'] = parse_date(metadata['TIME'])
         rset = cls(**metadata)
         rset.x_values = obj['x_values']
-        for k,v in obj['results'].items():
+        for k,v in list(obj['results'].items()):
             rset.add_result(k,v)
         return rset
 

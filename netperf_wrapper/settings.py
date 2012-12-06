@@ -25,9 +25,12 @@ from datetime import datetime
 
 from fnmatch import fnmatch
 
-from ordereddict import OrderedDict
-from resultset import ResultSet
-from build_info import DATA_DIR, VERSION
+try:
+    from collections import OrderedDict
+except ImportError:
+    from netperf_wrapper.ordereddict import OrderedDict
+from netperf_wrapper.resultset import ResultSet
+from netperf_wrapper.build_info import DATA_DIR, VERSION
 
 DEFAULT_SETTINGS = {
     'HOST': None,
@@ -52,7 +55,7 @@ TEST_PATH = os.path.join(DATA_DIR, 'tests')
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 def version(*args):
-    print "Netperf-wrapper v%s." %(VERSION)
+    print("Netperf-wrapper v%s." %(VERSION))
     sys.exit(0)
 
 
@@ -68,7 +71,7 @@ class Glob(object):
 
     def filter(self, values, exclude):
         exclude += self.exclude
-        return filter(lambda x: fnmatch(x, self.pattern) and x not in exclude, values)
+        return [x for x in values if fnmatch(x, self.pattern) and x not in exclude]
 
     def __iter__(self):
         return iter((self,)) # allow list(g) to return [g]
@@ -78,10 +81,10 @@ class Glob(object):
         # Expand glob patterns in parameters. Go through all items in the
         # dictionary looking for subkeys that is a Glob instance or a list
         # that has a Glob instance in it.
-        for k,v in d.items():
-            for g_k in v.keys():
+        for k,v in list(d.items()):
+            for g_k in list(v.keys()):
                 try:
-                    v[g_k] = cls.expand_list(v[g_k], d.keys(), [k])
+                    v[g_k] = cls.expand_list(v[g_k], list(d.keys()), [k])
                 except TypeError:
                     continue
         return d
@@ -112,7 +115,7 @@ class TestEnvironment(object):
 
     def execute(self, filename):
         try:
-            execfile(filename, self.env)
+            exec(compile(open(filename).read(), filename, 'exec'), self.env)
             return self.env
         except (IOError, SyntaxError):
             raise RuntimeError("Unable to read test config file: '%s'" % filename)
@@ -174,12 +177,12 @@ class Settings(optparse.Values, object):
         test_env = TestEnvironment(self.__dict__)
         s = test_env.execute(os.path.join(TEST_PATH, test_name + ".conf"))
 
-        for k,v in s.items():
+        for k,v in list(s.items()):
             if k == k.upper():
                 setattr(self, k, v)
 
         if 'DEFAULTS' in s:
-            for k,v in s['DEFAULTS'].items():
+            for k,v in list(s['DEFAULTS'].items()):
                 if not hasattr(self, k):
                     setattr(self, k, v)
 
@@ -193,7 +196,7 @@ class Settings(optparse.Values, object):
         object.__setattr__(self, k, v)
 
     def update(self, values):
-        for k,v in values.items():
+        for k,v in list(values.items()):
             setattr(self, k, v)
 
 settings = Settings(DEFAULT_SETTINGS)
@@ -210,9 +213,11 @@ def load():
 
     if settings.INPUT is not None:
         try:
-            with open(settings.INPUT) as fp:
-                if settings.INPUT.endswith(".gz"):
-                    fp = gzip.GzipFile(fileobj=fp)
+            if settings.INPUT.endswith(".gz"):
+                o = gzip.open
+            else:
+                o = open
+            with o(settings.INPUT, 'rt') as fp:
                 results = ResultSet.load(fp)
                 settings.load_test(results.meta("NAME"))
                 settings.update(results.meta())
@@ -246,7 +251,7 @@ def load():
                         fp = gzip.GzipFile(fileobj=fp)
                     r = ResultSet.load(fp)
                     if r.meta("NAME") != settings.NAME:
-                        raise RuntimeError(u"Setting name mismatch between test "
+                        raise RuntimeError("Setting name mismatch between test "
                                            "data and scale file %s" % filename)
                     scale_data.append(r)
         except IOError:
@@ -265,21 +270,21 @@ def load():
 def list_tests():
     tests = sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')])
     sys.stderr.write('Available tests:\n')
-    max_len = unicode(max([len(t) for t in tests]))
+    max_len = str(max([len(t) for t in tests]))
     for t in tests:
         settings.update(DEFAULT_SETTINGS)
         settings.load_test(t)
-        sys.stderr.write((u"  %-"+max_len+u"s :  %s\n") % (t, settings.DESCRIPTION))
+        sys.stderr.write(("  %-"+max_len+"s :  %s\n") % (t, settings.DESCRIPTION))
     sys.exit(0)
 
 def list_plots():
-    plots = settings.PLOTS.keys()
+    plots = list(settings.PLOTS.keys())
     if not plots:
         sys.stderr.write("No plots available for test '%s'.\n" % settings.NAME)
         sys.exit(0)
 
     sys.stderr.write("Available plots for test '%s':\n" % settings.NAME)
-    max_len = unicode(max([len(p) for p in plots]))
+    max_len = str(max([len(p) for p in plots]))
     for p in plots:
-        sys.stderr.write((u"  %-"+max_len+u"s :  %s\n") % (p, settings.PLOTS[p]['description']))
+        sys.stderr.write(("  %-"+max_len+"s :  %s\n") % (p, settings.PLOTS[p]['description']))
     sys.exit(0)

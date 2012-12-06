@@ -22,11 +22,12 @@
 import math, pprint, signal
 from datetime import datetime
 
-import runners, transformers
+from . import runners, transformers
 
-from util import classname
+from .util import classname
 
-from settings import settings
+from .settings import settings
+import collections
 
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
@@ -59,7 +60,7 @@ class Aggregator(object):
         self.instances[name] = instance
         duplicates = config.get('duplicates', None)
         if duplicates is not None:
-            for i in xrange(int(duplicates)-1):
+            for i in range(int(duplicates)-1):
                 self.instances["%s - %d" % (name, i+2)] = instance
 
     def aggregate(self):
@@ -70,20 +71,20 @@ class Aggregator(object):
         for the threads to exit, then collect the results."""
 
         if self.logfile:
-            self.logfile.write(u"Start run at %s\n" % datetime.now())
+            self.logfile.write("Start run at %s\n" % datetime.now())
 
         result = {}
         try:
-            for n,i in self.instances.items():
+            for n,i in list(self.instances.items()):
                 self.threads[n] = i['runner'](n, **i)
                 self.threads[n].start()
-            for n,t in self.threads.items():
+            for n,t in list(self.threads.items()):
                 while t.isAlive():
                     t.join(1)
                 self._log(n,t)
                 if t.result is None:
                     continue
-                elif callable(t.result):
+                elif isinstance(t.result, collections.Callable):
                     # If the result is callable, the runner is really a
                     # post-processor (Avg etc), and should be run as such (by the
                     # postprocess() method)
@@ -103,7 +104,7 @@ class Aggregator(object):
         return result
 
     def kill_runners(self):
-        for t in self.threads.values():
+        for t in list(self.threads.values()):
             t.killed = True
             if hasattr(t, 'prog'):
                 try:
@@ -135,7 +136,7 @@ class IterationAggregator(Aggregator):
         Aggregator.__init__(self, *args, **kwargs)
 
     def aggregate(self, results):
-        results.x_values = range(1, self.iterations+1)
+        results.x_values = list(range(1, self.iterations+1))
         for i in range(self.iterations):
             results.add_result(i+1, self.collect())
         return results
@@ -155,16 +156,16 @@ class TimeseriesAggregator(Aggregator):
     def aggregate(self, results):
         measurements = self.collect()
         if not measurements:
-            raise RuntimeError(u"No data to aggregate. Run with -l and check log file to investigate.")
-        results.create_series(measurements.keys())
+            raise RuntimeError("No data to aggregate. Run with -l and check log file to investigate.")
+        results.create_series(list(measurements.keys()))
 
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step
         # size
-        first_times = [i[0][0] for i in measurements.values() if i and i[0]]
-        last_times = [i[-1][0] for i in measurements.values() if i and i[-1]]
+        first_times = [i[0][0] for i in list(measurements.values()) if i and i[0]]
+        last_times = [i[-1][0] for i in list(measurements.values()) if i and i[-1]]
         if not (first_times and last_times):
-            raise RuntimeError(u"No data to aggregate. Run with -l and check log file to investigate.")
+            raise RuntimeError("No data to aggregate. Run with -l and check log file to investigate.")
         t_0 = min(first_times)
         t_max = max(last_times)
         steps = int(math.ceil((t_max-t_0)/self.step))
@@ -181,7 +182,7 @@ class TimeseriesAggregator(Aggregator):
             result = {}
             # n is the name of this measurement (from the config), r is the list
             # of measurement pairs (time,value)
-            for n,r in measurements.items():
+            for n,r in list(measurements.items()):
                 max_dist = self.max_distance
                 last = False
                 if not r:

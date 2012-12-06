@@ -48,7 +48,7 @@ try:
             else:
                 raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
 
-            for s in settings.DATA_SETS.items():
+            for s in list(settings.DATA_SETS.items()):
                 agg.add_instance(*s)
 
             formatter_name = util.classname(settings.FORMAT, 'Formatter')
@@ -62,8 +62,8 @@ try:
                 results.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
             formatter.format(results)
 
-        except RuntimeError, e:
-            sys.stderr.write(u"Error occurred: %s\n"% unicode(e))
+        except RuntimeError as e:
+            sys.stderr.write("Error occurred: %s\n"% str(e))
             sys.exit(1)
 except KeyboardInterrupt:
     try:
