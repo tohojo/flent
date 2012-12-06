@@ -66,6 +66,7 @@ class ResultSet(object):
 
         Requires preceding call to create_series() with the data series name(s).
         """
+        data = dict(data)
         self._x_values.append(x)
         for k in self._results.keys():
             if k in data:
@@ -76,6 +77,11 @@ class ResultSet(object):
 
         if data:
             raise RuntimeError("Unexpected data point(s): %s" % data.keys())
+
+    def last_datapoint(self, series):
+        if not self._results[series]:
+            return None
+        return self._results[series][-1]
 
     def series(self, name, smooth=None):
         if smooth:

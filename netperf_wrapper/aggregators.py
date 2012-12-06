@@ -182,23 +182,39 @@ class TimeseriesAggregator(Aggregator):
             # n is the name of this measurement (from the config), r is the list
             # of measurement pairs (time,value)
             for n,r in measurements.items():
+                max_dist = self.max_distance
+                last = False
                 if not r:
                     continue
                 t_prev = v_prev = None
                 t_next = v_next = None
-                for i in range(len(r)):
+
+                # Some measurements (notably UDP pings) give a spurious value
+                # for the last measurement, so cut off the very last data point
+                # from each series. This should hopefully not lose any valuable
+                # data.
+                for i in range(len(r)-1):
                     if r[i][0] > t:
                         if i > 0:
                             t_prev,v_prev = r[i-1]
+                        else:
+                            # minimum interpolation distance on first entry to
+                            # avoid multiple interpolations to the same value
+                            max_dist = 0.1
                         t_next,v_next = r[i]
                         break
                 if t_next is None:
                     t_next,v_next = r[-1]
-                if abs(t-t_next) <= self.max_distance:
+                    last = True
+                if abs(t-t_next) <= max_dist:
                     if t_prev is None:
-                        # The first data point for this measurement is after the
+                        # The first/last data point for this measurement is after the
                         # current t. Don't interpolate, just use the value.
-                        result[n] = v_next
+                        if last and results.last_datapoint(n) == v_next:
+                            # Avoid repeating last interpolation
+                            result[n] = None
+                        else:
+                            result[n] = v_next
                     else:
                         # We found the previous and next values; interpolate between
                         # them. We assume that the rate of change dv/dt is constant
