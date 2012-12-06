@@ -1,0 +1,1 @@
+2012-12-06: Fix to avoid interpolation artefacts at start/end of data series.

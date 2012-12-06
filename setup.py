@@ -63,6 +63,7 @@ data_files = [('share/netperf-wrapper/tests',
                    glob("tests/*.inc")),
               ('share/doc/netperf-wrapper',
                ['BUGS',
+                'CHANGES',
                 'README.rst']),
               ('share/doc/netperf-wrapper/misc',
                glob("misc/*.patch"))]
