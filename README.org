@@ -34,11 +34,11 @@ If no output file is specified, the plot is diplayed using matplotlib's
 interactive plot browser, which also allows saving of the output (in .png
 format).
 
-The basic invocation is =./netperf-wrapper.py -H <host> <test_name>=. Various
+The basic invocation is =./netperf-wrapper -H <host> <test_name>=. Various
 options to control test parameters are available; try running
-=./netperf-wrapper.py -h=. Tests can be displayed with
-=./netperf-wrapper.py --list-tests= and the available plots can be displayed with
-=./netperf-wrapper.py --list-plots <test_name>=.
+=./netperf-wrapper -h=. Tests can be displayed with
+=./netperf-wrapper --list-tests= and the available plots can be displayed with
+=./netperf-wrapper --list-plots <test_name>=.
 
 Running tests and plotting/displaying the output is logically split up in two
 separate processes, but can be combined into one. When a test is run, its data
@@ -49,6 +49,10 @@ in which case the test will not be run again, but the saved test data will be
 used as input for plotting functions etc. If an output format is selected while
 a test is run, the test data will be used directly for this output, but will
 still be saved in the json file.
+
+** Installing
+Install the package system-wide by running =sudo python2 setup.py install= or
+=sudo pip install netperf-wrapper= for the latest released version.
 
 ** The json data format
 The aggregated test data is saved in a file called
