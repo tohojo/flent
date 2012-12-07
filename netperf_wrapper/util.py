@@ -28,6 +28,11 @@ try:
 except ImportError:
     import ConfigParser as configparser
 
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
+
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
     (OrgTable) for class names."""
