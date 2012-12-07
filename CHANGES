@@ -1,3 +1,6 @@
-2012-12-07: Fix compatibility with python2.6
+2012-12-07: Merge compatibility fixes with py3k. Should now work with python
+            versions from 2.6 to 3.3.
+
+2012-12-07: Fix compatibility with python2.6.
 
 2012-12-06: Fix to avoid interpolation artefacts at start/end of data series.
