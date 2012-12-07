@@ -217,12 +217,14 @@ def load():
                 o = gzip.open
             else:
                 o = open
-            with o(settings.INPUT, 'rt') as fp:
-                results = ResultSet.load(fp)
-                settings.load_test(results.meta("NAME"))
-                settings.update(results.meta())
+            fp = o(settings.INPUT, 'rt')
+            results = ResultSet.load(fp)
+            settings.load_test(results.meta("NAME"))
+            settings.update(results.meta())
         except IOError:
             raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
+        finally:
+            fp.close()
     else:
         if len(args) < 1:
             parser.error("Missing test name.")
