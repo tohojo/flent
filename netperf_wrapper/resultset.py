@@ -21,7 +21,11 @@
 
 import json, os, gzip, math
 from datetime import datetime
-from dateutil.parser import parse as parse_date
+
+try:
+    from dateutil.parser import parse as parse_date
+except ImportError:
+    from util import parse_date
 
 from ordereddict import OrderedDict
 

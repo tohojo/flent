@@ -21,6 +21,7 @@
 
 import ConfigParser, math
 from bisect import bisect_left
+from datetime import datetime
 
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
@@ -30,6 +31,11 @@ def uscore_to_camel(s):
 def classname(s, suffix=''):
     return uscore_to_camel(s)+suffix
 
+def parse_date(timestring):
+    try:
+        return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%f")
+    except ValueError:
+        return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S")
 
 # Calculate discrete cdf function using bisect_left.
 def cum_prob(data, val):
