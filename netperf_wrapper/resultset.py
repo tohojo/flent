@@ -155,8 +155,11 @@ class ResultSet(object):
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
-        with gzip.open(self._dump_file, "wt") as fp:
+        try:
+            fp = gzip.open(self._dump_file, "wt")
             self.dump(fp)
+        finally:
+            fp.close()
 
     @classmethod
     def unserialise(cls, obj):
