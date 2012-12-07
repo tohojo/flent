@@ -25,7 +25,7 @@ from datetime import datetime
 try:
     from dateutil.parser import parse as parse_date
 except ImportError:
-    from util import parse_date
+    from .util import parse_date
 
 try:
     from collections import OrderedDict
