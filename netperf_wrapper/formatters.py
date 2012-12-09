@@ -332,7 +332,7 @@ class PlotFormatter(Formatter):
         if 'description' in self.config:
             plot_title += "\n" + self.config['description']
         if settings.TITLE:
-            plot_title += "\n" + settings.TITLE
+            plot_title += " - " + settings.TITLE
         self.plt.suptitle(plot_title, fontsize=14)
 
         annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
