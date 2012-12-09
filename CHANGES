@@ -1,3 +1,14 @@
+2012-12-09: Automatically switch CDF plots to log scale if the median values
+            differ by more than an order of magnitude.
+
+2012-12-09: Support multiple -i options to combine several result sets into one
+            table/set of plots. Basically, reading in multiple data sets by
+            supplying -i multiple times on the command line now plots them all
+            together; this does not work well for all plots, but for some it
+            does. Differentiating between the data sets is done by the title
+            (set with -t) of the result sets (i.e. -t must be supplied when the
+            data set is generated).
+
 2012-12-09: Put custom (-t) plot titles on the same line as the plot name
             (otherwise the title overlaps the plot area for plots exported to
             file).
