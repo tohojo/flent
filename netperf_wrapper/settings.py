@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, optparse, socket, gzip
+import sys, os, optparse, socket
 
 from datetime import datetime
 
@@ -212,19 +212,10 @@ def load():
         settings.FORMAT = 'plot'
 
     if settings.INPUT is not None:
-        try:
-            if settings.INPUT.endswith(".gz"):
-                o = gzip.open
-            else:
-                o = open
-            fp = o(settings.INPUT, 'rt')
-            results = ResultSet.load(fp)
-            settings.load_test(results.meta("NAME"))
-            settings.update(results.meta())
-        except IOError:
-            raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
-        finally:
-            fp.close()
+        results = ResultSet.load_file(settings.INPUT)
+
+        settings.load_test(results.meta("NAME"))
+        settings.update(results.meta())
     else:
         if len(args) < 1:
             parser.error("Missing test name.")
@@ -246,18 +237,17 @@ def load():
 
     if settings.SCALE_DATA:
         scale_data = []
-        try:
-            for filename in settings.SCALE_DATA:
-                with open(filename) as fp:
-                    if settings.INPUT.endswith(".gz"):
-                        fp = gzip.GzipFile(fileobj=fp)
-                    r = ResultSet.load(fp)
-                    if r.meta("NAME") != settings.NAME:
-                        raise RuntimeError("Setting name mismatch between test "
-                                           "data and scale file %s" % filename)
-                    scale_data.append(r)
-        except IOError:
-            raise RuntimeError("Unable to read input file: '%s'" % settings.INPUT)
+        for filename in settings.SCALE_DATA:
+            if filename == settings.INPUT:
+                # Do not load input file twice - makes it easier to select a set
+                # of files for plot scaling and supply each one to -i without
+                # having to change the other command line options each time.
+                continue
+            r = ResultSet.load_file(filename)
+            if r.meta("NAME") != settings.NAME:
+                raise RuntimeError("Setting name mismatch between test "
+                                   "data and scale file %s" % filename)
+            scale_data.append(r)
         settings.SCALE_DATA = scale_data
 
 

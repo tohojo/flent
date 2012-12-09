@@ -180,5 +180,19 @@ class ResultSet(object):
         return obj
 
     @classmethod
+    def load_file(cls, filename):
+        try:
+            if filename.endswith(".gz"):
+                o = gzip.open
+            else:
+                o = open
+            fp = o(filename, 'rt')
+            r = cls.load(fp)
+            fp.close()
+            return r
+        except IOError:
+            raise RuntimeError("Unable to read input file: '%s'" % filename)
+
+    @classmethod
     def loads(cls, s):
         return cls.unserialise(json.loads(s))
