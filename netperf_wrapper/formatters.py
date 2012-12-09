@@ -180,6 +180,7 @@ class PlotFormatter(Formatter):
 
     def _init_plots(self):
         self.config = self._load_plotconfig(settings.PLOT)
+        self.configs = [self.config]
         getattr(self, '_init_%s_plot' % self.config['type'])()
 
     def _init_timeseries_plot(self, config=None, axis=None):
@@ -244,7 +245,7 @@ class PlotFormatter(Formatter):
                 axis.set_xlabel("")
 
 
-    def _do_timeseries_plot(self, results, config=None, axis=None):
+    def _do_timeseries_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
             axis = self.plt.gca()
         if config is None:
@@ -264,6 +265,9 @@ class PlotFormatter(Formatter):
             for k in PLOT_KWARGS:
                 if k in s:
                     kwargs[k] = s[k]
+
+            if 'label' in kwargs:
+                kwargs['label']+=postfix
 
             y_values = results.series(s['data'], smooth)
             if 'axis' in s and s['axis'] == 2:
@@ -285,9 +289,7 @@ class PlotFormatter(Formatter):
         for a in range(len(config['axes'])):
             self._do_scaling(config['axes'][a], data[a], btm, top)
 
-        self._do_legend(config)
-
-    def _do_cdf_plot(self, results, config=None, axis=None):
+    def _do_cdf_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
             axis = self.plt.gca()
         if config is None:
@@ -322,54 +324,72 @@ class PlotFormatter(Formatter):
             for k in PLOT_KWARGS:
                 if k in s:
                     kwargs[k] = s[k]
+            if 'label' in kwargs:
+                kwargs['label']+=postfix
             axis.plot(x_values,
                       [cum_prob(data[i], point) for point in x_values],
                       **kwargs)
-        self._do_legend(config)
 
-
-    def _do_meta_plot(self, results):
+    def _do_meta_plot(self, results, postfix=""):
         for i,config in enumerate(self.configs):
-            getattr(self, '_do_%s_plot' % config['type'])(results, config=config)
+            getattr(self, '_do_%s_plot' % config['type'])(results, config=config, postfix=postfix)
 
     def format(self, results):
         if not results[0]:
             return
 
-        getattr(self, '_do_%s_plot' % self.config['type'])(results[0])
+        if len(results) > 1:
+            for r in results:
+                getattr(self, '_do_%s_plot' % self.config['type'])(r, postfix=" - "+r.meta("TITLE"))
+            skip_title = True
+        else:
+            getattr(self, '_do_%s_plot' % self.config['type'])(results[0])
+            skip_title = False
 
-        self._annotate_plot()
+        artists = []
+        for c in self.configs:
+            artists += self._do_legend(c)
+
+        artists += self._annotate_plot(skip_title)
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
         # Otherwise, the filename is passed to matplotlib, which selects an
         # appropriate output format based on the file name.
         if self.output == "-":
+            # For the interactive viewer there's no bbox_extra_artists, so we
+            # need to reduce the axis sizes to make room for the legend (which
+            # might still be slightly cut off).
+            for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+                box = a.get_position()
+                a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
             self.plt.show()
         else:
-            self.plt.savefig(self.output)
+            self.plt.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
 
 
-    def _annotate_plot(self):
+    def _annotate_plot(self, skip_title=False):
+        titles = []
         plot_title = settings.DESCRIPTION
         if 'description' in self.config:
             plot_title += "\n" + self.config['description']
-        if settings.TITLE:
+        if settings.TITLE and not skip_title:
             plot_title += " - " + settings.TITLE
-        self.plt.suptitle(plot_title, fontsize=14)
+        titles.append(self.plt.suptitle(plot_title, fontsize=14))
 
         annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
             settings.LOCAL_HOST, settings.HOST,
             settings.TIME,
             settings.LENGTH, settings.STEP_SIZE)
-        self.plt.suptitle(annotation_string,
+        titles.append(self.plt.suptitle(annotation_string,
                           x=0.5,
                           y=0.005,
                           horizontalalignment='center',
                           verticalalignment='bottom',
-                          fontsize=8)
+                          fontsize=8))
+        return titles
 
-    def _do_legend(self, config):
+    def _do_legend(self, config, postfix=""):
         axes = config['axes']
 
         # Each axis has a set of handles/labels for the legend; combine them
@@ -378,22 +398,23 @@ class PlotFormatter(Formatter):
         handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
                                  [a.get_legend_handles_labels() for a in axes])
 
-        # Shrink the current subplot by 20% in the horizontal direction, and
-        # place the legend on the right of the plot.
-        for a in axes:
-            box = a.get_position()
-            a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        kwargs = {}
+        if 'legend_title' in config:
+            kwargs['title'] = config['legend_title']
 
 
-            kwargs = {}
-            if 'legend_title' in config:
-                kwargs['title'] = config['legend_title']
+        if len(axes) > 1:
+            offset_x = 1.09
+        else:
+            offset_x = 1.02
 
-            a.legend(handles, labels,
-                     bbox_to_anchor=(1.05, 1.0),
-                     loc='upper left', borderaxespad=0.,
-                     prop={'size':'small'},
-                     **kwargs)
+        legends = []
+        legends.append(axes[0].legend(handles, labels,
+                                bbox_to_anchor=(offset_x, 1.0),
+                                loc='upper left', borderaxespad=0.,
+                                prop={'size':'small'},
+                                **kwargs))
+        return legends
 
     def _do_scaling(self, axis, data, btm, top):
         """Scale the axis to the selected bottom/top percentile"""
