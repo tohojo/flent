@@ -63,23 +63,49 @@ class Formatter(object):
             self.output = output
 
     def format(self, results):
-        sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results.dump_file)
+        sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_file)
 
 DefaultFormatter = Formatter
 
+class TableFormatter(Formatter):
 
-class OrgTableFormatter(Formatter):
+    def get_header(self, results):
+        name = results[0].meta("NAME")
+        keys = list(settings.DATA_SETS.keys())
+        header_row = [name]
+
+        if len(results) > 1:
+            for r in results:
+                header_row += [k + ' - ' + r.meta("TITLE") for k in keys]
+        else:
+            header_row += keys
+        return header_row
+
+    def combine_results(self, results):
+        """Generator to combine several result sets into one list of rows, by
+        concatenating them."""
+        keys = list(settings.DATA_SETS.keys())
+        for row in list(zip(*[list(r.zipped(keys)) for r in results])):
+            out_row = [row[0][0]]
+            for r in row:
+                if r[0] != out_row[0]:
+                    raise RuntimeError("x-value mismatch: %s/%s. Incompatible data sets?" % (out_row[0], r[0]))
+                out_row += r[1:]
+            yield out_row
+
+
+class OrgTableFormatter(TableFormatter):
     """Format the output for an Org mode table. The formatter is pretty crude
     and does not align the table properly, but it should be sufficient to create
     something that Org mode can correctly realign."""
 
     def format(self, results):
-        name = results.meta("NAME")
+        name = results[0].meta("NAME")
 
-        if not results:
+        if not results[0]:
             self.output.write(str(name) + " -- empty\n")
-        keys = list(settings.DATA_SETS.keys())
-        header_row = [name] + keys
+            return
+        header_row = self.get_header(results)
         self.output.write("| " + " | ".join(header_row) + " |\n")
         self.output.write("|-" + "-+-".join(["-"*len(i) for i in header_row]) + "-|\n")
 
@@ -88,25 +114,22 @@ class OrgTableFormatter(Formatter):
                 return "%.2f" % item
             return str(item)
 
-        for row in results.zipped(keys):
+        for row in self.combine_results(results):
             self.output.write("| ")
             self.output.write(" | ".join(map(format_item, row)))
             self.output.write(" |\n")
 
 
 
-class CsvFormatter(Formatter):
+class CsvFormatter(TableFormatter):
     """Format the output as csv."""
 
     def format(self, results):
-        name = results.meta("NAME")
-
-        if not results:
+        if not results[0]:
             return
 
         writer = csv.writer(self.output)
-        keys = list(settings.DATA_SETS.keys())
-        header_row = [name] + keys
+        header_row = self.get_header(results)
         writer.writerow(header_row)
 
         def format_item(item):
@@ -114,7 +137,7 @@ class CsvFormatter(Formatter):
                 return ""
             return str(item)
 
-        for row in results.zipped(keys):
+        for row in self.combine_results(results):
             writer.writerow(list(map(format_item, row)))
 
 class PlotFormatter(Formatter):
@@ -310,10 +333,10 @@ class PlotFormatter(Formatter):
             getattr(self, '_do_%s_plot' % config['type'])(results, config=config)
 
     def format(self, results):
-        if not results:
+        if not results[0]:
             return
 
-        getattr(self, '_do_%s_plot' % self.config['type'])(results)
+        getattr(self, '_do_%s_plot' % self.config['type'])(results[0])
 
         self._annotate_plot()
 

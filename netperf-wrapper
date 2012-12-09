@@ -57,9 +57,9 @@ try:
             else:
                 raise RuntimeError("Formatter not found.")
 
-            if not results:
-                results = agg.postprocess(agg.aggregate(results))
-                results.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
+            if not results[0]:
+                results[0] = agg.postprocess(agg.aggregate(results[0]))
+                results[0].dump_dir(os.path.dirname(settings.OUTPUT) or ".")
             formatter.format(results)
 
         except RuntimeError as e:

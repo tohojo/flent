@@ -42,7 +42,7 @@ DEFAULT_SETTINGS = {
     'FORMAT': 'default',
     'TITLE': '',
     'LOG_FILE': None,
-    'INPUT': None,
+    'INPUT': [],
     'DESCRIPTION': 'No description',
     'PLOTS': {},
     'IP_VERSION': None,
@@ -132,7 +132,7 @@ parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-st
 
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
                   help="file to write output to (default standard out)")
-parser.add_option("-i", "--input", action="store", type="string", dest="INPUT",
+parser.add_option("-i", "--input", action="append", type="string", dest="INPUT",
                   help="file to read input from (instead of running tests)")
 parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT",
                   help="select output format (plot, csv, org_table)")
@@ -211,11 +211,19 @@ def load():
     if hasattr(settings, 'PLOT'):
         settings.FORMAT = 'plot'
 
-    if settings.INPUT is not None:
-        results = ResultSet.load_file(settings.INPUT)
+    if settings.INPUT:
+        results = []
+        test_name = None
+        for filename in settings.INPUT:
+            r = ResultSet.load_file(filename)
+            if test_name is not None and test_name != r.meta("NAME"):
+                raise RuntimeError("Result sets must be from same test (found %s/%s)" % (test_name, r.meta("NAME")))
+            test_name = r.meta("NAME")
+            results.append(r)
 
-        settings.load_test(results.meta("NAME"))
-        settings.update(results.meta())
+
+        settings.load_test(test_name)
+        settings.update(results[0].meta())
     else:
         if len(args) < 1:
             parser.error("Missing test name.")
@@ -226,14 +234,14 @@ def load():
             test_name = os.path.splitext(os.path.basename(test_file))[0]
 
         settings.load_test(test_name)
-        results = ResultSet(NAME=settings.NAME,
+        results = [ResultSet(NAME=settings.NAME,
                             HOST=settings.HOST,
                             TIME=settings.TIME,
                             LOCAL_HOST=settings.LOCAL_HOST,
                             TITLE=settings.TITLE,
                             LENGTH=settings.LENGTH,
                             TOTAL_LENGTH=settings.TOTAL_LENGTH,
-                            STEP_SIZE=settings.STEP_SIZE,)
+                            STEP_SIZE=settings.STEP_SIZE,)]
 
     if settings.SCALE_DATA:
         scale_data = []
