@@ -232,6 +232,7 @@ class PlotFormatter(Formatter):
         axis.set_ylabel('Cumulative probability')
         axis.set_ylim(0,1)
         config['axes'] = [axis]
+        self.medians = []
 
 
     def _init_meta_plot(self):
@@ -306,6 +307,7 @@ class PlotFormatter(Formatter):
                 start,end = config['cutoff']
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
             d = sorted([x for x in s_data if x is not None])
+            self.medians.append(self.np.median(d))
             max_value = max([max_value]+d)
             data.append(d)
 
@@ -316,6 +318,10 @@ class PlotFormatter(Formatter):
 
 
         x_values = list(frange(0, max_value, 0.1))
+        if max(self.medians)/min(self.medians) > 10.0:
+            # More than an order of magnitude difference; switch to log scale
+            axis.set_xscale('log')
+
 
         for i,s in enumerate(config['series']):
             if not data[i]:
