@@ -390,16 +390,17 @@ class PlotFormatter(Formatter):
             plot_title += " - " + settings.TITLE
         titles.append(self.plt.suptitle(plot_title, fontsize=14))
 
-        annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
-            settings.LOCAL_HOST, settings.HOST,
-            settings.TIME,
-            settings.LENGTH, settings.STEP_SIZE)
-        titles.append(self.plt.suptitle(annotation_string,
-                          x=0.5,
-                          y=0.005,
-                          horizontalalignment='center',
-                          verticalalignment='bottom',
-                          fontsize=8))
+        if settings.ANNOTATE:
+            annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
+                settings.LOCAL_HOST, settings.HOST,
+                settings.TIME,
+                settings.LENGTH, settings.STEP_SIZE)
+            titles.append(self.plt.suptitle(annotation_string,
+                                            x=0.5,
+                                            y=0.005,
+                                            horizontalalignment='center',
+                                            verticalalignment='bottom',
+                                            fontsize=8))
         return titles
 
     def _do_legend(self, config, postfix=""):

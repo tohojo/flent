@@ -49,6 +49,7 @@ DEFAULT_SETTINGS = {
     'DELAY': 5,
     'TIME': datetime.now(),
     'SCALE_DATA': [],
+    'ANNOTATE': True,
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -176,6 +177,8 @@ parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
 parser.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
                   help="additional data files to use for scaling the plot axes "
                   "(can be supplied multiple times)")
+parser.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
+                  help="do not annotate plots with hosts, time and test length")
 
 class Settings(optparse.Values, object):
 
