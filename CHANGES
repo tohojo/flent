@@ -1,5 +1,5 @@
-2012-12-10: Add option to turn off annotation and title on plots
-            (--no-annotation and --no-title resp.).
+2012-12-10: Add options to turn off annotation, legend and title on plots
+            (--no-annotation, --no-legend and --no-title resp.).
 
 2012-12-10: Add automatic switching to log scale for regular plots as well as
             cdf plots. For regular plots, data differing by more than a factor

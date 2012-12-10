@@ -51,6 +51,7 @@ DEFAULT_SETTINGS = {
     'SCALE_DATA': [],
     'ANNOTATE': True,
     'PRINT_TITLE': True,
+    'PRINT_LEGEND': True,
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -180,6 +181,8 @@ parser.add_option("--scale-data", action="append", type="string", dest="SCALE_DA
                   "(can be supplied multiple times)")
 parser.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
                   help="do not annotate plots with hosts, time and test length")
+parser.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
+                  help="do not print plot legend")
 parser.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
                   help="do not print plot title")
 

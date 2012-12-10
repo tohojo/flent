@@ -405,6 +405,9 @@ class PlotFormatter(Formatter):
         return titles
 
     def _do_legend(self, config, postfix=""):
+        if not settings.PRINT_LEGEND:
+            return []
+
         axes = config['axes']
 
         # Each axis has a set of handles/labels for the legend; combine them
