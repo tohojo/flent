@@ -233,6 +233,7 @@ class PlotFormatter(Formatter):
         axis.set_ylim(0,1)
         config['axes'] = [axis]
         self.medians = []
+        self.min_vals = []
 
 
     def _init_meta_plot(self):
@@ -308,6 +309,7 @@ class PlotFormatter(Formatter):
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
             d = sorted([x for x in s_data if x is not None])
             self.medians.append(self.np.median(d))
+            self.min_vals.append(min(d))
             max_value = max([max_value]+d)
             data.append(d)
 
@@ -318,9 +320,6 @@ class PlotFormatter(Formatter):
 
 
         x_values = list(frange(0, max_value, 0.1))
-        if max(self.medians)/min(self.medians) > 10.0:
-            # More than an order of magnitude difference; switch to log scale
-            axis.set_xscale('log')
 
 
         for i,s in enumerate(config['series']):
@@ -335,6 +334,11 @@ class PlotFormatter(Formatter):
             axis.plot(x_values,
                       [cum_prob(data[i], point) for point in x_values],
                       **kwargs)
+
+        if max(self.medians)/min(self.medians) > 10.0:
+            # More than an order of magnitude difference; switch to log scale
+            axis.set_xscale('log')
+            axis.set_xlim(left=min(self.min_vals))
 
     def _do_meta_plot(self, results, postfix=""):
         for i,config in enumerate(self.configs):
