@@ -175,7 +175,10 @@ class Settings(optparse.Values, object):
             self.HOST = self.HOSTS[0]
 
         test_env = TestEnvironment(self.__dict__)
-        s = test_env.execute(os.path.join(TEST_PATH, test_name + ".conf"))
+        filename = os.path.join(TEST_PATH, test_name + ".conf")
+        if not os.path.exists(filename):
+            raise RuntimeError("No config file found for test '%s'" % test_name)
+        s = test_env.execute(filename)
 
         for k,v in list(s.items()):
             if k == k.upper():
@@ -229,9 +232,6 @@ def load():
             parser.error("Missing test name.")
 
         test_name = args[0]
-
-        if os.path.exists(test_name):
-            test_name = os.path.splitext(os.path.basename(test_file))[0]
 
         settings.load_test(test_name)
         results = [ResultSet(NAME=settings.NAME,
