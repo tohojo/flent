@@ -124,8 +124,18 @@ class TestEnvironment(object):
         self.execute(os.path.join(TEST_PATH, name))
 
     def require_host_count(self, count):
-        if len(self.env['HOSTS']) < count and not self.env['INPUT']:
-            raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
+        if len(self.env['HOSTS']) < count:
+            if 'DEFAULTS' in self.env and 'HOSTS' in self.env['DEFAULTS'] and self.env['DEFAULTS']['HOSTS']:
+                # If a default HOSTS list is set, populate the HOSTS list with
+                # values from this list, repeating as necessary up to count
+                def_hosts = self.env['DEFAULTS']['HOSTS']
+                host_c = len(self.env['HOSTS'])
+                missing_c = count-host_c
+                self.env['HOSTS'].extend((def_hosts * (missing_c//len(def_hosts)+1))[:missing_c])
+                if not self.env['HOST']:
+                    self.env['HOST'] = self.env['HOSTS'][0]
+            else:
+                raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
 
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
                                usage="usage: %prog [options] -H <host> test")
@@ -225,8 +235,8 @@ def load():
             results.append(r)
 
 
-        settings.load_test(test_name)
         settings.update(results[0].meta())
+        settings.load_test(test_name)
     else:
         if len(args) < 1:
             parser.error("Missing test name.")
@@ -236,6 +246,7 @@ def load():
         settings.load_test(test_name)
         results = [ResultSet(NAME=settings.NAME,
                             HOST=settings.HOST,
+                            HOSTS=settings.HOSTS,
                             TIME=settings.TIME,
                             LOCAL_HOST=settings.LOCAL_HOST,
                             TITLE=settings.TITLE,
