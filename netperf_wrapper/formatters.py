@@ -338,7 +338,8 @@ class PlotFormatter(Formatter):
         if max(self.medians)/min(self.medians) > 10.0:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
-            axis.set_xlim(left=min(self.min_vals))
+            min_val = min(self.min_vals)
+            axis.set_xlim(left=min_val-min_val%10) # nearest value divisible by 10
 
     def _do_meta_plot(self, results, postfix=""):
         for i,config in enumerate(self.configs):
