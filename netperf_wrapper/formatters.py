@@ -383,12 +383,13 @@ class PlotFormatter(Formatter):
 
     def _annotate_plot(self, skip_title=False):
         titles = []
-        plot_title = settings.DESCRIPTION
-        if 'description' in self.config:
-            plot_title += "\n" + self.config['description']
-        if settings.TITLE and not skip_title:
-            plot_title += " - " + settings.TITLE
-        titles.append(self.plt.suptitle(plot_title, fontsize=14))
+        if settings.PRINT_TITLE:
+            plot_title = settings.DESCRIPTION
+            if 'description' in self.config:
+                plot_title += "\n" + self.config['description']
+            if settings.TITLE and not skip_title:
+                plot_title += " - " + settings.TITLE
+            titles.append(self.plt.suptitle(plot_title, fontsize=14))
 
         if settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
