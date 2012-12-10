@@ -339,7 +339,9 @@ class PlotFormatter(Formatter):
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
             min_val = min(self.min_vals)
-            axis.set_xlim(left=min_val-min_val%10) # nearest value divisible by 10
+            if min_val > 10:
+                min_val -= min_val%10 # nearest value divisible by 10
+            axis.set_xlim(left=min_val)
 
     def _do_meta_plot(self, results, postfix=""):
         for i,config in enumerate(self.configs):
