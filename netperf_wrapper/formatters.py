@@ -192,6 +192,7 @@ class PlotFormatter(Formatter):
         if 'dual_axes' in config and config['dual_axes']:
             second_axis = self.plt.axes(axis.get_position(), sharex=axis, frameon=False)
             second_axis.yaxis.tick_right()
+            axis.yaxis.tick_left()
             second_axis.yaxis.set_label_position('right')
             second_axis.yaxis.set_offset_position('right')
             second_axis.xaxis.set_visible(False)
