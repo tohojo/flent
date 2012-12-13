@@ -220,7 +220,6 @@ class Settings(optparse.Values, object):
             try:
                 hostnames = socket.getaddrinfo(h, None, socket.AF_UNSPEC,
                                                socket.SOCK_STREAM)
-                print hostnames
                 if not hostnames:
                     raise RuntimeError("Found no hostnames on lookup of %s" % h)
                 hostname = hostnames[0]
