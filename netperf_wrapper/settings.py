@@ -220,13 +220,16 @@ class Settings(optparse.Values, object):
             try:
                 hostnames = socket.getaddrinfo(h, None, socket.AF_UNSPEC,
                                                socket.SOCK_STREAM)
-                for name in hostnames:
-                    if name[0] == socket.AF_INET6:
-                        version = 6
+                print hostnames
+                if not hostnames:
+                    raise RuntimeError("Found no hostnames on lookup of %s" % h)
+                hostname = hostnames[0]
+                if hostname[0] == socket.AF_INET6:
+                    version = 6
             except socket.gaierror as e:
                 raise RuntimeError("Hostname lookup failed for host %s: %s" % (h,e))
 
-        if self.IP_VERSION is not None and socket.has_ipv6:
+        if self.IP_VERSION is None:
             self.IP_VERSION = version
 
     def __setattr__(self, k, v):
