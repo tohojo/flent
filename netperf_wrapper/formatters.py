@@ -438,11 +438,14 @@ class PlotFormatter(Formatter):
         # to a crash when using bbox_extra_artists when saving the figure
         #
         # Simply check for either the right number of args, or a vararg
-        # specification, and if they are not present, don't return the legend as
-        # an artist
+        # specification, and if they are not present, attempt to monkey-patch
+        # the method if it does not accept any arguments.
         a,v,_,_ = inspect.getargspec(l.get_window_extent)
-        if len(a) >= 2 or v is not None:
-            legends.append(l)
+        if len(a) < 2 or v is None:
+            def get_window_extent(self, *args, **kwargs):
+                return self.legendPatch.get_window_extent(*args, **kwargs)
+            l.get_widow_extent = get_window_extent
+        legends.append(l)
         return legends
 
     def _do_scaling(self, axis, data, btm, top):
