@@ -193,10 +193,7 @@ class Settings(optparse.Values, object):
         if self.HOSTS:
             self.HOST = self.HOSTS[0]
 
-        # If the host has a : in it, it is probably an ipv6 address, and so
-        # IP_VERSION should default to 6 if not set at the command line
-        if ":" in self.HOST and self.IP_VERSION is None:
-            self.IP_VERSION = 6
+        self.lookup_hosts()
 
         test_env = TestEnvironment(self.__dict__)
         filename = os.path.join(TEST_PATH, test_name + ".conf")
@@ -215,6 +212,22 @@ class Settings(optparse.Values, object):
 
         if not 'TOTAL_LENGTH' in s:
             self.TOTAL_LENGTH = self.LENGTH
+
+    def lookup_hosts(self):
+        """If no explicit IP version is set, do a hostname lookup and try to"""
+        version = 4
+        for h in self.HOSTS:
+            try:
+                hostnames = socket.getaddrinfo(h, None, socket.AF_UNSPEC,
+                                               socket.SOCK_STREAM)
+                for name in hostnames:
+                    if name[0] == socket.AF_INET6:
+                        version = 6
+            except socket.gaierror as e:
+                raise RuntimeError("Hostname lookup failed for host %s: %s" % (h,e))
+
+        if self.IP_VERSION is not None and socket.has_ipv6:
+            self.IP_VERSION = version
 
     def __setattr__(self, k, v):
         if k in DICT_SETTINGS and isinstance(v, list):
