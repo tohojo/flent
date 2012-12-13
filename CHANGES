@@ -1,3 +1,6 @@
+2012-12-13: Fix bug that caused smoothing to add new data points at the ends of
+            series.
+
 2012-12-13: Fix bug that caused primary axis to place ticks on the right hand
             side in dual-axis plots.
 

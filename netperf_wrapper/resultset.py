@@ -101,8 +101,8 @@ class ResultSet(object):
         for i in range(len(res)):
             s = int(max(0,i-amount/2))
             e = int(min(len(res),i+amount/2))
-            window = [i for i in res[s:e] if i is not None]
-            if window:
+            window = [j for j in res[s:e] if j is not None]
+            if window and res[i] is not None:
                 smooth_res.append(math.fsum(window)/len(window))
             else:
                 smooth_res.append(None)
