@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint, sys, csv, math
+import pprint, sys, csv, math, inspect
 
 from .settings import settings
 from .util import cum_prob, frange
@@ -427,11 +427,22 @@ class PlotFormatter(Formatter):
             offset_x = 1.02
 
         legends = []
-        legends.append(axes[0].legend(handles, labels,
+        l = axes[0].legend(handles, labels,
                                 bbox_to_anchor=(offset_x, 1.0),
                                 loc='upper left', borderaxespad=0.,
                                 prop={'size':'small'},
-                                **kwargs))
+                                **kwargs)
+
+        # Work around a bug in older versions of matplotlib where the
+        # legend.get_window_extent method does not take any arguments, leading
+        # to a crash when using bbox_extra_artists when saving the figure
+        #
+        # Simply check for either the right number of args, or a vararg
+        # specification, and if they are not present, don't return the legend as
+        # an artist
+        a,v,_,_ = inspect.getargspec(l.get_window_extent)
+        if len(a) >= 2 or v is not None:
+            legends.append(l)
         return legends
 
     def _do_scaling(self, axis, data, btm, top):
