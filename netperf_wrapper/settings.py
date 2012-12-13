@@ -193,6 +193,11 @@ class Settings(optparse.Values, object):
         if self.HOSTS:
             self.HOST = self.HOSTS[0]
 
+        # If the host has a : in it, it is probably an ipv6 address, and so
+        # IP_VERSION should default to 6 if not set at the command line
+        if ":" in self.HOST and self.IP_VERSION is None:
+            self.IP_VERSION = 6
+
         test_env = TestEnvironment(self.__dict__)
         filename = os.path.join(TEST_PATH, test_name + ".conf")
         if not os.path.exists(filename):
