@@ -442,9 +442,9 @@ class PlotFormatter(Formatter):
         # the method if it does not accept any arguments.
         a,v,_,_ = inspect.getargspec(l.get_window_extent)
         if len(a) < 2 or v is None:
-            def get_window_extent(self, *args, **kwargs):
-                return self.legendPatch.get_window_extent(*args, **kwargs)
-            l.get_widow_extent = get_window_extent
+            def get_window_extent(*args, **kwargs):
+                return l.legendPatch.get_window_extent(*args, **kwargs)
+            l.get_window_extent = get_window_extent
         legends.append(l)
         return legends
 
