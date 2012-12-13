@@ -1,3 +1,6 @@
+2012-12-13: Fix bug that caused primary axis to place ticks on the right hand
+            side in dual-axis plots.
+
 2012-12-13: Release v0.3.0.
 
 2012-12-13: Lookup hostnames before starting runners and determine default IP
