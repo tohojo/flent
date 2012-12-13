@@ -24,5 +24,5 @@
 import os
 
 # this value works for the source distribution
-VERSION="0.3.0"
+VERSION="0.3.0-git"
 DATA_DIR=os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
