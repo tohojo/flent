@@ -1,3 +1,5 @@
+2012-12-15: Add stats formatter (-f stats) to output statistics on results data sets.
+
 2012-12-13: Fix bug that caused smoothing to add new data points at the ends of
             series.
 
