@@ -167,15 +167,16 @@ class StatsFormatter(Formatter):
                     continue
                 cs = self.np.cumsum(d)
                 units = settings.DATA_SETS[s]['units']
+                self.output.write("  Data points: %d\n" % len(d))
                 if units != "ms":
-                    self.output.write("  Total:    %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
+                    self.output.write("  Total:       %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
                                                                units.replace("/s", "")))
-                self.output.write("  Mean:     %f %s\n" % (self.np.mean(d), units))
-                self.output.write("  Median:   %f %s\n" % (self.np.median(d), units))
-                self.output.write("  Min:      %f %s\n" % (self.np.min(d), units))
-                self.output.write("  Max:      %f %s\n" % (self.np.max(d), units))
-                self.output.write("  Std dev:  %f\n" % (self.np.std(d)))
-                self.output.write("  Variance: %f\n" % (self.np.var(d)))
+                self.output.write("  Mean:        %f %s\n" % (self.np.mean(d), units))
+                self.output.write("  Median:      %f %s\n" % (self.np.median(d), units))
+                self.output.write("  Min:         %f %s\n" % (self.np.min(d), units))
+                self.output.write("  Max:         %f %s\n" % (self.np.max(d), units))
+                self.output.write("  Std dev:     %f\n" % (self.np.std(d)))
+                self.output.write("  Variance:    %f\n" % (self.np.var(d)))
 
 
 class PlotFormatter(Formatter):
