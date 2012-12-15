@@ -151,6 +151,8 @@ class StatsFormatter(Formatter):
             raise RuntimeError("Stats formatter requires numpy, which seems to be missing. Please install it and try again.")
 
     def format(self, results):
+        self.output.write("Warning: Totals are computed as cumulative sum * step size,\n"
+                          "so spurious values wreck havoc with the results.\n")
         for r in results:
             self.output.write("Results %s" % r.meta('TIME'))
             if r.meta('TITLE'):
@@ -162,8 +164,9 @@ class StatsFormatter(Formatter):
                 d = [i for i in r.series(s) if i]
                 cs = self.np.cumsum(d)
                 units = settings.DATA_SETS[s]['units']
-                self.output.write("  Total:    %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
-                                                        units.replace("/s", "")))
+                if units != "ms":
+                    self.output.write("  Total:    %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
+                                                               units.replace("/s", "")))
                 self.output.write("  Mean:     %f %s\n" % (self.np.mean(d), units))
                 self.output.write("  Median:   %f %s\n" % (self.np.median(d), units))
                 self.output.write("  Min:      %f %s\n" % (self.np.min(d), units))
