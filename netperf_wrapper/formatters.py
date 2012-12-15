@@ -140,6 +140,38 @@ class CsvFormatter(TableFormatter):
         for row in self.combine_results(results):
             writer.writerow(list(map(format_item, row)))
 
+class StatsFormatter(Formatter):
+
+    def __init__(self, output):
+        Formatter.__init__(self, output)
+        try:
+            import numpy
+            self.np = numpy
+        except ImportError:
+            raise RuntimeError("Stats formatter requires numpy, which seems to be missing. Please install it and try again.")
+
+    def format(self, results):
+        for r in results:
+            self.output.write("Results %s" % r.meta('TIME'))
+            if r.meta('TITLE'):
+                self.output.write(" - %s" % r.meta('TITLE'))
+            self.output.write(":\n")
+
+            for s in sorted(r.series_names):
+                self.output.write(" %s:\n" % s)
+                d = [i for i in r.series(s) if i]
+                cs = self.np.cumsum(d)
+                units = settings.DATA_SETS[s]['units']
+                self.output.write("  Total:    %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
+                                                        units.replace("/s", "")))
+                self.output.write("  Mean:     %f %s\n" % (self.np.mean(d), units))
+                self.output.write("  Median:   %f %s\n" % (self.np.median(d), units))
+                self.output.write("  Min:      %f %s\n" % (self.np.min(d), units))
+                self.output.write("  Max:      %f %s\n" % (self.np.max(d), units))
+                self.output.write("  Std dev:  %f\n" % (self.np.std(d)))
+                self.output.write("  Variance: %f\n" % (self.np.var(d)))
+
+
 class PlotFormatter(Formatter):
 
     def __init__(self, output):
