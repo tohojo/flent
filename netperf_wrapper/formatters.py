@@ -162,6 +162,9 @@ class StatsFormatter(Formatter):
             for s in sorted(r.series_names):
                 self.output.write(" %s:\n" % s)
                 d = [i for i in r.series(s) if i]
+                if not d:
+                    self.output.write("  No data.\n")
+                    continue
                 cs = self.np.cumsum(d)
                 units = settings.DATA_SETS[s]['units']
                 if units != "ms":
