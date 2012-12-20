@@ -48,8 +48,8 @@ def parse_date(timestring):
         return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S")
 
 # Calculate discrete cdf function using bisect_left.
-def cum_prob(data, val):
-    return bisect_left(data, val)/float(len(data))
+def cum_prob(data, val, size):
+    return bisect_left(data, val)/size
 
 # from http://code.activestate.com/recipes/66472/
 def frange(limit1, limit2 = None, increment = 1.):

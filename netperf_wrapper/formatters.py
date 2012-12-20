@@ -338,6 +338,7 @@ class PlotFormatter(Formatter):
             config = self.config
 
         data = []
+        sizes = []
         max_value = 0.0
         for s in config['series']:
             s_data = results.series(s['data'])
@@ -347,6 +348,7 @@ class PlotFormatter(Formatter):
                 # want the unloaded ping values
                 start,end = config['cutoff']
                 s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
+            sizes.append(float(len(s_data)))
             d = sorted([x for x in s_data if x is not None])
             self.medians.append(self.np.median(d))
             self.min_vals.append(min(d))
@@ -372,7 +374,7 @@ class PlotFormatter(Formatter):
             if 'label' in kwargs:
                 kwargs['label']+=postfix
             axis.plot(x_values,
-                      [cum_prob(data[i], point) for point in x_values],
+                      [cum_prob(data[i], point, sizes[i]) for point in x_values],
                       **kwargs)
 
         if max(self.medians)/min(self.medians) > 10.0:
