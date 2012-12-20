@@ -1,3 +1,5 @@
+2012-12-20: Fix cutoff logic when end cutoff value is 0.
+
 2012-12-20: If there are missing data values when doing a CDF plot, the plot
             should cut off at a probability < 1; i.e. use the total size of the
             data (including null data points) as data set size when calculating
