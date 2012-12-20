@@ -1,3 +1,5 @@
+2012-12-20: Release v0.4.1.
+
 2012-12-20: Fix cutoff logic when end cutoff value is 0.
 
 2012-12-20: If there are missing data values when doing a CDF plot, the plot
