@@ -347,7 +347,10 @@ class PlotFormatter(Formatter):
                 # plot; for e.g. pings that run long than the streams, we don't
                 # want the unloaded ping values
                 start,end = config['cutoff']
-                s_data = s_data[int(start/settings.STEP_SIZE):-int(end/settings.STEP_SIZE)]
+                end = -int(end/settings.STEP_SIZE)
+                if end == 0:
+                    end = None
+                s_data = s_data[int(start/settings.STEP_SIZE):end]
             sizes.append(float(len(s_data)))
             d = sorted([x for x in s_data if x is not None])
             self.medians.append(self.np.median(d))
