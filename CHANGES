@@ -1,3 +1,6 @@
+2013-01-22: Get rid of the colons in the time stamps used for file names (they
+            give rise to escaping headaches).
+
 2012-12-20: Release v0.4.1.
 
 2012-12-20: Fix cutoff logic when end cutoff value is 0.

@@ -151,7 +151,7 @@ class ResultSet(object):
         return self._gen_filename()
 
     def _gen_filename(self):
-        return "%s-%s.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat())
+        return "%s-%s.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat().replace(":", ""))
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
