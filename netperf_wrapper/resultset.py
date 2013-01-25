@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, os, gzip, math
+import json, os, gzip, math, re
 from datetime import datetime
 
 try:
@@ -151,7 +151,12 @@ class ResultSet(object):
         return self._gen_filename()
 
     def _gen_filename(self):
-        return "%s-%s.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat().replace(":", ""))
+        if 'TITLE' in self.metadata and self.metadata['TITLE']:
+            return "%s-%s.%s.json.gz" % (self.metadata['NAME'],
+                                         self.metadata['TIME'].isoformat().replace(":", ""),
+                                         re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:50])
+        else:
+            return "%s-%s.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat().replace(":", ""))
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
