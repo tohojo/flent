@@ -1,3 +1,5 @@
+2013-02-14: Release v0.4.2.
+
 2013-01-25: Encode title in data set filename if set.
 
 2013-01-22: Fix possible divide by zero error on certain data values.
