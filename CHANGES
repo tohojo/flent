@@ -1,5 +1,5 @@
-2013-02-19: Make sure subprocess communication uses a 4k buffer, to avoid broken
-            pipe errors from netperf.
+2013-02-19: Write subprocess output to a temporary file to avoid broken pipe
+            errors on FreeBSD.
 
 2013-02-14: Release v0.4.2.
 

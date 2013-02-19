@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re, time, sys, math
+import threading, time, shlex, subprocess, re, time, sys, math, tempfile
 
 from datetime import datetime
 
@@ -46,12 +46,23 @@ class ProcessRunner(threading.Thread):
             if self.killed:
                 return
         args = shlex.split(self.command)
-        self.prog = subprocess.Popen(args,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         bufsize=4096,
-                         universal_newlines=True)
-        self.out,self.err=self.prog.communicate()
+
+        # To avoid broken pipes, write subprocess data to a temporary file and read
+        # it back in once the process terminates
+        with tempfile.TemporaryFile() as outfile:
+
+            self.prog = subprocess.Popen(args,
+                                         stdout=outfile,
+                                         stderr=subprocess.PIPE,
+                                         universal_newlines=True)
+            self.out,self.err=self.prog.communicate()
+
+            # self.out is empty because the output is really in the temporary file.
+            # Make sure the output is flushed, then read it back in.
+            outfile.flush()
+            outfile.seek(0)
+            self.out = outfile.read()
+
         if self.killed:
             return
         self.returncode = self.prog.returncode
