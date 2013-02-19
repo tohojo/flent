@@ -49,6 +49,7 @@ class ProcessRunner(threading.Thread):
         self.prog = subprocess.Popen(args,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
+                         bufsize=4096,
                          universal_newlines=True)
         self.out,self.err=self.prog.communicate()
         if self.killed:
