@@ -1,6 +1,3 @@
-2013-02-19: Write subprocess output to a temporary file to avoid broken pipe
-            errors on FreeBSD.
-
 2013-02-14: Release v0.4.2.
 
 2013-01-25: Encode title in data set filename if set.
