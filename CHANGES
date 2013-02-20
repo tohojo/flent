@@ -1,3 +1,5 @@
+2013-02-20: Don't crash on missing data, just print a warning.
+
 2013-02-20: Workaround for bad exit codes on bsd.
 
 2013-02-14: Release v0.4.2.
