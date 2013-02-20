@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, os, gzip, math, re
+import json, os, gzip, math, re, sys
 from datetime import datetime
 
 try:
@@ -86,11 +86,15 @@ class ResultSet(object):
             raise RuntimeError("Unexpected data point(s): %s" % list(data.keys()))
 
     def last_datapoint(self, series):
-        if not self._results[series]:
+        data = self.series(series)
+        if not data:
             return None
-        return self._results[series][-1]
+        return data[-1]
 
     def series(self, name, smooth=None):
+        if not name in self._results:
+            sys.stderr.write("Warning: Missing data points for series '%s'\n" % name)
+            return [None]*len(self.x_values)
         if smooth:
             return self.smoothed(name, smooth)
         return self._results[name]
