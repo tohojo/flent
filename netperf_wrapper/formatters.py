@@ -299,6 +299,8 @@ class PlotFormatter(Formatter):
             data.append([])
 
         for s in config['series']:
+            if not s['data'] in results.series_names:
+                continue
             if 'smoothing' in s:
                 smooth=s['smoothing']
             else:
@@ -329,7 +331,8 @@ class PlotFormatter(Formatter):
             btm,top = 0,100
 
         for a in range(len(config['axes'])):
-            self._do_scaling(config['axes'][a], data[a], btm, top)
+            if data[a]:
+                self._do_scaling(config['axes'][a], data[a], btm, top)
 
     def _do_cdf_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
@@ -341,6 +344,9 @@ class PlotFormatter(Formatter):
         sizes = []
         max_value = 0.0
         for s in config['series']:
+            if not s['data'] in results.series_names:
+                data.append([])
+                continue
             s_data = results.series(s['data'])
             if 'cutoff' in config:
                 # cut off values from the beginning and end before doing the
@@ -380,7 +386,7 @@ class PlotFormatter(Formatter):
                       [cum_prob(data[i], point, sizes[i]) for point in x_values],
                       **kwargs)
 
-        if max(self.medians)/min(self.medians) > 10.0:
+        if self.medians and max(self.medians)/min(self.medians) > 10.0:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
             min_val = min(self.min_vals)
