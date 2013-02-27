@@ -7,5 +7,6 @@ if IP_VERSION == 4:
 elif IP_VERSION == 6:
     GLOBAL_COMMAND += " -6"
     PING="ping6"
+PING6="ping6"
 AGGREGATOR='timeseries'
 TOTAL_LENGTH=LENGTH+2*DELAY
