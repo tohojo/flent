@@ -1,3 +1,16 @@
+2013-02-20: Don't crash on missing data, just print a warning.
+
+2013-02-20: Workaround for bad exit codes on bsd.
+
+2013-02-14: Release v0.4.2.
+
+2013-01-25: Encode title in data set filename if set.
+
+2013-01-22: Fix possible divide by zero error on certain data values.
+
+2013-01-22: Get rid of the colons in the time stamps used for file names (they
+            give rise to escaping headaches).
+
 2012-12-20: Release v0.4.1.
 
 2012-12-20: Fix cutoff logic when end cutoff value is 0.

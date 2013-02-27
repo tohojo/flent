@@ -55,7 +55,17 @@ class ProcessRunner(threading.Thread):
             return
         self.returncode = self.prog.returncode
         self.command = " ".join(args)
+
         if self.prog.returncode:
+            if sys.platform.find("bsd") > -1 and self.out:
+                # When running on FreeBSD, forking from a subthread can cause netperf
+                # to get at broken pipe error at the end of the run. The data is fine,
+                # though, so attempt to parse the output, and if this produces any data,
+                # ignore the bad return code.
+                result = self.parse(self.out)
+                if result:
+                    self.result = result
+                    return
             sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % self.command)
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")

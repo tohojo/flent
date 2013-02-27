@@ -76,7 +76,7 @@ they are saved anyway.
 Currently the metadata values are:
 - =NAME=: The test name.
 - =TITLE=: Any extra title specified by the -t parameter when the test was run.
-- =HOST=: The server hostname connected to during the test.
+- =HOSTS=: List of the server hostnames connected to during the test.
 - =LOCAL_HOST=: The hostname of the machine that ran the test.
 - =LENGTH=: Test length in seconds, as specified by the -l parameter.
 - =TOTAL_LENGTH=: Actual data series length, after the test has added time to

@@ -29,4 +29,8 @@ def transform_results(results, func):
 def rr_to_ms(results):
     """Transforms a transactions/second netperf RR measurement into ping times
     in milliseconds."""
-    return transform_results(results, lambda x: 1000.0/x)
+    def safe_divide(x):
+        if x == 0:
+            return None
+        return 1000.0/x
+    return transform_results(results, safe_divide)
