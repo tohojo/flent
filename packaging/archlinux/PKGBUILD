@@ -1,0 +1,21 @@
+# Maintainer: Toke Høiland-Jørgensen <toke at toke dot dk>
+
+pkgname=netperf-wrapper
+pkgver=0.4.2
+pkgrel=1
+pkgdesc='A wrapper for the `netperf` benchmark utility, used for testing for bufferbloat.'
+arch=('any')
+url='https://github.com/tohojo/netperf-wrapper'
+license=('GPL')
+depends=('python' 'netperf')
+optdepends=(
+    'python-matplotlib: for outputting graphs'
+)
+source=("https://pypi.python.org/packages/source/n/netperf-wrapper/netperf-wrapper-${pkgver}.tar.gz")
+md5sums=('8fb5e5004e4c343e48435a87d3243d78')
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  python setup.py install --root="$pkgdir" --optimize=1
+}
