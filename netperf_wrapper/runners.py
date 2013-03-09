@@ -32,14 +32,13 @@ class ProcessRunner(threading.Thread):
         threading.Thread.__init__(self)
         self.name = name
         self.command = command
+        self.args = shlex.split(self.command)
         self.delay = delay
         self.result = None
         self.killed = False
         self.returncode = None
 
     def fork(self):
-        self.args = shlex.split(self.command)
-
         self.stdout = tempfile.TemporaryFile()
         self.stderr = tempfile.TemporaryFile()
 
