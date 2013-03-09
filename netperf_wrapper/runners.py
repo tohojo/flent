@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re, time, sys, math
+import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile
 
 from datetime import datetime
 
@@ -35,37 +35,87 @@ class ProcessRunner(threading.Thread):
         self.delay = delay
         self.result = None
         self.killed = False
+        self.returncode = None
+
+    def fork(self):
+        self.args = shlex.split(self.command)
+
+        self.stdout = tempfile.TemporaryFile()
+        self.stderr = tempfile.TemporaryFile()
+
+        pid = os.fork()
+
+        if pid == 0:
+            os.dup2(self.stdout.fileno(), 1)
+            os.dup2(self.stderr.fileno(), 2)
+            self.stdout.close()
+            self.stderr.close()
+
+            time.sleep(self.delay)
+
+            prog = self.args[0]
+            os.execvp(prog, self.args)
+        else:
+            self.pid = pid
+
+
+    # helper functions from subprocess module
+    def _handle_exitstatus(self, sts, _WIFSIGNALED=os.WIFSIGNALED,
+                           _WTERMSIG=os.WTERMSIG, _WIFEXITED=os.WIFEXITED,
+                           _WEXITSTATUS=os.WEXITSTATUS):
+        # This method is called (indirectly) by __del__, so it cannot
+        # refer to anything outside of its local scope."""
+        if _WIFSIGNALED(sts):
+            self.returncode = -_WTERMSIG(sts)
+        elif _WIFEXITED(sts):
+            self.returncode = _WEXITSTATUS(sts)
+        else:
+            # Should never happen
+            raise RuntimeError("Unknown child exit status!")
+
+    def _internal_poll(self, _deadstate=None, _waitpid=os.waitpid,
+                       _WNOHANG=os.WNOHANG, _os_error=os.error):
+        """Check if child process has terminated.  Returns returncode
+        attribute.
+
+        This method is called by __del__, so it cannot reference anything
+        outside of the local scope (nor can any methods it calls).
+
+        """
+        if self.returncode is None:
+            try:
+                pid, sts = _waitpid(self.pid, _WNOHANG)
+                if pid == self.pid:
+                    self._handle_exitstatus(sts)
+            except _os_error:
+                if _deadstate is not None:
+                    self.returncode = _deadstate
+        return self.returncode
+
+
+    def start(self):
+        self.fork()
+        threading.Thread.start(self)
 
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
         seconds, then open the subprocess, wait for it to finish, and collect
         the last word of the output (whitespace-separated)."""
 
-        for i in range(self.delay):
-            time.sleep(1)
-            if self.killed:
-                return
-        args = shlex.split(self.command)
-        self.prog = subprocess.Popen(args,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         universal_newlines=True)
-        self.out,self.err=self.prog.communicate()
+        os.waitpid(self.pid, 0)
+
+        self.stdout.seek(0)
+        self.out = self.stdout.read()
+        self.stdout.close()
+
+        self.stderr.seek(0)
+        self.err = self.stderr.read()
+        self.stderr.close()
+
         if self.killed:
             return
-        self.returncode = self.prog.returncode
-        self.command = " ".join(args)
 
-        if self.prog.returncode:
-            if sys.platform.find("bsd") > -1 and self.out:
-                # When running on FreeBSD, forking from a subthread can cause netperf
-                # to get at broken pipe error at the end of the run. The data is fine,
-                # though, so attempt to parse the output, and if this produces any data,
-                # ignore the bad return code.
-                result = self.parse(self.out)
-                if result:
-                    self.result = result
-                    return
+        if self.returncode:
             sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % self.command)
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
