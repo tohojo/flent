@@ -1,3 +1,5 @@
+2013-03-11: Preforking runner implementation (hopefully fixes issues on FreeBSD).
+
 2013-03-11: Be smarter about picking a `ping` binary, trying first fping
             then falling back to straight ping.
 
