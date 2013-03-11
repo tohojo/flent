@@ -110,12 +110,15 @@ class PingRunner(ProcessRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
 
     pingline_regex = re.compile(r'^\[([0-9]+\.[0-9]+)\].*time=([0-9]+(?:\.[0-9]+)?) ms$')
+    fpingline_regex = re.compile(r'^\[([0-9]+\.[0-9]+)\].*:.*, ([0-9]+(?:\.[0-9]+)?) ms \(.*\)$')
 
     def parse(self, output):
         result = []
         lines = output.split("\n")
         for line in lines:
             match = self.pingline_regex.match(line)
+            if not match:
+                match = self.fpingline_regex.match(line)
             if match:
                 result.append([float(match.group(1)), float(match.group(2))])
 
