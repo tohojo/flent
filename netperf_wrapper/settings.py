@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, optparse, socket
+import sys, os, optparse, socket, subprocess
 
 from datetime import datetime
 
@@ -31,6 +31,7 @@ except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 from netperf_wrapper.resultset import ResultSet
 from netperf_wrapper.build_info import DATA_DIR, VERSION
+from netperf_wrapper import util
 
 DEFAULT_SETTINGS = {
     'HOST': None,
@@ -114,6 +115,7 @@ class TestEnvironment(object):
             'o': OrderedDict,
             'include': self.include_test,
             'min_host_count': self.require_host_count,
+            'find_ping': self.find_ping,
             })
 
     def execute(self, filename):
@@ -125,6 +127,39 @@ class TestEnvironment(object):
 
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
+
+    def find_ping(self, ip_version, interval, length, host):
+        """Find a suitable ping executable, looking first for a compatible
+        `fping`, then falling back to the `ping` binary. Binaries are checked
+        for the required capabilities."""
+        if ip_version == 6:
+            suffix = "6"
+        else:
+            suffix = ""
+
+        fping = util.which('fping'+suffix)
+        ping = util.which('ping'+suffix)
+
+        if fping is not None:
+            proc = subprocess.Popen([fping, '-h'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out,err = proc.communicate()
+            if "print timestamp before each output line" in out:
+                # fping has timestamp option, use it
+                # there's no timeout parameter for fping, calculate a total number
+                # of pings to send
+                count = length // interval + 1
+                interval = int(interval * 1000)
+
+                return "%s -D -p %d -c %d %s" % (fping, interval, count, host)
+
+        if ping is not None:
+            # No checks atm; should check for presence of -D parameter
+            return "%s -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
+
+        raise RuntimeError("No suitable ping tool found.")
+
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:

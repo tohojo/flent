@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
+import math, os
 from bisect import bisect_left
 from datetime import datetime
 
@@ -71,6 +71,23 @@ def frange(limit1, limit2 = None, increment = 1.):
 
   count = int(math.ceil((limit2 - limit1)/increment))
   return (limit1 + n*increment for n in range(count))
+
+def is_executable(filename):
+    return os.path.isfile(filename) and os.access(filename, os.X_OK)
+
+def which(executable):
+    pathname, filename = os.path.split(executable)
+    if pathname:
+        if is_executable(executable):
+            return executable
+    else:
+        for path in [i.strip('""') for i in os.environ["PATH"].split(os.pathsep)]:
+            filename = os.path.join(path, executable)
+            if is_executable(filename):
+                return filename
+
+    return None
+
 
 class DefaultConfigParser(configparser.ConfigParser):
     class _NoDefault(object):
