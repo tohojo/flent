@@ -105,12 +105,7 @@ class Aggregator(object):
 
     def kill_runners(self):
         for t in list(self.threads.values()):
-            t.killed = True
-            if hasattr(t, 'prog'):
-                try:
-                    t.prog.send_signal(signal.SIGINT)
-                except OSError:
-                    pass
+            t.kill()
 
     def postprocess(self, result):
         for p in self.postprocessors:

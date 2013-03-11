@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile
+import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, signal
 
 from datetime import datetime
 
@@ -36,6 +36,7 @@ class ProcessRunner(threading.Thread):
         self.delay = delay
         self.result = None
         self.killed = False
+        self.pid = None
         self.returncode = None
 
     def fork(self):
@@ -57,6 +58,12 @@ class ProcessRunner(threading.Thread):
         else:
             self.pid = pid
 
+    def kill(self):
+        if self.killed:
+            return
+        if self.pid is not None:
+            os.kill(self.pid, signal.SIGINT)
+        self.killed = True
 
     # helper functions from subprocess module
     def _handle_exitstatus(self, sts, _WIFSIGNALED=os.WIFSIGNALED,
