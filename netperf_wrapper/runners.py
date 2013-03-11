@@ -121,21 +121,6 @@ class PingRunner(ProcessRunner):
 
         return result
 
-class Ping6Runner(ProcessRunner):
-    """Runner for ping/ping6 in timestamped (-D) mode."""
-
-    pingline_regex = re.compile(r'^\[([0-9]+\.[0-9]+)\].*time=([0-9]+(?:\.[0-9]+)?) ms$')
-
-    def parse(self, output):
-        result = []
-        lines = output.split("\n")
-        for line in lines:
-            match = self.pingline_regex.match(line)
-            if match:
-                result.append([float(match.group(1)), float(match.group(2))])
-
-        return result
-
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
