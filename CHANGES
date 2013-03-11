@@ -1,3 +1,6 @@
+2013-03-11: Be smarter about picking a `ping` binary, trying first fping
+            then falling back to straight ping.
+
 2013-02-20: Don't crash on missing data, just print a warning.
 
 2013-02-20: Workaround for bad exit codes on bsd.
