@@ -35,6 +35,8 @@ pip-log.txt
 *.pdf
 *.png
 *.html
+*.svg
+data/
 
 # distutils gerated
 MANIFEST
