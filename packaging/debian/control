@@ -1,0 +1,17 @@
+Source: netperf-wrapper
+Section: net
+Priority: extra
+Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
+Build-Depends: debhelper (>= 7.0.50~), python3 (>= 3.1), python3-setuptools
+Standards-Version: 3.8.4
+Homepage: https://pypi.python.org/pypi/netperf-wrapper/
+Vcs-Git: git://github.com/tohojo/netperf-wrapper.git
+Vcs-Browser: https://github.com/tohojo/netperf-wrapper
+X-Python3-Version: >=3.1
+
+Package: netperf-wrapper
+Architecture: all
+Depends: ${python3:Depends}, python3 (>= 3.1), netperf (>= 2.6.0)
+Description: A wrapper for the `netperf` benchmark utility.
+ Used for testing for the occurrence of bufferbloat, netperf-wrapper is
+ a Python wrapper for various testing tools, such as netperf.

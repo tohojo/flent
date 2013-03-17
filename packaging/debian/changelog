@@ -1,0 +1,5 @@
+netperf-wrapper (0.4.2-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Sun, 17 Mar 2013 20:58:18 +0100

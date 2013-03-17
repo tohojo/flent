@@ -1,0 +1,27 @@
+This work was packaged for Debian by:
+
+    Toke Høiland-Jørgensen <toke@toke.dk> on Sun, 17 Mar 2013 20:51:19 +0100
+
+It was downloaded from:
+
+    https://pypi.python.org/pypi/netperf-wrapper/
+
+Upstream Author(s):
+
+    Toke Høiland-Jørgensen <toke@toke.dk>
+
+Copyright:
+
+    Copyright (C) 2012-2013 Toke Høiland-Jørgensen
+
+License:
+
+    GPLv3
+
+The Debian packaging is:
+
+    Copyright (C) 2013 Toke Høiland-Jørgensen <toke@toke.dk>
+
+and is licensed under the GPL version 3,
+see "/usr/share/common-licenses/GPL-3".
+
