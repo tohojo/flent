@@ -11,6 +11,6 @@
 -    strftime( timestamp, length,"%Y%m%d%H%M%S", timest );
 +    struct timeval tv;
 +    gettimeofday(&tv, NULL);
-+    snprintf(timestamp, length, "%lu.%04lu",
++    snprintf(timestamp, length, "%lu.%06lu",
 +             (unsigned long)tv.tv_sec, (unsigned long)tv.tv_usec);
  }

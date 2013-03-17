@@ -35,7 +35,7 @@ index c6becd9..0a776ae 100644
      if( per_recv_flag )
      {
 +        if(timestamp_flag) {
-+            printf("[%lu.%04lu] ",
++            printf("[%lu.%06lu] ",
 +                 (unsigned long)current_time.tv_sec,
 +                 (unsigned long)current_time.tv_usec);
 +        }
