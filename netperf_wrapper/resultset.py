@@ -166,9 +166,13 @@ class ResultSet(object):
         self._dump_file = os.path.join(dirname, self._gen_filename())
         try:
             fp = gzip.open(self._dump_file, "wt")
-            self.dump(fp)
-        finally:
-            fp.close()
+            try:
+                self.dump(fp)
+            finally:
+                fp.close()
+        except IOError as e:
+            sys.stderr.write("Unable to write results data file: %s\n" % e)
+            self._dump_file = None
 
     @classmethod
     def unserialise(cls, obj):

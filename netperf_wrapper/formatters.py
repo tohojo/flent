@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint, sys, csv, math, inspect
+import pprint, sys, csv, math, inspect, os
 
 from .settings import settings
 from .util import cum_prob, frange
@@ -58,12 +58,16 @@ class Formatter(object):
             if output == "-":
                 self.output = sys.stdout
             else:
-                self.output = open(output, "w")
+                try:
+                    self.output = open(output, "w")
+                except IOError as e:
+                    raise RuntimeError("Unable to output data: %s" % e)
         else:
             self.output = output
 
     def format(self, results):
-        sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_file)
+        if results[0].dump_file is not None:
+            sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_file)
 
 DefaultFormatter = Formatter
 
@@ -182,6 +186,8 @@ class StatsFormatter(Formatter):
 class PlotFormatter(Formatter):
 
     def __init__(self, output):
+        if output != "-" and not os.access(output, os.W_OK):
+            raise RuntimeError("No write permission for output file '%s'" % output)
         self.output = output
         try:
             import matplotlib, numpy
@@ -429,7 +435,10 @@ class PlotFormatter(Formatter):
                 a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
             self.plt.show()
         else:
-            self.plt.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
+            try:
+                self.plt.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
+            except IOError as e:
+                raise RuntimeError("Unable to save output plot: %s" % e)
 
 
     def _annotate_plot(self, skip_title=False):
