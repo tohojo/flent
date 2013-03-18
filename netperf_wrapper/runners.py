@@ -62,7 +62,10 @@ class ProcessRunner(threading.Thread):
         if self.killed:
             return
         if self.pid is not None:
-            os.kill(self.pid, signal.SIGINT)
+            try:
+                os.kill(self.pid, signal.SIGINT)
+            except OSError:
+                pass
         self.killed = True
 
     # helper functions from subprocess module

@@ -1,3 +1,5 @@
+2013-03-18: Do not crash if killing subprocess fails because it is already killed.
+
 2013-03-18: Ensure compatibility with a wider range of python versions.
 
 2013-03-18: Do not fail horribly on write permission errors.
