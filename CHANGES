@@ -1,3 +1,5 @@
+2013-03-18: Compatibility fix for Python 3.1.
+
 2013-03-18: Release v0.5.0.
 
 2013-03-18: Do not crash if killing subprocess fails because it is already killed.

@@ -89,12 +89,29 @@ def which(executable):
     return None
 
 def gzip_open(filename, mode="rb"):
+    """Compatibility layer for gzip to work in Python 3.1 and 3.2."""
     wrap_text = False
     if "t" in mode:
         wrap_text = True
         mode = mode.replace("t", "")
     binary_file = gzip.open(filename, mode)
     if wrap_text:
+        # monkey-patching required to make gzip object compatible with TextIOWrapper
+        # in Python 3.1.
+        if not hasattr(binary_file, "readable"):
+            def readable():
+                return binary_file.mode == gzip.READ
+            binary_file.readable = readable
+        if not hasattr(binary_file, "writable"):
+            def writable():
+                return binary_file.mode == gzip.WRITE
+            binary_file.writable = writable
+        if not hasattr(binary_file, "seekable"):
+            def seekable():
+                return True
+            binary_file.seekable = seekable
+
+        # This wrapping is done by the builtin gzip module in python 3.3.
         return io.TextIOWrapper(binary_file)
     else:
         return binary_file
