@@ -1,3 +1,5 @@
+2013-03-18: Ensure compatibility with a wider range of python versions.
+
 2013-03-18: Do not fail horribly on write permission errors.
 
 2013-03-11: Preforking runner implementation (hopefully fixes issues on FreeBSD).

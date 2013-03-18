@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, os, gzip, math, re, sys
+import json, os, math, re, sys
 from datetime import datetime
 
 try:
@@ -31,6 +31,8 @@ try:
     from collections import OrderedDict
 except ImportError:
     from .ordereddict import OrderedDict
+
+from .util import gzip_open
 
 # Controls pretty-printing of json dumps
 JSON_INDENT=None
@@ -143,7 +145,11 @@ class ResultSet(object):
         return not self._x_values
 
     def dump(self, fp):
-        return json.dump(self.serialise(), fp, indent=JSON_INDENT)
+        data = self.dumps()
+        if hasattr(data, "decode"):
+            data = data.decode()
+
+        return fp.write(data)
 
     def dumps(self):
         return json.dumps(self.serialise(), indent=JSON_INDENT)
@@ -165,7 +171,7 @@ class ResultSet(object):
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
         try:
-            fp = gzip.open(self._dump_file, "wt")
+            fp = gzip_open(self._dump_file, "wt")
             try:
                 self.dump(fp)
             finally:
@@ -196,7 +202,7 @@ class ResultSet(object):
     def load_file(cls, filename):
         try:
             if filename.endswith(".gz"):
-                o = gzip.open
+                o = gzip_open
             else:
                 o = open
             fp = o(filename, 'rt')

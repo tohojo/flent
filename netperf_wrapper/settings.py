@@ -145,7 +145,7 @@ class TestEnvironment(object):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out,err = proc.communicate()
-            if "print timestamp before each output line" in out:
+            if "print timestamp before each output line" in str(out):
                 # fping has timestamp option, use it
                 # there's no timeout parameter for fping, calculate a total number
                 # of pings to send

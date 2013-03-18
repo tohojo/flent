@@ -111,11 +111,11 @@ class ProcessRunner(threading.Thread):
         os.waitpid(self.pid, 0)
 
         self.stdout.seek(0)
-        self.out = self.stdout.read()
+        self.out = self.stdout.read().decode()
         self.stdout.close()
 
         self.stderr.seek(0)
-        self.err = self.stderr.read()
+        self.err = self.stderr.read().decode()
         self.stderr.close()
 
         if self.killed:

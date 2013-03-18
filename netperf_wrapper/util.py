@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, os
+import math, os, gzip, io
 from bisect import bisect_left
 from datetime import datetime
 
@@ -87,6 +87,17 @@ def which(executable):
                 return filename
 
     return None
+
+def gzip_open(filename, mode="rb"):
+    wrap_text = False
+    if "t" in mode:
+        wrap_text = True
+        mode = mode.replace("t", "")
+    binary_file = gzip.open(filename, mode)
+    if wrap_text:
+        return io.TextIOWrapper(binary_file)
+    else:
+        return binary_file
 
 
 class DefaultConfigParser(configparser.ConfigParser):
