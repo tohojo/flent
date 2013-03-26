@@ -297,6 +297,8 @@ class ComputingRunner(object):
         pass
     def isAlive(self):
         return False
+    def kill(self):
+        pass
 
     def result(self, res):
         if not self.keys:
