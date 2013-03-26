@@ -53,17 +53,46 @@ PLOT_KWARGS = (
 
 class Formatter(object):
 
+    open_mode = "w"
+
     def __init__(self, output):
-        if isinstance(output, str):
-            if output == "-":
-                self.output = sys.stdout
-            else:
-                try:
-                    self.output = open(output, "w")
-                except IOError as e:
-                    raise RuntimeError("Unable to output data: %s" % e)
-        else:
+        self.check_output(output)
+
+    def check_output(self, output):
+        if hasattr(output, 'read') or output == "-":
             self.output = output
+        else:
+            # This logic is there to ensure that:
+            # 1. If there is no write access, fail before running the tests.
+            # 2. If the file exists, do not open (and hence overwrite it) until after the
+            #    tests have run.
+            if os.path.exists(output):
+                # os.access doesn't work on non-existant files on FreeBSD; so only do the
+                # access check on existing files (to avoid overwriting them before the tests
+                # have completed).
+                if not os.access(output, os.W_OK):
+                    raise RuntimeError("No write permission for output file '%s'" % output)
+                else:
+                    self.output = output
+            else:
+                # If the file doesn't exist, just try to open it immediately; that'll error out
+                # if access is denied.
+                try:
+                    self.output = open(output, self.open_mode)
+                except IOError as e:
+                    raise RuntimeError("Unable to open output file: '%s'" % e)
+
+    def open_output(self):
+        output = self.output
+        if hasattr(output, 'read'):
+            return
+        if output == "-":
+            self.output = sys.stdout
+        else:
+            try:
+                self.output = open(output, self.open_mode)
+            except IOError as e:
+                raise RuntimeError("Unable to output data: %s" % e)
 
     def format(self, results):
         if results[0].dump_file is not None:
@@ -104,6 +133,7 @@ class OrgTableFormatter(TableFormatter):
     something that Org mode can correctly realign."""
 
     def format(self, results):
+        self.open_output()
         name = results[0].meta("NAME")
 
         if not results[0]:
@@ -129,6 +159,7 @@ class CsvFormatter(TableFormatter):
     """Format the output as csv."""
 
     def format(self, results):
+        self.open_output()
         if not results[0]:
             return
 
@@ -155,6 +186,7 @@ class StatsFormatter(Formatter):
             raise RuntimeError("Stats formatter requires numpy, which seems to be missing. Please install it and try again.")
 
     def format(self, results):
+        self.open_output()
         self.output.write("Warning: Totals are computed as cumulative sum * step size,\n"
                           "so spurious values wreck havoc with the results.\n")
         for r in results:
@@ -185,10 +217,10 @@ class StatsFormatter(Formatter):
 
 class PlotFormatter(Formatter):
 
+    open_mode = "wb"
+
     def __init__(self, output):
-        if output != "-" and not os.access(output, os.W_OK):
-            raise RuntimeError("No write permission for output file '%s'" % output)
-        self.output = output
+        Formatter.__init__(self, output)
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
