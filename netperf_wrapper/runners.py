@@ -68,7 +68,7 @@ class ProcessRunner(threading.Thread):
                 pass
         self.killed = True
 
-    # helper functions from subprocess module
+    # helper function from subprocess module
     def _handle_exitstatus(self, sts, _WIFSIGNALED=os.WIFSIGNALED,
                            _WTERMSIG=os.WTERMSIG, _WIFEXITED=os.WIFEXITED,
                            _WEXITSTATUS=os.WEXITSTATUS):
@@ -82,26 +82,6 @@ class ProcessRunner(threading.Thread):
             # Should never happen
             raise RuntimeError("Unknown child exit status!")
 
-    def _internal_poll(self, _deadstate=None, _waitpid=os.waitpid,
-                       _WNOHANG=os.WNOHANG, _os_error=os.error):
-        """Check if child process has terminated.  Returns returncode
-        attribute.
-
-        This method is called by __del__, so it cannot reference anything
-        outside of the local scope (nor can any methods it calls).
-
-        """
-        if self.returncode is None:
-            try:
-                pid, sts = _waitpid(self.pid, _WNOHANG)
-                if pid == self.pid:
-                    self._handle_exitstatus(sts)
-            except _os_error:
-                if _deadstate is not None:
-                    self.returncode = _deadstate
-        return self.returncode
-
-
     def start(self):
         self.fork()
         threading.Thread.start(self)
@@ -111,7 +91,8 @@ class ProcessRunner(threading.Thread):
         seconds, then open the subprocess, wait for it to finish, and collect
         the last word of the output (whitespace-separated)."""
 
-        os.waitpid(self.pid, 0)
+        pid, sts = os.waitpid(self.pid, 0)
+        self._handle_exitstatus(sts)
 
         self.stdout.seek(0)
         self.out = self.stdout.read().decode()

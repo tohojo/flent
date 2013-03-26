@@ -1,3 +1,5 @@
+2013-03-26: Actually get the return code of a subprocess.
+
 2013-03-26: Fix bug on aborting tests due to missing kill() stub for computing runners.
 
 2013-03-26: Rework the way access checks are done for output files.
