@@ -2,17 +2,17 @@ Source: netperf-wrapper
 Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
 Section: python
 Priority: optional
-Build-Depends: python3 (>= 3.1), debhelper (>= 7.4.3)
+Build-Depends: python (>= 2.6), debhelper (>= 7.4.3)
 Standards-Version: 3.9.3
 Homepage: https://pypi.python.org/pypi/netperf-wrapper/
 Vcs-Git: git://github.com/tohojo/netperf-wrapper.git
 Vcs-Browser: https://github.com/tohojo/netperf-wrapper
-X-Python3-Version: >=3.1
+X-Python-Version: >=2.6
 
 Package: netperf-wrapper
 Architecture: all
-Depends: ${misc:Depends}, python3 (>= 3.1), netperf (>= 2.6.0)
-Recommends: python3-matplotlib
+Depends: ${misc:Depends}, python (>= 2.6), netperf (>= 2.6.0)
+Recommends: python-matplotlib
 Description: Wrapper for running network tests such as netperf concurrent
  netperf-wrapper
  ---------------

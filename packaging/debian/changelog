@@ -1,3 +1,9 @@
+netperf-wrapper (0.5.3-4) precise; urgency=low
+
+  * Build for python2 rather than python3.
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Wed, 27 Mar 2013 12:08:38 +0100
+
 netperf-wrapper (0.5.3-3) precise; urgency=low
 
   * Move python3-matplotlib to recommended rather than suggested.
