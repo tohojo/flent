@@ -1,7 +1,7 @@
 # Maintainer: Toke Høiland-Jørgensen <toke at toke dot dk>
 
 pkgname=netperf-wrapper
-pkgver=0.5.1
+pkgver=0.5.2
 pkgrel=1
 pkgdesc='A wrapper for the `netperf` benchmark utility, used for testing for bufferbloat.'
 arch=('any')
