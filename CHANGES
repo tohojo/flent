@@ -1,3 +1,7 @@
+2013-03-27: Release v0.5.3.
+
+2013-03-27: Fix install bug in setup.py when creating packages.
+
 2013-03-27: Release v0.5.2.
 
 2013-03-26: Actually get the return code of a subprocess.

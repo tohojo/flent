@@ -4,8 +4,7 @@
 	dh $@ --with python3
 
 override_dh_auto_install:
-	python3 setup.py install --root=debian/netperf-wrapper --install-layout=deb --install-lib=/usr/share/netperf-wrapper --install-scripts=/usr/share/netperf-wrapper
-	sed -i 's|debian/netperf-wrapper||' debian/netperf-wrapper/usr/share/netperf-wrapper/netperf_wrapper/build_info.py
+	python3 setup.py install --fake-root --root=debian/netperf-wrapper --install-layout=deb --install-lib=/usr/share/netperf-wrapper --install-scripts=/usr/share/netperf-wrapper
 
 override_dh_auto_build:
 
