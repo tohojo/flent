@@ -12,6 +12,7 @@ X-Python3-Version: >=3.1
 Package: netperf-wrapper
 Architecture: all
 Depends: ${misc:Depends}, python3 (>= 3.1), netperf (>= 2.6.0)
+Recommends: python3-matplotlib
 Description: Wrapper for running network tests such as netperf concurrent
  netperf-wrapper
  ---------------

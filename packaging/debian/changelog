@@ -1,3 +1,15 @@
+netperf-wrapper (0.5.3-3) precise; urgency=low
+
+  * Move python3-matplotlib to recommended rather than suggested.
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Wed, 27 Mar 2013 11:36:38 +0100
+
+netperf-wrapper (0.5.3-2) precise; urgency=low
+
+  * Add python3-matplotlib to suggested packages.
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Wed, 27 Mar 2013 11:31:38 +0100
+
 netperf-wrapper (0.5.3-1) precise; urgency=low
 
   * Bump to release 0.5.3.
