@@ -1,3 +1,6 @@
+2013-03-27: Don't use suptitle() to draw annotation at the bottom of the plots (makes
+            the annotation work in matplotlib 1.2.1).
+
 2013-03-27: Release v0.5.3.
 
 2013-03-27: Fix install bug in setup.py when creating packages.
