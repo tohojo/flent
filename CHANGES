@@ -1,3 +1,5 @@
+2013-03-27: Release v0.5.2.
+
 2013-03-26: Actually get the return code of a subprocess.
 
 2013-03-26: Fix bug on aborting tests due to missing kill() stub for computing runners.

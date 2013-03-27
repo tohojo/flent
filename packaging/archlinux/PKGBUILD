@@ -12,7 +12,7 @@ optdepends=(
     'python-matplotlib: for outputting graphs'
 )
 source=("https://pypi.python.org/packages/source/n/netperf-wrapper/netperf-wrapper-${pkgver}.tar.gz")
-md5sums=('daae0b32175b7260b79cca49a788c600')
+md5sums=('f9dfcc661815e7c37f7411e21ecdd696')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
