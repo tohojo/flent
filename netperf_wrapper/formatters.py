@@ -543,6 +543,9 @@ class PlotFormatter(Formatter):
         data = [x for x in data if x is not None]
         top_percentile = self.np.percentile(data, top)*1.05
         btm_percentile = self.np.percentile(data, btm)*0.95
-        axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
-        if top_percentile/btm_percentile > 20.0:
-            axis.set_yscale('log')
+        if settings.ZERO_Y:
+            axis.set_ylim(ymin=0, ymax=top_percentile)
+        else:
+            axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
+            if top_percentile/btm_percentile > 20.0:
+                axis.set_yscale('log')

@@ -53,6 +53,7 @@ DEFAULT_SETTINGS = {
     'ANNOTATE': True,
     'PRINT_TITLE': True,
     'PRINT_LEGEND': True,
+    'ZERO_Y': False,
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -207,6 +208,8 @@ parser.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSIO
 parser.add_option("-V", "--version", action="callback", callback=version,
                   help="show netperf-wrapper version and exit")
 
+parser.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
+                  help="start y axis of plot at zero (also disables log scales)")
 parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
                   help="list available tests")
 parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
