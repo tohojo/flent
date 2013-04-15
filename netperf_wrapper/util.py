@@ -88,13 +88,27 @@ def which(executable):
 
     return None
 
+# In Python 2.6, the GzipFile object does not have a 'closed' property, which makes
+# the io module blow up when trying to close it. This tidbit tries to detect that
+# and substitute a subclass that does have the property, while not touching
+# anything if the property is already present.
+if hasattr(gzip.GzipFile, "closed"):
+    _gzip_open = gzip.open
+else:
+    class GzipFile(gzip.GzipFile):
+        @property
+        def closed(self):
+            return self.fileobj is None
+    _gzip_open = GzipFile
+
 def gzip_open(filename, mode="rb"):
     """Compatibility layer for gzip to work in Python 3.1 and 3.2."""
     wrap_text = False
     if "t" in mode:
         wrap_text = True
         mode = mode.replace("t", "")
-    binary_file = gzip.open(filename, mode)
+    binary_file = _gzip_open(filename, mode)
+
     if wrap_text:
         # monkey-patching required to make gzip object compatible with TextIOWrapper
         # in Python 3.1.

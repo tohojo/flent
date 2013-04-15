@@ -1,3 +1,9 @@
+netperf-wrapper (0.5.5-1) precise; urgency=low
+
+  * Bump to release 0.5.5.
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Wed, 15 Apr 2013 12:39:38 +0100
+
 netperf-wrapper (0.5.3-4) precise; urgency=low
 
   * Build for python2 rather than python3.
