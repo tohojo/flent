@@ -1,3 +1,5 @@
+2013-04-15: Add option to disable automatic log-scaling of graphs.
+
 2013-03-27: Add -z option to start y-axis at zero.
 
 2013-03-27: Don't use suptitle() to draw annotation at the bottom of the plots (makes

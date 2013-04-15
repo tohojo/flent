@@ -547,5 +547,5 @@ class PlotFormatter(Formatter):
             axis.set_ylim(ymin=0, ymax=top_percentile)
         else:
             axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
-            if top_percentile/btm_percentile > 20.0:
+            if top_percentile/btm_percentile > 20.0 and settings.LOG_SCALE:
                 axis.set_yscale('log')

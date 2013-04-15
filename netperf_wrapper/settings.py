@@ -54,6 +54,7 @@ DEFAULT_SETTINGS = {
     'PRINT_TITLE': True,
     'PRINT_LEGEND': True,
     'ZERO_Y': False,
+    'LOG_SCALE': True,
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -210,6 +211,8 @@ parser.add_option("-V", "--version", action="callback", callback=version,
 
 parser.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
                   help="start y axis of plot at zero (also disables log scales)")
+parser.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
+                  help="disable log scales on plots")
 parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
                   help="list available tests")
 parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
