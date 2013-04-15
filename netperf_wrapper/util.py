@@ -88,19 +88,22 @@ def which(executable):
 
     return None
 
+if hasattr(gzip.GzipFile, "closed"):
+    _gzip_open = gzip.open
+else:
+    class GzipFile(gzip.GzipFile):
+        @property
+        def closed(self):
+            return self.fileobj is None
+    _gzip_open = GzipFile
+
 def gzip_open(filename, mode="rb"):
     """Compatibility layer for gzip to work in Python 3.1 and 3.2."""
     wrap_text = False
     if "t" in mode:
         wrap_text = True
         mode = mode.replace("t", "")
-    binary_file = gzip.open(filename, mode)
-
-    # fix bug in python2.6 where gzip objects do not have a closed property
-    if not hasattr(binary_file, "closed"):
-        def closed(self):
-            return binary_file.fileobj is None
-        binary_file.closed = property(closed)
+    binary_file = _gzip_open(filename, mode)
 
     if wrap_text:
         # monkey-patching required to make gzip object compatible with TextIOWrapper
