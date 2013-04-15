@@ -1,3 +1,5 @@
+2013-04-15: Release v0.5.5.
+
 2013-04-15: Add work-around for python2.6 version of GzipFile.
 
 2013-04-15: Add option to disable automatic log-scaling of graphs.
