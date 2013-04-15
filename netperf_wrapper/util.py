@@ -88,6 +88,10 @@ def which(executable):
 
     return None
 
+# In Python 2.6, the GzipFile object does not have a 'closed' property, which makes
+# the io module blow up when trying to close it. This tidbit tries to detect that
+# and substitute a subclass that does have the property, while not touching
+# anything if the property is already present.
 if hasattr(gzip.GzipFile, "closed"):
     _gzip_open = gzip.open
 else:
