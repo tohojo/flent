@@ -95,6 +95,13 @@ def gzip_open(filename, mode="rb"):
         wrap_text = True
         mode = mode.replace("t", "")
     binary_file = gzip.open(filename, mode)
+
+    # fix bug in python2.6 where gzip objects do not have a closed property
+    if not hasattr(binary_file, "closed"):
+        def closed(self):
+            return binary_file.fileobj is None
+        binary_file.closed = property(closed)
+
     if wrap_text:
         # monkey-patching required to make gzip object compatible with TextIOWrapper
         # in Python 3.1.
