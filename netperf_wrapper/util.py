@@ -96,9 +96,12 @@ if hasattr(gzip.GzipFile, "closed"):
     _gzip_open = gzip.open
 else:
     class GzipFile(gzip.GzipFile):
-        @property
-        def closed(self):
+        def get_closed(self):
             return self.fileobj is None
+        # Setter needed for python3.1-compatibility
+        def set_closed(self, closed):
+            self._closed = closed
+        closed = property(get_closed, set_closed)
     _gzip_open = GzipFile
 
 def gzip_open(filename, mode="rb"):

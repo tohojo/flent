@@ -1,3 +1,5 @@
+2013-04-18: Fix python3.1 compatibility bug in gzip workaround.
+
 2013-04-15: Release v0.5.6.
 
 2013-04-15: Add rrul_noclassification test.
