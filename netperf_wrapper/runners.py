@@ -40,8 +40,10 @@ class ProcessRunner(threading.Thread):
         self.returncode = None
 
     def fork(self):
-        self.stdout = tempfile.TemporaryFile()
-        self.stderr = tempfile.TemporaryFile()
+        # Use named temporary files to avoid errors on double-delete when
+        # running on Windows/cygwin.
+        self.stdout = tempfile.NamedTemporaryFile(delete=False)
+        self.stderr = tempfile.NamedTemporaryFile(delete=False)
 
         pid = os.fork()
 
@@ -96,11 +98,23 @@ class ProcessRunner(threading.Thread):
 
         self.stdout.seek(0)
         self.out = self.stdout.read().decode()
-        self.stdout.close()
+        try:
+            # Close and remove the temporary file. This might fail, but we're going
+            # to assume that is okay.
+            filename = self.stdout.name
+            self.stdout.close()
+            os.unlink(filename)
+        except OSError:
+            pass
 
         self.stderr.seek(0)
         self.err = self.stderr.read().decode()
-        self.stderr.close()
+        try:
+            filename = self.stderr.name
+            self.stderr.close()
+            os.unlink(filename)
+        except OSError:
+            pass
 
         if self.killed:
             return
