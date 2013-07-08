@@ -541,6 +541,8 @@ class PlotFormatter(Formatter):
     def _do_scaling(self, axis, data, btm, top):
         """Scale the axis to the selected bottom/top percentile"""
         data = [x for x in data if x is not None]
+        if not data:
+            return
         top_percentile = self.np.percentile(data, top)*1.05
         btm_percentile = self.np.percentile(data, btm)*0.95
         if settings.ZERO_Y:
