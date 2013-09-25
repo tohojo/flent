@@ -34,6 +34,7 @@ from netperf_wrapper.build_info import DATA_DIR, VERSION
 from netperf_wrapper import util
 
 DEFAULT_SETTINGS = {
+    'NAME': None,
     'HOST': None,
     'HOSTS': [],
     'LOCAL_HOST': socket.gethostname(),
@@ -237,17 +238,28 @@ parser.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
 
 class Settings(optparse.Values, object):
 
-    def load_test(self, test_name):
-        self.NAME = test_name
+    def check_testname(self, test_name):
+        filename = os.path.join(TEST_PATH, test_name + ".conf")
+
+        if not os.path.exists(filename):
+            # Test not found, assume it's a hostname
+            self.HOSTS.append(test_name)
+        elif self.NAME is not None and self.NAME != test_name:
+            raise RuntimeError("Multiple test names specified.")
+        else:
+            self.NAME = test_name
+
+
+    def load_test(self):
+        if self.NAME is None:
+            raise RuntimeError("Missing test name.")
         if self.HOSTS:
             self.HOST = self.HOSTS[0]
 
         self.lookup_hosts()
 
         test_env = TestEnvironment(self.__dict__)
-        filename = os.path.join(TEST_PATH, test_name + ".conf")
-        if not os.path.exists(filename):
-            raise RuntimeError("No config file found for test '%s'" % test_name)
+        filename = os.path.join(TEST_PATH, self.NAME + ".conf")
         s = test_env.execute(filename)
 
         for k,v in list(s.items()):
@@ -306,10 +318,10 @@ def load():
         if os.path.exists(a):
             if settings.SCALE_MODE and settings.INPUT:
                 settings.SCALE_DATA.append(a)
-                args.remove(a)
             else:
                 settings.INPUT.append(a)
-                args.remove(a)
+        else:
+            settings.check_testname(a)
 
     if settings.INPUT:
         results = []
@@ -323,14 +335,9 @@ def load():
 
 
         settings.update(results[0].meta())
-        settings.load_test(test_name)
+        settings.load_test()
     else:
-        if len(args) < 1:
-            parser.error("Missing test name.")
-
-        test_name = args[0]
-
-        settings.load_test(test_name)
+        settings.load_test()
         results = [ResultSet(NAME=settings.NAME,
                             HOST=settings.HOST,
                             HOSTS=settings.HOSTS,
