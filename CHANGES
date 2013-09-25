@@ -1,3 +1,8 @@
+2013-09-25: Allow passing of data filenames and host names as unqualified arguments
+            and attempt to guess what each argument is.
+
+2013-09-25: Add matplotlib version to --version output.
+
 2013-04-20: Manual removal of temporary files to get around issues on cygwin.
 
 2013-04-18: Print Python version along with netperf version on -V.
