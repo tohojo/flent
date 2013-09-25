@@ -50,6 +50,7 @@ DEFAULT_SETTINGS = {
     'DELAY': 5,
     'TIME': datetime.now(),
     'SCALE_DATA': [],
+    'SCALE_MODE': False,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
     'PRINT_LEGEND': True,
@@ -225,6 +226,8 @@ parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
 parser.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
                   help="additional data files to use for scaling the plot axes "
                   "(can be supplied multiple times)")
+parser.add_option("--scale-mode", action="store_true", dest="SCALE_MODE",
+                  help="treat file names (except for the first one) passed as unqualified arguments as if passed as --scale-data (default as if passed as -i)")
 parser.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
                   help="do not annotate plots with hosts, time and test length")
 parser.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
@@ -298,6 +301,15 @@ def load():
 
     if hasattr(settings, 'PLOT'):
         settings.FORMAT = 'plot'
+
+    for a in args:
+        if os.path.exists(a):
+            if settings.SCALE_MODE and settings.INPUT:
+                settings.SCALE_DATA.append(a)
+                args.remove(a)
+            else:
+                settings.INPUT.append(a)
+                args.remove(a)
 
     if settings.INPUT:
         results = []
