@@ -117,7 +117,7 @@ class Glob(object):
 
 class TestEnvironment(object):
 
-    def __init__(self, env={}):
+    def __init__(self, env={}, informational=False):
         self.env = dict(env)
         self.env.update({
             'glob': Glob,
@@ -126,6 +126,7 @@ class TestEnvironment(object):
             'min_host_count': self.require_host_count,
             'find_ping': self.find_ping,
             })
+        self.informational = informational
 
     def execute(self, filename):
         try:
@@ -172,7 +173,9 @@ class TestEnvironment(object):
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
-            if 'DEFAULTS' in self.env and 'HOSTS' in self.env['DEFAULTS'] and self.env['DEFAULTS']['HOSTS']:
+            if self.informational:
+                self.env['HOSTS'] = ['dummy']*count
+            elif 'DEFAULTS' in self.env and 'HOSTS' in self.env['DEFAULTS'] and self.env['DEFAULTS']['HOSTS']:
                 # If a default HOSTS list is set, populate the HOSTS list with
                 # values from this list, repeating as necessary up to count
                 def_hosts = self.env['DEFAULTS']['HOSTS']
@@ -250,7 +253,9 @@ class Settings(optparse.Values, object):
             self.NAME = test_name
 
 
-    def load_test(self):
+    def load_test(self, test_name=None, informational=False):
+        if test_name is not None:
+            self.NAME=test_name
         if self.NAME is None:
             raise RuntimeError("Missing test name.")
         if self.HOSTS:
@@ -258,7 +263,7 @@ class Settings(optparse.Values, object):
 
         self.lookup_hosts()
 
-        test_env = TestEnvironment(self.__dict__)
+        test_env = TestEnvironment(self.__dict__, informational)
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")
         s = test_env.execute(filename)
 
@@ -375,11 +380,12 @@ def load():
 def list_tests():
     tests = sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')])
     sys.stderr.write('Available tests:\n')
-    max_len = str(max([len(t) for t in tests]))
+    max_len = max([len(t) for t in tests])
     for t in tests:
         settings.update(DEFAULT_SETTINGS)
-        settings.load_test(t)
-        sys.stderr.write(("  %-"+max_len+"s :  %s\n") % (t, settings.DESCRIPTION))
+        settings.load_test(t, informational=True)
+        desc = settings.DESCRIPTION.replace("\n", "\n"+" "*(max_len+6))
+        sys.stderr.write(("  %-"+str(max_len)+"s :  %s\n") % (t, desc))
     sys.exit(0)
 
 def list_plots():
