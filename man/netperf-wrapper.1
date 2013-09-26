@@ -1,0 +1,259 @@
+.TH NETPERF-WRAPPER "1" "September 2013" "Netperf-wrapper v0.5.6-git." "User Commands"
+.SH NAME
+Netperf-wrapper \- manual page for Netperf-wrapper v0.5.6-git.
+.SH SYNOPSIS
+.B netperf-wrapper
+[\fIoptions\fR] \fI<host|test|input file \fR...\fI>\fR
+.SH INVOCATION
+When run, netperf-wrapper must be supplied either (a) a test name and one or
+more host names to connect to, or (b) one or more input files containing data
+from previous runs to post-process.
+.PP
+Test names, hostnames and input file names can all be specified as unqualified
+arguments, and netperf-wrapper will do its best to guess which is which. For
+each argument, if it is an existing file, it is assumed to be an input file, if
+it is the name of an existing test configuration it's assumed to be a test name,
+and if neither of those are true, it is assumed to be a host name. The \fB-i\fR
+and \fB-H\fR switches can be used to explicitly specify the interpretation of an
+argument.
+
+.SH DESCRIPTION
+Netperf-wrapper is a wrapper around \fI netperf \fR and similar tools to
+run predefined tests and aggregate and plot the results. It defines several
+tests that can be run against one or more hosts, primarily targeted at testing
+for the presence of bufferbloat under various conditions.
+.PP
+The aggregated data is saved in (gzipped) JSON format for later processing
+and/or import into other tools. The JSON format is documented below.
+.PP
+Apart from the JSON format, the data can be output as csv values, emacs org
+mode tables or plots. Each test can specify several different plots, including
+time-series plots of the values against each other, as well as CDF plots of
+(e.g.) ping times.
+.PP
+Plots can be output to the formats supported by matplotlib by specifying the
+output filename with \fB-o\fR \fIoutput.{png,ps,pdf,svg}\fR. If no output file
+is specified, the plot is diplayed using matplotlib's interactive plot browser,
+which also allows saving of the output (in .png format).
+
+.SH REQUIREMENTS
+Netperf-wrapper runs on Python, versions 2.6 through 3.3. Plotting requires a
+functional matplotlib installation (but everything else can run without
+matplotlib). For the interactive plot viewer, a graphical display (and suitably
+configured matplotlib) is required.
+.PP
+Most tests employ the \fInetperf\fR benchmarking tool to run the tests. Version
+2.6 or higher is required, and netperf must be compiled with the
+\fB\-\-enable\-demo\fR option passed to ./configure. Some tests use \fIiperf\fR
+in addition to, or instead of netperf. Both tools must be available in the
+\fIPATH\fR.
+.PP
+For ICMP ping measurements, the version of \fIping\fR employed must support
+output timestamping (the \fB\-D\fR parameter to GNU ping). This is \fBnot\fR
+supported by the BSD and OSX versions of ping. As an alternative to the regular
+ping command, the \fIfping\fR utility (see \fIfping.org\fR) can be employed. In
+that case fping must be version 3.5 or greater. Netperf-wrapper will attempt to
+detect the presence of fping in the \fIPATH\fR and check for support for the
+\fB\-D\fR parameter. If this check is successful, fping will be employed for
+ping data, otherwise the system ping will be used.
+
+.SH OPTIONS
+.TP
+\fB\-o\fR OUTPUT, \fB\-\-output\fR=\fIOUTPUT\fR
+File to write processed output to (default standard
+out). The JSON data file is written to the same
+directory as this file, if provided. Otherwise, the
+data file is written to the current directory.
+.TP
+\fB\-i\fR INPUT, \fB\-\-input\fR=\fIINPUT\fR
+File to read input from (instead of running tests).
+Input files can also be specified as unqualified
+arguments without using the \fB\-i\fR switch.
+.TP
+\fB\-f\fR FORMAT, \fB\-\-format\fR=\fIFORMAT\fR
+Select output format (plot, csv, org_table). Default
+is no processed output (just writes the JSON data
+file).
+.TP
+\fB\-p\fR PLOT, \fB\-\-plot\fR=\fIPLOT\fR
+Select which plot to output for the given test
+(implies \fB\-f\fR plot). Use the \fB\-\-list\-plots\fR option to see
+available plots.
+.TP
+\fB\-t\fR TITLE, \fB\-\-title\-extra\fR=\fITITLE\fR
+Text to add to plot title and data file name.
+.TP
+\fBTest configuration:\fR
+.PP
+These options affect the behaviour of the test being run and have no
+effect when parsing input files.
+.TP
+\fB\-H\fR HOST, \fB\-\-host\fR=\fIHOST\fR
+Host to connect to for tests. For tests that support
+it, multiple hosts can be specified by supplying this
+option multiple times. Hosts can also be specified as
+unqualified arguments; this parameter guarantees that
+the argument be interpreted as a host name (rather
+than being subject to auto\-detection between input
+files, hostnames and test names).
+.TP
+\fB\-l\fR LENGTH, \fB\-\-length\fR=\fILENGTH\fR
+Base test length (some tests may add some time to
+this).
+.TP
+\fB\-s\fR STEP_SIZE, \fB\-\-step\-size\fR=\fISTEP_SIZE\fR
+Measurement data point step size.
+.TP
+\fB\-d\fR DELAY, \fB\-\-delay\fR=\fIDELAY\fR
+Number of seconds to delay parts of test (such as
+bandwidth loaders).
+.TP
+\fB\-4\fR, \fB\-\-ipv4\fR
+Use IPv4 for tests (some tests may ignore this).
+.TP
+\fB\-6\fR, \fB\-\-ipv6\fR
+Use IPv6 for tests (some tests may ignore this).
+.TP
+\fBPlot configuration:\fR
+.PP
+These options are used to configure the appearance of plot output and
+only make sense combined with \fB\-f\fI plot\fR.
+.TP
+\fB\-z\fR, \fB\-\-zero\-y\fR
+Always start y axis of plot at zero, instead of autoscaling the axis (also disables log scales). Autoscaling is still enabled for the upper bound.
+.TP
+\fB\-\-disable\-log\fR
+Disable log scales on plots.
+.TP
+\fB\-\-scale\-data\fR=\fISCALE_DATA\fR
+Additional data files to consider when scaling the
+plot axes (for plotting several plots with identical
+axes). Can be supplied multiple times; see also
+\fB\-\-scale\-mode\fR.
+.TP
+\fB\-S\fR, \fB\-\-scale\-mode\fR
+Treat file names (except for the first one) passed as
+unqualified arguments as if passed as \fB\-\-scale\-data\fR
+(default as if passed as \fB\-\-input\fR).
+.TP
+\fB\-\-no\-annotation\fR
+Exclude annotation with hostnames, time and test
+length from plots.
+.TP
+\fB\-\-no\-legend\fR
+Exclude legend from plots.
+.TP
+\fB\-\-no\-title\fR
+Exclude title from plots.
+.IP
+.TP
+\fBMisc and debugging options:\fR
+.TP
+\fB\-L\fR LOG_FILE, \fB\-\-log\-file\fR=\fILOG_FILE\fR
+Write debug log (test program output) to log file.
+.TP
+\fB\-\-list\-tests\fR
+List available tests and exit.
+.TP
+\fB\-\-list\-plots\fR
+List available plots for selected test and exit.
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Show netperf\-wrapper version information and exit.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show usage help message and exit.
+
+.SH SUPPLIED TESTS
+Test are supplied as Python files and can specify commands to run etc. For a
+full list of the tests supported by netperf-wrapper, see the
+\fB\-\-list\-tests\fR option.
+.TP
+\fBThe Realtime Response Under Load (RRUL) test\fR
+.IP
+This test exists in a couple of variants and is a partial implementation of the
+RRUL specification as written by Dave Taht (see
+\fIhttps://github.com/dtaht/deBloat/blob/master/spec/rrule.doc?raw=true\fR). It
+works by running RTT measurement using ICMP ping and UDP roundtrip time
+measurement, while loading up the link with eight TCP streams (four downloads,
+four uploads). This quite reliably saturates the measured link (wherever the
+bottleneck might be), and thus exposes bufferbloat when it is present.
+.TP
+\fBSimple TCP flow tests\fR
+.IP
+These tests combines a TCP flow (either in one direction, or both) with an ICMP
+ping measurement. It's a simpler test than RRUL, but in some cases the single
+TCP flow can be sufficient to saturate the link.
+.TP
+\fBUDP flood test\fR
+.IP
+This test runs \fIiperf\fR configured to emit 100Mbps of UDP packets targeted at
+the test host, while measuring RTT using ICMP ping. It is useful for observing
+latency in the face of a completely unresponsive packet stream.
+
+.SH EXAMPLES
+Run the \fIrrul\fR test against \fItestserver.example.com\fI:
+.IP
+netperf-wrapper rrul testserver.example.com
+.PP
+This produces no output, but saves the result in a datafile named after the
+current date and time (in gzipped JSON format).
+.PP
+Show an interactive plot of a previously run test, which stored the data in
+\fIdatafile.json.gz\fR (requires a working matplotlib and a graphical display):
+.IP
+netperf-wrapper -f plot datafile.json.gz
+.PP
+Combine multiple data files into one CDF plot:
+.IP
+netperf-wrapper -p icmp_cdf *.json.gz
+
+.SH THE JSON DATA FORMAT
+The aggregated test data is saved in a file called
+\fI<test_name>-<date>.json.gz\fR. This file contains the data points generated
+during the test, as well as some metadata. The top-level json object has three
+keys in it: \fIx_values\fR, \fIresults\fR and \fImetadata\fR.
+.PP
+\fIx_values\fR is an array of the x values for the test data (typically the time
+values for timeseries data).
+.PP
+\fIresults\fR is a json object containing the result data series. The keys are the
+data series names; the value for each key is an array of y values for that data
+series. The data array has the same length as the \fIx_values\fR array, but there
+may be missing data points (signified by null values).
+.PP
+\fImetadata\fR is an object containing various data points about the test run. The
+metadata values are read in as configuration parameters when the data set is
+loaded in for further processing. Not all tests use all the parameters, but
+they are saved anyway.
+.PP
+Currently the metadata values are:
+.IP
+\fINAME\fR: The test name.
+.IP
+\fITITLE\fR: Any extra title specified by the -t parameter when the test was run.
+.IP
+\fIHOSTS\fR: List of the server hostnames connected to during the test.
+.IP
+\fILOCAL_HOST\fR: The hostname of the machine that ran the test.
+.IP
+\fILENGTH\fR: Test length in seconds, as specified by the -l parameter.
+.IP
+\fITOTAL_LENGTH\fR: Actual data series length, after the test has added time to the LENGTH.
+.IP
+\fISTEP_SIZE\fR: Time step size granularity.
+.IP
+\fITIME\fR: ISO timestamp of the time the test was initiated.
+
+.SH BUGS
+Under some conditions (such as severe bufferbloat), the UDP RTT measurements
+done by netperf can experience packet loss to the extent that the test aborts
+completely, which can cause missing data points for some measurement series.
+.PP
+Probably many other bugs. Please report any found to
+\fIhttps://github.com/tohojo/netperf-wrapper/issues\fR and include the output of
+\fBnetperf-wrapper --version\fR in the report.
+
+.SH AUTHORS
+Netperf-wrapper is written and maintained by Toke Høiland-Jørgensen, with
+contributions from Dave Taht and others.

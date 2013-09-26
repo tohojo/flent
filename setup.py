@@ -83,6 +83,8 @@ data_files = [('share/netperf-wrapper/tests',
                ['BUGS',
                 'CHANGES',
                 'README.rst']),
+              ('share/man/man1',
+               ['man/netperf-wrapper.1']),
               ('share/doc/netperf-wrapper/misc',
                glob("misc/*.patch"))]
 
