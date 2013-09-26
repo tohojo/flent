@@ -63,7 +63,7 @@ TEST_PATH = os.path.join(DATA_DIR, 'tests')
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 def version(*args):
-    print("Netperf-wrapper v%s on Python %s." %(VERSION, sys.version.replace("\n", " ")))
+    print("Netperf-wrapper v%s.\nRunning on Python %s." %(VERSION, sys.version.replace("\n", " ")))
     try:
         import matplotlib
         print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, matplotlib.__version__numpy__))
@@ -187,57 +187,84 @@ class TestEnvironment(object):
             else:
                 raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
 
-parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests',
-                               usage="usage: %prog [options] -H <host> test")
+parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests.',
+                               usage="Usage: %prog [options] <host|test|input file ...> ")
 
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
-                  help="file to write output to (default standard out)")
+                  help="File to write processed output to (default standard out). The JSON "
+                  "data file is written to the same directory as this file, if provided. "
+                  "Otherwise, the data file is written to the current directory.")
 parser.add_option("-i", "--input", action="append", type="string", dest="INPUT",
-                  help="file to read input from (instead of running tests)")
+                  help="File to read input from (instead of running tests). Input files "
+                  "can also be specified as unqualified arguments without using the -i switch.")
 parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT",
-                  help="select output format (plot, csv, org_table)")
+                  help="Select output format (plot, csv, org_table). Default is no processed "
+                  "output (just writes the JSON data file).")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
-                  help="select which plot to output for the given test (implies -f plot)")
-parser.add_option("-H", "--host", action="append", type="string", dest="HOSTS", metavar='HOST',
-                  help="host to connect to for tests. Specify multiple hosts with multiple -H "
-                  "options (not all tests support this).")
+                  help="Select which plot to output for the given test (implies -f plot). "
+                  "Use the --list-plots option to see available plots.")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
-                  help="text to add to plot title")
-parser.add_option("-L", "--log-file", action="store", type="string", dest="LOG_FILE",
-                  help="write debug log (test program output) to log file")
-parser.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
-                  help="base test length (some tests may add some time to this)")
-parser.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
-                  help="measurement data point step size")
-parser.add_option("-d", "--delay", action="store", type="int", dest="DELAY",
-                  help="number of seconds to delay second parts of test (such as bandwidth loaders)")
-parser.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
-                  help="use IPv4 for tests (some tests may ignore this)")
-parser.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
-                  help="use IPv6 for tests (some tests may ignore this)")
+                  help="Text to add to plot title and data file name.")
 
-parser.add_option("-V", "--version", action="callback", callback=version,
-                  help="show netperf-wrapper version and exit")
 
-parser.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
-                  help="start y axis of plot at zero (also disables log scales)")
-parser.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
-                  help="disable log scales on plots")
-parser.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
-                  help="list available tests")
-parser.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
-                  help="list available plots for selected test")
-parser.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
-                  help="additional data files to use for scaling the plot axes "
-                  "(can be supplied multiple times)")
-parser.add_option("--scale-mode", action="store_true", dest="SCALE_MODE",
-                  help="treat file names (except for the first one) passed as unqualified arguments as if passed as --scale-data (default as if passed as -i)")
-parser.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
-                  help="do not annotate plots with hosts, time and test length")
-parser.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
-                  help="do not print plot legend")
-parser.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
-                  help="do not print plot title")
+test_group = optparse.OptionGroup(parser, "Test configuration",
+                                  "These options affect the behaviour of the test being run "
+                                  "and have no effect when parsing input files.")
+test_group.add_option("-H", "--host", action="append", type="string", dest="HOSTS", metavar='HOST',
+                  help="Host to connect to for tests. For tests that support it, multiple hosts "
+                  "can be specified by supplying this option multiple times. Hosts can also be "
+                  "specified as unqualified arguments; this parameter guarantees that the "
+                  "argument be interpreted as a host name (rather than being subject to "
+                  "auto-detection between input files, hostnames and test names).")
+test_group.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
+                  help="Base test length (some tests may add some time to this).")
+test_group.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
+                  help="Measurement data point step size.")
+test_group.add_option("-d", "--delay", action="store", type="int", dest="DELAY",
+                  help="Number of seconds to delay parts of test (such as bandwidth "
+                  "loaders).")
+test_group.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
+                  help="Use IPv4 for tests (some tests may ignore this).")
+test_group.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
+                  help="Use IPv6 for tests (some tests may ignore this).")
+parser.add_option_group(test_group)
+
+plot_group = optparse.OptionGroup(parser, "Plot configuration",
+                                  "These options are used to configure the appearance of "
+                                  "plot output and only make sense combined with -f plot.")
+
+plot_group.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
+                  help="Always start y axis of plot at zero, instead of auto-scaling the "
+                  "axis (also disables log scales). Auto-scaling is still enabled for the "
+                  "upper bound.")
+plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
+                  help="Disable log scales on plots.")
+plot_group.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
+                  help="Additional data files to consider when scaling the plot axes "
+                  "(for plotting several plots with identical axes). "
+                  "Can be supplied multiple times; see also --scale-mode.")
+plot_group.add_option("-S", "--scale-mode", action="store_true", dest="SCALE_MODE",
+                  help="Treat file names (except for the first one) passed as unqualified "
+                  "arguments as if passed as --scale-data (default as if passed as --input).")
+plot_group.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
+                  help="Exclude annotation with hostnames, time and test length from plots.")
+plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
+                  help="Exclude legend from plots.")
+plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
+                  help="Exclude title from plots.")
+parser.add_option_group(plot_group)
+
+
+misc_group = optparse.OptionGroup(parser, "Misc and debugging options")
+misc_group.add_option("-L", "--log-file", action="store", type="string", dest="LOG_FILE",
+                  help="Write debug log (test program output) to log file.")
+misc_group.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
+                  help="List available tests and exit.")
+misc_group.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
+                  help="List available plots for selected test and exit.")
+misc_group.add_option("-V", "--version", action="callback", callback=version,
+                  help="Show netperf-wrapper version information and exit.")
+parser.add_option_group(misc_group)
 
 class Settings(optparse.Values, object):
 
