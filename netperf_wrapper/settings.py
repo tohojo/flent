@@ -199,8 +199,8 @@ parser.add_option("-i", "--input", action="append", type="string", dest="INPUT",
                   help="File to read input from (instead of running tests). Input files "
                   "can also be specified as unqualified arguments without using the -i switch.")
 parser.add_option("-f", "--format", action="store", type="string", dest="FORMAT",
-                  help="Select output format (plot, csv, org_table). Default is no processed "
-                  "output (just writes the JSON data file).")
+                  help="Select output format (plot, csv, org_table, stats). Default is no "
+                  "processed output (just writes the JSON data file).")
 parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   help="Select which plot to output for the given test (implies -f plot). "
                   "Use the --list-plots option to see available plots.")

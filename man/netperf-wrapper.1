@@ -71,7 +71,7 @@ Input files can also be specified as unqualified
 arguments without using the \fB\-i\fR switch.
 .TP
 \fB\-f\fR FORMAT, \fB\-\-format\fR=\fIFORMAT\fR
-Select output format (plot, csv, org_table). Default
+Select output format (plot, csv, org_table, stats). Default
 is no processed output (just writes the JSON data
 file).
 .TP
@@ -194,6 +194,43 @@ TCP flow can be sufficient to saturate the link.
 This test runs \fIiperf\fR configured to emit 100Mbps of UDP packets targeted at
 the test host, while measuring RTT using ICMP ping. It is useful for observing
 latency in the face of a completely unresponsive packet stream.
+
+.SH OUTPUT FORMATS
+The following output formats are currently supported by netperf-wrapper:
+.TP
+\fBPlot output\fR (\fB\-f\fR \fIplot\fR)
+.IP
+Output test data as one of a series of graphical plots of timeseries data or
+summarised as a CDF plot. Each test supplies a number of different plots; the
+list of plots for a given test is output by the \fB\-\-list\-plots\fR switch
+(which must be supplied along with a test name).
+.IP
+The plots are drawn by matplotlib, and can be displayed on the screen
+interactively (requires a graphical display), or output to a file in svg, pdf,
+ps and png formats. Using the \fB\-o\fR switch turns out file output (the file
+format is inferred from the file name), while not supplying the switch turns on
+the interactive plot viewer.
+
+.TP
+\fBTabulated output\fR (\fB\-f\fR \fIcsv\fR and \fB\-f\fR \fIorg_table\fR)
+.IP
+These formats output the numeric data in a tabulated format to be consumed by
+other applications. The \fIcsv\fR output format is a comma-separated output that
+can be imported into e.g. spreadsheets, while \fIorg_table\fR outputs a
+tabulated output in the table format supported by Emacs org mode. The data is
+output in text format to standard output, or written to a file if invoked with
+the \fB\-o\fR parameter.
+
+.TP
+\fBStatistics output\fR (\fB\-f\fR \fIstats\fR)
+.IP
+This output format outputs various statistics about the test data, such as total
+bandwidth consumed, and various statistical measures (min/max/mean/median/std
+dev/variance) for each data source specified in the relevant test (this can
+include some data sources not includes on plots). The data is output in text
+format to standard output, or written to a file if invoked with the \fB\-o\fR
+parameter.
+
 
 .SH EXAMPLES
 Run the \fIrrul\fR test against \fItestserver.example.com\fI:
