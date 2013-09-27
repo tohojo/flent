@@ -1,3 +1,7 @@
+2013-09-27: Print custom title on separate line on plots.
+
+2013-09-26: Add man page.
+
 2013-09-25: Allow passing of data filenames and host names as unqualified arguments
             and attempt to guess what each argument is.
 
