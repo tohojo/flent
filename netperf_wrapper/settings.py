@@ -43,6 +43,7 @@ DEFAULT_SETTINGS = {
     'OUTPUT': '-',
     'FORMAT': 'default',
     'TITLE': '',
+    'NOTE': '',
     'LOG_FILE': None,
     'INPUT': [],
     'DESCRIPTION': 'No description',
@@ -205,6 +206,9 @@ parser.add_option("-p", "--plot", action="store", type="string", dest="PLOT",
                   "Use the --list-plots option to see available plots.")
 parser.add_option("-t", "--title-extra", action="store", type="string", dest="TITLE",
                   help="Text to add to plot title and data file name.")
+parser.add_option("-n", "--note", action="store", type="string", dest="NOTE",
+                  help="Add arbitrary text as a note to be stored in the JSON data file "
+                  "(under the NOTE key in the metadata object).")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -376,6 +380,7 @@ def load():
                             TIME=settings.TIME,
                             LOCAL_HOST=settings.LOCAL_HOST,
                             TITLE=settings.TITLE,
+                            NOTE=settings.NOTE,
                             LENGTH=settings.LENGTH,
                             TOTAL_LENGTH=settings.TOTAL_LENGTH,
                             STEP_SIZE=settings.STEP_SIZE,)]

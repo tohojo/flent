@@ -1,3 +1,5 @@
+2013-09-27: Add the --note argument to store arbitrary notes in the JSON metadata.
+
 2013-09-27: Print custom title on separate line on plots.
 
 2013-09-26: Add man page.

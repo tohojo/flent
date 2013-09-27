@@ -84,3 +84,4 @@ Currently the metadata values are:
   the LENGTH.
 - =STEP_SIZE=: Time step size granularity.
 - =TIME=: ISO timestamp of the time the test was initiated.
+- =NOTE=: Arbitrary text as entered with the =--note= switch when the test was run.

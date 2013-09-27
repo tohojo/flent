@@ -83,6 +83,10 @@ available plots.
 \fB\-t\fR TITLE, \fB\-\-title\-extra\fR=\fITITLE\fR
 Text to add to plot title and data file name.
 .TP
+\fB\-n\fR NOTE, \fB\-\-note\fR=\fINOTE\fR
+Add arbitrary text as a note to be stored in the JSON data file
+(under the \fINOTE\fR key in the metadata object).
+.TP
 \fBTest configuration:\fR
 .PP
 These options affect the behaviour of the test being run and have no
@@ -231,19 +235,21 @@ Currently the metadata values are:
 .IP
 \fINAME\fR: The test name.
 .IP
-\fITITLE\fR: Any extra title specified by the -t parameter when the test was run.
+\fITITLE\fR: Any extra title specified by the \fB-t\fR parameter when the test was run.
 .IP
 \fIHOSTS\fR: List of the server hostnames connected to during the test.
 .IP
 \fILOCAL_HOST\fR: The hostname of the machine that ran the test.
 .IP
-\fILENGTH\fR: Test length in seconds, as specified by the -l parameter.
+\fILENGTH\fR: Test length in seconds, as specified by the \fB-l\fR parameter.
 .IP
-\fITOTAL_LENGTH\fR: Actual data series length, after the test has added time to the LENGTH.
+\fITOTAL_LENGTH\fR: Actual data series length, after the test has added time to the \fILENGTH\fR.
 .IP
 \fISTEP_SIZE\fR: Time step size granularity.
 .IP
 \fITIME\fR: ISO timestamp of the time the test was initiated.
+.IP
+\fINOTE\fR: Arbitrary text as entered with the \fB--note\fR switch when the test was run.
 
 .SH BUGS
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
