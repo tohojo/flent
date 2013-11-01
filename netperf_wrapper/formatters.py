@@ -477,18 +477,21 @@ class PlotFormatter(Formatter):
         titles = []
         if settings.PRINT_TITLE:
             plot_title = settings.DESCRIPTION
+            y=0.98
             if 'description' in self.config:
                 plot_title += "\n" + self.config['description']
             if settings.TITLE and not skip_title:
                 plot_title += "\n" + settings.TITLE
-            titles.append(self.plt.suptitle(plot_title, fontsize=14))
+            if 'description' in self.config and settings.TITLE and not skip_title:
+                y=1.01
+            titles.append(self.plt.suptitle(plot_title, fontsize=14, y=y))
 
         if settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
                 settings.LOCAL_HOST, settings.HOST,
                 settings.TIME,
                 settings.LENGTH, settings.STEP_SIZE)
-            titles.append(self.plt.gcf().text(0.5, 0.005, annotation_string,
+            titles.append(self.plt.gcf().text(0.5, -0.01, annotation_string,
                                             horizontalalignment='center',
                                             verticalalignment='bottom',
                                             fontsize=8))

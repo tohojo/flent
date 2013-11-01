@@ -1,3 +1,5 @@
+2013-10-31: Adjust spacing for title and annotation to work better with exported plots.
+
 2013-09-27: Add description of output formats to man page.
 
 2013-09-27: Add the --note argument to store arbitrary notes in the JSON metadata.
