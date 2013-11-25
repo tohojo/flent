@@ -55,7 +55,7 @@ class build_py(_build_py):
         if ( module == 'build_info' and package == 'netperf_wrapper'
              and 'install' in self.distribution.command_obj):
             iobj = self.distribution.command_obj['install']
-            with open(module_file, 'r') as module_fp:
+            with open(module_file, 'rb') as module_fp:
                 orig_content = module_fp.read()
 
             if iobj.fake_root:
@@ -73,7 +73,7 @@ class build_py(_build_py):
         _build_py.build_module(self, module, module_file, package)
 
         if orig_content is not None:
-            with open(module_file, 'w') as module_fp:
+            with open(module_file, 'wb') as module_fp:
                 module_fp.write(orig_content)
 
 data_files = [('share/netperf-wrapper/tests',

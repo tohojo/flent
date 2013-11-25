@@ -66,8 +66,8 @@ DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 def version(*args):
     print("Netperf-wrapper v%s.\nRunning on Python %s." %(VERSION, sys.version.replace("\n", " ")))
     try:
-        import matplotlib
-        print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, matplotlib.__version__numpy__))
+        import matplotlib, numpy
+        print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, numpy.__version__))
     except ImportError:
         print("No matplotlib found. Plots won't be available.")
     sys.exit(0)
