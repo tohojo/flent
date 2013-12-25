@@ -1,3 +1,5 @@
+2013-12-25: Don't crash on empty values in CDF plots.
+
 2013-11-25: Release v0.6.1.
 
 2013-11-25: Fix module rewrite in setup.py and numpy version output in --version.

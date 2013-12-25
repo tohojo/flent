@@ -397,23 +397,22 @@ class PlotFormatter(Formatter):
                 s_data = s_data[int(start/settings.STEP_SIZE):end]
             sizes.append(float(len(s_data)))
             d = sorted([x for x in s_data if x is not None])
-            self.medians.append(self.np.median(d))
-            self.min_vals.append(min(d))
-            max_value = max([max_value]+d)
             data.append(d)
+            if d:
+                self.medians.append(self.np.median(d))
+                self.min_vals.append(min(d))
+                max_value = max([max_value]+d)
 
-            for r in settings.SCALE_DATA:
-                d_s = [x for x in r.series(s['data']) if x is not None]
-                if d_s:
-                    max_value = max([max_value]+d_s)
+                for r in settings.SCALE_DATA:
+                    d_s = [x for x in r.series(s['data']) if x is not None]
+                    if d_s:
+                        max_value = max([max_value]+d_s)
 
 
         x_values = list(frange(0, max_value, 0.1))
 
 
         for i,s in enumerate(config['series']):
-            if not data[i]:
-                continue
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
