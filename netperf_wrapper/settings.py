@@ -181,12 +181,17 @@ class TestEnvironment(object):
         raise RuntimeError("No suitable ping tool found.")
 
 
-    def find_netperf(self, test, marking, ip_version, interval, length, host, extra_args=None):
+    def find_netperf(self, test, length, host, ip_version=None, marking=None, interval=None, extra_args=None):
         """Find a suitable netperf executable, and test for the required capabilities."""
         # This can take a while, so skip if the tests are only loaded for informational
         # purposes (e.g. for --list-tests)
         if self.informational:
             return ""
+        if ip_version is None:
+            ip_version = self.env['IP_VERSION']
+
+        if interval is None:
+            interval = self.env['STEP_SIZE']
 
         args = "-P 0 -v 0 -D -%.1f" % interval
         if ip_version == 4:
@@ -237,7 +242,7 @@ class TestEnvironment(object):
             if not "--" in args:
                 args += " --"
             args += " -e %d" % self.env['SOCKET_TIMEOUT']
-        elif test in ("TCP_STREAM", "TCP_MAERTS"):
+        elif test in ("TCP_STREAM", "TCP_MAERTS", "omni"):
             args += " -f m"
 
         return "%s %s" % (self.netperf['executable'], args)
