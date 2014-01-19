@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, optparse, socket, subprocess
+import sys, os, optparse, socket, subprocess, time
 
 from datetime import datetime
 
@@ -50,6 +50,7 @@ DEFAULT_SETTINGS = {
     'PLOTS': {},
     'IP_VERSION': None,
     'DELAY': 5,
+    'SOCKET_TIMEOUT': 2,
     'TIME': datetime.now(),
     'SCALE_DATA': [],
     'SCALE_MODE': False,
@@ -126,8 +127,10 @@ class TestEnvironment(object):
             'include': self.include_test,
             'min_host_count': self.require_host_count,
             'find_ping': self.find_ping,
+            'find_netperf': self.find_netperf,
             })
         self.informational = informational
+        self.netperf = None
 
     def execute(self, filename):
         try:
@@ -143,6 +146,12 @@ class TestEnvironment(object):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
+
+        # This can take a while, so skip if the tests are only loaded for informational
+        # purposes (e.g. for --list-tests)
+        if self.informational:
+            return ""
+
         if ip_version == 6:
             suffix = "6"
         else:
@@ -170,6 +179,65 @@ class TestEnvironment(object):
             return "%s -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
 
         raise RuntimeError("No suitable ping tool found.")
+
+
+    def find_netperf(self, test, marking, ip_version, interval, length, host, extra_args=None):
+        """Find a suitable netperf executable, and test for the required capabilities."""
+        # This can take a while, so skip if the tests are only loaded for informational
+        # purposes (e.g. for --list-tests)
+        if self.informational:
+            return ""
+
+        args = "-P 0 -v 0 -D -%.1f" % interval
+        if ip_version == 4:
+            args += " -4"
+        elif ip_version == 6:
+            args += " -6"
+
+        if marking is not None:
+            args += " -Y %s" % marking
+
+        args += " -H %s -t %s -l %d" % (host, test, length)
+
+        if self.netperf is None:
+            netperf = util.which('netperf')
+            if netperf is None:
+                raise RuntimeError("No netperf binary found in PATH.")
+
+            # Try to figure out whether this version of netperf supports the -e
+            # option for socket timeout on UDP_RR tests, and whether it has been
+            # compiled with --enable-demo. Unfortunately, the --help message is
+            # not very helpful for this, so the only way to find out is try to
+            # invoke it and check for an error message. This has the side-effect
+            # of having netperf attempt a connection to localhost, which can
+            # stall, so we kill the process almost immediately.
+
+            proc = subprocess.Popen([netperf, '-l', '1', '-D', '0.2', '--', '-e', '1'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            time.sleep(0.1) # should be enough time for netperf to output any error messages
+            proc.kill()
+            out,err = proc.communicate()
+            if "Demo Mode not configured" in str(out):
+                raise RuntimeError("%s does not support demo mode." % netperf)
+
+            self.netperf = {'executable': netperf, "-e": False}
+
+            if not "netperf: invalid option -- 'e'" in str(err):
+                self.netperf['-e'] = True
+
+        if extra_args is not None:
+            args += " " + extra_args
+
+        if test == "UDP_RR" and self.netperf["-e"]:
+            # -- might have been passed as extra_args
+            if not "--" in args:
+                args += " --"
+            args += " -e %d" % self.env['SOCKET_TIMEOUT']
+        elif test in ("TCP_STREAM", "TCP_MAERTS"):
+            args += " -f m"
+
+        return "%s %s" % (self.netperf['executable'], args)
 
 
     def require_host_count(self, count):
@@ -231,6 +299,11 @@ test_group.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VE
                   help="Use IPv4 for tests (some tests may ignore this).")
 test_group.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
                   help="Use IPv6 for tests (some tests may ignore this).")
+test_group.add_option("--socket-timeout", action="store", type=int, dest="SOCKET_TIMEOUT",
+                  help="Socket timeout (in seconds) used for UDP delay measurement, to prevent "
+                  "stalls on packet loss. Only enabled if the installed netperf version is "
+                  "detected to support this (requires SVN version of netperf). "
+                  "Default value: %d seconds. Set to 0 to disable." % DEFAULT_SETTINGS['SOCKET_TIMEOUT'])
 parser.add_option_group(test_group)
 
 plot_group = optparse.OptionGroup(parser, "Plot configuration",

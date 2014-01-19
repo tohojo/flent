@@ -1,3 +1,6 @@
+2014-01-19: Add detection of supported netperf options and support passing -e to
+            netperf for UDP_RR socket timeout (adds --socket-timeout parameter).
+
 2014-01-19: Complain if run without a hostname.
 
 2014-01-18: Add rrul_be test using exclusively BE traffic.

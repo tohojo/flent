@@ -118,6 +118,16 @@ Use IPv4 for tests (some tests may ignore this).
 \fB\-6\fR, \fB\-\-ipv6\fR
 Use IPv6 for tests (some tests may ignore this).
 .TP
+\fB\-\-socket\-timeout\fR=\fISOCKET_TIMEOUT\fR
+Socket timeout (in seconds) used for UDP delay measurement, to prevent
+stalls on packet loss. Only enabled if the installed netperf version is
+detected to support this (requires SVN version of netperf).
+.IP
+For the default value, see the output of netperf-wrapper -h. The value of this
+parameter is an implicit upper bound on how long a round-trip time that can be
+measured. As such you may need to adjust it if you are experiencing latency
+above the default value. Set to 0 to disable.
+.TP
 \fBPlot configuration:\fR
 .PP
 These options are used to configure the appearance of plot output and
