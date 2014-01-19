@@ -1,3 +1,5 @@
+2014-01-19: Complain if run without a hostname.
+
 2014-01-18: Add rrul_be test using exclusively BE traffic.
 
 2013-12-25: Don't crash on empty values in CDF plots.

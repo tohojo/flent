@@ -310,6 +310,9 @@ class Settings(optparse.Values, object):
         if not 'TOTAL_LENGTH' in s:
             self.TOTAL_LENGTH = self.LENGTH
 
+        if not self.HOSTS:
+            raise RuntimeError("No hostname specified.")
+
     def lookup_hosts(self):
         """If no explicit IP version is set, do a hostname lookup and try to"""
         version = 4
