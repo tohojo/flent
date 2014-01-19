@@ -383,9 +383,6 @@ class Settings(optparse.Values, object):
         if not 'TOTAL_LENGTH' in s:
             self.TOTAL_LENGTH = self.LENGTH
 
-        if not self.HOSTS:
-            raise RuntimeError("No hostname specified.")
-
     def lookup_hosts(self):
         """If no explicit IP version is set, do a hostname lookup and try to"""
         version = 4
@@ -480,7 +477,7 @@ def load():
     if hasattr(settings, 'LIST_PLOTS') and settings.LIST_PLOTS:
         list_plots()
 
-    if not settings.HOSTS and not results:
+    if not settings.HOSTS and not results[0]:
         raise RuntimeError("Must specify host (-H option).")
 
     return settings, results
