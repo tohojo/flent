@@ -212,7 +212,7 @@ class TestEnvironment(object):
             # of having netperf attempt a connection to localhost, which can
             # stall, so we kill the process almost immediately.
 
-            proc = subprocess.Popen([netperf, '-l', '1', '-D', '0.2', '--', '-e', '1'],
+            proc = subprocess.Popen([netperf, '-l', '1', '-D', '-0.2', '--', '-e', '1'],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             time.sleep(0.1) # should be enough time for netperf to output any error messages
@@ -220,6 +220,9 @@ class TestEnvironment(object):
             out,err = proc.communicate()
             if "Demo Mode not configured" in str(out):
                 raise RuntimeError("%s does not support demo mode." % netperf)
+
+            if "invalid option -- '0'" in str(err):
+                raise RuntimeError("%s does not support accurate intermediate time reporting. You need netperf v2.6.0 or newer." % netperf)
 
             self.netperf = {'executable': netperf, "-e": False}
 
