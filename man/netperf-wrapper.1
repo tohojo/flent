@@ -302,6 +302,8 @@ Currently the metadata values are:
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
 done by netperf can experience packet loss to the extent that the test aborts
 completely, which can cause missing data points for some measurement series.
+The --socket-timeout feature can alleviate this, but requires a recent SVN
+version of netperf to work.
 .PP
 Probably many other bugs. Please report any found to
 \fIhttps://github.com/tohojo/netperf-wrapper/issues\fR and include the output of
