@@ -87,6 +87,11 @@ Text to add to plot title and data file name.
 Add arbitrary text as a note to be stored in the JSON data file
 (under the \fINOTE\fR key in the metadata object).
 .TP
+\fB\-x\fR, \fB\-\-extended\-metadata\fR
+Collect extended metadata and store it with the data file.
+May include details of your machine you don't want to distribute; see the
+section on the data format below.
+.TP
 \fBTest configuration:\fR
 .PP
 These options affect the behaviour of the test being run and have no
@@ -297,6 +302,16 @@ Currently the metadata values are:
 \fITIME\fR: ISO timestamp of the time the test was initiated.
 .IP
 \fINOTE\fR: Arbitrary text as entered with the \fB--note\fR switch when the test was run.
+.IP
+\fINETPERF_WRAPPER_VERSION\fR: Version of netperf-wrapper that generated the
+data file.
+.PP
+If the \fB\-\-extended\-metadata\fR switch is turned on, the following
+additional values are collected and stored:
+.IP
+\fIKERNEL_NAME\fR: The kernel name as reported by \fIuname -s\fR.
+.IP
+\fIKERNEL_RELEASE\fR: The kernel release as reported by \fIuname -r\fR.
 
 .SH BUGS
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements

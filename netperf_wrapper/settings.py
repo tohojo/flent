@@ -59,6 +59,7 @@ DEFAULT_SETTINGS = {
     'PRINT_LEGEND': True,
     'ZERO_Y': False,
     'LOG_SCALE': True,
+    'EXTENDED_METADATA': False,
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -285,6 +286,9 @@ parser.add_option("-t", "--title-extra", action="store", type="string", dest="TI
 parser.add_option("-n", "--note", action="store", type="string", dest="NOTE",
                   help="Add arbitrary text as a note to be stored in the JSON data file "
                   "(under the NOTE key in the metadata object).")
+parser.add_option("-x", "--extended-metadata", action="store_true", dest="EXTENDED_METADATA",
+                  help="Collect extended metadata and store it with the data file. "
+                  "May include details of your machine you don't want to distribute; see man page.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -464,7 +468,10 @@ def load():
                             NOTE=settings.NOTE,
                             LENGTH=settings.LENGTH,
                             TOTAL_LENGTH=settings.TOTAL_LENGTH,
-                            STEP_SIZE=settings.STEP_SIZE,)]
+                            STEP_SIZE=settings.STEP_SIZE,
+                            NETPERF_WRAPPER_VERSION=VERSION,)]
+        if settings.EXTENDED_METADATA:
+            record_extended_metadata(results[0])
 
     if settings.SCALE_DATA:
         scale_data = []
@@ -512,3 +519,8 @@ def list_plots():
     for p in plots:
         sys.stderr.write(("  %-"+max_len+"s :  %s\n") % (p, settings.PLOTS[p]['description']))
     sys.exit(0)
+
+def record_extended_metadata(results):
+    m = results.meta()
+    m['KERNEL_NAME'] = subprocess.check_output(["uname","-s"]).strip()
+    m['KERNEL_RELEASE'] = subprocess.check_output(["uname","-r"]).strip()
