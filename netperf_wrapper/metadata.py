@@ -31,6 +31,7 @@ def record_extended_metadata(results):
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
     m['IP_ADDRS'] = get_ip_addrs()
+    m['IFACE_OFFLOADS'] = get_offloads()
 
 
 def get_command_output(command):
@@ -72,3 +73,23 @@ def get_ip_addrs(iface=None):
                     a = a[:a.index('/')]
                 addrs.append(a)
     return addrs
+
+def get_offloads(iface=None):
+    offloads = {}
+    if iface is None:
+        return offloads
+    output = get_command_output("ethtool -k %s" % iface)
+    val_map = {'on': True, 'off': False}
+    interesting_offloads = ['tcp-segmentation-offload',
+                            'generic-segmentation-offload',
+                            'generic-receive-offload']
+    if output is not None:
+        for l in output.splitlines():
+            parts = l.split()
+            key = parts[0].strip(":")
+            if key in interesting_offloads:
+                try:
+                   offloads[key] = val_map[parts[1]]
+                except KeyError:
+                    continue
+    return offloads
