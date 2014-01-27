@@ -31,6 +31,7 @@ except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 from netperf_wrapper.resultset import ResultSet
 from netperf_wrapper.build_info import DATA_DIR, VERSION
+from netperf_wrapper.metadata import record_extended_metadata
 from netperf_wrapper import util
 
 DEFAULT_SETTINGS = {
@@ -472,6 +473,9 @@ def load():
                             NETPERF_WRAPPER_VERSION=VERSION,)]
         if settings.EXTENDED_METADATA:
             record_extended_metadata(results[0])
+            import pprint
+            pprint.pprint(results[0].meta())
+            sys.exit(0)
 
     if settings.SCALE_DATA:
         scale_data = []
@@ -519,8 +523,3 @@ def list_plots():
     for p in plots:
         sys.stderr.write(("  %-"+max_len+"s :  %s\n") % (p, settings.PLOTS[p]['description']))
     sys.exit(0)
-
-def record_extended_metadata(results):
-    m = results.meta()
-    m['KERNEL_NAME'] = subprocess.check_output(["uname","-s"]).strip()
-    m['KERNEL_RELEASE'] = subprocess.check_output(["uname","-r"]).strip()
