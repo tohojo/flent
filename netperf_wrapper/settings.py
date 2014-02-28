@@ -401,11 +401,7 @@ class Settings(optparse.Values, object):
         version = 4
         for h in self.HOSTS:
             try:
-                hostnames = socket.getaddrinfo(h, None, socket.AF_UNSPEC,
-                                               socket.SOCK_STREAM)
-                if not hostnames:
-                    raise RuntimeError("Found no hostnames on lookup of %s" % h)
-                hostname = hostnames[0]
+                hostname = util.lookup_host(h)
                 if hostname[0] == socket.AF_INET6:
                     version = 6
             except socket.gaierror as e:

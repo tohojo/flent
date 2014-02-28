@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, os, gzip, io
+import math, os, gzip, io, socket
 from bisect import bisect_left
 from datetime import datetime
 
@@ -87,6 +87,14 @@ def which(executable):
                 return filename
 
     return None
+
+def lookup_host(hostname):
+    hostnames = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC,
+                                               socket.SOCK_STREAM)
+    if not hostnames:
+        raise RuntimeError("Found no hostnames on lookup of %s" % h)
+
+    return hostnames[0]
 
 # In Python 2.6, the GzipFile object does not have a 'closed' property, which makes
 # the io module blow up when trying to close it. This tidbit tries to detect that
