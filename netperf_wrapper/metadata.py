@@ -104,7 +104,7 @@ def get_offloads(ifaces=None):
                         offloads[key] = val_map[parts[1]]
                     except KeyError:
                         continue
-        offload_list[iface] = offloads
+            offload_list[iface] = offloads
     return offload_list
 
 
