@@ -317,6 +317,12 @@ additional values are collected and stored:
 .IP
 \fIIFACE_OFFLOADS\fR: Information about network adapter offload engines for the
 interface used to connect to the test host.
+.IP
+\fIEGRESS_GWS\fR: IP addresses of all detected default gateways on the system,
+and the interfaces they are reachable through.
+.IP
+\fIEGRESS_ROUTE\fR: Egress interface, and IP address of the next hop router (if
+applicable), used to reach the test target.
 
 .SH BUGS
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
