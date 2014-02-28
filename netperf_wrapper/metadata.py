@@ -33,7 +33,13 @@ def record_extended_metadata(results):
     m['IP_ADDRS'] = get_ip_addrs()
     m['EGRESS_GWS'] = get_egress_gws()
     m['EGRESS_ROUTE'] = get_egress_route(target=m['HOST'])
-    m['IFACE_OFFLOADS'] = get_offloads()
+
+    ifaces = []
+    if m['EGRESS_ROUTE']:
+        ifaces.append(m['EGRESS_ROUTE']['iface'])
+    if m['EGRESS_GWS']:
+        ifaces.extend([i['iface'] for i in m['EGRESS_GWS'] if 'iface' in i])
+    m['IFACE_OFFLOADS'] = get_offloads(set(ifaces))
 
 
 def get_command_output(command):
@@ -79,25 +85,27 @@ def get_ip_addrs(iface=None):
                 addrs.append(a)
     return addrs
 
-def get_offloads(iface=None):
-    offloads = {}
-    if iface is None:
-        return offloads
-    output = get_command_output("ethtool -k %s" % iface)
-    val_map = {'on': True, 'off': False}
-    interesting_offloads = ['tcp-segmentation-offload',
-                            'generic-segmentation-offload',
-                            'generic-receive-offload']
-    if output is not None:
-        for l in output.splitlines():
-            parts = l.split()
-            key = parts[0].strip(":")
-            if key in interesting_offloads:
-                try:
-                   offloads[key] = val_map[parts[1]]
-                except KeyError:
-                    continue
-    return offloads
+def get_offloads(ifaces=None):
+    offload_list = {}
+
+    for iface in ifaces:
+        offloads = {}
+        output = get_command_output("ethtool -k %s" % iface)
+        val_map = {'on': True, 'off': False}
+        interesting_offloads = ['tcp-segmentation-offload',
+                                'generic-segmentation-offload',
+                                'generic-receive-offload']
+        if output is not None:
+            for l in output.splitlines():
+                parts = l.split()
+                key = parts[0].strip(":")
+                if key in interesting_offloads:
+                    try:
+                        offloads[key] = val_map[parts[1]]
+                    except KeyError:
+                        continue
+        offload_list[iface] = offloads
+    return offload_list
 
 
 def get_egress_gws():
