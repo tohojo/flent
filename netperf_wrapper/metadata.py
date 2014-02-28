@@ -152,7 +152,7 @@ def get_egress_route(target):
                 if p == 'dev':
                     route['iface'] = parts.next()
         else:
-            output = get_command_output("route get %s" % ip)
+            output = get_command_output("route -n get %s" % ip)
             if output is not None:
                 # BSD syntax. Example:
                 # $ route -n get 8.8.8.8
@@ -169,7 +169,7 @@ def get_egress_route(target):
                     if not ":" in line:
                         continue
                     k,v = [i.strip() for i in line.split(":")]
-                    if k == "route to":
+                    if k == "gateway":
                         route['ip'] = v
                     if k == "interface":
                         route['iface'] = v
