@@ -115,6 +115,8 @@ def get_egress_gws():
 
         for line in lines:
             parts = line.split()
+            if not parts:
+                continue
 
             # Try to find the column header; should have "Destination" as first word.
             if parts[0] == "Destination":
