@@ -31,6 +31,8 @@ def record_extended_metadata(results):
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
     m['IP_ADDRS'] = get_ip_addrs()
+    m['EGRESS_GWS'] = get_egress_gws()
+    m['EGRESS_ROUTE'] = get_egress_route(target=m['HOST'])
     m['IFACE_OFFLOADS'] = get_offloads()
 
 
@@ -67,10 +69,12 @@ def get_ip_addrs(iface=None):
             # identifier, and fields are whitespace-separated. Look for that and parse
             # accordingly.
             parts = l.strip().split()
-            if parts[0] in ('inet', 'inet6'):
+            if parts and parts[0] in ('inet', 'inet6'):
                 a =  parts[1]
                 if '/' in a: # iproute2 adds subnet qualification; strip that out
                     a = a[:a.index('/')]
+                if '%' in a: # BSD may add interface qualification; strip that out
+                    a = a[:a.index('%')]
                 addrs.append(a)
     return addrs
 
@@ -93,3 +97,78 @@ def get_offloads(iface=None):
                 except KeyError:
                     continue
     return offloads
+
+
+def get_egress_gws():
+    gws = []
+    # Linux netstat only outputs IPv4 data by default, but can be made to output both
+    # if passed both -4 and -6
+    output = get_command_output("netstat -46nr")
+    if output is None:
+        # If that didn't work, maybe netstat doesn't support -4/-6 (e.g. BSD), so try
+        # without
+        output = get_command_output("netstat -nr")
+    if output is not None:
+        output = output.replace("Next Hop", "Next_Hop") # breaks part splitting
+        lines = output.splitlines()
+        iface_idx = None
+
+        for line in lines:
+            parts = line.split()
+
+            # Try to find the column header; should have "Destination" as first word.
+            if parts[0] == "Destination":
+                # Linux uses Iface or If as header (for IPv4/6), FreeBSD uses If
+                for n in ("Iface", "Netif", "If"):
+                    if n in parts:
+                        iface_idx = parts.index(n)
+            if parts[0] in ("0.0.0.0", "default", "::/0"):
+                if iface_idx is not None:
+                    gw = {'ip': parts[1], 'iface': parts[iface_idx]}
+                    if not gw['iface'].startswith('lo'):
+                        gws.append(gw)
+                else:
+                    gws.append({'ip': parts[1]})
+    return gws
+
+def get_egress_route(target):
+    route = {}
+
+    if target:
+        ip = util.lookup_host(target)[4][0]
+        output = get_command_output("ip route get %s" % ip)
+        if output is not None:
+            # Linux iproute2 syntax. Example:
+            # $ ip r get 8.8.8.8
+            # 8.8.8.8 via 10.109.3.254 dev wlan0  src 10.109.0.146
+            #     cache
+            parts = iter(output.split())
+            for p in parts:
+                if p == 'via':
+                    route['ip'] = parts.next()
+                if p == 'dev':
+                    route['iface'] = parts.next()
+        else:
+            output = get_command_output("route get %s" % ip)
+            if output is not None:
+                # BSD syntax. Example:
+                # $ route -n get 8.8.8.8
+                #    route to: 8.8.8.8
+                # destination: default
+                #        mask: default
+                #     gateway: 10.42.7.225
+                #   interface: em0
+                #       flags: <UP,GATEWAY,DONE,STATIC>
+                #  recvpipe  sendpipe  ssthresh  rtt,msec    mtu        weight    expire
+                #        0         0         0         0      1500         1         0
+
+                for line in output.splitlines():
+                    if not ":" in line:
+                        continue
+                    k,v = [i.strip() for i in line.split(":")]
+                    if k == "route to":
+                        route['ip'] = v
+                    if k == "interface":
+                        route['iface'] = v
+
+    return route or None
