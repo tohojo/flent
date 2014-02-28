@@ -40,7 +40,8 @@ def get_command_output(command):
     """Try executing a command, and if successful,
     return the strip()'ed output, else None."""
     try:
-        res = subprocess.check_output(command, universal_newlines=True, shell=True)
+        res = subprocess.check_output(command, universal_newlines=True, shell=True,
+                                      stderr=subprocess.STDOUT)
         return res.strip()
     except subprocess.CalledProcessError:
         return None
