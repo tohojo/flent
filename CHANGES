@@ -1,3 +1,5 @@
+2013-03-01: Add collection of several extended metadata items.
+
 2014-01-22: Initial provisions for optionally gathering extended metadata on test runs.
 
 2014-01-19: Add detection of supported netperf options and support passing -e to
