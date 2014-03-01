@@ -470,9 +470,6 @@ def load():
                             IP_VERSION=settings.IP_VERSION)]
         if settings.EXTENDED_METADATA:
             record_extended_metadata(results[0])
-            import pprint
-            pprint.pprint(results[0].meta())
-            sys.exit(0)
 
     if settings.SCALE_DATA:
         scale_data = []
