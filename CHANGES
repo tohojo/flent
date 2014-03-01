@@ -1,6 +1,6 @@
-2013-03-01: Add metadata output formatter to extract metadata from stored data files.
+2014-03-01: Add metadata output formatter to extract metadata from stored data files.
 
-2013-03-01: Add collection of several extended metadata items.
+2014-03-01: Add collection of several extended metadata items.
 
 2014-01-22: Initial provisions for optionally gathering extended metadata on test runs.
 
