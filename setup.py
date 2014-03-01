@@ -3,7 +3,7 @@
 ## setup.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:      4 december 2012
+## Date:      4 December 2012
 ## Copyright (c) 2012, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify

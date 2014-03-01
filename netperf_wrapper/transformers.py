@@ -3,7 +3,7 @@
 ## tranformers.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     24 oktober 2012
+## Date:     24 October 2012
 ## Copyright (c) 2012, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify

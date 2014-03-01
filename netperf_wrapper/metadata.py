@@ -3,7 +3,7 @@
 ## metadata.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     27 januar 2014
+## Date:     27 January 2014
 ## Copyright (c) 2014, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify

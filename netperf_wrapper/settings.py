@@ -3,7 +3,7 @@
 ## settings.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     25 november 2012
+## Date:     25 November 2012
 ## Copyright (c) 2012, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
