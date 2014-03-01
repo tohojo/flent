@@ -22,8 +22,12 @@
 import sys, os, optparse, socket, subprocess, time
 
 from datetime import datetime
-
 from fnmatch import fnmatch
+
+try:
+    from configparser import RawConfigParser
+except ImportError:
+    from ConfigParser import RawConfigParser
 
 try:
     from collections import OrderedDict
@@ -45,6 +49,7 @@ DEFAULT_SETTINGS = {
     'FORMAT': 'default',
     'TITLE': '',
     'NOTE': '',
+    'RCFILE': os.path.expanduser("~/.netperf-wrapperrc"),
     'LOG_FILE': None,
     'INPUT': [],
     'DESCRIPTION': 'No description',
@@ -61,6 +66,27 @@ DEFAULT_SETTINGS = {
     'ZERO_Y': False,
     'LOG_SCALE': True,
     'EXTENDED_METADATA': False,
+    }
+
+CONFIG_TYPES = {
+    'HOST': 'str',
+    'STEP_SIZE': 'float',
+    'LENGTH': 'int',
+    'OUTPUT': 'str',
+    'FORMAT': 'str',
+    'TITLE': 'str',
+    'NOTE': 'str',
+    'LOG_FILE': 'str',
+    'IP_VERSION': 'int',
+    'DELAY': 'int',
+    'SOCKET_TIMEOUT': 'int',
+    'SCALE_MODE': 'bool',
+    'ANNOTATE': 'bool',
+    'PRINT_TITLE': 'bool',
+    'PRINT_LEGEND': 'bool',
+    'ZERO_Y': 'bool',
+    'LOG_SCALE': 'bool',
+    'EXTENDED_METADATA': 'bool',
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -287,6 +313,8 @@ parser.add_option("-t", "--title-extra", action="store", type="string", dest="TI
 parser.add_option("-n", "--note", action="store", type="string", dest="NOTE",
                   help="Add arbitrary text as a note to be stored in the JSON data file "
                   "(under the NOTE key in the metadata object).")
+parser.add_option("-r", "--rcfile", action="store", type="string", dest="RCFILE",
+                  help="Load configuration data from RCFILE (default ~/.netperf-wrapperrc).")
 parser.add_option("-x", "--extended-metadata", action="store_true", dest="EXTENDED_METADATA",
                   help="Collect extended metadata and store it with the data file. "
                   "May include details of your machine you don't want to distribute; see man page.")
@@ -358,7 +386,7 @@ parser.add_option_group(misc_group)
 
 class Settings(optparse.Values, object):
 
-    def check_testname(self, test_name):
+    def load_test_or_host(self, test_name):
         filename = os.path.join(TEST_PATH, test_name + ".conf")
 
         if not os.path.exists(filename):
@@ -369,6 +397,35 @@ class Settings(optparse.Values, object):
         else:
             self.NAME = test_name
 
+    def load_rcfile(self):
+        if os.path.exists(self.RCFILE):
+
+            config = RawConfigParser()
+            config.optionxform = lambda x: x.upper()
+            config.read(self.RCFILE)
+
+            items = []
+
+            if config.has_section('global'):
+                items.extend(config.items('global'))
+            if self.NAME is not None and config.has_section(self.NAME):
+                items.extend(config.items(self.NAME))
+
+            for k,v in items:
+                if k in CONFIG_TYPES and getattr(self,k) == DEFAULT_SETTINGS[k]:
+                    if CONFIG_TYPES[k] == 'str':
+                        setattr(self, k, v)
+                    elif CONFIG_TYPES[k] == 'int':
+                        setattr(self, k, int(v))
+                    elif CONFIG_TYPES[k] == 'float':
+                        setattr(self, k, float(v))
+                    elif CONFIG_TYPES[k] == 'bool':
+                        if v.lower() in ('1', 'yes', 'true', 'on'):
+                            setattr(self, k, True)
+                        elif v.lower() in ('0', 'no', 'false', 'off'):
+                            setattr(self, k, False)
+                        else:
+                            raise ValueError("Not a boolean: %s" % v)
 
     def load_test(self, test_name=None, informational=False):
         if test_name is not None:
@@ -439,7 +496,9 @@ def load():
             else:
                 settings.INPUT.append(a)
         else:
-            settings.check_testname(a)
+            settings.load_test_or_host(a)
+
+    settings.load_rcfile()
 
     if settings.INPUT:
         results = []

@@ -87,6 +87,10 @@ Text to add to plot title and data file name.
 Add arbitrary text as a note to be stored in the JSON data file
 (under the \fINOTE\fR key in the metadata object).
 .TP
+\fB\-r\fR RCFILE, \fB\-\-rcfile\fR=\fIRCFILE\fR
+Load configuration data from \fIRCFILE\fR (default \fI~/.netperf-wrapperrc\fR). See
+section below for information on the rc file format.
+.TP
 \fB\-x\fR, \fB\-\-extended\-metadata\fR
 Collect extended metadata and store it with the data file.
 May include details of your machine you don't want to distribute; see the
@@ -254,6 +258,15 @@ suitable for human consumption). It is output as a list of objects, where each
 object corresponds to the metadata of one test. Mostly useful for inspecting
 metadata of stored data files.
 
+.SH RC FILE
+Some of the command line options can be specified in an rc file. By default,
+netperf-wrapper looks for this in \fI~/.netperf-wrapperrc\fR, but an alternative
+location can be specified with the \fB--rcfile\fR command line option.
+
+The rc file allows options to be specified globally, an optionally overridden
+for specific tests. For an explanation of the options, refer to the annotated
+example rc file, by default installed to
+\fI/usr/share/doc/netperf-wrapper/netperf-wrapperrc.example\fR.
 
 .SH EXAMPLES
 Run the \fIrrul\fR test against \fItestserver.example.com\fI:

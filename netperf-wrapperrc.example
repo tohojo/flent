@@ -1,0 +1,131 @@
+## Sample rcfile for netperf-wrapper. Allows options to be specified
+## on a global or per-test basis. The file is divided into sections with
+## section headers between square brackets.
+##
+## Options specified in the [global] section apply to everything, while
+## further sections specify options that are specific for the test name
+## corresponding to the section name.
+##
+## Comments start with # or ;, and option names are case insensitive.
+## The supported options are listed with commentary below. Options specified
+## on the command line override options set in the rcfile.
+##
+## To use: Copy to ~/.netperf-wrapperrc and edit, or specify location of
+## the file with --rcfile.
+
+[global]
+
+# Default test target host.
+# Corresponding command line option: --host (or unqualified argument).
+;host = demo.tohojo.dk
+
+# Data point step size and sampling interval (seconds).
+# Corresponding command line option: --step-size
+;step_size = 0.2
+
+# Test length (not including delay before starting test).
+# Corresponding command line option: --length
+;length = 60
+
+# Delay from start of test to the rest of the test starts (only some tests).
+# Typically used to delay bandwidth loaders after starting latency measurements;
+# the total runtime, for tests that use delay, typically becomes length+2*delay.
+# Corresponding command line option: --delay
+;delay = 5
+
+# Output file; defaults to standard output (or an interactive viewer for plots)
+# if a graphical display is available. Note that for some output modes (e.g. plots),
+# the output file name determines file format.
+# Corresponding command line option: --output
+;output =
+
+# Output format.
+# Corresponding command line option: --format
+;format =
+
+# Title added to data file name, printed on plots etc.
+# Probably not terribly useful to set in a config file...
+# Corresponding command line option: --title-extra
+;title =
+
+# Note added to the data file as metadata (key NOTE).
+# Probably not terribly useful to set in a config file...
+# Corresponding command line option: --note
+;note =
+
+# Filename to output debug logging to.
+# Debug logging is disabled if this is not set.
+# Corresponding command line option: --log-file
+;log_file =
+
+# IP version to use for connecting to the target host.
+# Valid values: 4 or 6.
+# Corresponding command line option: --ipv4 or --ipv6
+;ip_version = 4
+
+# Socket timeout to pass to netperf for UDP tests (if the netperf) version
+# supports it. Units of seconds.
+# Corresponding command line option: --socket-timeout
+;socket_timeout = 2
+
+# Whether to interpret multiple input files as being used to scale plots.
+# If not set, multiple input files are interpreted to be plotted side-by-side.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --scale-mode
+;scale_mode = no
+
+# Whether to print annotations (hostname etc) on plots.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --no-annotation
+;annotate = yes
+
+# Whether to print the test title on plots.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --no-title
+;print_title = yes
+
+# Whether to print plot legend.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --no-legend
+;print_legend = yes
+
+# Whether to always start y-axis from 0 (rather than scaling to the smallest
+# data point).
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --zero-y
+;zero_y = no
+
+# Whether to enable automatic log-scaling of plot axes.
+# If not disabled here (or on the command line), log scales are enabled if
+# the maximum data point is more than 20 times the value of the minimum.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --disable-log
+;log_scale = yes
+
+# Whether to gather extended meta data and store it in the data file.
+# This may include sensitive data from the machine running the test, that
+# it may not be desireable to publish. See the man page for the list of
+# data gathered.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --extended-metadata
+;extended_metadata = no
+
+## Sections can specify settings overriding the global settings for
+## specific tests. For instance, this sets plot output to be default
+## for the RRUL test:
+;[rrul]
+;format=plot
