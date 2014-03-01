@@ -85,7 +85,7 @@ def get_ip_addrs(iface=None):
                 addrs.append(a)
     return addrs
 
-def get_offloads(ifaces=None):
+def get_offloads(ifaces=[]):
     offload_list = {}
 
     for iface in ifaces:
@@ -182,4 +182,38 @@ def get_egress_route(target):
                     if k == "interface":
                         route['iface'] = v
 
+    if route:
+        route['qdiscs'] = get_qdiscs(route['iface'])
+
     return route or None
+
+def get_qdiscs(iface):
+    qdiscs = []
+
+    output = get_command_output("tc qdisc show dev %s" % iface)
+    if output is not None:
+        lines = output.splitlines()
+        for line in lines:
+            parts = line.split()
+            if not parts or parts[0] != 'qdisc':
+                continue
+            qdisc = {'name': parts[1],
+                     'id': parts[2]}
+            if parts[3] == 'root':
+                qdisc['parent'] = 'root'
+                params = parts[4:]
+            else:
+                qdisc['parent'] = parts[4]
+                params = parts[5:]
+
+            # Assume that the remainder of the output line is a set of space delimited
+            # key/value pairs. Some qdiscs (e.g. fq_codel) has a single non-valued parameter
+            # at the end, in which case the length of params will be uneven. In this case an
+            # empty string is added as the parameter "value", to make sure it is included.
+            if len(params) % 2 > 0:
+                params.append("")
+            qdisc['params'] = dict(zip(params[::2], params[1::2]))
+
+            qdiscs.append(qdisc)
+
+    return qdiscs or None
