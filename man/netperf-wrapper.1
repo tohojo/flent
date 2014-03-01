@@ -266,7 +266,8 @@ netperf-wrapper -p icmp_cdf *.json.gz
 
 .SH THE JSON DATA FORMAT
 The aggregated test data is saved in a file called
-\fI<test_name>-<date>.json.gz\fR. This file contains the data points generated
+\fI<test_name>-<date>.<title>.json.gz\fR (the title part is omitted if no title
+is specified by the \fB-t\fR parameter). This file contains the data points generated
 during the test, as well as some metadata. The top-level json object has three
 keys in it: \fIx_values\fR, \fIresults\fR and \fImetadata\fR.
 .PP
