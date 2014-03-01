@@ -34,14 +34,6 @@ def record_extended_metadata(results):
     m['EGRESS_GWS'] = get_egress_gws()
     m['EGRESS_ROUTE'] = get_egress_route(target=m['HOST'])
 
-    ifaces = []
-    if m['EGRESS_ROUTE']:
-        ifaces.append(m['EGRESS_ROUTE']['iface'])
-    if m['EGRESS_GWS']:
-        ifaces.extend([i['iface'] for i in m['EGRESS_GWS'] if 'iface' in i])
-    m['IFACE_OFFLOADS'] = get_offloads(set(ifaces))
-
-
 def get_command_output(command):
     """Try executing a command, and if successful,
     return the strip()'ed output, else None."""
@@ -85,27 +77,26 @@ def get_ip_addrs(iface=None):
                 addrs.append(a)
     return addrs
 
-def get_offloads(ifaces=[]):
-    offload_list = {}
+def get_offloads(iface):
+    offloads = {}
 
-    for iface in ifaces:
-        offloads = {}
-        output = get_command_output("ethtool -k %s" % iface)
-        val_map = {'on': True, 'off': False}
-        interesting_offloads = ['tcp-segmentation-offload',
-                                'generic-segmentation-offload',
-                                'generic-receive-offload']
-        if output is not None:
-            for l in output.splitlines():
-                parts = l.split()
-                key = parts[0].strip(":")
-                if key in interesting_offloads:
-                    try:
-                        offloads[key] = val_map[parts[1]]
-                    except KeyError:
-                        continue
-            offload_list[iface] = offloads
-    return offload_list
+    output = get_command_output("ethtool -k %s" % iface)
+    val_map = {'on': True, 'off': False}
+    interesting_offloads = ['tcp-segmentation-offload',
+                            'udp-fragmentation-offload',
+                            'large-receive-offload',
+                            'generic-segmentation-offload',
+                            'generic-receive-offload']
+    if output is not None:
+        for l in output.splitlines():
+            parts = l.split()
+            key = parts[0].strip(":")
+            if key in interesting_offloads:
+                try:
+                    offloads[key] = val_map[parts[1]]
+                except KeyError:
+                    continue
+    return offloads or None
 
 
 def get_egress_gws():
@@ -184,6 +175,7 @@ def get_egress_route(target):
 
     if route:
         route['qdiscs'] = get_qdiscs(route['iface'])
+        route['offloads'] = get_offloads(route['iface'])
 
     return route or None
 
