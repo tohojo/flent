@@ -31,8 +31,8 @@ def record_extended_metadata(results):
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
     m['IP_ADDRS'] = get_ip_addrs()
-    m['EGRESS_GWS'] = get_egress_gws()
-    m['EGRESS_ROUTE'] = get_egress_route(target=m['HOST'])
+    m['GATEWAYS'] = get_gateways()
+    m['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
 
 def get_command_output(command):
     """Try executing a command, and if successful,
@@ -99,7 +99,7 @@ def get_offloads(iface):
     return offloads or None
 
 
-def get_egress_gws():
+def get_gateways():
     gws = []
     # Linux netstat only outputs IPv4 data by default, but can be made to output both
     # if passed both -4 and -6
@@ -133,11 +133,11 @@ def get_egress_gws():
                     gws.append({'ip': parts[1]})
     return gws
 
-def get_egress_route(target):
+def get_egress_info(target, ip_version):
     route = {}
 
     if target:
-        ip = util.lookup_host(target)[4][0]
+        ip = util.lookup_host(target, ip_version)[4][0]
         output = get_command_output("ip route get %s" % ip)
         if output is not None:
             # Linux iproute2 syntax. Example:
@@ -147,7 +147,7 @@ def get_egress_route(target):
             parts = iter(output.split())
             for p in parts:
                 if p == 'via':
-                    route['ip'] = parts.next()
+                    route['nexthop'] = parts.next()
                 if p == 'dev':
                     route['iface'] = parts.next()
         else:
@@ -169,13 +169,16 @@ def get_egress_route(target):
                         continue
                     k,v = [i.strip() for i in line.split(":")]
                     if k == "gateway":
-                        route['ip'] = v
+                        route['nexthop'] = v
                     if k == "interface":
                         route['iface'] = v
 
     if route:
         route['qdiscs'] = get_qdiscs(route['iface'])
         route['offloads'] = get_offloads(route['iface'])
+        route['target'] = ip
+        if not 'nexthop' in route:
+            route['nexthop'] = None
 
     return route or None
 
