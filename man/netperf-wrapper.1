@@ -307,7 +307,8 @@ Currently the metadata values are:
 data file.
 .PP
 If the \fB\-\-extended\-metadata\fR switch is turned on, the following
-additional values are collected and stored:
+additional values are collected and stored (to the extent they are available
+from the platform):
 .IP
 \fIKERNEL_NAME\fR: The kernel name as reported by \fIuname -s\fR.
 .IP
@@ -316,13 +317,18 @@ additional values are collected and stored:
 \fIIP_ADDRS\fR: IP addresses assigned to the machine running netperf-wrapper.
 .IP
 \fIIFACE_OFFLOADS\fR: Information about network adapter offload engines for the
-interface used to connect to the test host.
+interface used to connect to the test host. Only available if the \fIethtool\fR
+binary is present on the system.
 .IP
 \fIEGRESS_GWS\fR: IP addresses of all detected default gateways on the system,
-and the interfaces they are reachable through.
+and the interfaces they are reachable through. Only available if the
+\fInetstat\fR binary is present on the system.
 .IP
-\fIEGRESS_ROUTE\fR: Egress interface, and IP address of the next hop router (if
-applicable), used to reach the test target.
+\fIEGRESS_ROUTE\fR: Egress interface, its qdisc configuration, and (if
+applicable) the IP address of the next-hop router used to reach the test target.
+The egress interface and next-hop router requires that the \fIip\fR binary is
+present on Linux, but can be extracted from \fIroute\fR on BSD. Qdisc
+information requires the \fItc\fR binary to be present.
 
 .SH BUGS
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
