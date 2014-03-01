@@ -466,7 +466,8 @@ def load():
                             LENGTH=settings.LENGTH,
                             TOTAL_LENGTH=settings.TOTAL_LENGTH,
                             STEP_SIZE=settings.STEP_SIZE,
-                            NETPERF_WRAPPER_VERSION=VERSION,)]
+                            NETPERF_WRAPPER_VERSION=VERSION,
+                            IP_VERSION=settings.IP_VERSION)]
         if settings.EXTENDED_METADATA:
             record_extended_metadata(results[0])
             import pprint

@@ -305,6 +305,9 @@ Currently the metadata values are:
 .IP
 \fINETPERF_WRAPPER_VERSION\fR: Version of netperf-wrapper that generated the
 data file.
+.IP
+\fIIP_VERSION\fR: IP version used to run test (as specified by command line
+parameters, or auto-detected from \fIgetaddrinfo()\fR if unspecified).
 .PP
 If the \fB\-\-extended\-metadata\fR switch is turned on, the following
 additional values are collected and stored (to the extent they are available

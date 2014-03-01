@@ -88,9 +88,15 @@ def which(executable):
 
     return None
 
-def lookup_host(hostname):
-    hostnames = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC,
-                                               socket.SOCK_STREAM)
+def lookup_host(hostname, version=None):
+    if version == 4:
+        version = socket.AF_INET
+    elif version == 6:
+        version = socket.AF_INET6
+    else:
+        version = socket.AF_UNSPEC
+    hostnames = socket.getaddrinfo(hostname, None, version,
+                                   socket.SOCK_STREAM)
     if not hostnames:
         raise RuntimeError("Found no hostnames on lookup of %s" % h)
 
