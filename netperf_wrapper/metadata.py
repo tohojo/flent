@@ -176,6 +176,7 @@ def get_egress_info(target, ip_version):
     if route:
         route['qdiscs'] = get_qdiscs(route['iface'])
         route['offloads'] = get_offloads(route['iface'])
+        route['bql'] = get_bql(route['iface'])
         route['target'] = ip
         if not 'nexthop' in route:
             route['nexthop'] = None
@@ -212,3 +213,11 @@ def get_qdiscs(iface):
             qdiscs.append(qdisc)
 
     return qdiscs or None
+
+def get_bql(iface):
+    bql = []
+    output = get_command_output('for i in /sys/class/net/%s/queues/tx-*; do [ -d $i/byte_queue_limits ] && echo -n "$(basename $i) " && cat $i/byte_queue_limits/limit_max; done' % iface)
+    if output is not None:
+        bql = dict([i.split() for i in output.splitlines()])
+
+    return bql or None
