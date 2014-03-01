@@ -131,9 +131,13 @@ class ResultSet(object):
     def __len__(self):
         return len(self._x_values)
 
-    def serialise(self):
+    def serialise_metadata(self):
         metadata = dict(self.metadata)
         metadata['TIME'] = metadata['TIME'].isoformat()
+        return metadata
+
+    def serialise(self):
+        metadata = self.serialise_metadata()
         return {
             'metadata': metadata,
             'x_values': self._x_values,

@@ -246,6 +246,14 @@ include some data sources not includes on plots). The data is output in text
 format to standard output, or written to a file if invoked with the \fB\-o\fR
 parameter.
 
+.TP
+\fBMetadata output\fR (\fB\-f\fR \fImetadata\fR)
+.IP
+This output format outputs the test metadata as pretty-printed json (also
+suitable for human consumption). It is output as a list of objects, where each
+object corresponds to the metadata of one test. Mostly useful for inspecting
+metadata of stored data files.
+
 
 .SH EXAMPLES
 Run the \fIrrul\fR test against \fItestserver.example.com\fI:

@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pprint, sys, csv, math, inspect, os
+import json, sys, csv, math, inspect, os
 
 from .settings import settings
 from .util import cum_prob, frange
@@ -553,3 +553,10 @@ class PlotFormatter(Formatter):
             axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
             if top_percentile/btm_percentile > 20.0 and settings.LOG_SCALE:
                 axis.set_yscale('log')
+
+
+class MetadataFormatter(Formatter):
+
+    def format(self, results):
+        self.open_output()
+        self.output.write(json.dumps([r.serialise_metadata() for r in results], indent=4) + "\n")
