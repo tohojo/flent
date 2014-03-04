@@ -182,6 +182,7 @@ def get_egress_info(target, ip_version):
         route['qdiscs'] = get_qdiscs(route['iface'])
         route['offloads'] = get_offloads(route['iface'])
         route['bql'] = get_bql(route['iface'])
+        route['driver'] = get_driver(route['iface'])
         route['target'] = ip
         if not 'nexthop' in route:
             route['nexthop'] = None
@@ -226,3 +227,6 @@ def get_bql(iface):
         bql = dict([i.split() for i in output.splitlines()])
 
     return bql or None
+
+def get_driver(iface):
+    return get_command_output("basename $(readlink /sys/class/net/%s/device/driver)" % iface)

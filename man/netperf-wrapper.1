@@ -345,8 +345,8 @@ from the platform):
 and the interfaces they are reachable through. Only available if the
 \fInetstat\fR binary is present on the system.
 .IP
-\fIEGRESS_INFO\fR: Egress interface, its qdisc, offload and BQL configuration, and (if
-applicable) the IP address of the next-hop router used to reach the test target.
+\fIEGRESS_INFO\fR: Egress interface, its qdisc, offload, driver and BQL configuration,
+and (if applicable) the IP address of the next-hop router used to reach the test target.
 The egress interface and next-hop router requires that the \fIip\fR binary is
 present on Linux, but can be extracted from \fIroute\fR on BSD. Qdisc
 information requires the \fItc\fR binary to be present, and offload information
