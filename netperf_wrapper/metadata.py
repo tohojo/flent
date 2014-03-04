@@ -126,6 +126,11 @@ def get_gateways():
                         iface_idx = parts.index(n)
             if parts[0] in ("0.0.0.0", "default", "::/0"):
                 if iface_idx is not None:
+                    # The fields may run into each other in some instances; try
+                    # to detect this, and if so just assume that the interface
+                    # name is the last field (it often is, on Linux).
+                    if iface_idx > len(parts)-1:
+                        iface_idx = -1
                     gw = {'ip': parts[1], 'iface': parts[iface_idx]}
                     if not gw['iface'].startswith('lo'):
                         gws.append(gw)
