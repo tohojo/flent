@@ -44,22 +44,22 @@ def get_command_output(command):
     except subprocess.CalledProcessError:
         return None
 
-def has_iproute2():
-    return util.which("ip") is not None
-
 def get_ip_addrs(iface=None):
     """Try to get IP addresses associated to this machine. Uses iproute2 if available,
     otherwise falls back to ifconfig."""
-    if has_iproute2():
-        cmd = "ip addr show"
-        if iface is not None:
-            cmd += " dev %s" % iface
-    else:
+    addrs = []
+
+    cmd = "ip addr show"
+    if iface is not None:
+        cmd += " dev %s" % iface
+    output = get_command_output(cmd)
+
+    if output is None:
         cmd = "ifconfig"
         if iface is not None:
             cmd += " %s" % iface
-    output = get_command_output(cmd)
-    addrs = []
+        output = get_command_output(cmd)
+
 
     if output is not None:
         lines = output.splitlines()
