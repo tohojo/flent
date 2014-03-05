@@ -23,10 +23,31 @@ import sys, os, socket, subprocess, time
 
 from netperf_wrapper import util
 
+class CommandRunner(object):
+
+    def __init__(self):
+        self.hostname = None
+
+    def set_hostname(self, hostname):
+        self.hostname = hostname
+
+    def __call__(self, command):
+        """Try executing a command, and if successful,
+        return the strip()'ed output, else None."""
+        try:
+            if self.hostname:
+                command = "ssh %s '%s'" % (self.hostname, command)
+            res = subprocess.check_output(command, universal_newlines=True, shell=True,
+                                          stderr=subprocess.STDOUT)
+            return res.strip()
+        except subprocess.CalledProcessError:
+            return None
+
+get_command_output = CommandRunner()
 
 __all__ = ['record_extended_metadata']
 
-def record_extended_metadata(results):
+def record_extended_metadata(results, hostnames):
     m = results.meta()
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
@@ -34,15 +55,18 @@ def record_extended_metadata(results):
     m['GATEWAYS'] = get_gateways()
     m['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
 
-def get_command_output(command):
-    """Try executing a command, and if successful,
-    return the strip()'ed output, else None."""
-    try:
-        res = subprocess.check_output(command, universal_newlines=True, shell=True,
-                                      stderr=subprocess.STDOUT)
-        return res.strip()
-    except subprocess.CalledProcessError:
-        return None
+    m['REMOTE_METADATA'] = {}
+
+    for h in hostnames:
+        get_command_output.set_hostname(h)
+        m['REMOTE_METADATA'][h] = {}
+        m['REMOTE_METADATA'][h]['LOCAL_HOST'] = get_command_output("hostname")
+        m['REMOTE_METADATA'][h]['KERNEL_NAME'] = get_command_output("uname -s")
+        m['REMOTE_METADATA'][h]['KERNEL_RELEASE'] = get_command_output("uname -r")
+        m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
+        m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
+        m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
+
 
 def get_ip_addrs(iface=None):
     """Try to get IP addresses associated to this machine. Uses iproute2 if available,

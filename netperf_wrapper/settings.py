@@ -66,6 +66,7 @@ DEFAULT_SETTINGS = {
     'ZERO_Y': False,
     'LOG_SCALE': True,
     'EXTENDED_METADATA': False,
+    'REMOTE_METADATA': [],
     }
 
 CONFIG_TYPES = {
@@ -318,6 +319,12 @@ parser.add_option("-r", "--rcfile", action="store", type="string", dest="RCFILE"
 parser.add_option("-x", "--extended-metadata", action="store_true", dest="EXTENDED_METADATA",
                   help="Collect extended metadata and store it with the data file. "
                   "May include details of your machine you don't want to distribute; see man page.")
+parser.add_option("--remote-metadata", action="append", type="string", dest="REMOTE_METADATA",
+                  metavar="HOSTNAME",
+                  help="Collect extended metadata from a remote host. HOSTNAME is passed "
+                  "verbatim to ssh, so can include hosts specified in ~/.ssh/config. This "
+                  "option can be specified multiple times. Note that gathering the data can "
+                  "take some time, since it involves executing several remote commands.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -528,7 +535,7 @@ def load():
                             NETPERF_WRAPPER_VERSION=VERSION,
                             IP_VERSION=settings.IP_VERSION)]
         if settings.EXTENDED_METADATA:
-            record_extended_metadata(results[0])
+            record_extended_metadata(results[0], settings.REMOTE_METADATA)
 
     if settings.SCALE_DATA:
         scale_data = []

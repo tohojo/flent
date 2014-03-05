@@ -96,6 +96,12 @@ Collect extended metadata and store it with the data file.
 May include details of your machine you don't want to distribute; see the
 section on the data format below.
 .TP
+\fB\-\-remote\-metadata\fR=\fIHOSTNAME\fR
+Collect extended metadata from a remote host. \fIHOSTNAME\fR is passed verbatim
+to ssh, so can include hosts specified in ~/.ssh/config. Note that gathering the
+data can take some time, since it involves executing several remote commands.
+This option can be specified multiple times.
+.TP
 \fBTest configuration:\fR
 .PP
 These options affect the behaviour of the test being run and have no
@@ -351,6 +357,11 @@ The egress interface and next-hop router requires that the \fIip\fR binary is
 present on Linux, but can be extracted from \fIroute\fR on BSD. Qdisc
 information requires the \fItc\fR binary to be present, and offload information
 requires \fIethtool\fR.
+.PP
+If the \fB--remote-metadata\fR is used, the extended metadata info is gathered
+for each of the hostnames specified. This is gathered under the
+\fIREMOTE_METADATA\fR key in the metadata object, keyed by the hostname values
+passed to \fB--remote-metadata\fR.
 
 .SH BUGS
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
