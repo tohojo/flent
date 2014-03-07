@@ -204,6 +204,7 @@ def get_egress_info(target, ip_version):
 
     if route:
         route['qdiscs'] = get_qdiscs(route['iface'])
+        route['classes'] = get_classes(route['iface'])
         route['offloads'] = get_offloads(route['iface'])
         route['bql'] = get_bql(route['iface'])
         route['driver'] = get_driver(route['iface'])
@@ -213,23 +214,23 @@ def get_egress_info(target, ip_version):
 
     return route or None
 
-def get_qdiscs(iface):
-    qdiscs = []
+def parse_tc(cmd, kind):
+    items = []
 
-    output = get_command_output("tc qdisc show dev %s" % iface)
+    output = get_command_output(cmd)
     if output is not None:
         lines = output.splitlines()
         for line in lines:
             parts = line.split()
-            if not parts or parts[0] != 'qdisc':
+            if not parts or parts[0] != kind:
                 continue
-            qdisc = {'name': parts[1],
-                     'id': parts[2]}
+            item = {'name': parts[1],
+                    'id': parts[2]}
             if parts[3] == 'root':
-                qdisc['parent'] = 'root'
+                item['parent'] = 'root'
                 params = parts[4:]
             else:
-                qdisc['parent'] = parts[4]
+                item['parent'] = parts[4]
                 params = parts[5:]
 
             # Assume that the remainder of the output line is a set of space delimited
@@ -238,11 +239,16 @@ def get_qdiscs(iface):
             # empty string is added as the parameter "value", to make sure it is included.
             if len(params) % 2 > 0:
                 params.append("")
-            qdisc['params'] = dict(zip(params[::2], params[1::2]))
+            item['params'] = dict(zip(params[::2], params[1::2]))
 
-            qdiscs.append(qdisc)
+            items.append(item)
+    return items or None
 
-    return qdiscs or None
+def get_qdiscs(iface):
+    return parse_tc("tc qdisc show dev %s" % iface, "qdisc")
+
+def get_classes(iface):
+    return parse_tc("tc class show dev %s" % iface, "class")
 
 def get_bql(iface):
     bql = []
