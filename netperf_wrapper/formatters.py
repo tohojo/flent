@@ -331,7 +331,7 @@ class PlotFormatter(Formatter):
         if config is None:
             config = self.config
 
-        axis.set_xlim(0, settings.TOTAL_LENGTH)
+        axis.set_xlim(0, max(results.x_values+[settings.TOTAL_LENGTH]))
         data = []
         for i in range(len(config['axes'])):
             data.append([])

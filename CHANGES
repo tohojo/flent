@@ -1,3 +1,6 @@
+2013-03-16: Scale x axis to include all captures data points, even if they go beyond
+            the configured test duration.
+
 2013-03-16: Run ping with -n.
 
 2013-03-05: Add remote metadata support.
