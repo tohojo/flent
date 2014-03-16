@@ -205,7 +205,7 @@ class TestEnvironment(object):
 
         if ping is not None:
             # No checks atm; should check for presence of -D parameter
-            return "%s -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
+            return "%s -n -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
 
         raise RuntimeError("No suitable ping tool found.")
 
