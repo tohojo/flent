@@ -188,8 +188,10 @@ def get_egress_info(target, ip_version):
             for p in parts:
                 if p == 'via':
                     route['nexthop'] = parts.next()
-                if p == 'dev':
+                elif p == 'dev':
                     route['iface'] = parts.next()
+                elif p == 'src':
+                    route['src'] = parts.next()
         else:
             output = get_command_output("route -n get %s" % ip)
             if output is not None:
