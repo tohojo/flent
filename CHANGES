@@ -1,3 +1,5 @@
+2013-03-19: Capture IP address info per-interface.
+
 2013-03-16: Scale x axis to include all captures data points, even if they go beyond
             the configured test duration.
 

@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, socket, subprocess, time
+import sys, os, socket, subprocess, time, re
 
 from netperf_wrapper import util
 
@@ -71,7 +71,7 @@ def record_extended_metadata(results, hostnames):
 def get_ip_addrs(iface=None):
     """Try to get IP addresses associated to this machine. Uses iproute2 if available,
     otherwise falls back to ifconfig."""
-    addrs = []
+    addresses = {}
 
     cmd = "ip addr show"
     if iface is not None:
@@ -84,13 +84,22 @@ def get_ip_addrs(iface=None):
             cmd += " %s" % iface
         output = get_command_output(cmd)
 
+    iface_re = re.compile('^([0-9]+: )?([a-z0-9-]+):')
 
     if output is not None:
         lines = output.splitlines()
+        iface = None
+        addrs = []
         for l in lines:
             # Both ifconfig and iproute2 emit addresses on lines starting with the address
             # identifier, and fields are whitespace-separated. Look for that and parse
             # accordingly.
+            m = iface_re.match(l)
+            if m is not None:
+                if iface and addrs:
+                    addresses[iface] = addrs
+                iface = m.group(2)
+                addrs = []
             parts = l.strip().split()
             if parts and parts[0] in ('inet', 'inet6'):
                 a =  parts[1]
@@ -99,7 +108,9 @@ def get_ip_addrs(iface=None):
                 if '%' in a: # BSD may add interface qualification; strip that out
                     a = a[:a.index('%')]
                 addrs.append(a)
-    return addrs
+        if addrs and iface:
+            addresses[iface] = addrs
+    return addresses or None
 
 def get_offloads(iface):
     offloads = {}
