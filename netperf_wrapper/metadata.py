@@ -70,7 +70,6 @@ def record_extended_metadata(results, hostnames):
             m['REMOTE_METADATA'][h]['INGRESS_INFO'] = get_egress_info(target=m['EGRESS_INFO']['src'], ip_version=m['IP_VERSION'])
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
 
-
 def get_ip_addrs(iface=None):
     """Try to get IP addresses associated to this machine. Uses iproute2 if available,
     otherwise falls back to ifconfig."""
@@ -190,11 +189,11 @@ def get_egress_info(target, ip_version):
             parts = iter(output.split())
             for p in parts:
                 if p == 'via':
-                    route['nexthop'] = parts.next()
+                    route['nexthop'] = next(parts)
                 elif p == 'dev':
-                    route['iface'] = parts.next()
+                    route['iface'] = next(parts)
                 elif p == 'src':
-                    route['src'] = parts.next()
+                    route['src'] = next(parts)
         else:
             output = get_command_output("route -n get %s" % ip)
             if output is not None:
