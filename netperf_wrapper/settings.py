@@ -70,7 +70,7 @@ DEFAULT_SETTINGS = {
     }
 
 CONFIG_TYPES = {
-    'HOST': 'str',
+    'HOSTS': 'list',
     'STEP_SIZE': 'float',
     'LENGTH': 'int',
     'OUTPUT': 'str',
@@ -426,6 +426,8 @@ class Settings(optparse.Values, object):
                         setattr(self, k, int(v))
                     elif CONFIG_TYPES[k] == 'float':
                         setattr(self, k, float(v))
+                    elif CONFIG_TYPES[k] == 'list':
+                        setattr(self, k, [i.strip() for i in v.split(",")])
                     elif CONFIG_TYPES[k] == 'bool':
                         if v.lower() in ('1', 'yes', 'true', 'on'):
                             setattr(self, k, True)

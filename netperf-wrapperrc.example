@@ -15,9 +15,10 @@
 
 [global]
 
-# Default test target host.
+# Default test target host(s).
 # Corresponding command line option: --host (or unqualified argument).
-;host = demo.tohojo.dk
+# Multiple values are separated by commas.
+;hosts = demo.tohojo.dk
 
 # Data point step size and sampling interval (seconds).
 # Corresponding command line option: --step-size
