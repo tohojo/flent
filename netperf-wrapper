@@ -53,7 +53,7 @@ try:
 
             formatter_name = util.classname(settings.FORMAT, 'Formatter')
             if hasattr(formatters, formatter_name):
-                formatter = getattr(formatters, formatter_name)(settings.OUTPUT)
+                formatter = getattr(formatters, formatter_name)(settings)
             else:
                 raise RuntimeError("Formatter not found.")
 

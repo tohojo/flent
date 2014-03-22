@@ -21,7 +21,6 @@
 
 import json, sys, csv, math, inspect, os
 
-from .settings import settings
 from .util import cum_prob, frange
 from functools import reduce
 
@@ -55,8 +54,9 @@ class Formatter(object):
 
     open_mode = "w"
 
-    def __init__(self, output):
-        self.check_output(output)
+    def __init__(self, settings):
+        self.settings = settings
+        self.check_output(self.settings.OUTPUT)
 
     def check_output(self, output):
         if hasattr(output, 'read') or output == "-":
@@ -104,7 +104,7 @@ class TableFormatter(Formatter):
 
     def get_header(self, results):
         name = results[0].meta("NAME")
-        keys = list(settings.DATA_SETS.keys())
+        keys = list(self.settings.DATA_SETS.keys())
         header_row = [name]
 
         if len(results) > 1:
@@ -117,7 +117,7 @@ class TableFormatter(Formatter):
     def combine_results(self, results):
         """Generator to combine several result sets into one list of rows, by
         concatenating them."""
-        keys = list(settings.DATA_SETS.keys())
+        keys = list(self.settings.DATA_SETS.keys())
         for row in list(zip(*[list(r.zipped(keys)) for r in results])):
             out_row = [row[0][0]]
             for r in row:
@@ -177,8 +177,8 @@ class CsvFormatter(TableFormatter):
 
 class StatsFormatter(Formatter):
 
-    def __init__(self, output):
-        Formatter.__init__(self, output)
+    def __init__(self, settings):
+        Formatter.__init__(self, settings)
         try:
             import numpy
             self.np = numpy
@@ -202,7 +202,7 @@ class StatsFormatter(Formatter):
                     self.output.write("  No data.\n")
                     continue
                 cs = self.np.cumsum(d)
-                units = settings.DATA_SETS[s]['units']
+                units = self.settings.DATA_SETS[s]['units']
                 self.output.write("  Data points: %d\n" % len(d))
                 if units != "ms":
                     self.output.write("  Total:       %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
@@ -219,21 +219,21 @@ class PlotFormatter(Formatter):
 
     open_mode = "wb"
 
-    def __init__(self, output):
-        Formatter.__init__(self, output)
+    def __init__(self, settings):
+        Formatter.__init__(self, settings)
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
             # matplotlib according to the output file name. This helps with
             # running matplotlib without an X server.
-            if output != "-":
-                if output.endswith('.svg') or output.endswith('.svgz'):
+            if self.output != "-":
+                if self.output.endswith('.svg') or self.output.endswith('.svgz'):
                     matplotlib.use('svg')
-                elif output.endswith('.ps') or output.endswith('.eps'):
+                elif self.output.endswith('.ps') or self.output.endswith('.eps'):
                     matplotlib.use('ps')
-                elif output.endswith('.pdf'):
+                elif self.output.endswith('.pdf'):
                     matplotlib.use('pdf')
-                elif output.endswith('.png'):
+                elif self.output.endswith('.png'):
                     matplotlib.use('agg')
                 else:
                     raise RuntimeError("Unrecognised file format for output '%s'" % output)
@@ -246,17 +246,17 @@ class PlotFormatter(Formatter):
 
 
     def _load_plotconfig(self, plot):
-        if not plot in settings.PLOTS:
+        if not plot in self.settings.PLOTS:
             raise RuntimeError("Unable to find plot configuration '%s'" % plot)
-        config = settings.PLOTS[plot]
+        config = self.settings.PLOTS[plot]
         if 'parent' in config:
-            parent_config = settings.PLOTS[config['parent']]
+            parent_config = self.settings.PLOTS[config['parent']]
             parent_config.update(config)
             return parent_config
         return config
 
     def _init_plots(self):
-        self.config = self._load_plotconfig(settings.PLOT)
+        self.config = self._load_plotconfig(self.settings.PLOT)
         self.configs = [self.config]
         getattr(self, '_init_%s_plot' % self.config['type'])()
 
@@ -284,7 +284,7 @@ class PlotFormatter(Formatter):
                 a = 1
             else:
                 a = 0
-            s_unit = settings.DATA_SETS[s['data']]['units']
+            s_unit = self.settings.DATA_SETS[s['data']]['units']
             if unit[a] is not None and s_unit != unit[a]:
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
             unit[a] = s_unit
@@ -301,7 +301,7 @@ class PlotFormatter(Formatter):
 
         unit = None
         for s in config['series']:
-            s_unit = settings.DATA_SETS[s['data']]['units']
+            s_unit = self.settings.DATA_SETS[s['data']]['units']
             if unit is not None and s_unit != unit:
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit, s_unit))
             unit = s_unit
@@ -331,7 +331,7 @@ class PlotFormatter(Formatter):
         if config is None:
             config = self.config
 
-        axis.set_xlim(0, max(results.x_values+[settings.TOTAL_LENGTH]))
+        axis.set_xlim(0, max(results.x_values+[self.settings.TOTAL_LENGTH]))
         data = []
         for i in range(len(config['axes'])):
             data.append([])
@@ -357,7 +357,7 @@ class PlotFormatter(Formatter):
             else:
                 a = 0
             data[a] += y_values
-            for r in settings.SCALE_DATA:
+            for r in self.settings.SCALE_DATA:
                 data[a] += r.series(s['data'], smooth)
             config['axes'][a].plot(results.x_values,
                    y_values,
@@ -391,10 +391,10 @@ class PlotFormatter(Formatter):
                 # plot; for e.g. pings that run long than the streams, we don't
                 # want the unloaded ping values
                 start,end = config['cutoff']
-                end = -int(end/settings.STEP_SIZE)
+                end = -int(end/self.settings.STEP_SIZE)
                 if end == 0:
                     end = None
-                s_data = s_data[int(start/settings.STEP_SIZE):end]
+                s_data = s_data[int(start/self.settings.STEP_SIZE):end]
             sizes.append(float(len(s_data)))
             d = sorted([x for x in s_data if x is not None])
             data.append(d)
@@ -403,7 +403,7 @@ class PlotFormatter(Formatter):
                 self.min_vals.append(min(d))
                 max_value = max([max_value]+d)
 
-                for r in settings.SCALE_DATA:
+                for r in self.settings.SCALE_DATA:
                     d_s = [x for x in r.series(s['data']) if x is not None]
                     if d_s:
                         max_value = max([max_value]+d_s)
@@ -474,22 +474,22 @@ class PlotFormatter(Formatter):
 
     def _annotate_plot(self, skip_title=False):
         titles = []
-        if settings.PRINT_TITLE:
-            plot_title = settings.DESCRIPTION
+        if self.settings.PRINT_TITLE:
+            plot_title = self.settings.DESCRIPTION
             y=0.98
             if 'description' in self.config:
                 plot_title += "\n" + self.config['description']
-            if settings.TITLE and not skip_title:
-                plot_title += "\n" + settings.TITLE
-            if 'description' in self.config and settings.TITLE and not skip_title:
+            if self.settings.TITLE and not skip_title:
+                plot_title += "\n" + self.settings.TITLE
+            if 'description' in self.config and self.settings.TITLE and not skip_title:
                 y=1.01
             titles.append(self.plt.suptitle(plot_title, fontsize=14, y=y))
 
-        if settings.ANNOTATE:
+        if self.settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
-                settings.LOCAL_HOST, settings.HOST,
-                settings.TIME,
-                settings.LENGTH, settings.STEP_SIZE)
+                self.settings.LOCAL_HOST, self.settings.HOST,
+                self.settings.TIME,
+                self.settings.LENGTH, self.settings.STEP_SIZE)
             titles.append(self.plt.gcf().text(0.5, -0.01, annotation_string,
                                             horizontalalignment='center',
                                             verticalalignment='bottom',
@@ -497,7 +497,7 @@ class PlotFormatter(Formatter):
         return titles
 
     def _do_legend(self, config, postfix=""):
-        if not settings.PRINT_LEGEND:
+        if not self.settings.PRINT_LEGEND:
             return []
 
         axes = config['axes']
@@ -547,11 +547,11 @@ class PlotFormatter(Formatter):
             return
         top_percentile = self.np.percentile(data, top)*1.05
         btm_percentile = self.np.percentile(data, btm)*0.95
-        if settings.ZERO_Y:
+        if self.settings.ZERO_Y:
             axis.set_ylim(ymin=0, ymax=top_percentile)
         else:
             axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
-            if top_percentile/btm_percentile > 20.0 and settings.LOG_SCALE:
+            if top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
                 axis.set_yscale('log')
 
 
