@@ -76,6 +76,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.action_Close_tab.activated.connect(self.close_tab)
         self.tabWidget.tabCloseRequested.connect(self.close_tab)
 
+        self.plotDock.visibilityChanged.connect(self.action_Plot_selector.setChecked)
+        self.settingsDock.visibilityChanged.connect(self.action_Settings.setChecked)
+        self.metadataDock.visibilityChanged.connect(self.action_Metadata.setChecked)
+
         self.load_files(self.settings.INPUT)
 
     def on_open(self):
