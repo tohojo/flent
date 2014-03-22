@@ -79,6 +79,8 @@ class build_py(_build_py):
 data_files = [('share/netperf-wrapper/tests',
                glob("tests/*.conf") + \
                    glob("tests/*.inc")),
+              ('share/netperf-wrapper/ui',
+               glob("ui/*.ui")),
               ('share/doc/netperf-wrapper',
                ['BUGS',
                 'CHANGES',

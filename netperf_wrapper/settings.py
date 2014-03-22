@@ -67,6 +67,7 @@ DEFAULT_SETTINGS = {
     'LOG_SCALE': True,
     'EXTENDED_METADATA': False,
     'REMOTE_METADATA': [],
+    'GUI': False,
     }
 
 CONFIG_TYPES = {
@@ -325,6 +326,9 @@ parser.add_option("--remote-metadata", action="append", type="string", dest="REM
                   "verbatim to ssh, so can include hosts specified in ~/.ssh/config. This "
                   "option can be specified multiple times. Note that gathering the data can "
                   "take some time, since it involves executing several remote commands.")
+parser.add_option("--gui", action="store_true", dest="GUI",
+                  help="Run the netperf-wrapper GUI. All other options are used as defaults "
+                  "in the GUI, but can be changed once it is running.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -488,6 +492,9 @@ class Settings(optparse.Values, object):
 
 settings = Settings(DEFAULT_SETTINGS)
 
+def load_gui(settings):
+    from netperf_wrapper import gui
+    gui.run_gui(settings) # does not return
 
 def load():
     (dummy,args) = parser.parse_args(values=settings)
@@ -519,9 +526,13 @@ def load():
             test_name = r.meta("NAME")
             results.append(r)
 
+        if settings.GUI:
+            load_gui(settings)
 
         settings.update(results[0].meta())
         settings.load_test()
+    elif settings.GUI:
+        load_gui(settings)
     else:
         settings.load_test()
         results = [ResultSet(NAME=settings.NAME,
