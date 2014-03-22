@@ -490,6 +490,12 @@ class Settings(optparse.Values, object):
         for k,v in list(values.items()):
             setattr(self, k, v)
 
+    def items(self):
+        return self.__dict__.items()
+
+    def copy(self):
+        return Settings(self)
+
 settings = Settings(DEFAULT_SETTINGS)
 
 def load_gui(settings):
