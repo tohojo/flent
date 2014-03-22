@@ -259,6 +259,7 @@ class PlotFormatter(Formatter):
         self.config = self._load_plotconfig(self.settings.PLOT)
         self.configs = [self.config]
         getattr(self, '_init_%s_plot' % self.config['type'])()
+        self.figure = self.plt.gcf()
 
     def _init_timeseries_plot(self, config=None, axis=None):
         if axis is None:
@@ -464,7 +465,8 @@ class PlotFormatter(Formatter):
             for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
                 box = a.get_position()
                 a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-            self.plt.show()
+            if not self.settings.GUI:
+                self.plt.show()
         else:
             try:
                 self.plt.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
