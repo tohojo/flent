@@ -151,6 +151,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.widget(idx)
         self.plotView.setModel(widget.plotModel)
         self.plotView.setSelectionModel(widget.plotSelectionModel)
+        self.metadataView.setModel(widget.metadataModel)
+        self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
 
     def load_files(self, filenames):
@@ -181,6 +183,74 @@ class PlotModel(QStringListModel):
     def name_of(self, idx):
         return self.keys[idx.row()]
 
+
+class TreeItem(object):
+
+    def __init__(self, parent, name, value):
+        self.parent = parent
+        self.name = name
+        self.children = []
+
+        if isinstance(value, list):
+            self.value = ""
+            for v in value:
+                self.children.append(TreeItem(self, "", v))
+        elif isinstance(value, dict):
+            self.value = ""
+            for k,v in sorted(value.items()):
+                self.children.append(TreeItem(self, k, v))
+        else:
+            self.value = value
+            self.children = []
+
+    def __len__(self):
+        return len(self.children)
+
+
+class MetadataModel(QAbstractItemModel):
+
+    header_names = [u"Name", u"Value"]
+
+    def __init__(self, parent, datadict):
+        QAbstractItemModel.__init__(self, parent)
+        self.root = TreeItem(None, "root", datadict)
+
+    def columnCount(self, parent):
+        return 2
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return len(parent.internalPointer())
+        return len(self.root)
+
+    def headerData(self, section, orientation, role = Qt.DisplayRole):
+        if orientation == Qt.Vertical or role != Qt.DisplayRole:
+            return None
+        return self.header_names[section]
+
+    def data(self, idx, role = Qt.DisplayRole):
+        if role != Qt.DisplayRole:
+            return None
+
+        item = idx.internalPointer()
+        if idx.column() == 0:
+            return item.name
+        elif idx.column() == 1:
+            return item.value
+
+    def parent(self, idx):
+        item = idx.internalPointer()
+        if item is None:
+            return QModelIndex()
+        return self.createIndex(0, 0, item.parent)
+
+    def index(self, row, column, parent):
+        item = parent.internalPointer()
+        if item is None:
+            item = self.root
+        return self.createIndex(row, column, item.children[row])
+
+
 class ResultWidget(get_ui_class("resultwidget.ui")):
     def __init__(self, parent, filename, settings):
         super(ResultWidget, self).__init__(parent)
@@ -208,6 +278,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
                                                 QItemSelectionModel.SelectCurrent)
         self.plotSelectionModel.currentChanged.connect(self.change_plot)
+
+        self.metadataModel = MetadataModel(self, self.results.meta())
+        self.metadataSelectionModel = QItemSelectionModel(self.metadataModel)
 
         if self.settings.TITLE:
             self.title = "%s - %s - %s" % (self.settings.NAME, self.settings.TITLE,
