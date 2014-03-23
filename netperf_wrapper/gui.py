@@ -77,6 +77,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def __init__(self, settings):
         super(MainWindow, self).__init__()
         self.settings = settings
+        self.last_dir = os.getcwd()
 
         self.action_Open.activated.connect(self.on_open)
         self.action_Close_tab.activated.connect(self.close_tab)
@@ -138,11 +139,18 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.statusBar().showMessage(
             self.metadataView.model().data(idx, Qt.StatusTipRole), 1000)
 
-    def on_open(self):
+    def get_opennames(self):
         filenames = QFileDialog.getOpenFileNames(self,
                                                  "Select data file(s)",
-                                                 os.getcwd(),
+                                                 self.last_dir,
                                                  "Data files (*.json.gz)")
+        if filenames:
+            self.last_dir = os.path.dirname(unicode(filenames[0]))
+
+        return filenames
+
+    def on_open(self):
+        filenames = self.get_opennames()
         self.load_files(filenames)
 
     def close_tab(self, idx=None):
