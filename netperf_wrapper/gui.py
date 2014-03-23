@@ -74,8 +74,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.action_Open.activated.connect(self.on_open)
         self.action_Close_tab.activated.connect(self.close_tab)
-        self.tabWidget.tabCloseRequested.connect(self.close_tab)
-        self.tabWidget.currentChanged.connect(self.activate_tab)
+        self.viewArea.tabCloseRequested.connect(self.close_tab)
+        self.viewArea.currentChanged.connect(self.activate_tab)
 
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.settingsDock.visibilityChanged.connect(self.settings_visibility)
@@ -100,10 +100,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def close_tab(self, idx=None):
         if idx is None:
-            idx = self.tabWidget.currentIndex()
-        widget = self.tabWidget.widget(idx)
+            idx = self.viewArea.currentIndex()
+        widget = self.viewArea.widget(idx)
         if widget is not None:
-            self.tabWidget.removeTab(idx)
+            self.viewArea.removeTab(idx)
             widget.setParent(None)
             widget.deleteLater()
 
@@ -111,17 +111,17 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if idx is None:
             return
 
-        widget = self.tabWidget.widget(idx)
+        widget = self.viewArea.widget(idx)
         self.plotList.setModel(widget.plotModel)
         self.plotList.setSelectionModel(widget.plotSelectionModel)
 
     def load_files(self, filenames):
-        self.tabWidget.setUpdatesEnabled(False)
+        self.viewArea.setUpdatesEnabled(False)
         for f in filenames:
-            self.tabWidget.setCurrentIndex(
-                self.tabWidget.addTab(ResultWidget(self.tabWidget, f, self.settings),
+            self.viewArea.setCurrentIndex(
+                self.viewArea.addTab(ResultWidget(self.viewArea, f, self.settings),
                                   os.path.basename(unicode(f))))
-        self.tabWidget.setUpdatesEnabled(True)
+        self.viewArea.setUpdatesEnabled(True)
 
 
 class PlotModel(QStringListModel):
