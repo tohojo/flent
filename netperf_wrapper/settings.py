@@ -448,7 +448,8 @@ class Settings(optparse.Values, object):
         if self.HOSTS:
             self.HOST = self.HOSTS[0]
 
-        self.lookup_hosts()
+        if not self.INPUT and not self.GUI:
+            self.lookup_hosts()
 
         test_env = TestEnvironment(self.__dict__, informational)
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")

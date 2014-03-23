@@ -1,3 +1,7 @@
+2013-03-23: Disable hostname lookup when loading data files or the GUI; should
+            fix issue with hostname lookup failing when a datafile with an
+            unreachable host is loaded.
+
 2013-03-23: Add GUI for interactive browsing of results.
 
 2013-03-20: rc-file should specify hosts rather than host.
