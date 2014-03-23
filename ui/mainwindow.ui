@@ -140,6 +140,9 @@
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
       <widget class="QTreeView" name="metadataView">
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
        </property>

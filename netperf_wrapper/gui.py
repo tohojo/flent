@@ -81,6 +81,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.settingsDock.visibilityChanged.connect(self.settings_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
+        self.metadataView.entered.connect(self.update_statusbar)
 
         self.checkZeroY.toggled.connect(self.zero_y_toggled)
         self.checkDisableLog.toggled.connect(self.disable_log_toggled)
@@ -127,6 +128,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.checkAnnotation.setChecked(widget.draw_annotation())
             self.checkLegend.setChecked(widget.draw_legend())
             self.checkTitle.setChecked(widget.draw_title())
+
+    def update_statusbar(self, idx):
+        self.statusBar().showMessage(
+            self.metadataView.model().data(idx, Qt.StatusTipRole), 1000)
 
     def on_open(self):
         filenames = QFileDialog.getOpenFileNames(self,
@@ -229,10 +234,15 @@ class MetadataModel(QAbstractItemModel):
         return self.header_names[section]
 
     def data(self, idx, role = Qt.DisplayRole):
-        if role != Qt.DisplayRole:
+        if not role in (Qt.DisplayRole, Qt.StatusTipRole):
             return None
 
         item = idx.internalPointer()
+        if role == Qt.StatusTipRole:
+            if item.name:
+                return "%s: %s" % (item.name, item.value)
+            else:
+                return item.value
         if idx.column() == 0:
             return item.name
         elif idx.column() == 1:
