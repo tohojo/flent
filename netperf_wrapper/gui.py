@@ -155,9 +155,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def load_files(self, filenames):
         self.viewArea.setUpdatesEnabled(False)
         for f in filenames:
-            self.viewArea.setCurrentIndex(
-                self.viewArea.addTab(ResultWidget(self.viewArea, f, self.settings),
-                                  os.path.basename(unicode(f))))
+            widget = ResultWidget(self.viewArea, f, self.settings)
+            self.viewArea.setCurrentIndex(self.viewArea.addTab(widget, widget.title))
         self.viewArea.setUpdatesEnabled(True)
 
 
@@ -208,6 +207,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
                                                 QItemSelectionModel.SelectCurrent)
         self.plotSelectionModel.currentChanged.connect(self.change_plot)
+
+        if self.settings.TITLE:
+            self.title = "%s - %s - %s" % (self.settings.NAME, self.settings.TITLE,
+                                           self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
+        else:
+            self.title = "%s - %s" % (self.settings.NAME, self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
 
         self.update()
 
