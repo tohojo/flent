@@ -76,11 +76,19 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.action_Close_tab.activated.connect(self.close_tab)
         self.tabWidget.tabCloseRequested.connect(self.close_tab)
 
-        self.plotDock.visibilityChanged.connect(self.action_Plot_selector.setChecked)
-        self.settingsDock.visibilityChanged.connect(self.action_Settings.setChecked)
-        self.metadataDock.visibilityChanged.connect(self.action_Metadata.setChecked)
+        self.plotDock.visibilityChanged.connect(self.plot_visibility)
+        self.settingsDock.visibilityChanged.connect(self.settings_visibility)
+        self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
 
         self.load_files(self.settings.INPUT)
+
+    # Helper functions to update menubar actions when dock widgets are closed
+    def plot_visibility(self):
+        self.action_Plot_selector.setChecked(not self.plotDock.isHidden())
+    def settings_visibility(self):
+        self.action_Settings.setChecked(not self.settingsDock.isHidden())
+    def metadata_visibility(self):
+        self.action_Metadata.setChecked(not self.metadataDock.isHidden())
 
     def on_open(self):
         filenames = QFileDialog.getOpenFileNames(self,
