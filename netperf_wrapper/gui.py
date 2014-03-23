@@ -171,6 +171,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.setParent(None)
             widget.deleteLater()
 
+    def busy_start(self):
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+    def busy_end(self):
+        QApplication.restoreOverrideCursor()
+
     def activate_tab(self, idx=None):
         if idx is None:
             return
@@ -183,12 +189,13 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.update_checkboxes()
 
     def load_files(self, filenames):
-        self.setCursor(Qt.WaitCursor)
+        self.busy_start()
         for f in filenames:
             widget = ResultWidget(self.viewArea, f, self.settings)
+            widget.update_start.connect(self.busy_start)
+            widget.update_end.connect(self.busy_end)
             self.viewArea.setCurrentIndex(self.viewArea.addTab(widget, widget.title))
-        self.setCursor(Qt.ArrowCursor)
-
+        self.busy_end()
 
 class PlotModel(QStringListModel):
 
@@ -283,6 +290,10 @@ class MetadataModel(QAbstractItemModel):
 
 
 class ResultWidget(get_ui_class("resultwidget.ui")):
+
+    update_start = pyqtSignal()
+    update_end = pyqtSignal()
+
     def __init__(self, parent, filename, settings):
         super(ResultWidget, self).__init__(parent)
         self.filename = unicode(filename)
@@ -357,6 +368,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.update()
 
     def update(self):
+        self.update_start.emit()
         self.formatter.init_plots()
         self.formatter.format([self.results])
         self.canvas.draw()
+        self.update_end.emit()
