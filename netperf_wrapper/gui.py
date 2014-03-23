@@ -78,6 +78,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         super(MainWindow, self).__init__()
         self.settings = settings
         self.last_dir = os.getcwd()
+        self.defer_load = self.settings.INPUT
 
         self.action_Open.activated.connect(self.on_open)
         self.action_Close_tab.activated.connect(self.close_tab)
@@ -94,8 +95,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkAnnotation.toggled.connect(self.annotation_toggled)
         self.checkLegend.toggled.connect(self.legend_toggled)
         self.checkTitle.toggled.connect(self.title_toggled)
-
-        self.load_files(self.settings.INPUT)
 
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
@@ -152,6 +151,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def on_open(self):
         filenames = self.get_opennames()
         self.load_files(filenames)
+
+    def show(self):
+        super(MainWindow, self).show()
+
+        # Deferring loading until here means the window has been created and a busy
+        # cursor can be shown.
+        if self.defer_load:
+            self.load_files(self.defer_load)
+            self.defer_load = None
 
     def close_tab(self, idx=None):
         if idx is None:
