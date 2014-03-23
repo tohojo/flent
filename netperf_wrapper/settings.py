@@ -505,6 +505,11 @@ def load_gui(settings):
 def load():
     (dummy,args) = parser.parse_args(values=settings)
 
+    # If run with no args and no controlling TTY, launch the GUI by default
+    if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
+        and len(sys.argv) < 2:
+        settings.GUI = True
+
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
         list_tests()
 
