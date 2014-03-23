@@ -494,7 +494,7 @@ class PlotFormatter(Formatter):
                 self.settings.LOCAL_HOST, self.settings.HOST,
                 self.settings.TIME,
                 self.settings.LENGTH, self.settings.STEP_SIZE)
-            titles.append(self.plt.gcf().text(0.5, -0.01, annotation_string,
+            titles.append(self.plt.gcf().text(0.5, 0.0, annotation_string,
                                             horizontalalignment='center',
                                             verticalalignment='bottom',
                                             fontsize=8))
