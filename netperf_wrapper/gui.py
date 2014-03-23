@@ -164,17 +164,40 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def load_extra(self):
         widget = self.viewArea.currentWidget()
-        if widget is not None:
-            filenames = self.get_opennames()
-            widget.load_files(filenames)
+        if widget is None:
+            return
+
+        filenames = self.get_opennames()
+        added = widget.load_files(filenames)
+
+        if added == 0:
+            self.warn_nomatch()
 
     def other_extra(self):
-        pass
+        idx = self.viewArea.currentIndex()
+        widget = self.viewArea.currentWidget()
+        if widget is None:
+            return
+
+        added = 0
+        for i in range(self.viewArea.count()):
+            if i != idx:
+                if  widget.add_extra(self.viewArea.widget(i).results):
+                    added += 1
+
+        if added > 0:
+            widget.update()
+        else:
+            self.warn_nomatch()
 
     def clear_extra(self):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.clear_extra()
+
+    def warn_nomatch(self):
+        QMessageBox.warning(self, "No matching datasets found",
+                           "Could not find any datasets with a matching test name to add.")
 
 
     def show(self):
@@ -359,9 +382,19 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.update()
 
     def load_files(self, filenames):
+        added = 0
         for f in filenames:
-            self.extra_results.append(ResultSet.load_file(unicode(f)))
-        self.update()
+            if self.add_extra(ResultSet.load_file(unicode(f))):
+                added += 1
+        if added > 0:
+            self.update()
+        return added
+
+    def add_extra(self, resultset):
+        if resultset.meta('NAME') == self.settings.NAME:
+            self.extra_results.append(resultset)
+            return True
+        return False
 
     def clear_extra(self):
         self.extra_results = []
