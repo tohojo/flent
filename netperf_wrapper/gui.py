@@ -21,6 +21,7 @@
 
 import sys, os
 
+# Python 2/3 compatibility
 try:
     unicode
 except NameError:
@@ -202,7 +203,6 @@ class PlotModel(QStringListModel):
             strings.append("%s (%s)" % (k, v['description']))
         self.setStringList(strings)
 
-
     def index_of(self, plot):
         return self.index(self.keys.index(plot))
 
@@ -317,7 +317,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.title = "%s - %s - %s" % (self.settings.NAME, self.settings.TITLE,
                                            self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
         else:
-            self.title = "%s - %s" % (self.settings.NAME, self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
+            self.title = "%s - %s" % (self.settings.NAME,
+                                      self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
 
         self.update()
 
@@ -354,7 +355,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def change_plot(self, idx, prev):
         self.settings.PLOT = self.plotModel.name_of(idx)
         self.update()
-
 
     def update(self):
         self.formatter.init_plots()
