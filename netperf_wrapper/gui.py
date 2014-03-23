@@ -148,8 +148,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             return
 
         widget = self.viewArea.widget(idx)
-        self.plotList.setModel(widget.plotModel)
-        self.plotList.setSelectionModel(widget.plotSelectionModel)
+        self.plotView.setModel(widget.plotModel)
+        self.plotView.setSelectionModel(widget.plotSelectionModel)
         self.update_checkboxes()
 
     def load_files(self, filenames):
