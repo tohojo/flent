@@ -166,11 +166,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.update_checkboxes()
 
     def load_files(self, filenames):
-        self.viewArea.setUpdatesEnabled(False)
+        self.setCursor(Qt.WaitCursor)
         for f in filenames:
             widget = ResultWidget(self.viewArea, f, self.settings)
             self.viewArea.setCurrentIndex(self.viewArea.addTab(widget, widget.title))
-        self.viewArea.setUpdatesEnabled(True)
+        self.setCursor(Qt.ArrowCursor)
 
 
 class PlotModel(QStringListModel):
