@@ -226,14 +226,15 @@ class PlotFormatter(Formatter):
             # If saving to file, try our best to set a proper backend for
             # matplotlib according to the output file name. This helps with
             # running matplotlib without an X server.
-            if self.output != "-":
-                if self.output.endswith('.svg') or self.output.endswith('.svgz'):
+            output = self.settings.OUTPUT
+            if output != "-":
+                if output.endswith('.svg') or output.endswith('.svgz'):
                     matplotlib.use('svg')
-                elif self.output.endswith('.ps') or self.output.endswith('.eps'):
+                elif output.endswith('.ps') or output.endswith('.eps'):
                     matplotlib.use('ps')
-                elif self.output.endswith('.pdf'):
+                elif output.endswith('.pdf'):
                     matplotlib.use('pdf')
-                elif self.output.endswith('.png'):
+                elif output.endswith('.png'):
                     matplotlib.use('agg')
                 else:
                     raise RuntimeError("Unrecognised file format for output '%s'" % output)
