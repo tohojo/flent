@@ -22,6 +22,11 @@
 import sys, os
 
 try:
+    unicode
+except NameError:
+    unicode = str
+
+try:
     from PyQt4 import QtCore, QtGui, uic
     from PyQt4.QtGui import *
     from PyQt4.QtCore import *
@@ -174,7 +179,7 @@ class PlotModel(QStringListModel):
         QStringListModel.__init__(self, parent)
         self.settings = settings
 
-        self.keys = self.settings.PLOTS.keys()
+        self.keys = list(self.settings.PLOTS.keys())
 
         strings = []
         for k,v in self.settings.PLOTS.items():
@@ -264,11 +269,11 @@ class MetadataModel(QAbstractItemModel):
 class ResultWidget(get_ui_class("resultwidget.ui")):
     def __init__(self, parent, filename, settings):
         super(ResultWidget, self).__init__(parent)
-        self.filename = filename
+        self.filename = unicode(filename)
         self.settings = settings.copy()
         self.settings.OUTPUT = "-"
 
-        self.results = ResultSet.load_file(unicode(filename))
+        self.results = ResultSet.load_file(self.filename)
         self.settings.update(self.results.meta())
         self.settings.load_test()
 
