@@ -240,7 +240,8 @@ class PlotFormatter(Formatter):
             import matplotlib.pyplot as plt
             self.plt = plt
             self.np = numpy
-            self._init_plots()
+            self.figure = self.plt.gcf()
+            self.init_plots()
         except ImportError:
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
@@ -248,18 +249,18 @@ class PlotFormatter(Formatter):
     def _load_plotconfig(self, plot):
         if not plot in self.settings.PLOTS:
             raise RuntimeError("Unable to find plot configuration '%s'" % plot)
-        config = self.settings.PLOTS[plot]
+        config = self.settings.PLOTS[plot].copy()
         if 'parent' in config:
-            parent_config = self.settings.PLOTS[config['parent']]
+            parent_config = self.settings.PLOTS[config['parent']].copy()
             parent_config.update(config)
             return parent_config
         return config
 
-    def _init_plots(self):
+    def init_plots(self):
+        self.figure.clear()
         self.config = self._load_plotconfig(self.settings.PLOT)
         self.configs = [self.config]
         getattr(self, '_init_%s_plot' % self.config['type'])()
-        self.figure = self.plt.gcf()
 
     def _init_timeseries_plot(self, config=None, axis=None):
         if axis is None:
