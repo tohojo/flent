@@ -487,7 +487,7 @@ class PlotFormatter(Formatter):
             if self.settings.TITLE and not skip_title:
                 plot_title += "\n" + self.settings.TITLE
             if 'description' in self.config and self.settings.TITLE and not skip_title:
-                y=1.01
+                y=1.00
             titles.append(self.plt.suptitle(plot_title, fontsize=14, y=y))
 
         if self.settings.ANNOTATE:
