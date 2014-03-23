@@ -241,7 +241,7 @@ class PlotFormatter(Formatter):
             import matplotlib.pyplot as plt
             self.plt = plt
             self.np = numpy
-            self.figure = self.plt.gcf()
+            self.figure = self.plt.figure()
             self.init_plots()
         except ImportError:
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
