@@ -463,9 +463,10 @@ class PlotFormatter(Formatter):
             # For the interactive viewer there's no bbox_extra_artists, so we
             # need to reduce the axis sizes to make room for the legend (which
             # might still be slightly cut off).
-            for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
-                box = a.get_position()
-                a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            if self.settings.PRINT_LEGEND:
+                for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+                    box = a.get_position()
+                    a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
             if not self.settings.GUI:
                 self.plt.show()
         else:
