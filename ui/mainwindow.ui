@@ -56,8 +56,17 @@
     <addaction name="action_Settings"/>
     <addaction name="action_Metadata"/>
    </widget>
+   <widget class="QMenu" name="menu_Data">
+    <property name="title">
+     <string>&amp;Data</string>
+    </property>
+    <addaction name="actionLoadExtra"/>
+    <addaction name="actionOtherExtra"/>
+    <addaction name="actionClearExtra"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
+   <addaction name="menu_Data"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="plotDock">
@@ -93,6 +102,9 @@
     <layout class="QGridLayout" name="gridLayout">
      <item row="1" column="1">
       <widget class="QCheckBox" name="checkLegend">
+       <property name="statusTip">
+        <string>Draw plot legend?</string>
+       </property>
        <property name="text">
         <string>Legend</string>
        </property>
@@ -100,6 +112,9 @@
      </item>
      <item row="1" column="0">
       <widget class="QCheckBox" name="checkAnnotation">
+       <property name="statusTip">
+        <string>Annotate plot (at the bottom)?</string>
+       </property>
        <property name="text">
         <string>Annotation</string>
        </property>
@@ -107,6 +122,9 @@
      </item>
      <item row="0" column="0">
       <widget class="QCheckBox" name="checkZeroY">
+       <property name="statusTip">
+        <string>Always start Y-axis at 0?</string>
+       </property>
        <property name="text">
         <string>Zero Y-axis</string>
        </property>
@@ -114,6 +132,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QCheckBox" name="checkDisableLog">
+       <property name="statusTip">
+        <string>Disable automatic log scaling of axes?</string>
+       </property>
        <property name="text">
         <string>Disable log scale</string>
        </property>
@@ -121,8 +142,21 @@
      </item>
      <item row="2" column="0">
       <widget class="QCheckBox" name="checkTitle">
+       <property name="statusTip">
+        <string>Draw plot title?</string>
+       </property>
        <property name="text">
         <string>Title</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QCheckBox" name="checkScaleMode">
+       <property name="statusTip">
+        <string>Use extra data files for axis scaling instaed of plotting them?</string>
+       </property>
+       <property name="text">
+        <string>Scale mode</string>
        </property>
       </widget>
      </item>
@@ -209,6 +243,26 @@
    </property>
    <property name="text">
     <string>&amp;Metadata</string>
+   </property>
+  </action>
+  <action name="actionLoadExtra">
+   <property name="text">
+    <string>&amp;Load additional data file</string>
+   </property>
+  </action>
+  <action name="actionLoadCombine">
+   <property name="text">
+    <string>Load additional data file (&amp;combine)</string>
+   </property>
+  </action>
+  <action name="actionOtherExtra">
+   <property name="text">
+    <string>&amp;Add other open data files</string>
+   </property>
+  </action>
+  <action name="actionClearExtra">
+   <property name="text">
+    <string>&amp;Clear extra data files</string>
    </property>
   </action>
  </widget>

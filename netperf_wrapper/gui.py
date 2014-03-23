@@ -83,6 +83,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.action_Open.activated.connect(self.on_open)
         self.action_Close_tab.activated.connect(self.close_tab)
+        self.actionLoadExtra.activated.connect(self.load_extra)
+        self.actionOtherExtra.activated.connect(self.other_extra)
+        self.actionClearExtra.activated.connect(self.clear_extra)
         self.viewArea.tabCloseRequested.connect(self.close_tab)
         self.viewArea.currentChanged.connect(self.activate_tab)
 
@@ -96,6 +99,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkAnnotation.toggled.connect(self.annotation_toggled)
         self.checkLegend.toggled.connect(self.legend_toggled)
         self.checkTitle.toggled.connect(self.title_toggled)
+        self.checkScaleMode.toggled.connect(self.scale_mode_toggled)
 
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
@@ -125,6 +129,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.draw_title(val)
+    def scale_mode_toggled(self, val):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.scale_mode(val)
 
     def update_checkboxes(self):
         widget = self.viewArea.currentWidget()
@@ -134,6 +142,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.checkAnnotation.setChecked(widget.draw_annotation())
             self.checkLegend.setChecked(widget.draw_legend())
             self.checkTitle.setChecked(widget.draw_title())
+            self.checkScaleMode.setChecked(widget.scale_mode())
 
     def update_statusbar(self, idx):
         self.statusBar().showMessage(
@@ -152,6 +161,21 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def on_open(self):
         filenames = self.get_opennames()
         self.load_files(filenames)
+
+    def load_extra(self):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            filenames = self.get_opennames()
+            widget.load_files(filenames)
+
+    def other_extra(self):
+        pass
+
+    def clear_extra(self):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.clear_extra()
+
 
     def show(self):
         super(MainWindow, self).show()
@@ -300,8 +324,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings = settings.copy()
         self.settings.OUTPUT = "-"
 
-        self.results = ResultSet.load_file(self.filename)
-        self.settings.update(self.results.meta())
+        self.results = [ResultSet.load_file(f)]
+        self.settings.update(self.results[0].meta())
         self.settings.load_test()
 
         self.formatter = PlotFormatter(self.settings)
@@ -321,7 +345,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                                                 QItemSelectionModel.SelectCurrent)
         self.plotSelectionModel.currentChanged.connect(self.change_plot)
 
-        self.metadataModel = MetadataModel(self, self.results.meta())
+        self.metadataModel = MetadataModel(self, self.results[0].meta())
         self.metadataSelectionModel = QItemSelectionModel(self.metadataModel)
 
         if self.settings.TITLE:
@@ -331,6 +355,19 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.title = "%s - %s" % (self.settings.NAME,
                                       self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
 
+        self.update()
+
+    def load_files(self, filenames):
+        for f in filenames:
+            if self.settings.SCALE_MODE:
+                self.settings.SCALE_DATA.append(ResultSet.load_file(f))
+            else:
+                self.results.append(ResultSet.load_file(f))
+        self.update()
+
+    def clear_extra(self):
+        self.results = self.results[:1]
+        self.settings.SCALE_DATA = []
         self.update()
 
     def zero_y(self, val=None):
@@ -363,6 +400,18 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.update()
         return self.settings.PRINT_TITLE
 
+    def scale_mode(self, val=None):
+        if val is not None:
+            self.settings.SCALE_MODE = val
+            if self.settings.SCALE_MODE:
+                self.settings.SCALE_DATA = self.results[1:]
+                self.results = self.results[:1]
+            else:
+                self.results.extend(self.settings.SCALE_DATA)
+                self.settings.SCALE_DATA = []
+            self.update()
+        return self.settings.SCALE_MODE
+
     def change_plot(self, idx, prev):
         self.settings.PLOT = self.plotModel.name_of(idx)
         self.update()
@@ -370,6 +419,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def update(self):
         self.update_start.emit()
         self.formatter.init_plots()
-        self.formatter.format([self.results])
+        self.formatter.format(self.results)
         self.canvas.draw()
         self.update_end.emit()
