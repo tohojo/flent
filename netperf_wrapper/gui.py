@@ -81,6 +81,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.settingsDock.visibilityChanged.connect(self.settings_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
 
+        self.checkZeroY.toggled.connect(self.zero_y_toggled)
+        self.checkDisableLog.toggled.connect(self.disable_log_toggled)
+        self.checkAnnotation.toggled.connect(self.annotation_toggled)
+        self.checkLegend.toggled.connect(self.legend_toggled)
+        self.checkTitle.toggled.connect(self.title_toggled)
+
         self.load_files(self.settings.INPUT)
 
     # Helper functions to update menubar actions when dock widgets are closed
@@ -90,6 +96,36 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.action_Settings.setChecked(not self.settingsDock.isHidden())
     def metadata_visibility(self):
         self.action_Metadata.setChecked(not self.metadataDock.isHidden())
+
+    def zero_y_toggled(self, val):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.zero_y(val)
+    def disable_log_toggled(self, val):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.disable_log(val)
+    def annotation_toggled(self, val):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.draw_annotation(val)
+    def legend_toggled(self, val):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.draw_legend(val)
+    def title_toggled(self, val):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.draw_title(val)
+
+    def update_checkboxes(self):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            self.checkZeroY.setChecked(widget.zero_y())
+            self.checkDisableLog.setChecked(widget.disable_log())
+            self.checkAnnotation.setChecked(widget.draw_annotation())
+            self.checkLegend.setChecked(widget.draw_legend())
+            self.checkTitle.setChecked(widget.draw_title())
 
     def on_open(self):
         filenames = QFileDialog.getOpenFileNames(self,
@@ -114,6 +150,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.widget(idx)
         self.plotList.setModel(widget.plotModel)
         self.plotList.setSelectionModel(widget.plotSelectionModel)
+        self.update_checkboxes()
 
     def load_files(self, filenames):
         self.viewArea.setUpdatesEnabled(False)
@@ -173,6 +210,36 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.plotSelectionModel.currentChanged.connect(self.change_plot)
 
         self.update()
+
+    def zero_y(self, val=None):
+        if val is not None:
+            self.settings.ZERO_Y = val
+            self.update()
+        return self.settings.ZERO_Y
+
+    def disable_log(self, val=None):
+        if val is not None:
+            self.settings.LOG_SCALE = not val
+            self.update()
+        return not self.settings.LOG_SCALE
+
+    def draw_annotation(self, val=None):
+        if val is not None:
+            self.settings.ANNOTATE = val
+            self.update()
+        return self.settings.ANNOTATE
+
+    def draw_legend(self, val=None):
+        if val is not None:
+            self.settings.PRINT_LEGEND = val
+            self.update()
+        return self.settings.PRINT_LEGEND
+
+    def draw_title(self, val=None):
+        if val is not None:
+            self.settings.PRINT_TITLE = val
+            self.update()
+        return self.settings.PRINT_TITLE
 
     def change_plot(self, idx, prev):
         self.settings.PLOT = self.plotModel.name_of(idx)
