@@ -324,8 +324,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings = settings.copy()
         self.settings.OUTPUT = "-"
 
-        self.results = [ResultSet.load_file(f)]
-        self.settings.update(self.results[0].meta())
+        self.results = ResultSet.load_file(self.filename)
+        self.extra_results = []
+        self.settings.update(self.results.meta())
         self.settings.load_test()
 
         self.formatter = PlotFormatter(self.settings)
@@ -345,7 +346,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                                                 QItemSelectionModel.SelectCurrent)
         self.plotSelectionModel.currentChanged.connect(self.change_plot)
 
-        self.metadataModel = MetadataModel(self, self.results[0].meta())
+        self.metadataModel = MetadataModel(self, self.results.meta())
         self.metadataSelectionModel = QItemSelectionModel(self.metadataModel)
 
         if self.settings.TITLE:
@@ -359,15 +360,11 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def load_files(self, filenames):
         for f in filenames:
-            if self.settings.SCALE_MODE:
-                self.settings.SCALE_DATA.append(ResultSet.load_file(f))
-            else:
-                self.results.append(ResultSet.load_file(f))
+            self.extra_results.append(ResultSet.load_file(unicode(f)))
         self.update()
 
     def clear_extra(self):
-        self.results = self.results[:1]
-        self.settings.SCALE_DATA = []
+        self.extra_results = []
         self.update()
 
     def zero_y(self, val=None):
@@ -403,12 +400,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def scale_mode(self, val=None):
         if val is not None:
             self.settings.SCALE_MODE = val
-            if self.settings.SCALE_MODE:
-                self.settings.SCALE_DATA = self.results[1:]
-                self.results = self.results[:1]
-            else:
-                self.results.extend(self.settings.SCALE_DATA)
-                self.settings.SCALE_DATA = []
             self.update()
         return self.settings.SCALE_MODE
 
@@ -419,6 +410,11 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def update(self):
         self.update_start.emit()
         self.formatter.init_plots()
-        self.formatter.format(self.results)
+        if self.settings.SCALE_MODE:
+            self.settings.SCALE_DATA = self.extra_results
+            self.formatter.format([self.results])
+        else:
+            self.settings.SCALE_DATA = []
+            self.formatter.format([self.results] + self.extra_results)
         self.canvas.draw()
         self.update_end.emit()
