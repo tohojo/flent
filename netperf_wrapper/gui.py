@@ -24,6 +24,7 @@ import sys, os
 try:
     from PyQt4 import QtCore, QtGui, uic
     from PyQt4.QtGui import *
+    from PyQt4.QtCore import *
 except ImportError:
     raise RuntimeError("PyQt4 must be installed to use the GUI.")
 
