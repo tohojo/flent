@@ -58,6 +58,9 @@
     <addaction name="action_Plot_selector"/>
     <addaction name="action_Settings"/>
     <addaction name="action_Metadata"/>
+    <addaction name="separator"/>
+    <addaction name="actionNextTab"/>
+    <addaction name="actionPrevTab"/>
    </widget>
    <widget class="QMenu" name="menu_Data">
     <property name="title">
@@ -253,11 +256,6 @@
     <string>&amp;Load additional data file</string>
    </property>
   </action>
-  <action name="actionLoadCombine">
-   <property name="text">
-    <string>Load additional data file (&amp;combine)</string>
-   </property>
-  </action>
   <action name="actionOtherExtra">
    <property name="text">
     <string>&amp;Add other open data files</string>
@@ -266,6 +264,22 @@
   <action name="actionClearExtra">
    <property name="text">
     <string>&amp;Clear extra data files</string>
+   </property>
+  </action>
+  <action name="actionNextTab">
+   <property name="text">
+    <string>&amp;Next tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Tab</string>
+   </property>
+  </action>
+  <action name="actionPrevTab">
+   <property name="text">
+    <string>P&amp;revious tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Backtab</string>
    </property>
   </action>
  </widget>

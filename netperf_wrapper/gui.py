@@ -86,6 +86,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionLoadExtra.activated.connect(self.load_extra)
         self.actionOtherExtra.activated.connect(self.other_extra)
         self.actionClearExtra.activated.connect(self.clear_extra)
+        self.actionNextTab.activated.connect(self.next_tab)
+        self.actionPrevTab.activated.connect(self.prev_tab)
+
         self.viewArea.tabCloseRequested.connect(self.close_tab)
         self.viewArea.currentChanged.connect(self.activate_tab)
 
@@ -217,6 +220,18 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.viewArea.removeTab(idx)
             widget.setParent(None)
             widget.deleteLater()
+
+    def move_tab(self, move_by):
+        count = self.viewArea.count()
+        if count:
+            idx = self.viewArea.currentIndex()
+            self.viewArea.setCurrentIndex((idx + move_by) % count)
+
+    def next_tab(self):
+        self.move_tab(1)
+
+    def prev_tab(self):
+        self.move_tab(-1)
 
     def busy_start(self):
         QApplication.setOverrideCursor(Qt.WaitCursor)
