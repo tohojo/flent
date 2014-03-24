@@ -1,3 +1,8 @@
+2013-03-24: Allow tests to specify axis labels explicitly. Use this to write
+            something better than 'ms' on the latency axes.
+
+2013-03-24: Add box plot type.
+
 2013-03-23: Disable hostname lookup when loading data files or the GUI; should
             fix issue with hostname lookup failing when a datafile with an
             unreachable host is loaded.
