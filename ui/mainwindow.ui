@@ -108,6 +108,9 @@
     <layout class="QGridLayout" name="gridLayout">
      <item row="1" column="1">
       <widget class="QCheckBox" name="checkLegend">
+       <property name="toolTip">
+        <string>Draw plot legend?</string>
+       </property>
        <property name="statusTip">
         <string>Draw plot legend?</string>
        </property>
@@ -118,6 +121,9 @@
      </item>
      <item row="1" column="0">
       <widget class="QCheckBox" name="checkAnnotation">
+       <property name="toolTip">
+        <string>Annotate plot (at the bottom)?</string>
+       </property>
        <property name="statusTip">
         <string>Annotate plot (at the bottom)?</string>
        </property>
@@ -128,6 +134,9 @@
      </item>
      <item row="0" column="0">
       <widget class="QCheckBox" name="checkZeroY">
+       <property name="toolTip">
+        <string>Always start Y-axis at 0?</string>
+       </property>
        <property name="statusTip">
         <string>Always start Y-axis at 0?</string>
        </property>
@@ -138,6 +147,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QCheckBox" name="checkDisableLog">
+       <property name="toolTip">
+        <string>Disable automatic log scaling of axes?</string>
+       </property>
        <property name="statusTip">
         <string>Disable automatic log scaling of axes?</string>
        </property>
@@ -148,6 +160,9 @@
      </item>
      <item row="2" column="0">
       <widget class="QCheckBox" name="checkTitle">
+       <property name="toolTip">
+        <string>Draw plot title?</string>
+       </property>
        <property name="statusTip">
         <string>Draw plot title?</string>
        </property>
@@ -158,6 +173,9 @@
      </item>
      <item row="2" column="1">
       <widget class="QCheckBox" name="checkScaleMode">
+       <property name="toolTip">
+        <string>Use extra data files for axis scaling instaed of plotting them?</string>
+       </property>
        <property name="statusTip">
         <string>Use extra data files for axis scaling instaed of plotting them?</string>
        </property>
