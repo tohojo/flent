@@ -324,11 +324,11 @@ class MetadataModel(QAbstractItemModel):
         return self.header_names[section]
 
     def data(self, idx, role = Qt.DisplayRole):
-        if not role in (Qt.DisplayRole, Qt.StatusTipRole):
+        if not role in (Qt.DisplayRole, Qt.StatusTipRole, Qt.ToolTipRole):
             return None
 
         item = idx.internalPointer()
-        if role == Qt.StatusTipRole:
+        if role in (Qt.StatusTipRole, Qt.ToolTipRole):
             if item.name:
                 return "%s: %s" % (item.name, item.value)
             else:
