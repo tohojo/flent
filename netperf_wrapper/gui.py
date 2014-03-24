@@ -422,7 +422,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         return self.settings.ZERO_Y
 
     def disable_log(self, val=None):
-        if val is not None and val != self.settings.LOG_SCALE:
+        if val is not None and val == self.settings.LOG_SCALE:
             self.settings.LOG_SCALE = not val
             self.update()
         return not self.settings.LOG_SCALE
