@@ -293,7 +293,10 @@ class PlotFormatter(Formatter):
 
         axis.set_xlabel('Time')
         for i,u in enumerate(unit):
-            config['axes'][i].set_ylabel(unit[i])
+            if 'axis_labels' in config and config['axis_labels'][i]:
+                config['axes'][i].set_ylabel(config['axis_labels'][i])
+            else:
+                config['axes'][i].set_ylabel(unit[i])
 
 
     def _init_box_plot(self, config=None, axis=None):
@@ -321,7 +324,10 @@ class PlotFormatter(Formatter):
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit, s_unit))
             unit = s_unit
 
-        axis.set_xlabel(unit)
+        if 'axis_labels' in config and config['axis_labels'][0]:
+            axis.set_xlabel(config['axis_labels'][0])
+        else:
+            axis.set_xlabel(unit)
         axis.set_ylabel('Cumulative probability')
         axis.set_ylim(0,1)
         config['axes'] = [axis]
