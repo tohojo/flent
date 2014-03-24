@@ -102,6 +102,11 @@ to ssh, so can include hosts specified in ~/.ssh/config. Note that gathering the
 data can take some time, since it involves executing several remote commands.
 This option can be specified multiple times.
 .TP
+\fB--gui\fR
+Run the netperf-wrapper GUI. All other options are used as defaults in the GUI,
+but can be changed once it is running. See section below for a description of
+the GUI.
+.TP
 \fBTest configuration:\fR
 .PP
 These options affect the behaviour of the test being run and have no
@@ -264,6 +269,28 @@ This output format outputs the test metadata as pretty-printed json (also
 suitable for human consumption). It is output as a list of objects, where each
 object corresponds to the metadata of one test. Mostly useful for inspecting
 metadata of stored data files.
+
+.SH THE NETPERF-WRAPPER GUI
+Netperf-wrapper comes equipped with a GUI to browse and plot previously captured
+datasets. The GUI requires PyQt4; if this is installed, it can be launched with
+the \fB--gui\fR parameter. Additionally, if netperf-wrapper is launched without
+parameters and without a controlling terminal, the GUI will be launched
+automatically.
+
+The GUI can be used for interactively plotting previously captured datasets, and
+makes it easy to compare results from several test runs. It presents a tabbed
+interface to graphs of data files, allows dynamic configuration of plots, and
+includes a metadata browser. For each loaded data file, additional data files
+can be loaded and added to the plot, similar to what happens when specifying
+multiple input files for plotting on the command line. A checkbox controls
+whether the added data files are added as separate entries to the plot, or
+whether they are used for scaling the output (mirroring the \fB--scale-mode\fR)
+command line switch.
+
+The GUI also incorporates matplotlib's interactive browsing toolbar, enabling
+panning and zooming of the plot area,  dynamic configuration of plot and axis
+parameters and labels and saving the plots to file. The exact dynamic features
+supported depends on the installed version of matplotlib.
 
 .SH RC FILE
 Some of the command line options can be specified in an rc file. By default,
