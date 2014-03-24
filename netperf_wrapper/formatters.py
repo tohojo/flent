@@ -265,12 +265,12 @@ class PlotFormatter(Formatter):
 
     def _init_timeseries_plot(self, config=None, axis=None):
         if axis is None:
-            axis = self.plt.gca()
+            axis = self.figure.gca()
         if config is None:
             config = self.config
 
         if 'dual_axes' in config and config['dual_axes']:
-            second_axis = self.plt.axes(axis.get_position(), sharex=axis, frameon=False)
+            second_axis = self.figure.add_axes(axis.get_position(), sharex=axis, frameon=False)
             second_axis.yaxis.tick_right()
             axis.yaxis.tick_left()
             second_axis.yaxis.set_label_position('right')
@@ -298,7 +298,7 @@ class PlotFormatter(Formatter):
 
     def _init_cdf_plot(self, config=None, axis=None):
         if axis is None:
-            axis = self.plt.gca()
+            axis = self.figure.gca()
         if config is None:
             config = self.config
 
@@ -319,8 +319,10 @@ class PlotFormatter(Formatter):
 
     def _init_meta_plot(self):
         self.configs = []
+        ax = self.figure.gca()
+        ax.set_axis_off()
         for i,subplot in enumerate(self.config['subplots']):
-            axis = self.plt.subplot(len(self.config['subplots']),1,i+1, sharex=self.plt.gca())
+            axis = self.figure.add_subplot(len(self.config['subplots']),1,i+1, sharex=self.figure.gca())
             config = self._load_plotconfig(subplot)
             self.configs.append(config)
             getattr(self, '_init_%s_plot' % config['type'])(config=config, axis=axis)
@@ -330,7 +332,7 @@ class PlotFormatter(Formatter):
 
     def _do_timeseries_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
-            axis = self.plt.gca()
+            axis = self.figure.gca()
         if config is None:
             config = self.config
 
@@ -377,7 +379,7 @@ class PlotFormatter(Formatter):
 
     def _do_cdf_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
-            axis = self.plt.gca()
+            axis = self.figure.gca()
         if config is None:
             config = self.config
 
@@ -472,7 +474,7 @@ class PlotFormatter(Formatter):
                 self.plt.show()
         else:
             try:
-                self.plt.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
+                self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
@@ -488,14 +490,14 @@ class PlotFormatter(Formatter):
                 plot_title += "\n" + self.settings.TITLE
             if 'description' in self.config and self.settings.TITLE and not skip_title:
                 y=1.00
-            titles.append(self.plt.suptitle(plot_title, fontsize=14, y=y))
+            titles.append(self.figure.suptitle(plot_title, fontsize=14, y=y))
 
         if self.settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
                 self.settings.LOCAL_HOST, self.settings.HOST,
                 self.settings.TIME,
                 self.settings.LENGTH, self.settings.STEP_SIZE)
-            titles.append(self.plt.gcf().text(0.5, 0.0, annotation_string,
+            titles.append(self.figure.text(0.5, 0.0, annotation_string,
                                             horizontalalignment='center',
                                             verticalalignment='bottom',
                                             fontsize=8))
