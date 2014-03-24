@@ -280,7 +280,6 @@ class PlotFormatter(Formatter):
         else:
             config['axes'] = [axis]
 
-
         unit = [None]*len(config['axes'])
         for s in config['series']:
             if 'axis' in s and s['axis'] == 2:
@@ -295,6 +294,19 @@ class PlotFormatter(Formatter):
         axis.set_xlabel('Time')
         for i,u in enumerate(unit):
             config['axes'][i].set_ylabel(unit[i])
+
+
+    def _init_box_plot(self, config=None, axis=None):
+        if axis is None:
+            axis = self.figure.gca()
+        if config is None:
+            config = self.config
+
+        self._init_timeseries_plot(config, axis)
+        axis.set_xlabel('')
+
+        self.start_position = 1
+
 
     def _init_cdf_plot(self, config=None, axis=None):
         if axis is None:
@@ -329,6 +341,10 @@ class PlotFormatter(Formatter):
             if i < len(self.config['subplots'])-1:
                 axis.set_xlabel("")
 
+
+    def do_timeseries_plot(self, results, config=None, axis=None):
+        for r in results:
+            self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.meta("TITLE"))
 
     def _do_timeseries_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
@@ -376,6 +392,51 @@ class PlotFormatter(Formatter):
         for a in range(len(config['axes'])):
             if data[a]:
                 self._do_scaling(config['axes'][a], data[a], btm, top)
+
+
+    def do_box_plot(self, results, config=None, axis=None):
+        results = results[0]
+        if axis is None:
+            axis = self.figure.gca()
+        if config is None:
+            config = self.config
+
+        positions = {}
+        data = {}
+        for i,s in enumerate(config['series']):
+            if 'axis' in s and s['axis'] == 2:
+                a = 1
+            else:
+                a = 0
+            if not a in data:
+                data[a] = {'series': [],
+                        'labels': []}
+
+            data[a]['series'].append([i for i in results.series(s['data']) if i is not None])
+            if 'label' in s:
+                data[a]['labels'].append(s['label'])
+            else:
+                data[a]['labels'].append(i)
+
+        for a,d in data.items():
+            if self.start_position > 1:
+                labels = [i.get_text() for i in config['axes'][0].get_xticklabels()] + d['labels']
+            else:
+                labels = d['labels']
+
+            plotted = config['axes'][a].boxplot(d['series'],
+                                      positions=range(self.start_position,
+                                                      self.start_position+len(d['series'])))
+            self.start_position += len(d['series'])
+
+            config['axes'][0].set_xticks(range(1, self.start_position))
+            config['axes'][0].set_xticklabels(labels, rotation=45, ha='right')
+            config['axes'][0].set_xlim(0,self.start_position)
+
+
+    def do_cdf_plot(self, results, config=None, axis=None):
+        for r in results:
+            self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.meta("TITLE"))
 
     def _do_cdf_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
@@ -436,25 +497,24 @@ class PlotFormatter(Formatter):
                 min_val -= min_val%10 # nearest value divisible by 10
             axis.set_xlim(left=min_val)
 
-    def _do_meta_plot(self, results, postfix=""):
+    def do_meta_plot(self, results):
         for i,config in enumerate(self.configs):
-            getattr(self, '_do_%s_plot' % config['type'])(results, config=config, postfix=postfix)
+            getattr(self, 'do_%s_plot' % config['type'])(results, config=config)
 
     def format(self, results):
         if not results[0]:
             return
 
-        if len(results) > 1:
-            for r in results:
-                getattr(self, '_do_%s_plot' % self.config['type'])(r, postfix=" - "+r.meta("TITLE"))
-            skip_title = True
-        else:
-            getattr(self, '_do_%s_plot' % self.config['type'])(results[0])
-            skip_title = False
+        getattr(self, 'do_%s_plot' % self.config['type'])(results)
+        skip_title = len(results) > 1
 
         artists = []
+        legend_exists = False
         for c in self.configs:
-            artists += self._do_legend(c)
+            legends = self._do_legend(c)
+            if legends:
+                artists += legends
+                legend_exists = True
 
         artists += self._annotate_plot(skip_title)
 
@@ -466,7 +526,7 @@ class PlotFormatter(Formatter):
             # For the interactive viewer there's no bbox_extra_artists, so we
             # need to reduce the axis sizes to make room for the legend (which
             # might still be slightly cut off).
-            if self.settings.PRINT_LEGEND:
+            if self.settings.PRINT_LEGEND and legend_exists:
                 for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
                     box = a.get_position()
                     a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
@@ -514,6 +574,9 @@ class PlotFormatter(Formatter):
         # all plot lines
         handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
                                  [a.get_legend_handles_labels() for a in axes])
+
+        if not labels:
+            return []
 
         kwargs = {}
         if 'legend_title' in config:
