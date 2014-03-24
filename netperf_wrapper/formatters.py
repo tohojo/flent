@@ -109,7 +109,7 @@ class TableFormatter(Formatter):
 
         if len(results) > 1:
             for r in results:
-                header_row += [k + ' - ' + r.meta("TITLE") for k in keys]
+                header_row += [k + ' - ' + r.label() for k in keys]
         else:
             header_row += keys
         return header_row
@@ -343,8 +343,11 @@ class PlotFormatter(Formatter):
 
 
     def do_timeseries_plot(self, results, config=None, axis=None):
-        for r in results:
-            self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.meta("TITLE"))
+        if len(results) > 1:
+            for r in results:
+                self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label())
+        else:
+            self._do_timeseries_plot(results[0], config=config, axis=axis)
 
     def _do_timeseries_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:
@@ -395,48 +398,62 @@ class PlotFormatter(Formatter):
 
 
     def do_box_plot(self, results, config=None, axis=None):
-        results = results[0]
-        if axis is None:
-            axis = self.figure.gca()
         if config is None:
             config = self.config
+        axis = config['axes'][0]
 
-        positions = {}
-        data = {}
+        group_size = len(results)
+        ticklabels = []
+        ticks = []
+        pos = 1
+
+        colours = ['b', 'g', 'c', 'm', 'k']
+        while len(colours) < len(results):
+            colours = colours *2
+
         for i,s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
                 a = 0
-            if not a in data:
-                data[a] = {'series': [],
-                        'labels': []}
 
-            data[a]['series'].append([i for i in results.series(s['data']) if i is not None])
+            data = []
+            for r in results:
+                data.append([i for i in r.series(s['data']) if i is not None])
+
             if 'label' in s:
-                data[a]['labels'].append(s['label'])
+                ticklabels.append(s['label'])
             else:
-                data[a]['labels'].append(i)
+                ticklabels.append(i)
 
-        for a,d in data.items():
-            if self.start_position > 1:
-                labels = [i.get_text() for i in config['axes'][0].get_xticklabels()] + d['labels']
-            else:
-                labels = d['labels']
+            positions = range(pos,pos+group_size)
+            ticks.append(self.np.mean(positions))
 
-            plotted = config['axes'][a].boxplot(d['series'],
-                                      positions=range(self.start_position,
-                                                      self.start_position+len(d['series'])))
-            self.start_position += len(d['series'])
+            bp = config['axes'][a].boxplot(data,
+                                           positions=positions)
+            for j,r in enumerate(results):
+                self.plt.setp(bp['boxes'][j], color=colours[j])
+                if i == 0 and group_size > 1:
+                    bp['caps'][j*2].set_label(r.label())
+                for k in 'caps','whiskers','fliers':
+                    if bp[k]:
+                        self.plt.setp(bp[k][j*2], color=colours[j])
+                        self.plt.setp(bp[k][j*2+1], color=colours[j])
 
-            config['axes'][0].set_xticks(range(1, self.start_position))
-            config['axes'][0].set_xticklabels(labels, rotation=45, ha='right')
-            config['axes'][0].set_xlim(0,self.start_position)
+            pos += group_size+1
+
+
+        axis.set_xticks(ticks)
+        axis.set_xticklabels(ticklabels)
+        axis.set_xlim(0,pos-1)
 
 
     def do_cdf_plot(self, results, config=None, axis=None):
-        for r in results:
-            self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.meta("TITLE"))
+        if len(results) > 1:
+            for r in results:
+                self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label())
+        else:
+            self._do_cdf_plot(results[0], config=config, axis=axis)
 
     def _do_cdf_plot(self, results, config=None, axis=None, postfix=""):
         if axis is None:

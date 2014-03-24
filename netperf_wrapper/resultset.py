@@ -54,6 +54,9 @@ class ResultSet(object):
             return self.metadata[k]
         return self.metadata
 
+    def label(self):
+        return self.metadata["TITLE"] or self.metadata["TIME"].strftime("%Y-%m-%d %H:%M:%S")
+
     def get_x_values(self):
         return self._x_values
     def set_x_values(self, x_values):
