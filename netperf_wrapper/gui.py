@@ -416,37 +416,37 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.update()
 
     def zero_y(self, val=None):
-        if val is not None:
+        if val is not None and val != self.settings.ZERO_Y:
             self.settings.ZERO_Y = val
             self.update()
         return self.settings.ZERO_Y
 
     def disable_log(self, val=None):
-        if val is not None:
+        if val is not None and val != self.settings.LOG_SCALE:
             self.settings.LOG_SCALE = not val
             self.update()
         return not self.settings.LOG_SCALE
 
     def draw_annotation(self, val=None):
-        if val is not None:
+        if val is not None and val != self.settings.ANNOTATE:
             self.settings.ANNOTATE = val
             self.update()
         return self.settings.ANNOTATE
 
     def draw_legend(self, val=None):
-        if val is not None:
+        if val is not None and val != self.settings.PRINT_LEGEND:
             self.settings.PRINT_LEGEND = val
             self.update()
         return self.settings.PRINT_LEGEND
 
     def draw_title(self, val=None):
-        if val is not None:
+        if val is not None and val != self.settings.PRINT_TITLE:
             self.settings.PRINT_TITLE = val
             self.update()
         return self.settings.PRINT_TITLE
 
     def scale_mode(self, val=None):
-        if val is not None:
+        if val is not None and val != self.settings.SCALE_MODE:
             self.settings.SCALE_MODE = val
             self.update()
         return self.settings.SCALE_MODE
