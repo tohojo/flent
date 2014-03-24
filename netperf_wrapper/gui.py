@@ -336,7 +336,7 @@ class MetadataModel(QAbstractItemModel):
         if idx.column() == 0:
             return item.name
         elif idx.column() == 1:
-            return item.value
+            return unicode(item.value)
 
     def parent(self, idx):
         item = idx.internalPointer()
