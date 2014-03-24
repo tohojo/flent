@@ -27,6 +27,19 @@ class CommandRunner(object):
 
     def __init__(self):
         self.hostname = None
+        self.env = os.environ.copy()
+        self.fixup_path()
+
+    def fixup_path(self):
+        """Fix up the PATH to include /sbin and /usr/sbin since some of the
+        utilities called (such as ip and tc) live here, and those directories
+        are not normally in the path (on e.g. Debian)."""
+        path = self.env['PATH'].split(':')
+        if not '/sbin' in path:
+            path.append('/sbin')
+        if not '/usr/sbin' in path:
+            path.append('/usr/sbin')
+        self.env['PATH'] = ":".join(path)
 
     def set_hostname(self, hostname):
         self.hostname = hostname
@@ -38,7 +51,7 @@ class CommandRunner(object):
             if self.hostname:
                 command = "ssh %s '%s'" % (self.hostname, command)
             res = subprocess.check_output(command, universal_newlines=True, shell=True,
-                                          stderr=subprocess.STDOUT)
+                                          stderr=subprocess.STDOUT, env=self.env)
             return res.strip()
         except subprocess.CalledProcessError:
             return None
