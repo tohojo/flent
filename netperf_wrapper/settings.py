@@ -370,8 +370,9 @@ plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
                   help="Disable log scales on plots.")
 plot_group.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
                   help="Additional data files to consider when scaling the plot axes "
-                  "(for plotting several plots with identical axes). "
-                  "Can be supplied multiple times; see also --scale-mode.")
+                  "(for plotting several plots with identical axes). Note, this displays "
+                  "only the first data set, but with axis scaling taking into account the "
+                  "additional data sets. Can be supplied multiple times; see also --scale-mode.")
 plot_group.add_option("-S", "--scale-mode", action="store_true", dest="SCALE_MODE",
                   help="Treat file names (except for the first one) passed as unqualified "
                   "arguments as if passed as --scale-data (default as if passed as --input).")
