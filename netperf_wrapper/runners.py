@@ -138,9 +138,9 @@ class ProcessRunner(threading.Thread):
 
     def parse(self, output):
         """Default parser returns the last (whitespace-separated) word of
-        output."""
+        output as a float."""
 
-        return output.split()[-1].strip()
+        return float(output.split()[-1].strip())
 
 DefaultRunner = ProcessRunner
 

@@ -131,9 +131,11 @@ class IterationAggregator(Aggregator):
         Aggregator.__init__(self, *args, **kwargs)
 
     def aggregate(self, results):
-        results.x_values = list(range(1, self.iterations+1))
         for i in range(self.iterations):
-            results.add_result(i+1, self.collect())
+            data = self.collect()
+            if i == 0:
+                results.create_series(data.keys())
+            results.append_datapoint(i, data)
         return results
 
 class TimeseriesAggregator(Aggregator):
