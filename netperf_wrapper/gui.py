@@ -83,6 +83,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.action_Open.activated.connect(self.on_open)
         self.action_Close_tab.activated.connect(self.close_tab)
+        self.actionSavePlot.activated.connect(self.save_plot)
         self.actionLoadExtra.activated.connect(self.load_extra)
         self.actionOtherExtra.activated.connect(self.other_extra)
         self.actionClearExtra.activated.connect(self.clear_extra)
@@ -198,6 +199,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget is not None:
             widget.clear_extra()
 
+    def save_plot(self):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.save_plot()
+
     def warn_nomatch(self):
         QMessageBox.warning(self, "No matching datasets found",
                            "Could not find any datasets with a matching test name to add.")
@@ -249,6 +255,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataView.setModel(widget.metadataModel)
         self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
+        self.actionSavePlot.setEnabled(widget.can_save())
 
     def load_files(self, filenames):
         self.busy_start()
@@ -414,6 +421,14 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def clear_extra(self):
         self.extra_results = []
         self.update()
+
+    def can_save(self):
+        # Check for attribute to not crash on a matplotlib version that does not
+        # have the save action.
+        return hasattr(self.toolbar, 'save_figure')
+    def save_plot(self):
+        if self.can_save():
+            self.toolbar.save_figure()
 
     def zero_y(self, val=None):
         if val is not None and val != self.settings.ZERO_Y:

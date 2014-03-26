@@ -48,6 +48,7 @@
     </property>
     <addaction name="action_Open"/>
     <addaction name="action_Close_tab"/>
+    <addaction name="actionSavePlot"/>
     <addaction name="separator"/>
     <addaction name="action_Quit"/>
    </widget>
@@ -298,6 +299,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Backtab</string>
+   </property>
+  </action>
+  <action name="actionSavePlot">
+   <property name="text">
+    <string>&amp;Save plot to file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>
