@@ -81,8 +81,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.last_dir = os.getcwd()
         self.defer_load = self.settings.INPUT
 
-        self.action_Open.activated.connect(self.on_open)
-        self.action_Close_tab.activated.connect(self.close_tab)
+        self.actionOpen.activated.connect(self.on_open)
+        self.actionCloseTab.activated.connect(self.close_tab)
         self.actionSavePlot.activated.connect(self.save_plot)
         self.actionLoadExtra.activated.connect(self.load_extra)
         self.actionOtherExtra.activated.connect(self.other_extra)
@@ -107,11 +107,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
-        self.action_Plot_selector.setChecked(not self.plotDock.isHidden())
+        self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
     def settings_visibility(self):
-        self.action_Settings.setChecked(not self.settingsDock.isHidden())
+        self.actionSettings.setChecked(not self.settingsDock.isHidden())
     def metadata_visibility(self):
-        self.action_Metadata.setChecked(not self.metadataDock.isHidden())
+        self.actionMetadata.setChecked(not self.metadataDock.isHidden())
 
     def zero_y_toggled(self, val):
         widget = self.viewArea.currentWidget()

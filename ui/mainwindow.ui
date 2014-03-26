@@ -46,19 +46,19 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="action_Open"/>
-    <addaction name="action_Close_tab"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionCloseTab"/>
     <addaction name="actionSavePlot"/>
     <addaction name="separator"/>
-    <addaction name="action_Quit"/>
+    <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <addaction name="action_Plot_selector"/>
-    <addaction name="action_Settings"/>
-    <addaction name="action_Metadata"/>
+    <addaction name="actionPlotSelector"/>
+    <addaction name="actionSettings"/>
+    <addaction name="actionMetadata"/>
     <addaction name="separator"/>
     <addaction name="actionNextTab"/>
     <addaction name="actionPrevTab"/>
@@ -213,7 +213,7 @@
     </layout>
    </widget>
   </widget>
-  <action name="action_Quit">
+  <action name="actionQuit">
    <property name="text">
     <string>&amp;Quit</string>
    </property>
@@ -221,7 +221,7 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
-  <action name="action_Open">
+  <action name="actionOpen">
    <property name="text">
     <string>&amp;Open data file</string>
    </property>
@@ -229,7 +229,7 @@
     <string>Ctrl+O</string>
    </property>
   </action>
-  <action name="action_Close_tab">
+  <action name="actionCloseTab">
    <property name="text">
     <string>&amp;Close tab</string>
    </property>
@@ -237,7 +237,7 @@
     <string>Ctrl+W</string>
    </property>
   </action>
-  <action name="action_Plot_selector">
+  <action name="actionPlotSelector">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -248,7 +248,7 @@
     <string>&amp;Plot selector</string>
    </property>
   </action>
-  <action name="action_Settings">
+  <action name="actionSettings">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -259,7 +259,7 @@
     <string>&amp;Settings</string>
    </property>
   </action>
-  <action name="action_Metadata">
+  <action name="actionMetadata">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -313,7 +313,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>action_Quit</sender>
+   <sender>actionQuit</sender>
    <signal>activated()</signal>
    <receiver>MainWindow</receiver>
    <slot>close()</slot>
@@ -329,7 +329,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>action_Metadata</sender>
+   <sender>actionMetadata</sender>
    <signal>toggled(bool)</signal>
    <receiver>metadataDock</receiver>
    <slot>setVisible(bool)</slot>
@@ -345,7 +345,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>action_Settings</sender>
+   <sender>actionSettings</sender>
    <signal>toggled(bool)</signal>
    <receiver>settingsDock</receiver>
    <slot>setVisible(bool)</slot>
@@ -361,7 +361,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>action_Plot_selector</sender>
+   <sender>actionPlotSelector</sender>
    <signal>toggled(bool)</signal>
    <receiver>plotDock</receiver>
    <slot>setVisible(bool)</slot>
