@@ -638,8 +638,14 @@ class PlotFormatter(Formatter):
         data = [x for x in data if x is not None]
         if not data:
             return
-        top_percentile = self.np.percentile(data, top)*1.05
-        btm_percentile = self.np.percentile(data, btm)*0.95
+
+        # numpy doesn't have 'percentile' until v1.6
+        if not hasattr(self.np, 'percentile'):
+            top_percentile = max(data)*1.01
+            btm_percentile = min(data)*0.99
+        else:
+            top_percentile = self.np.percentile(data, top)*1.05
+            btm_percentile = self.np.percentile(data, btm)*0.95
         if self.settings.ZERO_Y:
             axis.set_ylim(ymin=0, ymax=top_percentile)
         else:
