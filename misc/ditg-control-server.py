@@ -83,7 +83,7 @@ class DITGManager(object):
         self._collect_garbage()
         filename = os.path.join(self.working_dir,  self.datafile_pattern % test_id)
         if not os.path.exists(filename):
-            raise KeyError("Data for test ID '%s' not found" % test_id)
+            return {'status': 'Error', 'message': "Data for test ID '%s' not found." % test_id}
         with open(filename, 'rt') as fp:
             data = json.load(fp)
             return data
@@ -93,11 +93,11 @@ class DITGManager(object):
         duration = int(duration)
         interval = int(interval)
         if duration <= 0 or interval <= 0:
-            raise Exception("Duration and interval must be positive integers.")
+            return {'status': 'Error', 'message': "Duration and interval must be positive integers."}
         if duration > self.max_test_time:
-            raise Exception("Maximum test time of %d seconds exceeded." % self.max_test_time)
+            return {'status': 'Error', 'message': "Maximum test time of %d seconds exceeded." % self.max_test_time}
         if interval > duration*1000:
-            raise Exception("Interval must be <= duration")
+            return {'status': 'Error', 'message': "Interval must be <= duration."}
         test_id = "".join(random.sample(ALPHABET, 20))
         self._spawn_receiver(test_id, duration, interval)
 
