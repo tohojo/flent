@@ -207,19 +207,21 @@ class DITGManager(object):
     def _spawn_receiver(self, test_id, duration, interval, port):
         stdout = "%s.recv.out" % test_id
         datafile = self.datafile_pattern % test_id
+        error = False
         if self._clean_fork(stdout):
             try:
                 ret = self._run_receiver(test_id, duration, interval, port)
             except Exception as e:
                 traceback.print_exc()
                 ret = {'status': 'Error', 'message': str(e)}
+                error = True
             try:
                 # Write data to temp file, atomically rename to final file name
                 with open('%s.tmp' % datafile, 'wt') as fp:
                     json.dump(ret, fp)
                     os.rename('%s.tmp' % datafile, datafile)
             finally:
-                if 'status' in ret and ret['status'] == 'OK':
+                if not error:
                     self._unlink(stdout)
                     os._exit(0)
                 os._exit(1)
@@ -229,7 +231,7 @@ class DITGManager(object):
         logfile = '%s.log' % test_id
         txtlog = '%s.log.txt' % test_id
         outfile = '%s.dat' % test_id
-        ret = {}
+        ret = {'status': 'OK'}
 
         # Run ITGRecv; does not terminate after the end of the test, so wait for
         # the test duration + a grace time of 5 seconds, then kill the process
@@ -253,44 +255,43 @@ class DITGManager(object):
 
         # Call ITGDec on the log file output, read in the resulting data
         if not os.path.exists(logfile):
-            ret['status'] = 'No data file produced'
-        else:
-            try:
-                subprocess.check_call(['ITGDec', logfile,
-                                       '-c', str(interval), outfile,
-                                       '-l', txtlog])
-                with open(outfile, 'rt') as fp:
-                    ret['data'] = fp.read()
+            raise Exception('No data file produced')
 
-                if not ret['data']:
-                    raise Exception("Empty data set")
+        try:
+            subprocess.check_call(['ITGDec', logfile,
+                                   '-c', str(interval), outfile,
+                                   '-l', txtlog])
+            with open(outfile, 'rt') as fp:
+                ret['data'] = fp.read()
 
-                # Read start of text log file to get timestamp of first received packet
-                with open(txtlog, 'rt') as fp:
-                    data = fp.read(1024)
-                    try:
-                        idx_s = data.index('rxTime>') + len('rxTime>')
-                        idx_e = data.index('Size>')
-                        t,microsec = data[idx_s:idx_e].split(".")
-                        h,m,s = t.split(":")
-                        dt = datetime.utcnow()
-                        dt.replace(hour=int(h), minute=int(m), second=int(s), microsecond=int(microsec))
-                        ret['utc_offset'] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
-                    except Exception as e:
-                        traceback.print_exc()
-                        ret['utc_offset'] = None
-                    ret['status'] = 'OK'
-            except Exception as e:
-                traceback.print_exc()
-                ret['status'] = 'Error'
-                ret['message'] = str(e)
+            if not ret['data']:
+                # By not raising an exception, the stdout output file is still
+                # cleared, but an error is reported to the caller. This is to
+                # prevent output files from sticking around for, e.g., users
+                # that request a test, but then cannot get packets through; the
+                # output is not useful to diagnose that anyway.
+                ret = {'status': 'Error', 'message': 'Empty data set.'}
 
+            # Read start of text log file to get timestamp of first received packet
+            with open(txtlog, 'rt') as fp:
+                data = fp.read(1024)
+                try:
+                    idx_s = data.index('rxTime>') + len('rxTime>')
+                    idx_e = data.index('Size>')
+                    t,microsec = data[idx_s:idx_e].split(".")
+                    h,m,s = t.split(":")
+                    dt = datetime.utcnow()
+                    dt.replace(hour=int(h), minute=int(m), second=int(s), microsecond=int(microsec))
+                    ret['utc_offset'] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
+                except Exception as e:
+                    ret['utc_offset'] = None
 
-        # Clean up temporary files and exit
-        for f in logfile, txtlog, outfile:
-            self._unlink(f)
+            return ret
+        finally:
+            # Clean up temporary files and exit
+            for f in logfile, txtlog, outfile:
+                self._unlink(f)
 
-        return ret
 
     def _collect_garbage(self, *args):
         for p in self.children:
