@@ -108,24 +108,30 @@ class DITGManager(object):
         if pid:
             self.children.append(pid)
         else:
-            self.children = []
-            self.toplevel = False
-            os.chdir(self.working_dir)
-            sys.stdin.close()
-            os.closerange(3, MAXFD)
-            if output is not None:
-                with open(os.path.join(self.working_dir, output), "w") as fp:
-                    os.dup2(fp.fileno(), 1)
-                    os.dup2(fp.fileno(), 2)
-            else:
-                sys.stdout.close()
-                sys.stderr.close()
+            try:
+                self.children = []
+                self.toplevel = False
+                os.chdir(self.working_dir)
+                sys.stdin.close()
+                os.closerange(3, MAXFD)
+                if output is not None:
+                    with open(os.path.join(self.working_dir, output), "w") as fp:
+                        os.dup2(fp.fileno(), 1)
+                        os.dup2(fp.fileno(), 2)
+                else:
+                    sys.stdout.close()
+                    sys.stderr.close()
+            except:
+                try:
+                    traceback.print_exc()
+                finally:
+                    os._exit(1)
         return pid == 0
 
     def _unlink(self, filename):
         try:
             os.unlink(filename)
-        except FileNotFoundError:
+        except:
             pass
 
     def _spawn_receiver(self, test_id, duration, interval):
