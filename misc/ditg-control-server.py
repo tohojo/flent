@@ -60,17 +60,20 @@ parser.add_option('-p', '--port', action='store', type='int', dest='BIND_PORT', 
                   help="Bind port. Default: 8000.")
 parser.add_option('-A', '--itg-address', action='store', type='string', dest='ITG_ADDRESS',
                   default=None, help="Address to bind ITGRecv to. Default: Same as --address.")
+parser.add_option('-t', '--max-test-time', action='store', type='int', dest='MAX_TEST_TIME',
+                  default=7200, help="Maximum test time allowed. Default 7200 seconds (two hours).")
 
 class DITGManager(object):
     datafile_pattern = "%s.json"
 
-    def __init__(self, bind_address):
+    def __init__(self, bind_address, max_test_time):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
         self.garbage = []
         self.toplevel = True
         self.bind_address = bind_address
+        self.max_test_time = max_test_time
 
         signal.signal(signal.SIGINT, self._exit)
         signal.signal(signal.SIGTERM, self._exit)
@@ -91,8 +94,8 @@ class DITGManager(object):
         interval = int(interval)
         if duration <= 0 or interval <= 0:
             raise Exception("Duration and interval must be positive integers.")
-        if duration > 7200:
-            raise Exception("Two hour test maximum exceeded.")
+        if duration > self.max_test_time:
+            raise Exception("Maximum test time of %d seconds exceeded." % self.max_test_time)
         if interval > duration*1000:
             raise Exception("Interval must be <= duration")
         test_id = "".join(random.sample(ALPHABET, 20))
@@ -245,7 +248,7 @@ def run():
         sys.exit(1)
 
     server = SimpleXMLRPCServer((options.BIND_ADDRESS, options.BIND_PORT), allow_none=True)
-    manager = DITGManager(options.ITG_ADDRESS or options.BIND_ADDRESS)
+    manager = DITGManager(options.ITG_ADDRESS or options.BIND_ADDRESS, options.MAX_TEST_TIME)
     server.register_instance(manager)
     server.register_introspection_functions()
     server.serve_forever()
