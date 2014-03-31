@@ -124,8 +124,9 @@ class DITGManager(object):
             return {'status': 'Error', 'message': "Too many concurrent instances running. Try again later."}
 
         test_id = "".join(random.sample(ALPHABET, self.id_length))
+        # Need one port for control, one for data (if the data stream is TCP).
         port = self.current_port
-        self.current_port += 1
+        self.current_port += 2
         self._spawn_receiver(test_id, duration, interval, port)
 
         return {'status': 'OK', 'id': test_id, 'port': port}
