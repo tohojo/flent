@@ -70,7 +70,6 @@ class DITGManager(object):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
-        self.garbage = []
         self.toplevel = True
         self.bind_address = bind_address
         self.max_test_time = max_test_time
@@ -81,15 +80,16 @@ class DITGManager(object):
         signal.signal(signal.SIGCHLD, self._collect_garbage)
 
     def get_test_results(self, test_id):
+        self._collect_garbage()
         filename = os.path.join(self.working_dir,  self.datafile_pattern % test_id)
         if not os.path.exists(filename):
             raise KeyError("Data for test ID '%s' not found" % test_id)
         with open(filename, 'rt') as fp:
             data = json.load(fp)
-            self.garbage.append(filename)
             return data
 
     def request_new_test(self, duration, interval):
+        self._collect_garbage()
         duration = int(duration)
         interval = int(interval)
         if duration <= 0 or interval <= 0:
@@ -109,7 +109,6 @@ class DITGManager(object):
             self.children.append(pid)
         else:
             self.children = []
-            self.garbage = []
             self.toplevel = False
             os.chdir(self.working_dir)
             sys.stdin.close()
@@ -211,13 +210,25 @@ class DITGManager(object):
 
         return ret
 
-    def _collect_garbage(self, signum, frame):
-        while self.garbage:
-            f = self.garbage.pop()
-            os.unlink(f)
+    def _collect_garbage(self, *args):
         for p in self.children:
             if os.waitpid(p, os.WNOHANG) != (0,0):
                 self.children.remove(p)
+        if not self.toplevel:
+            return
+
+        try:
+            files = os.listdir(self.working_dir)
+            for f in files:
+                if not f.endswith('.json'):
+                    continue
+                p = os.path.join(self.working_dir, f)
+                s = os.stat(p)
+                td = datetime.now() - datetime.fromtimestamp(s.st_mtime)
+                if td.seconds > 300:
+                    self._unlink(p)
+        except:
+            traceback.print_exc()
 
     def _alarm(self, signum, frame):
         raise AlarmException()
