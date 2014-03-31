@@ -121,7 +121,7 @@ class DITGManager(object):
     def request_new_test(self, duration, interval, hmac_hex):
         """Request a new test instance.
 
-        This will allocate a new ITCRecv instance and parse the log file it produces.
+        This will allocate a new ITGRecv instance and parse the log file it produces.
         The results of this can then be retrieved with get_test_results() after the
         test has run.
 
@@ -169,21 +169,26 @@ class DITGManager(object):
         # Need one port for control, one for data (if the data stream is TCP).
         port = self.current_port
         self.current_port += 2
-        self._spawn_receiver(test_id, duration, interval, port)
+        return self._spawn_receiver(test_id, duration, interval, port)
 
-        return {'status': 'OK', 'id': test_id, 'port': port}
 
     def _clean_fork(self, output=None):
+        pipe_r, pipe_w = os.pipe()
         pid = os.fork()
         if pid:
             self.children.append(pid)
+            return pipe_r, False
         else:
             try:
                 self.children = []
                 self.toplevel = False
                 os.chdir(self.working_dir)
                 sys.stdin.close()
-                os.closerange(3, MAXFD)
+                # Move the pipe fd to position 3, close everything above it
+                os.dup2(pipe_w, 3)
+                os.closerange(4, MAXFD)
+                pipe_w = 3
+
                 if output is not None:
                     with open(os.path.join(self.working_dir, output), "w") as fp:
                         os.dup2(fp.fileno(), 1)
@@ -196,7 +201,7 @@ class DITGManager(object):
                     traceback.print_exc()
                 finally:
                     os._exit(1)
-        return pid == 0
+            return pipe_w, True
 
     def _unlink(self, filename):
         try:
@@ -208,9 +213,10 @@ class DITGManager(object):
         stdout = "%s.recv.out" % test_id
         datafile = self.datafile_pattern % test_id
         error = False
-        if self._clean_fork(stdout):
+        pipe, child = self._clean_fork(stdout)
+        if child:
             try:
-                ret = self._run_receiver(test_id, duration, interval, port)
+                ret = self._run_receiver(test_id, duration, interval, port, pipe)
             except Exception as e:
                 traceback.print_exc()
                 ret = {'status': 'Error', 'message': str(e)}
@@ -225,9 +231,19 @@ class DITGManager(object):
                     self._unlink(stdout)
                     os._exit(0)
                 os._exit(1)
+        else:
+            try:
+                val = os.read(pipe, 1024)
+                if val == 'OK':
+                    return {'status': 'OK', 'id': test_id, 'port': port}
+                else:
+                    return {'status': 'Error', 'message': val}
+            finally:
+                os.close(pipe)
 
 
-    def _run_receiver(self, test_id, duration, interval, port):
+
+    def _run_receiver(self, test_id, duration, interval, port, pipe):
         logfile = '%s.log' % test_id
         txtlog = '%s.log.txt' % test_id
         outfile = '%s.dat' % test_id
@@ -235,12 +251,27 @@ class DITGManager(object):
 
         # Run ITGRecv; does not terminate after the end of the test, so wait for
         # the test duration + a grace time of 5 seconds, then kill the process
-        proc = subprocess.Popen(['ITGRecv',
-                                 '-l', logfile,
-                                 '-I',
-                                 '-a', self.bind_address,
-                                 '-Sp', str(port)])
-        self.children.append(proc.pid)
+        try:
+            proc = subprocess.Popen(['ITGRecv',
+                                     '-l', logfile,
+                                     '-I',
+                                     '-a', self.bind_address,
+                                     '-Sp', str(port)])
+
+        # Signal back to the parent whether or not we successfully spawned the receiver.
+        except OSError as e:
+            os.write(pipe, str(e))
+        else:
+            time.sleep(0.1)
+            w = os.waitpid(proc.pid, os.WNOHANG)
+            if w != (0,0):
+                ret = {'status': 'Error', 'message': 'ITGRecv exited immediately with code %d' % w[1]}
+                os.write(pipe, ret['message'])
+            else:
+                self.children.append(proc.pid)
+                os.write(pipe, 'OK')
+
+        os.close(pipe)
 
         # Use an alarm signal for the timeout; means we don't have to wait for the
         # entire test duration if the ITGRecv process terminates before then
