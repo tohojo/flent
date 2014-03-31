@@ -77,8 +77,6 @@ class DITGManager(object):
         signal.signal(signal.SIGALRM, self._alarm)
         signal.signal(signal.SIGCHLD, self._collect_garbage)
 
-        self._spawn_logserver()
-
     def get_test_results(self, test_id):
         filename = os.path.join(self.working_dir,  self.datafile_pattern % test_id)
         if not os.path.exists(filename):
@@ -209,10 +207,6 @@ class DITGManager(object):
             self._unlink(f)
 
         return ret
-
-    def _spawn_logserver(self):
-        if self._clean_fork(output="ITGLog.out"):
-            os.execlp('ITGLog', 'ITGLog')
 
     def _collect_garbage(self, signum, frame):
         while self.garbage:
