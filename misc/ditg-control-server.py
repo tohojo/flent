@@ -19,7 +19,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, optparse, subprocess, time, tempfile, shutil, json, random, string, signal, traceback, time
+import sys, os, optparse, subprocess, time, tempfile, shutil, json
+import random, string, signal, traceback, time, hmac, hashlib
 
 from datetime import datetime
 
@@ -66,11 +67,13 @@ parser.add_option('-t', '--max-test-time', action='store', type='int', dest='MAX
                   default=7200, help="Maximum test time allowed. Default 7200 seconds (two hours).")
 parser.add_option('-m', '--max-instances', action='store', type='int', dest='MAX_INSTANCES',
                   default=100, help="Maximum number of running instances before new requests are denied (default 100).")
+parser.add_option('-S', '--secret', action='store', type='string', dest='SECRET',
+                  default="", help="Secret for request authentication. Default: ''.")
 
 class DITGManager(object):
     datafile_pattern = "%s.json"
 
-    def __init__(self, bind_address, start_port, max_test_time, max_instances):
+    def __init__(self, bind_address, start_port, max_test_time, max_instances, secret):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
@@ -78,6 +81,7 @@ class DITGManager(object):
         self.bind_address = bind_address
         self.max_test_time = max_test_time
         self.max_instances = max_instances
+        self.hmac = hmac.new(secret.encode(), digestmod=hashlib.sha256)
         self.start_port = self.current_port = start_port
         self.id_length = 20
 
@@ -101,10 +105,15 @@ class DITGManager(object):
             data = json.load(fp)
             return data
 
-    def request_new_test(self, duration, interval):
+    def request_new_test(self, duration, interval, hmac_hex):
         self._collect_garbage()
         duration = int(duration)
         interval = int(interval)
+        hmac = self.hmac.copy()
+        hmac.update(str(duration).encode())
+        hmac.update(str(interval).encode())
+        if hmac.hexdigest() != hmac_hex:
+            return {'status': 'Error', 'message': "HMAC authentication failure."}
         if duration <= 0 or interval <= 0:
             return {'status': 'Error', 'message': "Duration and interval must be positive integers."}
         if duration > self.max_test_time:
@@ -296,7 +305,8 @@ def run():
     manager = DITGManager(bind_address = options.ITG_ADDRESS or options.BIND_ADDRESS,
                           start_port = options.START_PORT,
                           max_test_time = options.MAX_TEST_TIME,
-                          max_instances = options.MAX_INSTANCES)
+                          max_instances = options.MAX_INSTANCES,
+                          secret = options.SECRET)
     server.register_instance(manager)
     server.register_introspection_functions()
     server.serve_forever()
