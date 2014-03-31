@@ -167,7 +167,9 @@ class DITGManager(object):
         # entire test duration if the ITGRecv process terminates before then
         signal.alarm(duration + 5)
         try:
-            proc.wait()
+            retval = proc.wait()
+            if retval > 0:
+                raise Exception("ITGRecv non-zero exit")
         except AlarmException:
             proc.terminate()
         signal.alarm(0)
@@ -182,6 +184,9 @@ class DITGManager(object):
                                        '-l', txtlog])
                 with open(outfile, 'rt') as fp:
                     ret['data'] = fp.read()
+
+                if not ret['data']:
+                    raise Exception("Empty data set")
 
                 # Read start of text log file to get timestamp of first received packet
                 with open(txtlog, 'rt') as fp:
@@ -201,7 +206,7 @@ class DITGManager(object):
             except Exception as e:
                 traceback.print_exc()
                 ret['status'] = 'Error'
-                ret['message'] = e.msg()
+                ret['message'] = str(e)
 
 
         # Clean up temporary files and exit
