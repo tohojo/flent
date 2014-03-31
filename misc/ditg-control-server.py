@@ -60,22 +60,26 @@ parser.add_option('-p', '--port', action='store', type='int', dest='BIND_PORT', 
                   help="Bind port. Default: 8000.")
 parser.add_option('-A', '--itg-address', action='store', type='string', dest='ITG_ADDRESS',
                   default=None, help="Address to bind ITGRecv to. Default: Same as --address.")
-parser.add_option('-t', '--max-test-time', action='store', type='int', dest='MAX_TEST_TIME',
-                  default=7200, help="Maximum test time allowed. Default 7200 seconds (two hours).")
 parser.add_option('-s', '--start-port', action='store', type='int', dest='START_PORT',
                   default=9000, help="Start port for ITGRecv control socket binds (default 9000).")
+parser.add_option('-t', '--max-test-time', action='store', type='int', dest='MAX_TEST_TIME',
+                  default=7200, help="Maximum test time allowed. Default 7200 seconds (two hours).")
+parser.add_option('-m', '--max-instances', action='store', type='int', dest='MAX_INSTANCES',
+                  default=100, help="Maximum number of running instances before new requests are denied (default 100).")
 
 class DITGManager(object):
     datafile_pattern = "%s.json"
 
-    def __init__(self, bind_address, max_test_time, start_port):
+    def __init__(self, bind_address, start_port, max_test_time, max_instances):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
         self.toplevel = True
         self.bind_address = bind_address
         self.max_test_time = max_test_time
+        self.max_instances = max_instances
         self.start_port = self.current_port = start_port
+        self.id_length = 20
 
         signal.signal(signal.SIGINT, self._exit)
         signal.signal(signal.SIGTERM, self._exit)
@@ -84,6 +88,12 @@ class DITGManager(object):
 
     def get_test_results(self, test_id):
         self._collect_garbage()
+        test_id = str(test_id)
+        if len(test_id) != self.id_length:
+            return {'status': 'Error', 'message': "Invalid test id: '%s'." % test_id}
+        for c in test_id:
+            if not c in ALPHABET:
+                return {'status': 'Error', 'message': "Invalid test id: '%s'." % test_id}
         filename = os.path.join(self.working_dir,  self.datafile_pattern % test_id)
         if not os.path.exists(filename):
             return {'status': 'Error', 'message': "Data for test ID '%s' not found." % test_id}
@@ -101,8 +111,10 @@ class DITGManager(object):
             return {'status': 'Error', 'message': "Maximum test time of %d seconds exceeded." % self.max_test_time}
         if interval > duration*1000:
             return {'status': 'Error', 'message': "Interval must be <= duration."}
+        if len(self.children) >= self.max_instances:
+            return {'status': 'Error', 'message': "Too many concurrent instances running. Try again later."}
 
-        test_id = "".join(random.sample(ALPHABET, 20))
+        test_id = "".join(random.sample(ALPHABET, self.id_length))
         port = self.current_port
         self.current_port += 1
         self._spawn_receiver(test_id, duration, interval, port)
@@ -281,9 +293,10 @@ def run():
         sys.exit(1)
 
     server = SimpleXMLRPCServer((options.BIND_ADDRESS, options.BIND_PORT), allow_none=True)
-    manager = DITGManager(options.ITG_ADDRESS or options.BIND_ADDRESS,
-                          options.MAX_TEST_TIME,
-                          options.START_PORT)
+    manager = DITGManager(bind_address = options.ITG_ADDRESS or options.BIND_ADDRESS,
+                          start_port = options.START_PORT,
+                          max_test_time = options.MAX_TEST_TIME,
+                          max_instances = options.MAX_INSTANCES)
     server.register_instance(manager)
     server.register_introspection_functions()
     server.serve_forever()
