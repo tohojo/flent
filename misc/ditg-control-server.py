@@ -122,72 +122,93 @@ class DITGManager(object):
                 sys.stderr.close()
         return pid == 0
 
+    def _unlink(self, filename):
+        try:
+            os.unlink(filename)
+        except FileNotFoundError:
+            pass
+
     def _spawn_receiver(self, test_id, duration, interval):
         stdout = "%s.recv.out" % test_id
+        datafile = self.datafile_pattern % test_id
         if self._clean_fork(stdout):
-            logfile = '%s.log' % test_id
-            txtlog = '%s.log.txt' % test_id
-            outfile = '%s.dat' % test_id
-            datafile = self.datafile_pattern % test_id
-            ret = {}
-
-            # Run ITGRecv; does not terminate after the end of the test, so wait for
-            # the test duration + a grace time of 5 seconds, then kill the process
-            proc = subprocess.Popen(['ITGRecv',
-                                     '-l', logfile,
-                                     '-L',
-                                     '-a', self.bind_address])
-            self.children.append(proc.pid)
-
-            # Use an alarm signal for the timeout; means we don't have to wait for the
-            # entire test duration if the ITGRecv process terminates before then
-            signal.alarm(duration + 5)
             try:
-                proc.wait()
-            except AlarmException:
-                proc.terminate()
-            signal.alarm(0)
+                ret = self._run_receiver(test_id, duration, interval)
+            except Exception as e:
+                traceback.print_exc()
+                ret = {'status': 'Error', 'message': str(e)}
+            try:
+                # Write data to temp file, atomically rename to final file name
+                with open('%s.tmp' % datafile, 'wt') as fp:
+                    json.dump(ret, fp)
+                    os.rename('%s.tmp' % datafile, datafile)
+            finally:
+                if 'status' in ret and ret['status'] == 'OK':
+                    self._unlink(stdout)
+                    os._exit(0)
+                os._exit(1)
 
-            # Call ITGDec on the log file output, read in the resulting data
-            if not os.path.exists(logfile):
-                ret['status'] = 'No data file produced'
-            else:
-                try:
-                    subprocess.check_call(['ITGDec', logfile,
-                                           '-c', str(interval), outfile,
-                                           '-l', txtlog])
-                    with open(outfile, 'rt') as fp:
-                        ret['data'] = fp.read()
 
-                    # Read start of text log file to get timestamp of first received packet
-                    with open(txtlog, 'rt') as fp:
-                        data = fp.read(1024)
-                        try:
-                            idx_s = data.index('rxTime>') + len('rxTime>')
-                            idx_e = data.index('Size>')
-                            timestamp = data[idx_s:idx_e]
-                            t,microsec = timestamp.split(".")
-                            h,m,s = t.split(":")
-                            dt = datetime.utcnow()
-                            dt.replace(hour=int(h), minute=int(m), second=int(s), microsecond=int(microsec))
-                            ret['utc_offset'] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
-                        except Exception as e:
-                            traceback.print_exc()
-                            ret['utc_offset'] = None
-                        ret['status'] = 'OK'
-                except Exception as e:
-                    traceback.print_exc()
-                    ret['status'] = 'Error running ITGDec'
+    def _run_receiver(self, test_id, duration, interval):
+        logfile = '%s.log' % test_id
+        txtlog = '%s.log.txt' % test_id
+        outfile = '%s.dat' % test_id
+        ret = {}
 
-            # Write data to temp file, atomically rename to final file name
-            with open('%s.tmp' % datafile, 'wt') as fp:
-                json.dump(ret, fp)
-            os.rename('%s.tmp' % datafile, datafile)
+        # Run ITGRecv; does not terminate after the end of the test, so wait for
+        # the test duration + a grace time of 5 seconds, then kill the process
+        proc = subprocess.Popen(['ITGRecv',
+                                 '-l', logfile,
+                                 '-I',
+                                 '-a', self.bind_address])
+        self.children.append(proc.pid)
 
-            # Clean up temporary files and exit
-            for f in stdout, logfile, outfile, txtlog:
-                os.unlink(f)
-            os._exit(0)
+        # Use an alarm signal for the timeout; means we don't have to wait for the
+        # entire test duration if the ITGRecv process terminates before then
+        signal.alarm(duration + 5)
+        try:
+            proc.wait()
+        except AlarmException:
+            proc.terminate()
+        signal.alarm(0)
+
+        # Call ITGDec on the log file output, read in the resulting data
+        if not os.path.exists(logfile):
+            ret['status'] = 'No data file produced'
+        else:
+            try:
+                subprocess.check_call(['ITGDec', logfile,
+                                       '-c', str(interval), outfile,
+                                       '-l', txtlog])
+                with open(outfile, 'rt') as fp:
+                    ret['data'] = fp.read()
+
+                # Read start of text log file to get timestamp of first received packet
+                with open(txtlog, 'rt') as fp:
+                    data = fp.read(1024)
+                    try:
+                        idx_s = data.index('rxTime>') + len('rxTime>')
+                        idx_e = data.index('Size>')
+                        t,microsec = data[idx_s:idx_e].split(".")
+                        h,m,s = t.split(":")
+                        dt = datetime.utcnow()
+                        dt.replace(hour=int(h), minute=int(m), second=int(s), microsecond=int(microsec))
+                        ret['utc_offset'] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
+                    except Exception as e:
+                        traceback.print_exc()
+                        ret['utc_offset'] = None
+                    ret['status'] = 'OK'
+            except Exception as e:
+                traceback.print_exc()
+                ret['status'] = 'Error'
+                ret['message'] = e.msg()
+
+
+        # Clean up temporary files and exit
+        for f in logfile, txtlog, outfile:
+            self._unlink(f)
+
+        return ret
 
     def _spawn_logserver(self):
         if self._clean_fork(output="ITGLog.out"):
@@ -218,7 +239,8 @@ class DITGManager(object):
         sys.exit(1)
 
     def __del__(self):
-        shutil.rmtree(self.working_dir, ignore_errors=True)
+        if self.toplevel:
+            shutil.rmtree(self.working_dir, ignore_errors=True)
 
 
 def run():
