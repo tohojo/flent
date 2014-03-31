@@ -91,6 +91,19 @@ class DITGManager(object):
         signal.signal(signal.SIGCHLD, self._collect_garbage)
 
     def get_test_results(self, test_id):
+        """Get the results of a previously initiated test. The sole parameter is
+        the test_id returned from request_new_test().
+
+        The return parameter is a dictionary with the following entries:
+
+        status: 'OK' if everything went well, 'Error' otherwise.
+
+        message: Set if status is 'Error'; contains an error message.
+
+        data: The output of ITGDec -c with the interval requested at initiation.
+
+        utc_offset: UTC timestamp which the time values in the return data is offset by.
+        """
         self._collect_garbage()
         test_id = str(test_id)
         if len(test_id) != self.id_length:
@@ -106,6 +119,35 @@ class DITGManager(object):
             return data
 
     def request_new_test(self, duration, interval, hmac_hex):
+        """Request a new test instance.
+
+        This will allocate a new ITCRecv instance and parse the log file it produces.
+        The results of this can then be retrieved with get_test_results() after the
+        test has run.
+
+        The parameters are:
+
+        duration: Requested test duration in seconds. The ITGRecv instance will be killed
+                  after this time has passed (+ a grace period of five seconds).
+
+        interval: The requested interval for data points, in milliseconds (passed to ITGDec).
+
+        hmac_hex: A hexadecimal HMAC-SHA256 of the two other parameters computed by
+                  concatenating their ASCII representations. The HMAC secret is configured
+                  by the operator of the control server instance.
+
+        The return value is a dictionary with the following keys:
+
+        status: 'OK' if everything went well, 'Error' otherwise.
+
+        message: Set if status is 'Error'; contains an error message.
+
+        test_id: The assigned test ID, to be passed to get_test_results() after the duration
+                 has expired.
+
+        port:    The control server port of the ITGRecv instance. The sender is expected to
+                 use port+1 for the data connection.
+        """
         self._collect_garbage()
         duration = int(duration)
         interval = int(interval)
