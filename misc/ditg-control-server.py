@@ -62,17 +62,20 @@ parser.add_option('-A', '--itg-address', action='store', type='string', dest='IT
                   default=None, help="Address to bind ITGRecv to. Default: Same as --address.")
 parser.add_option('-t', '--max-test-time', action='store', type='int', dest='MAX_TEST_TIME',
                   default=7200, help="Maximum test time allowed. Default 7200 seconds (two hours).")
+parser.add_option('-s', '--start-port', action='store', type='int', dest='START_PORT',
+                  default=9000, help="Start port for ITGRecv control socket binds (default 9000).")
 
 class DITGManager(object):
     datafile_pattern = "%s.json"
 
-    def __init__(self, bind_address, max_test_time):
+    def __init__(self, bind_address, max_test_time, start_port):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
         self.toplevel = True
         self.bind_address = bind_address
         self.max_test_time = max_test_time
+        self.start_port = self.current_port = start_port
 
         signal.signal(signal.SIGINT, self._exit)
         signal.signal(signal.SIGTERM, self._exit)
@@ -98,10 +101,13 @@ class DITGManager(object):
             return {'status': 'Error', 'message': "Maximum test time of %d seconds exceeded." % self.max_test_time}
         if interval > duration*1000:
             return {'status': 'Error', 'message': "Interval must be <= duration."}
-        test_id = "".join(random.sample(ALPHABET, 20))
-        self._spawn_receiver(test_id, duration, interval)
 
-        return {'status': 'OK', 'id': test_id}
+        test_id = "".join(random.sample(ALPHABET, 20))
+        port = self.current_port
+        self.current_port += 1
+        self._spawn_receiver(test_id, duration, interval, port)
+
+        return {'status': 'OK', 'id': test_id, 'port': port}
 
     def _clean_fork(self, output=None):
         pid = os.fork()
@@ -134,12 +140,12 @@ class DITGManager(object):
         except:
             pass
 
-    def _spawn_receiver(self, test_id, duration, interval):
+    def _spawn_receiver(self, test_id, duration, interval, port):
         stdout = "%s.recv.out" % test_id
         datafile = self.datafile_pattern % test_id
         if self._clean_fork(stdout):
             try:
-                ret = self._run_receiver(test_id, duration, interval)
+                ret = self._run_receiver(test_id, duration, interval, port)
             except Exception as e:
                 traceback.print_exc()
                 ret = {'status': 'Error', 'message': str(e)}
@@ -155,7 +161,7 @@ class DITGManager(object):
                 os._exit(1)
 
 
-    def _run_receiver(self, test_id, duration, interval):
+    def _run_receiver(self, test_id, duration, interval, port):
         logfile = '%s.log' % test_id
         txtlog = '%s.log.txt' % test_id
         outfile = '%s.dat' % test_id
@@ -166,7 +172,8 @@ class DITGManager(object):
         proc = subprocess.Popen(['ITGRecv',
                                  '-l', logfile,
                                  '-I',
-                                 '-a', self.bind_address])
+                                 '-a', self.bind_address,
+                                 '-Sp', str(port)])
         self.children.append(proc.pid)
 
         # Use an alarm signal for the timeout; means we don't have to wait for the
@@ -225,6 +232,10 @@ class DITGManager(object):
         for p in self.children:
             if os.waitpid(p, os.WNOHANG) != (0,0):
                 self.children.remove(p)
+
+                # When no more children are alive, reset the current port
+        if not self.children:
+            self.current_port = self.start_port
         if not self.toplevel:
             return
 
@@ -270,7 +281,9 @@ def run():
         sys.exit(1)
 
     server = SimpleXMLRPCServer((options.BIND_ADDRESS, options.BIND_PORT), allow_none=True)
-    manager = DITGManager(options.ITG_ADDRESS or options.BIND_ADDRESS, options.MAX_TEST_TIME)
+    manager = DITGManager(options.ITG_ADDRESS or options.BIND_ADDRESS,
+                          options.MAX_TEST_TIME,
+                          options.START_PORT)
     server.register_instance(manager)
     server.register_introspection_functions()
     server.serve_forever()
