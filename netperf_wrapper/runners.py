@@ -375,8 +375,9 @@ class NullRunner(object):
 
 class ComputingRunner(object):
     command = "Computed"
-    def __init__(self, name, apply_to=None, *args, **kwargs):
+    def __init__(self, name, settings, apply_to=None, *args, **kwargs):
         self.name = name
+        self.settings = settings
         if apply_to is None:
             self.keys = []
         else:
