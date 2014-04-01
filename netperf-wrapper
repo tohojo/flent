@@ -28,15 +28,6 @@ try:
     from netperf_wrapper import aggregators, formatters, util
     from netperf_wrapper.settings import settings, load
 
-
-    config = util.DefaultConfigParser({'delay': 0})
-    config.add_section('global')
-    config.set('global', 'name', 'Netperf')
-    config.set('global', 'iterations', '1')
-    config.set('global', 'output', 'org_table')
-    config.set('global', 'cmd_opts', '-P 0 -v 0')
-    config.set('global', 'cmd_binary', '/usr/bin/netperf')
-
     if __name__ == "__main__":
         try:
             settings,results = load()
