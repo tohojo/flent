@@ -26,19 +26,19 @@ from . import runners, transformers
 
 from .util import classname
 
-from .settings import settings
 import collections
 
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
 
-    def __init__(self):
+    def __init__(self, settings):
         self.instances = {}
         self.threads = {}
-        if settings.LOG_FILE is None:
+        self.settings = settings
+        if self.settings.LOG_FILE is None:
             self.logfile = None
         else:
-            self.logfile = open(settings.LOG_FILE, "a")
+            self.logfile = open(self.settings.LOG_FILE, "a")
 
         self.postprocessors = []
 
@@ -76,7 +76,7 @@ class Aggregator(object):
         result = {}
         try:
             for n,i in list(self.instances.items()):
-                self.threads[n] = i['runner'](n, **i)
+                self.threads[n] = i['runner'](n, self.settings, **i)
                 self.threads[n].start()
             for n,t in list(self.threads.items()):
                 while t.isAlive():
@@ -127,8 +127,8 @@ class IterationAggregator(Aggregator):
     results. Assumes each job outputs one value."""
 
     def __init__(self, *args, **kwargs):
-        self.iterations = settings.ITERATIONS
         Aggregator.__init__(self, *args, **kwargs)
+        self.iterations = self.settings.ITERATIONS
 
     def aggregate(self, results):
         for i in range(self.iterations):
@@ -146,9 +146,9 @@ class TimeseriesAggregator(Aggregator):
     values are floating point values."""
 
     def __init__(self, *args, **kwargs):
-        self.step = settings.STEP_SIZE
-        self.max_distance = self.step * 5.0
         Aggregator.__init__(self, *args, **kwargs)
+        self.step = self.settings.STEP_SIZE
+        self.max_distance = self.step * 5.0
 
     def aggregate(self, results):
         measurements = self.collect()

@@ -35,7 +35,7 @@ try:
             aggregator_name = settings.AGGREGATOR
             classname = util.classname(aggregator_name, "Aggregator")
             if hasattr(aggregators, classname):
-                agg = getattr(aggregators, classname)()
+                agg = getattr(aggregators, classname)(settings)
             else:
                 raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
 

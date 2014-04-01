@@ -28,9 +28,10 @@ from .settings import settings, Glob
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
 
-    def __init__(self, name, command, delay, *args, **kwargs):
+    def __init__(self, name, settings, command, delay, *args, **kwargs):
         threading.Thread.__init__(self)
         self.name = name
+        self.settings = settings
         self.command = command
         self.args = shlex.split(self.command)
         self.delay = delay
