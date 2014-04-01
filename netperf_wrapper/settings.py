@@ -398,6 +398,17 @@ parser.add_option_group(misc_group)
 
 class Settings(optparse.Values, object):
 
+    def __init__(self, defs):
+
+        # Copy everything from defaults to make sure the defaults are not modified.
+        defaults = {}
+        for k,v in defs.items():
+            if hasattr(v, 'copy'):
+                defaults[k] = v.copy()
+            else:
+                defaults[k] = v
+        optparse.Values.__init__(self, defaults)
+
     def load_test_or_host(self, test_name):
         filename = os.path.join(TEST_PATH, test_name + ".conf")
 
