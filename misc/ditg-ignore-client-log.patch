@@ -1,0 +1,67 @@
+diff -Z -u -r D-ITG-2.8.1-r1023.orig/src/ITGRecv/ITGRecv.cpp D-ITG-2.8.1-r1023/src/ITGRecv/ITGRecv.cpp
+--- D-ITG-2.8.1-r1023.orig/src/ITGRecv/ITGRecv.cpp	2013-07-02 16:35:10.000000000 +0200
++++ D-ITG-2.8.1-r1023/src/ITGRecv/ITGRecv.cpp	2014-03-31 13:48:35.043462511 +0200
+@@ -83,6 +83,8 @@
+ 
+ int logRemote = 0;
+ 
++int ignoreClientLog = 0;
++
+ uint16_t logbuffer_size = 50;	
+ 
+ 
+@@ -587,7 +589,7 @@
+ 
+ 			if (type == TSP_SEND_NAME_LOG) {
+ 				recvNameLog(nameFileLog, newSockSignaling);
+-				if (logCheck != 1) {
++				if (logCheck != 1 && !ignoreClientLog) {
+ 					fileDescriptor = allowedLogFile(nameFileLog);	
+ 					if (fileDescriptor == NULL) {
+ 						if (sendAck(newSockSignaling, TSP_ERR_MSG_4) < 0)
+@@ -609,13 +611,15 @@
+ 				}
+ 			} else if (type == TSP_SEND_FLOW_LOG) {
+ 				recvFlowLog(newSockSignaling, logHost, protocolLog, nameFileLog);
+-				if (logRemote != 1) {	
+-					createRemoteLogFile(logHost, nameFileLog,protocolLog, logSockSignaling, logSock);
+-					logRemote = 2;
+-				} else {	
+-					logSockSignaling = globaleLogSockSignaling;
+-					logSock = globaleLogSock;
+-					copia(globaleLogHost, logHost);
++				if (!ignoreClientLog) {
++					if (logRemote != 1) {
++						createRemoteLogFile(logHost, nameFileLog,protocolLog, logSockSignaling, logSock);
++						logRemote = 2;
++					} else {
++						logSockSignaling = globaleLogSockSignaling;
++						logSock = globaleLogSock;
++						copia(globaleLogHost, logHost);
++					}
+ 				}
+ 				if (sendAck(newSockSignaling, TSP_ACK_SEND_FLOW_LOG) < 0)
+ 					reportErrorAndExit("sendFlowLog","sendAck - type = TSP_ACK_SEND_FLOW_LOG(12)","Cannot send Ack on newSockSignaling");
+@@ -827,7 +831,9 @@
+ 
+ 		"    -H <ITGSend_address>     Enable \"Passive Mode\" toward the specified ITGSend instance.\n\n"
+ 
+-		"    -n <num_pkt>             Number of outgoing packets used for UDP NAT traversal.\n";
++		"    -n <num_pkt>             Number of outgoing packets used for UDP NAT traversal.\n"
++
++		"    -I                       Ignore client logging options and use command line settings exclusively.\n";
+ 
+ 	cout << "\nFor more information please refer to the manual.\n";
+ 	exit(1);
+@@ -2136,6 +2142,11 @@
+ 			NEXT_OPT;
+ 			break;
+ 		
++		case 'I':
++			PRINTD(1,"parserRecv: Ignoring logging data from clients.\n");
++			ignoreClientLog = 1;
++			break;
++
+ 		default:
+ 			printf("parserRecv: Unknow option : %s\n\n", argv[0]);
+ 			printHelpAndExit();
