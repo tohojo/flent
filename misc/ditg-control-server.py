@@ -235,7 +235,7 @@ class DITGManager(object):
             try:
                 val = os.read(pipe, 1024).decode()
                 if val == 'OK':
-                    return {'status': 'OK', 'id': test_id, 'port': port}
+                    return {'status': 'OK', 'test_id': test_id, 'port': port}
                 else:
                     return {'status': 'Error', 'message': val}
             finally:
