@@ -195,18 +195,18 @@ class DitgRunner(ProcessRunner):
     def parse(self, output):
         data = ""
         utc_offset = 0
-        results = []
+        results = {}
         try:
             # The control server has a grace period after the test ends, so we don't know exactly
             # when the test results are going to be ready. We assume that
             for i in range(10):
-                time.sleep(1)
                 res = self.proxy.get_test_results(self.test_id)
                 if res['status'] == 'OK':
                     data = res['data']
                     self.out += data
                     utc_offset = res['utc_offset']
                     break
+                time.sleep(1)
             if res['status'] != 'OK':
                 if 'message' in res:
                     self.err = "Error while getting results. Control server reported error: %s" % res['message']
@@ -219,8 +219,14 @@ class DitgRunner(ProcessRunner):
         offset = float(calendar.timegm(dt.timetuple())) + dt.microsecond / 10**6
 
         for line in data.splitlines():
-            parts = line.split()
-            results.append([float(parts[0])+offset, float(parts[1])])
+            if not line.strip():
+                continue
+            parts = [float(i) for i in line.split()]
+            timestamp = parts.pop(0) + offset
+            for i,n in enumerate(('bitrate', 'delay', 'jitter', 'loss')):
+                if not n in results:
+                    results[n] = []
+                results[n].append([timestamp, parts[i]])
 
         return results
 
@@ -350,6 +356,22 @@ class TcRunner(ProcessRunner):
             else:
                 sys.stderr.write("Warning: Missing value for %s" % key)
         return result
+
+class NullRunner(object):
+    def __init__(self, *args, **kwargs):
+        self.result = None
+        self.command = 'null'
+        self.returncode = 0
+        self.out = self.err = ''
+    # Emulate threading interface to fit into aggregator usage.
+    def start(self):
+        pass
+    def join(self):
+        pass
+    def isAlive(self):
+        return False
+    def kill(self):
+        pass
 
 class ComputingRunner(object):
     command = "Computed"

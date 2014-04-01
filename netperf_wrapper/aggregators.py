@@ -89,6 +89,9 @@ class Aggregator(object):
                     # post-processor (Avg etc), and should be run as such (by the
                     # postprocess() method)
                     self.postprocessors.append(t.result)
+                elif hasattr(t.result, 'keys'):
+                    for k in t.result.keys():
+                        result["%s::%s" % (n,k)] = t.result[k]
                 else:
                     result[n] = t.result
                     if 'transformers' in self.instances[n]:
