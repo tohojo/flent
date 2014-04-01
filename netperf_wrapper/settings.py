@@ -68,6 +68,9 @@ DEFAULT_SETTINGS = {
     'EXTENDED_METADATA': False,
     'REMOTE_METADATA': [],
     'GUI': False,
+    'DITG_CONTROL_HOST': None,
+    'DITG_CONTROL_PORT': 8000,
+    'DITG_CONTROL_SECRET': '',
     }
 
 CONFIG_TYPES = {
@@ -89,6 +92,9 @@ CONFIG_TYPES = {
     'ZERO_Y': 'bool',
     'LOG_SCALE': 'bool',
     'EXTENDED_METADATA': 'bool',
+    'DITG_CONTROL_HOST': 'str',
+    'DITG_CONTROL_PORT': 'int',
+    'DITG_CONTROL_SECRET': 'str',
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -158,9 +164,11 @@ class TestEnvironment(object):
             'min_host_count': self.require_host_count,
             'find_ping': self.find_ping,
             'find_netperf': self.find_netperf,
+            'find_itgsend': self.find_itgsend,
             })
         self.informational = informational
         self.netperf = None
+        self.itgsend = None
 
     def execute(self, filename):
         try:
@@ -209,7 +217,6 @@ class TestEnvironment(object):
             return "%s -n -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
 
         raise RuntimeError("No suitable ping tool found.")
-
 
     def find_netperf(self, test, length, host, ip_version=None, marking=None, interval=None, extra_args=None):
         """Find a suitable netperf executable, and test for the required capabilities."""
@@ -264,6 +271,7 @@ class TestEnvironment(object):
             if not "netperf: invalid option -- 'e'" in str(err):
                 self.netperf['-e'] = True
 
+
         if extra_args is not None:
             args += " " + extra_args
 
@@ -276,6 +284,25 @@ class TestEnvironment(object):
             args += " -f m"
 
         return "%s %s" % (self.netperf['executable'], args)
+
+    def find_itgsend(self, test_args, length, host):
+        if self.informational:
+            return ""
+
+        if self.itgsend is None:
+            self.itgsend = util.which("ITGSend")
+            if self.itgsend is None:
+                raise RuntimeError("ITGSend not found in PATH.")
+
+        # We put placeholders in the command string to be filled out by string
+        # format expansion by the runner once it has communicated with the control
+        # server and obtained the port values.
+        return "{binary} -Sdp {{signal_port}} -t {length} -a {dest_host} -rp {{dest_port}} {args}".format(
+            binary=self.itgsend,
+            length=int(length*1000),
+            dest_host=host,
+            args=test_args)
+
 
 
     def require_host_count(self, count):
@@ -395,6 +422,18 @@ misc_group.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
 misc_group.add_option("-V", "--version", action="callback", callback=version,
                   help="Show netperf-wrapper version information and exit.")
 parser.add_option_group(misc_group)
+
+ditg_group = optparse.OptionGroup(parser, "D-ITG-related options")
+ditg_group.add_option("--ditg-control-host", action="store", type="string", dest="DITG_CONTROL_HOST",
+                      metavar="HOST",
+                      help="Hostname for D-ITG control server. Default: First hostname of test target.")
+ditg_group.add_option("--ditg-control-port", action="store", type=int, dest="DITG_CONTROL_PORT",
+                      metavar="PORT",
+                      help="Port for D-ITG control server. Default: %d." % DEFAULT_SETTINGS['DITG_CONTROL_PORT'])
+ditg_group.add_option("--ditg-control-secret", action="store", type="string", dest="DITG_CONTROL_SECRET",
+                      metavar="SECRET",
+                      help="Secret for D-ITG control server authentication. Default: '%s'." % DEFAULT_SETTINGS['DITG_CONTROL_SECRET'])
+parser.add_option_group(ditg_group)
 
 class Settings(optparse.Values, object):
 

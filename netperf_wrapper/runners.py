@@ -19,11 +19,26 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, signal
+import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, signal, hmac, hashlib, calendar
 
 from datetime import datetime
 
-from .settings import settings, Glob
+try:
+    from defusedxml.xmlrpc import monkey_patch
+    monkey_patch()
+    del monkey_patch
+    XML_DEFUSED=True
+except ImportError:
+    XML_DEFUSED=False
+
+try:
+    # python 2
+    import xmlrpclib as xmlrpc
+except ImportError:
+    import xmlrpc.client as xmlrpc
+
+
+from .settings import Glob
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
@@ -144,6 +159,70 @@ class ProcessRunner(threading.Thread):
         return float(output.split()[-1].strip())
 
 DefaultRunner = ProcessRunner
+
+class DitgRunner(ProcessRunner):
+    """Runner for D-ITG with a control server."""
+
+    def __init__(self, name, settings, duration, interval, **kwargs):
+        ProcessRunner.__init__(self, name, settings, **kwargs)
+        host = self.settings.DITG_CONTROL_HOST or self.settings.HOST
+        self.proxy = xmlrpc.ServerProxy("http://%s:%s" % (host, self.settings.DITG_CONTROL_PORT),
+                                        allow_none=True)
+        self.ditg_secret = self.settings.DITG_CONTROL_SECRET
+        self.duration = duration
+        self.interval = interval
+
+
+    def start(self):
+        try:
+            interval = int(self.interval*1000)
+            hm = hmac.new(self.ditg_secret.encode(), digestmod=hashlib.sha256)
+            hm.update(str(self.duration).encode())
+            hm.update(str(interval).encode())
+            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest())
+            if params['status'] != 'OK':
+                if 'message' in params:
+                    raise RuntimeError("Unable to request D-ITG test. Control server reported error: %s" % params['message'])
+                else:
+                    raise RuntimeError("Unable to request D-ITG test. Control server reported an unspecified error.")
+            self.test_id = params['test_id']
+        except xmlrpc.Fault as e:
+            raise RuntimeError("Error while requesting D-ITG test: %s" % e)
+        self.command = self.command.format(signal_port = params['port'], dest_port=params['port']+1)
+        self.args = shlex.split(self.command)
+        ProcessRunner.start(self)
+
+    def parse(self, output):
+        data = ""
+        utc_offset = 0
+        results = []
+        try:
+            # The control server has a grace period after the test ends, so we don't know exactly
+            # when the test results are going to be ready. We assume that
+            for i in range(10):
+                time.sleep(1)
+                res = self.proxy.get_test_results(self.test_id)
+                if res['status'] == 'OK':
+                    data = res['data']
+                    self.out += data
+                    utc_offset = res['utc_offset']
+                    break
+            if res['status'] != 'OK':
+                if 'message' in res:
+                    self.err = "Error while getting results. Control server reported error: %s" % res['message']
+                else:
+                    self.err = "Error while getting results. Control server reported unknown error."
+        except xmlrpc.Fault as e:
+            self.err = "Error while getting results: %s" % e
+
+        dt = datetime.utcfromtimestamp(utc_offset)
+        offset = float(calendar.timegm(dt.timetuple())) + dt.microsecond / 10**6
+
+        for line in data.splitlines():
+            parts = line.split()
+            results.append([float(parts[0])+offset, float(parts[1])])
+
+        return results
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
