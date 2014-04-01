@@ -233,7 +233,7 @@ class DITGManager(object):
                 os._exit(1)
         else:
             try:
-                val = os.read(pipe, 1024)
+                val = os.read(pipe, 1024).decode()
                 if val == 'OK':
                     return {'status': 'OK', 'id': test_id, 'port': port}
                 else:
@@ -260,16 +260,16 @@ class DITGManager(object):
 
         # Signal back to the parent whether or not we successfully spawned the receiver.
         except OSError as e:
-            os.write(pipe, str(e))
+            os.write(pipe, str(e).encode())
         else:
             time.sleep(0.1)
             w = os.waitpid(proc.pid, os.WNOHANG)
             if w != (0,0):
                 ret = {'status': 'Error', 'message': 'ITGRecv exited immediately with code %d' % w[1]}
-                os.write(pipe, ret['message'])
+                os.write(pipe, ret['message'].encode())
             else:
                 self.children.append(proc.pid)
-                os.write(pipe, 'OK')
+                os.write(pipe, b'OK')
 
         os.close(pipe)
 
