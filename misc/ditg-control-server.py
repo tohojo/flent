@@ -353,9 +353,12 @@ class DITGManager(object):
 
     def _exit(self, signum, frame):
         for p in self.children:
-            os.kill(p, signum)
+            try:
+                os.kill(p, signum)
+            except OSError:
+                pass
 
-        # Do not call normal exit handlers when we are a subprocess
+        # Do not call normal exit handlers when in a subprocess
         if not self.toplevel:
             os._exit(0)
 
