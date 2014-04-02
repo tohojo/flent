@@ -239,6 +239,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save())
+        widget.visibility_changed()
 
     def update_plots(self, testname, plotname):
         for i in range(self.viewArea.count()):
@@ -358,6 +359,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         super(ResultWidget, self).__init__(parent)
         self.filename = unicode(filename)
         self.settings = settings.copy()
+        self.dirty = False
         self.settings.OUTPUT = "-"
 
         self.results = ResultSet.load_file(self.filename)
@@ -467,7 +469,14 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.plot_changed.emit(self.settings.NAME, self.settings.PLOT)
             self.update()
 
+    def visibility_changed(self):
+        if self.dirty:
+            self.update()
+
     def update(self):
+        if not self.isVisible():
+            self.dirty = True
+            return
         self.update_start.emit()
         self.formatter.init_plots()
         if self.settings.SCALE_MODE:
@@ -477,4 +486,5 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.SCALE_DATA = []
             self.formatter.format([self.results] + self.extra_results)
         self.canvas.draw()
+        self.dirty = False
         self.update_end.emit()
