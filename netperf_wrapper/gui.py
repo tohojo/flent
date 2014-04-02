@@ -98,12 +98,20 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.metadataView.entered.connect(self.update_statusbar)
 
-        self.checkZeroY.toggled.connect(self.zero_y_toggled)
-        self.checkDisableLog.toggled.connect(self.disable_log_toggled)
-        self.checkAnnotation.toggled.connect(self.annotation_toggled)
-        self.checkLegend.toggled.connect(self.legend_toggled)
-        self.checkTitle.toggled.connect(self.title_toggled)
-        self.checkScaleMode.toggled.connect(self.scale_mode_toggled)
+        # Set initial value of checkboxes from settings
+        self.checkZeroY.setChecked(self.settings.ZERO_Y)
+        self.checkDisableLog.setChecked(not self.settings.LOG_SCALE)
+        self.checkAnnotation.setChecked(self.settings.ANNOTATE)
+        self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
+        self.checkTitle.setChecked(self.settings.PRINT_TITLE)
+        self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
+
+        self.checkZeroY.toggled.connect(self.update_checkboxes)
+        self.checkDisableLog.toggled.connect(self.update_checkboxes)
+        self.checkAnnotation.toggled.connect(self.update_checkboxes)
+        self.checkLegend.toggled.connect(self.update_checkboxes)
+        self.checkTitle.toggled.connect(self.update_checkboxes)
+        self.checkScaleMode.toggled.connect(self.update_checkboxes)
 
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
@@ -113,40 +121,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
 
-    def zero_y_toggled(self, val):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.zero_y(val)
-    def disable_log_toggled(self, val):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.disable_log(val)
-    def annotation_toggled(self, val):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.draw_annotation(val)
-    def legend_toggled(self, val):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.draw_legend(val)
-    def title_toggled(self, val):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.draw_title(val)
-    def scale_mode_toggled(self, val):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.scale_mode(val)
-
     def update_checkboxes(self):
         widget = self.viewArea.currentWidget()
         if widget is not None:
-            self.checkZeroY.setChecked(widget.zero_y())
-            self.checkDisableLog.setChecked(widget.disable_log())
-            self.checkAnnotation.setChecked(widget.draw_annotation())
-            self.checkLegend.setChecked(widget.draw_legend())
-            self.checkTitle.setChecked(widget.draw_title())
-            self.checkScaleMode.setChecked(widget.scale_mode())
+            widget.zero_y(self.checkZeroY.isChecked())
+            widget.disable_log(self.checkDisableLog.isChecked())
+            widget.draw_annotation(self.checkAnnotation.isChecked())
+            widget.draw_legend(self.checkLegend.isChecked())
+            widget.draw_title(self.checkTitle.isChecked())
+            widget.scale_mode(self.checkScaleMode.isChecked())
 
     def update_statusbar(self, idx):
         self.statusBar().showMessage(
