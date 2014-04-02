@@ -425,7 +425,7 @@ class PlotFormatter(Formatter):
 
             data = []
             for r in results:
-                d = [i for i in r.series(s['data']) if i is not None]
+                d = [d for d in r.series(s['data']) if d is not None]
                 if not d:
                     data.append([0.0])
                 else:
