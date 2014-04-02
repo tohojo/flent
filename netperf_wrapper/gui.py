@@ -240,12 +240,19 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save())
 
+    def update_plots(self, testname, plotname):
+        for i in range(self.viewArea.count()):
+            widget = self.viewArea.widget(i)
+            if widget and widget.settings.NAME == testname:
+                widget.change_plot(plotname)
+
     def load_files(self, filenames):
         self.busy_start()
         for f in filenames:
             widget = ResultWidget(self.viewArea, f, self.settings)
             widget.update_start.connect(self.busy_start)
             widget.update_end.connect(self.busy_end)
+            widget.plot_changed.connect(self.update_plots)
             self.viewArea.setCurrentIndex(self.viewArea.addTab(widget, widget.title))
         self.busy_end()
 
@@ -345,6 +352,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     update_start = pyqtSignal()
     update_end = pyqtSignal()
+    plot_changed = pyqtSignal('QString', 'QString')
 
     def __init__(self, parent, filename, settings):
         super(ResultWidget, self).__init__(parent)
@@ -449,9 +457,15 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.update()
         return self.settings.SCALE_MODE
 
-    def change_plot(self, idx, prev):
-        self.settings.PLOT = self.plotModel.name_of(idx)
-        self.update()
+    def change_plot(self, plot_name):
+        if isinstance(plot_name, QModelIndex):
+            plot_name = self.plotModel.name_of(plot_name)
+        if plot_name != self.settings.PLOT:
+            self.settings.PLOT = plot_name
+            self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
+                                                    QItemSelectionModel.SelectCurrent)
+            self.plot_changed.emit(self.settings.NAME, self.settings.PLOT)
+            self.update()
 
     def update(self):
         self.update_start.emit()
