@@ -425,7 +425,11 @@ class PlotFormatter(Formatter):
 
             data = []
             for r in results:
-                data.append([i for i in r.series(s['data']) if i is not None])
+                d = [i for i in r.series(s['data']) if i is not None]
+                if not d:
+                    data.append([0.0])
+                else:
+                    data.append(d)
 
             if 'label' in s:
                 ticklabels.append(s['label'])
