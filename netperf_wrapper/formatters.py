@@ -532,14 +532,13 @@ class PlotFormatter(Formatter):
         skip_title = len(results) > 1
 
         artists = []
-        legend_exists = False
+        all_legends = []
         for c in self.configs:
             legends = self._do_legend(c)
             if legends:
-                artists += legends
-                legend_exists = True
+                all_legends += legends
 
-        artists += self._annotate_plot(skip_title)
+        artists += all_legends + self._annotate_plot(skip_title)
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
@@ -547,12 +546,14 @@ class PlotFormatter(Formatter):
         # appropriate output format based on the file name.
         if self.output == "-":
             # For the interactive viewer there's no bbox_extra_artists, so we
-            # need to reduce the axis sizes to make room for the legend (which
-            # might still be slightly cut off).
-            if self.settings.PRINT_LEGEND and legend_exists:
+            # need to reduce the axis sizes to make room for the legend.
+            if self.settings.PRINT_LEGEND and all_legends:
+                self.plt.draw() # Legend width is not set before it's drawn
+                legend_width = max([l.get_window_extent().width for l in all_legends])
                 for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+                    ax_width = a.get_window_extent().width
                     box = a.get_position()
-                    a.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+                    a.set_position([box.x0, box.y0, box.width * (1.0 - legend_width/ax_width), box.height])
             if not self.settings.GUI:
                 self.plt.show()
         else:
@@ -607,7 +608,7 @@ class PlotFormatter(Formatter):
 
 
         if len(axes) > 1:
-            offset_x = 1.09
+            offset_x = 1.11
         else:
             offset_x = 1.02
 
