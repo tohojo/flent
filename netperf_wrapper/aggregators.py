@@ -61,7 +61,7 @@ class Aggregator(object):
         duplicates = config.get('duplicates', None)
         if duplicates is not None:
             for i in range(int(duplicates)-1):
-                self.instances["%s - %d" % (name, i+2)] = instance
+                self.instances["%s::%d" % (name, i+2)] = instance
 
     def aggregate(self):
         raise NotImplementedError()
