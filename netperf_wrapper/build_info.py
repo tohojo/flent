@@ -26,3 +26,11 @@ import os
 # this value works for the source distribution
 VERSION="0.6.1-git"
 DATA_DIR=os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
+
+if VERSION.endswith("-git") and os.path.exists(os.path.join(DATA_DIR, '.git')):
+    try:
+        import subprocess
+        commit = subprocess.check_output(["git", "log", "--format=%h", "-1"], cwd=DATA_DIR).decode()
+        VERSION+="-%s" % commit.strip()
+    except:
+        pass
