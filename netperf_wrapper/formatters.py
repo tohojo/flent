@@ -104,7 +104,7 @@ class TableFormatter(Formatter):
 
     def get_header(self, results):
         name = results[0].meta("NAME")
-        keys = list(self.settings.DATA_SETS.keys())
+        keys = list(set(reduce(lambda x,y:x+y, [r.series_names for r in results])))
         header_row = [name]
 
         if len(results) > 1:
@@ -117,7 +117,7 @@ class TableFormatter(Formatter):
     def combine_results(self, results):
         """Generator to combine several result sets into one list of rows, by
         concatenating them."""
-        keys = list(self.settings.DATA_SETS.keys())
+        keys = list(set(reduce(lambda x,y:x+y, [r.series_names for r in results])))
         for row in list(zip(*[list(r.zipped(keys)) for r in results])):
             out_row = [row[0][0]]
             for r in row:
