@@ -126,7 +126,13 @@ class ResultSet(object):
         if keys is None:
             keys = self.series_names
         for i in range(len(self._x_values)):
-            yield [self._x_values[i]]+[self._results[k][i] for k in keys]
+            y = [self._x_values[i]]
+            for k in keys:
+                if k in self._results:
+                    y.append(self._results[k][i])
+                else:
+                    y.append(None)
+            yield y
 
     def __iter__(self):
         return self.zipped()
