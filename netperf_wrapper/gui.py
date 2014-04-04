@@ -89,6 +89,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionClearExtra.activated.connect(self.clear_extra)
         self.actionNextTab.activated.connect(self.next_tab)
         self.actionPrevTab.activated.connect(self.prev_tab)
+        self.actionRefresh.activated.connect(self.refresh_plot)
 
         self.viewArea.tabCloseRequested.connect(self.close_tab)
         self.viewArea.currentChanged.connect(self.activate_tab)
@@ -186,6 +187,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.save_plot()
+
+    def refresh_plot(self):
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            widget.update()
 
     def warn_nomatch(self):
         QMessageBox.warning(self, "No matching datasets found",
