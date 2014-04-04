@@ -593,7 +593,7 @@ def load():
             load_gui(settings)
 
         settings.update(results[0].meta())
-        settings.load_test()
+        settings.load_test(informational=True)
     elif settings.GUI:
         load_gui(settings)
     else:
