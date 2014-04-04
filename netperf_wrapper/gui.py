@@ -365,7 +365,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.results = ResultSet.load_file(self.filename)
         self.extra_results = []
         self.settings.update(self.results.meta())
-        self.settings.load_test()
+        self.settings.load_test(informational=True)
 
         self.formatter = PlotFormatter(self.settings)
 
