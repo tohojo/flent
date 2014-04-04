@@ -1,3 +1,5 @@
+2013-04-04: Add Q-Q plot type.
+
 2013-03-24: Allow tests to specify axis labels explicitly. Use this to write
             something better than 'ms' on the latency axes.
 
