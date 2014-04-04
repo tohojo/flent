@@ -644,19 +644,29 @@ class PlotFormatter(Formatter):
         if not data:
             return
 
-        # numpy doesn't have 'percentile' until v1.6
-        if not hasattr(self.np, 'percentile'):
-            top_percentile = max(data)*1.01
-            btm_percentile = min(data)*0.99
-        else:
-            top_percentile = self.np.percentile(data, top)*1.05
-            btm_percentile = self.np.percentile(data, btm)*0.95
+        top_percentile = self._percentile(data, top)*1.05
+        btm_percentile = self._percentile(data, btm)*0.95
         if self.settings.ZERO_Y:
             axis.set_ylim(ymin=0, ymax=top_percentile)
         else:
             axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
             if top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
                 axis.set_yscale('log')
+
+    def _percentile(self, lst, q):
+        """Primitive percentile calculation for axis scaling.
+
+        Implemented here since old versions of numpy don't include
+        the percentile function."""
+        q = int(q)
+        if q == 0:
+            return min(lst)
+        elif q == 100:
+            return max(lst)
+        elif q < 0 or q > 100:
+            raise ValueError("Invalid percentile: %s" % q)
+        idx = int(len(lst) * (q/100.0))
+        return self.np.sort(lst)[idx]
 
 
 class MetadataFormatter(Formatter):
