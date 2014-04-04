@@ -249,7 +249,7 @@ class PlotFormatter(Formatter):
 
     def _load_plotconfig(self, plot):
         if not plot in self.settings.PLOTS:
-            raise RuntimeError("Unable to find plot configuration '%s'" % plot)
+            raise RuntimeError("Unable to find plot configuration '%s'." % plot)
         config = self.settings.PLOTS[plot].copy()
         if 'parent' in config:
             parent_config = self.settings.PLOTS[config['parent']].copy()
