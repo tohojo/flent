@@ -60,7 +60,6 @@ class build_py(_build_py):
 
             if iobj.fake_root:
                 prefix = iobj.prefix
-                print(prefix)
             else:
                 prefix = iobj.install_data
 
