@@ -572,7 +572,9 @@ def load():
     if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
         and len(sys.argv) < 2:
         settings.GUI = True
-    # --new-gui-instance implies --gui
+    # Passing --new-gui-instance on the command line implies --gui, but setting
+    # it in the rc file does not. When set here, before the rc file is loaded,
+    # this has the desired effect.
     elif settings.NEW_GUI_INSTANCE:
         settings.GUI = True
 

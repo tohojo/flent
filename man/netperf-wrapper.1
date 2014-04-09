@@ -110,9 +110,10 @@ the GUI.
 \fB--new-gui-instance\fR
 Start a new GUI instance. Otherwise, netperf-wrapper will try to connect to an
 already running GUI instance and have that load any new data files specified as
-arguments. Implies --gui. Note that when multiple GUI instances are running,
-there is no guarantee as to which instance will get a subsequent open request
-(if run again without --new-gui-instance).
+arguments. Implies \fB--gui\fR when passed on the command line, but not when set in
+the rc file. Note that when multiple GUI instances are running, there is no
+guarantee as to which instance will get a subsequent open request (if run again
+without \fB--new-gui-instance\fR).
 .TP
 \fBTest configuration:\fR
 .PP
