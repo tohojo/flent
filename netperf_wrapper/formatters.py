@@ -218,6 +218,7 @@ class StatsFormatter(Formatter):
 class PlotFormatter(Formatter):
 
     open_mode = "wb"
+    inverted_units = ('ms')
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
@@ -298,6 +299,7 @@ class PlotFormatter(Formatter):
             else:
                 config['axes'][i].set_ylabel(unit[i])
 
+        self.units = unit
 
     def _init_box_plot(self, config=None, axis=None):
         if axis is None:
@@ -400,7 +402,7 @@ class PlotFormatter(Formatter):
 
         for a in range(len(config['axes'])):
             if data[a]:
-                self._do_scaling(config['axes'][a], data[a], btm, top)
+                self._do_scaling(config['axes'][a], data[a], btm, top, self.units[a])
 
 
     def do_box_plot(self, results, config=None, axis=None):
@@ -451,6 +453,8 @@ class PlotFormatter(Formatter):
                         self.plt.setp(bp[k][j*2+1], color=colours[j])
 
             pos += group_size+1
+            if self.settings.INVERT_Y and self.units[a] in self.inverted_units:
+                config['axes'][a].invert_yaxis()
 
 
         axis.set_xticks(ticks)
@@ -638,7 +642,7 @@ class PlotFormatter(Formatter):
         legends.append(l)
         return legends
 
-    def _do_scaling(self, axis, data, btm, top):
+    def _do_scaling(self, axis, data, btm, top, unit=None):
         """Scale the axis to the selected bottom/top percentile"""
         data = [x for x in data if x is not None]
         if not data:
@@ -652,6 +656,9 @@ class PlotFormatter(Formatter):
             axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
             if top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
                 axis.set_yscale('log')
+
+        if self.settings.INVERT_Y and unit in self.inverted_units:
+            axis.invert_yaxis()
 
     def _percentile(self, lst, q):
         """Primitive percentile calculation for axis scaling.

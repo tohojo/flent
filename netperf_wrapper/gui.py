@@ -101,6 +101,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         # Set initial value of checkboxes from settings
         self.checkZeroY.setChecked(self.settings.ZERO_Y)
+        self.checkInvertY.setChecked(self.settings.INVERT_Y)
         self.checkDisableLog.setChecked(not self.settings.LOG_SCALE)
         self.checkAnnotation.setChecked(self.settings.ANNOTATE)
         self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
@@ -108,6 +109,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
+        self.checkInvertY.toggled.connect(self.update_checkboxes)
         self.checkDisableLog.toggled.connect(self.update_checkboxes)
         self.checkAnnotation.toggled.connect(self.update_checkboxes)
         self.checkLegend.toggled.connect(self.update_checkboxes)
@@ -126,6 +128,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.zero_y(self.checkZeroY.isChecked())
+            widget.invert_y(self.checkInvertY.isChecked())
             widget.disable_log(self.checkDisableLog.isChecked())
             widget.draw_annotation(self.checkAnnotation.isChecked())
             widget.draw_legend(self.checkLegend.isChecked())
@@ -434,6 +437,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.ZERO_Y = val
             self.update()
         return self.settings.ZERO_Y
+
+    def invert_y(self, val=None):
+        if val is not None and val != self.settings.INVERT_Y:
+            self.settings.INVERT_Y = val
+            self.update()
+        return self.settings.INVERT_Y
 
     def disable_log(self, val=None):
         if val is not None and val == self.settings.LOG_SCALE:

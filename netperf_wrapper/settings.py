@@ -64,6 +64,7 @@ DEFAULT_SETTINGS = {
     'PRINT_TITLE': True,
     'PRINT_LEGEND': True,
     'ZERO_Y': False,
+    'INVERT_Y': False,
     'LOG_SCALE': True,
     'EXTENDED_METADATA': False,
     'REMOTE_METADATA': [],
@@ -90,6 +91,7 @@ CONFIG_TYPES = {
     'PRINT_TITLE': 'bool',
     'PRINT_LEGEND': 'bool',
     'ZERO_Y': 'bool',
+    'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
     'EXTENDED_METADATA': 'bool',
     'DITG_CONTROL_HOST': 'str',
@@ -393,6 +395,9 @@ plot_group.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
                   help="Always start y axis of plot at zero, instead of auto-scaling the "
                   "axis (also disables log scales). Auto-scaling is still enabled for the "
                   "upper bound.")
+plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INVERT_Y",
+                  help="Invert the y-axis for latency data series (making plots show 'better values "
+                  "upwards').")
 plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
                   help="Disable log scales on plots.")
 plot_group.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
