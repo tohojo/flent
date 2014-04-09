@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Netperf-wrapper
+Comment=Network benchmarking and bufferbloat investigation tool
+Exec=netperf-wrapper --gui %F
+Icon=applications-internet
+Categories=Qt;Network;
+Terminal=false
+MimeType=application/x-compressed-json;

@@ -89,7 +89,11 @@ data_files = [('share/netperf-wrapper/tests',
               ('share/man/man1',
                ['man/netperf-wrapper.1']),
               ('share/doc/netperf-wrapper/misc',
-               glob("misc/*.patch"))]
+               glob("misc/*.patch")),
+              ('share/mime/packages',
+               ['netperf-wrapper-mime.xml']),
+              ('share/applications',
+               ['netperf-wrapper.desktop'])]
 
 with open("README.rst") as fp:
     long_description = "\n"+fp.read()
