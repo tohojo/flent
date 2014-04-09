@@ -470,8 +470,7 @@ class PlotFormatter(Formatter):
                         self.plt.setp(bp[k][j*2+1], color=colours[j])
 
             pos += group_size+1
-            if self.settings.INVERT_Y and self.units[a] in self.inverted_units:
-                config['axes'][a].invert_yaxis()
+            self._do_scaling(config['axes'][a], reduce(lambda x,y:x+y, data), 0, 100, self.units[a])
 
 
         axis.set_xticks(ticks)
@@ -720,12 +719,18 @@ class PlotFormatter(Formatter):
         if not data:
             return
 
-        top_percentile = self._percentile(data, top)*1.05
-        btm_percentile = self._percentile(data, btm)*0.95
+        top_percentile = self._percentile(data, top)
+        btm_percentile = self._percentile(data, btm)
+
+        # Leave 1 percent of the axis range as extra space, so the outermost
+        # points are not smudged by the axis lines.
+        space = (top_percentile - btm_percentile)*0.01
+        top_scale = top_percentile + space
+        btm_scale = btm_percentile - space
         if self.settings.ZERO_Y:
-            axis.set_ylim(ymin=0, ymax=top_percentile)
+            axis.set_ylim(ymin=0, ymax=top_scale)
         else:
-            axis.set_ylim(ymin=btm_percentile, ymax=top_percentile)
+            axis.set_ylim(ymin=btm_scale, ymax=top_scale)
             if top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
                 axis.set_yscale('log')
 
