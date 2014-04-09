@@ -313,6 +313,34 @@ for specific tests. For an explanation of the options, refer to the annotated
 example rc file, by default installed to
 \fI/usr/share/doc/netperf-wrapper/netperf-wrapperrc.example\fR.
 
+.SH RUNNING TESTS WITH THE D-ITG TOOL
+This version of netperf-wrapper has experimental support for running and parsing
+the output of the D-ITG test tool (see
+\fIhttp://traffic.comics.unina.it/software/ITG/\fR). Netperf-wrapper supports
+parsing the one-way delay as measured by D-ITG. However, in order to do so, the
+data needs to be collected at the receiver end, statistics extracted, and the
+result passed back to netperf-wrapper on the sending side.
+
+To perform this function, netperf-wrapper supports a control server which will
+listen to XML-RPC requests, spawn an appropriate ITGRecv instance and, after the
+test is done, parse its output and make it available for netperf-wrapper to
+retrieve. This control server is available as a Python file that by default is
+installed in \fI/usr/share/doc/netperf-wrapper/misc\fR. It currently requires a
+patched version of D-ITG v2.8.1. The patch is also included in the same
+directory.
+
+Note that the D-ITG server is finicky and not designed with security in mind.
+For this reason, the control server includes HMAC authentication to only allow
+authenticated clients to run a test against the server; however there is
+currently no support for enforcement of this in e.g. firewall rules. Please bear
+this in mind when running a publicly reachable ITGRecv instance (with or without
+the control server). Another security issue with the control server is that the
+Python XML-RPC library by default is vulnerable to XML entity expansion attacks.
+For this reason, it is highly recommended to install the 'defusedxml' library
+(available at \fIhttps://pypi.python.org/pypi/defusedxml/\fR) on the host
+running the control server. The server will try to find the library on startup
+and refuse to run if it is not available, unless explicitly told otherwise.
+
 .SH EXAMPLES
 Run the \fIrrul\fR test against \fItestserver.example.com\fI:
 .IP
