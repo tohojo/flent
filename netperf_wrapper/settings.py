@@ -589,7 +589,7 @@ def load():
         test_name = None
         for filename in settings.INPUT:
             r = ResultSet.load_file(filename)
-            if test_name is not None and test_name != r.meta("NAME"):
+            if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
                 raise RuntimeError("Result sets must be from same test (found %s/%s)" % (test_name, r.meta("NAME")))
             test_name = r.meta("NAME")
             results.append(r)

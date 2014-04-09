@@ -250,7 +250,7 @@ class PlotFormatter(Formatter):
 
     def _load_plotconfig(self, plot):
         if not plot in self.settings.PLOTS:
-            raise RuntimeError("Unable to find plot configuration '%s'" % plot)
+            raise RuntimeError("Unable to find plot configuration '%s'." % plot)
         config = self.settings.PLOTS[plot].copy()
         if 'parent' in config:
             parent_config = self.settings.PLOTS[config['parent']].copy()
@@ -335,6 +335,18 @@ class PlotFormatter(Formatter):
         config['axes'] = [axis]
         self.medians = []
         self.min_vals = []
+
+
+    def _init_qq_plot(self, config=None, axis=None):
+        if axis is None:
+            axis = self.figure.gca()
+        if config is None:
+            config = self.config
+
+        config['axes'] = [axis]
+
+        if len(config['series']) > 1:
+            raise RuntimeError("Can't do Q-Q plot with more than one series.")
 
 
     def _init_meta_plot(self):
@@ -527,6 +539,61 @@ class PlotFormatter(Formatter):
             if min_val > 10:
                 min_val -= min_val%10 # nearest value divisible by 10
             axis.set_xlim(left=min_val)
+
+
+    def do_qq_plot(self, results):
+        if len(results) < 2:
+            results *= 2
+        self._do_qq_plot(results[:2])
+
+    def _do_qq_plot(self, results):
+        series = self.config['series'][0]
+        axis = self.config['axes'][0]
+
+        x_values = self.np.sort([r for r in results[0].series(series['data']) if r is not None])
+        y_values = self.np.sort([r for r in results[1].series(series['data']) if r is not None])
+
+        # If data sets are not of equal sample size, the larger one is shrunk by
+        # interpolating values into the length of the smallest data set.
+        #
+        # Translated from the R implementation:
+        # http://svn.r-project.org/R/trunk/src/library/stats/R/qqplot.R and
+        # http://svn.r-project.org/R/trunk/src/library/stats/R/approx.R
+        #
+        # np.linspace returns a number of equally spaced points between a
+        # maximum and a minimum (like range() but specifying number of steps
+        # rather than interval). These are the x values of used for
+        # interpolation.
+        #
+        # np.interp does linear interpolation of a dataset. I.e. for each x
+        # value in the first argument it returns the linear interpolation
+        # between the two neighbouring y values of the source data set. The
+        # source x values are simply numbered up to the length of the longer
+        # data set, and the source y values are the actual values of the
+        # longer data set. The destination x values are equally spaced in the
+        # length of the longer data set, with n being equal to the number of
+        # data points in the shorter data set.
+        if len(x_values) < len(y_values):
+            y_values = self.np.interp(self.np.linspace(0, len(y_values),
+                                                       num=len(x_values), endpoint=False),
+                                      range(len(y_values)), y_values)
+
+        elif len(y_values) < len(x_values):
+            x_values = self.np.interp(self.np.linspace(0, len(x_values),
+                                                       num=len(y_values), endpoint=False),
+                                      range(len(x_values)), x_values)
+
+        axis.plot(x_values, y_values, 'r.', label=series['label'])
+
+        max_val = max(x_values.max(), y_values.max())
+        axis.plot([0,max_val], [0,max_val], 'b-', label="Ref (x=y)")
+
+        axis.set_xlabel(results[0].label())
+        axis.set_ylabel(results[1].label())
+
+        axis.set_xlim(min(x_values)*0.99, max(x_values)*1.01)
+        axis.set_ylim(min(y_values)*0.99, max(y_values)*1.01)
+
 
     def do_meta_plot(self, results):
         for i,config in enumerate(self.configs):

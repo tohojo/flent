@@ -376,7 +376,14 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
 
-        self.formatter = PlotFormatter(self.settings)
+        try:
+            self.formatter = PlotFormatter(self.settings)
+        except RuntimeError as e:
+            QMessageBox.warning(self, "Error loading plot",
+                                "%s\nFalling back to default plot" % e)
+
+            self.settings.PLOT = self.settings.DEFAULTS['PLOT']
+            self.formatter = PlotFormatter(self.settings)
 
         self.canvas = FigureCanvas(self.formatter.figure)
         self.canvas.setParent(self.graphDisplay)
