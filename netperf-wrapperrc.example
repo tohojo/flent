@@ -106,6 +106,14 @@
 # Corresponding command line option: --zero-y
 ;zero_y = no
 
+# Whether to Invert the y-axis for latency data series (making plots show
+# 'better values upwards').
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --invert-latency-y
+;invert_y = no
+
 # Whether to enable automatic log-scaling of plot axes.
 # If not disabled here (or on the command line), log scales are enabled if
 # the maximum data point is more than 20 times the value of the minimum.
@@ -124,6 +132,29 @@
 # overridden from the command line.
 # Corresponding command line option: --extended-metadata
 ;extended_metadata = no
+
+# Host to connect to the D-ITG control server on (only used for D-ITG tests; see
+# man page).
+#
+# If this is not set (here or on the command line), the test hostname is used.
+;ditg_control_host = control-server.example.com
+
+# Port the D-ITG control server is listening on (only used for D-ITG tests; see
+# man page). Default: 8000.
+;ditg_control_port = 8000
+
+# Secret used for HMAC authentication to the D-ITG control server (only used for
+# D-ITG tests; see man page). Default: '' (the empty string).
+;digt_control_secret =
+
+# Whether to always start a new GUI instance rather than attempt to connect
+# to an already running instance. Note that unlike on the when it is passed
+# on the command line, setting this flag here does not imply --gui.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --new-gui-instance
+;new_gui_instance = no
 
 ## Sections can specify settings overriding the global settings for
 ## specific tests. For instance, this sets plot output to be default
