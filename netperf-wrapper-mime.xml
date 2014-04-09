@@ -2,6 +2,7 @@
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
    <mime-type type="application/x-compressed-json">
      <comment>Compressed JSON data.</comment>
+     <sub-class-of type="application/gzip"/>
      <glob pattern="*.json.gz"/>
    </mime-type>
 </mime-info>
