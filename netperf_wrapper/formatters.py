@@ -281,6 +281,9 @@ class PlotFormatter(Formatter):
         else:
             config['axes'] = [axis]
 
+        for a in config['axes']:
+            a.minorticks_on()
+
         unit = [None]*len(config['axes'])
         for s in config['series']:
             if 'axis' in s and s['axis'] == 2:
@@ -332,6 +335,7 @@ class PlotFormatter(Formatter):
             axis.set_xlabel(unit)
         axis.set_ylabel('Cumulative probability')
         axis.set_ylim(0,1)
+        axis.minorticks_on()
         config['axes'] = [axis]
         self.medians = []
         self.min_vals = []
@@ -343,6 +347,7 @@ class PlotFormatter(Formatter):
         if config is None:
             config = self.config
 
+        axis.minorticks_on()
         config['axes'] = [axis]
 
         if len(config['series']) > 1:
