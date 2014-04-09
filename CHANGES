@@ -1,3 +1,6 @@
+2013-04-09: On GUI startup, by default search for a running instance and pass
+            the file name to that rather than starting a new instance.
+
 2013-04-09: Add .desktop file and mime info for data files.
 
 2013-04-09: Add toggle to invert y-axis on latency measurements.

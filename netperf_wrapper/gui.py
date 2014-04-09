@@ -28,7 +28,7 @@ except NameError:
     unicode = str
 
 try:
-    from PyQt4 import QtCore, QtGui, uic
+    from PyQt4 import QtCore, QtGui, QtNetwork, uic
     from PyQt4.QtGui import *
     from PyQt4.QtCore import *
 except ImportError:
@@ -46,13 +46,60 @@ from netperf_wrapper.build_info import DATA_DIR
 from netperf_wrapper.resultset import ResultSet
 from netperf_wrapper.formatters import PlotFormatter
 
+# IPC socket parameters
+SOCKET_NAME_PREFIX = "netperf-wrapper-socket-"
+SOCKET_DIR = "/tmp"
+
 __all__ = ['run_gui']
 
 def run_gui(settings):
+    if check_running(settings):
+        sys.exit(0)
     app = QApplication(sys.argv[:1])
     mainwindow = MainWindow(settings)
     mainwindow.show()
     sys.exit(app.exec_())
+
+def check_running(settings):
+    """Check for a valid socket of an already running instance, and if so,
+    connect to it and send the input file names."""
+    if settings.NEW_GUI_INSTANCE:
+        return False
+
+    files = os.listdir(SOCKET_DIR)
+    for f in files:
+        if f.startswith(SOCKET_NAME_PREFIX):
+            pid = int(f.split("-")[-1])
+            try:
+                os.kill(pid, 0)
+                sys.stderr.write("Found a running instance with pid %d. Trying to connect... " % pid)
+                # Signal handler did not raise an error, so the pid is running. Try to connect
+                sock = QtNetwork.QLocalSocket()
+                sock.connectToServer(os.path.join(SOCKET_DIR, f), QIODevice.WriteOnly)
+                if not sock.waitForConnected(1000):
+                    continue
+
+                # Encode the filenames as a QStringList and pass them over the socket
+                block = QByteArray()
+                stream = QDataStream(block, QIODevice.WriteOnly)
+                stream.setVersion(QDataStream.Qt_4_0)
+                stream.writeQStringList([os.path.abspath(f) for f in settings.INPUT])
+                sock.write(block)
+                ret = sock.waitForBytesWritten(1000)
+                sock.disconnectFromServer()
+
+                # If we succeeded in sending stuff, we're done. Otherwise, if
+                # there's another possibly valid socket in the list we'll try
+                # again the next time round in the loop.
+                if ret:
+                    sys.stderr.write("Success!\n")
+                    return True
+                else:
+                    sys.stderr.write("Error!\n")
+            except OSError:
+                # os.kill raises OSError if the pid does not exist
+                pass
+    return False
 
 def get_ui_class(filename):
     """Helper method to dynamically load a .ui file, construct a class
@@ -116,6 +163,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkTitle.toggled.connect(self.update_checkboxes)
         self.checkScaleMode.toggled.connect(self.update_checkboxes)
 
+        # Start IPC socket server on name corresponding to pid
+        self.server = QtNetwork.QLocalServer()
+        self.sockets = []
+        self.server.newConnection.connect(self.new_connection)
+        self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
+
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
@@ -134,6 +187,21 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.draw_legend(self.checkLegend.isChecked())
             widget.draw_title(self.checkTitle.isChecked())
             widget.scale_mode(self.checkScaleMode.isChecked())
+
+    def new_connection(self):
+        sock = self.server.nextPendingConnection()
+        self.sockets.append(sock)
+        sock.readyRead.connect(self.data_ready)
+
+    def data_ready(self):
+        for s in self.sockets:
+            if s.isReadable():
+                stream = QDataStream(s)
+                filenames = stream.readQStringList()
+                self.load_files(filenames)
+                self.sockets.remove(s)
+                self.raise_()
+                self.activateWindow()
 
     def update_statusbar(self, idx):
         self.statusBar().showMessage(

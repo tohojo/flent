@@ -69,6 +69,7 @@ DEFAULT_SETTINGS = {
     'EXTENDED_METADATA': False,
     'REMOTE_METADATA': [],
     'GUI': False,
+    'NEW_GUI_INSTANCE': False,
     'DITG_CONTROL_HOST': None,
     'DITG_CONTROL_PORT': 8000,
     'DITG_CONTROL_SECRET': '',
@@ -97,6 +98,7 @@ CONFIG_TYPES = {
     'DITG_CONTROL_HOST': 'str',
     'DITG_CONTROL_PORT': 'int',
     'DITG_CONTROL_SECRET': 'str',
+    'NEW_GUI_INSTANCE': 'bool',
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -358,6 +360,10 @@ parser.add_option("--remote-metadata", action="append", type="string", dest="REM
 parser.add_option("--gui", action="store_true", dest="GUI",
                   help="Run the netperf-wrapper GUI. All other options are used as defaults "
                   "in the GUI, but can be changed once it is running.")
+parser.add_option("--new-gui-instance", action="store_true", dest="NEW_GUI_INSTANCE",
+                  help="Start a new GUI instance. Otherwise, netperf-wrapper will try to "
+                  "connect to an already running GUI instance and have that load any new "
+                  "data files specified as arguments. Implies --gui.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -565,6 +571,9 @@ def load():
     # If run with no args and no controlling TTY, launch the GUI by default
     if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
         and len(sys.argv) < 2:
+        settings.GUI = True
+    # --new-gui-instance implies --gui
+    elif settings.NEW_GUI_INSTANCE:
         settings.GUI = True
 
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
