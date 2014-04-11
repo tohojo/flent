@@ -483,24 +483,27 @@ class Settings(optparse.Values, object):
                 items.extend(config.items('global'))
             if self.NAME is not None and config.has_section(self.NAME):
                 items.extend(config.items(self.NAME))
+            self.load_rcvalues(items)
 
-            for k,v in items:
-                if k in CONFIG_TYPES and getattr(self,k) == DEFAULT_SETTINGS[k]:
-                    if CONFIG_TYPES[k] == 'str':
-                        setattr(self, k, v)
-                    elif CONFIG_TYPES[k] == 'int':
-                        setattr(self, k, int(v))
-                    elif CONFIG_TYPES[k] == 'float':
-                        setattr(self, k, float(v))
-                    elif CONFIG_TYPES[k] == 'list':
-                        setattr(self, k, [i.strip() for i in v.split(",")])
-                    elif CONFIG_TYPES[k] == 'bool':
-                        if v.lower() in ('1', 'yes', 'true', 'on'):
-                            setattr(self, k, True)
-                        elif v.lower() in ('0', 'no', 'false', 'off'):
-                            setattr(self, k, False)
-                        else:
-                            raise ValueError("Not a boolean: %s" % v)
+    def load_rcvalues(self, items):
+
+        for k,v in items:
+            if k in CONFIG_TYPES and getattr(self,k) == DEFAULT_SETTINGS[k]:
+                if CONFIG_TYPES[k] == 'str':
+                    setattr(self, k, v)
+                elif CONFIG_TYPES[k] == 'int':
+                    setattr(self, k, int(v))
+                elif CONFIG_TYPES[k] == 'float':
+                    setattr(self, k, float(v))
+                elif CONFIG_TYPES[k] == 'list':
+                    setattr(self, k, [i.strip() for i in v.split(",")])
+                elif CONFIG_TYPES[k] == 'bool':
+                    if v.lower() in ('1', 'yes', 'true', 'on'):
+                        setattr(self, k, True)
+                    elif v.lower() in ('0', 'no', 'false', 'off'):
+                        setattr(self, k, False)
+                    else:
+                        raise ValueError("Not a boolean: %s" % v)
 
     def load_test(self, test_name=None, informational=False):
         if test_name is not None:
