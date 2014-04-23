@@ -36,6 +36,7 @@ except ImportError:
 from netperf_wrapper.resultset import ResultSet
 from netperf_wrapper.build_info import DATA_DIR, VERSION
 from netperf_wrapper.metadata import record_extended_metadata
+from netperf_wrapper.batch import BatchRunner
 from netperf_wrapper import util
 
 DEFAULT_SETTINGS = {
@@ -73,6 +74,8 @@ DEFAULT_SETTINGS = {
     'DITG_CONTROL_HOST': None,
     'DITG_CONTROL_PORT': 8000,
     'DITG_CONTROL_SECRET': '',
+    'BATCH_NAME': None,
+    'BATCH_FILES': [],
     }
 
 CONFIG_TYPES = {
@@ -99,6 +102,7 @@ CONFIG_TYPES = {
     'DITG_CONTROL_PORT': 'int',
     'DITG_CONTROL_SECRET': 'str',
     'NEW_GUI_INSTANCE': 'bool',
+    'BATCH_FILES': 'list',
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
@@ -364,6 +368,14 @@ parser.add_option("--new-gui-instance", action="store_true", dest="NEW_GUI_INSTA
                   help="Start a new GUI instance. Otherwise, netperf-wrapper will try to "
                   "connect to an already running GUI instance and have that load any new "
                   "data files specified as arguments. Implies --gui.")
+parser.add_option("-b", "--batch", action="store", type="string", dest="BATCH_NAME",
+                  help="Run test batch BATCH_NAME (must be specified in a batch file loaded "
+                  "by the --batch-file option).")
+parser.add_option("-B", "--batch-file", action="append", type="string", dest="BATCH_FILES",
+                  metavar="BATCH_FILE",
+                  help="Load batch file BATCH_FILE. Can be specified multiple times, in which "
+                  "case the files will be combined (with identically-named sections being overridden "
+                  "by later files). See the man page for an explanation of the batch file format.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -597,6 +609,10 @@ def load():
             settings.load_test_or_host(a)
 
     settings.load_rcfile()
+
+    batch = BatchRunner(settings)
+    for f in settings.BATCH_FILES:
+        batch.read(f)
 
     if settings.INPUT:
         results = []

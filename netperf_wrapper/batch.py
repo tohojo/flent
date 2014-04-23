@@ -29,6 +29,7 @@ try:
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 
+# Python2/3 compatibility
 try:
     basestring
 except NameError:
@@ -41,16 +42,19 @@ class BatchRunner(object):
     _MAX_INTERP = 1000
 
 
-    def __init__(self, interpolation_values):
+    def __init__(self, settings):
         self.args = {}
         self.batches = {}
         self.commands = {}
-        self.interpolation_values = dict(interpolation_values)
+        self.settings = settings
+        self.interpolation_values = dict()
 
 
     def read(self, filename):
         parser = RawConfigParser(dict_type=OrderedDict)
-        parser.read(filename)
+        read = parser.read(filename)
+        if read != [filename]:
+            raise RuntimeError("Unable to read batch file: %s." % filename)
 
         for s in parser.sections():
             typ,nam = s.split("::")

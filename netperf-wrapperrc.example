@@ -156,6 +156,17 @@
 # Corresponding command line option: --new-gui-instance
 ;new_gui_instance = no
 
+# List of batch file names to load -- to actually do a batch run, the batch name
+# has to be passed in on the command line. This allows for having a persistent
+# batch file specified in the rc file, which is always available for loading.
+#
+# Like with hosts, batch files specified here are overridden by batch files
+# specified on the command line, meaning that if one or more batch files are
+# passed on the command line, the files specified here are NOT loaded.
+#
+# Multiple values are specified comma-separated.
+;batch_files = ~/example.batch
+
 ## Sections can specify settings overriding the global settings for
 ## specific tests. For instance, this sets plot output to be default
 ## for the RRUL test:
