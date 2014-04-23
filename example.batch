@@ -1,0 +1,62 @@
+[Command::setup_qdiscs]
+exec = setup_qdiscs.sh ${qdisc_name} ${qdisc_args}
+type = pre
+essential = yes
+
+[Command::tcpdump]
+filename = ${data_filename}
+exec = ssh ${hostname} "timeout ${duration} tcpdump -n -i ${interface} -s ${capsize} -w /tmp/${filename}.cap; mv /tmp/${filename}.cap /home/data/${batch_name}/"
+type = monitor
+kill = no
+
+[Command::tcpdump_egress]
+inherits = tcpdump
+hostname = ${egress_router_hostname}
+interface = ${egress_router_iface}
+filename = ${data_filename}_egress
+
+[Command::tcpdump_ingress]
+inherits = tcpdump
+hostname = ${ingress_router_hostname}
+interface = ${ingress_router_iface}
+filename = ${data_filename}_ingress
+
+[Command::tcpdump_test]
+inherits = tcpdump_ingress
+
+[Batch::global]
+# rc file keys
+remote_metadata = egress_router_hostname, ingress_router_hostname
+extended_metadata = yes
+title = ${test_name} ${arg} qdisc
+ip_version = 4
+
+# how long to pause after each run?
+pause = 5
+
+[Batch::rrul]
+inherits = global
+commands = setup_qdiscs, tcpdump_egress, tcpdump_ingress
+for_args = pie, codel, fq_codel
+test_name = rrul
+
+[Arg::global]
+egress_router_hostname = router1
+egress_router_iface = eth2
+ingress_router_hostname = router2
+ingress_router_iface = eth1
+capsize = 128
+qdisc_args =
+
+[Arg::pie]
+inherits = global
+qdisc_name = pie
+
+[Arg::codel]
+inherits = global
+qdisc_name = codel
+
+[Arg::fq_codel]
+inherits = global
+qdisc_name = fq_codel
+
