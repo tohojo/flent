@@ -651,7 +651,7 @@ def load():
     if settings.SCALE_DATA:
         scale_data = []
         for filename in settings.SCALE_DATA:
-            if filename == settings.INPUT:
+            if filename in settings.INPUT:
                 # Do not load input file twice - makes it easier to select a set
                 # of files for plot scaling and supply each one to -i without
                 # having to change the other command line options each time.
