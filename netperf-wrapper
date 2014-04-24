@@ -25,28 +25,15 @@ import sys
 try:
     import optparse, os
 
-    from netperf_wrapper import aggregators, formatters, util
-    from netperf_wrapper.settings import settings, load
+    from netperf_wrapper import aggregators, formatters
+    from netperf_wrapper.settings import load
 
     if __name__ == "__main__":
         try:
             settings,results = load()
 
-            aggregator_name = settings.AGGREGATOR
-            classname = util.classname(aggregator_name, "Aggregator")
-            if hasattr(aggregators, classname):
-                agg = getattr(aggregators, classname)(settings)
-            else:
-                raise RuntimeError("Aggregator not found: '%s'" % aggregator_name)
-
-            for s in list(settings.DATA_SETS.items()):
-                agg.add_instance(*s)
-
-            formatter_name = util.classname(settings.FORMAT, 'Formatter')
-            if hasattr(formatters, formatter_name):
-                formatter = getattr(formatters, formatter_name)(settings)
-            else:
-                raise RuntimeError("Formatter not found.")
+            agg = aggregators.new(settings)
+            formatter = formatters.new(settings)
 
             if not results[0]:
                 results[0] = agg.postprocess(agg.aggregate(results[0]))

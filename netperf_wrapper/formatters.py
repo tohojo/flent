@@ -21,7 +21,7 @@
 
 import json, sys, csv, math, inspect, os
 
-from .util import cum_prob, frange
+from .util import cum_prob, frange, classname
 from functools import reduce
 
 PLOT_KWARGS = (
@@ -49,6 +49,14 @@ PLOT_KWARGS = (
     'visible',
     'zorder'
     )
+
+def new(settings):
+    formatter_name = classname(settings.FORMAT, 'Formatter')
+    try:
+        return globals()[formatter_name](settings)
+    except KeyError:
+        raise RuntimeError("Formatter not found: '%s'." % settings.FORMAT)
+
 
 class Formatter(object):
 
