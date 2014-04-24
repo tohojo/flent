@@ -54,6 +54,7 @@ class ProcessRunner(threading.Thread):
         self.killed = False
         self.pid = None
         self.returncode = None
+        self.kill_lock = threading.Lock()
 
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
@@ -77,14 +78,17 @@ class ProcessRunner(threading.Thread):
             self.pid = pid
 
     def kill(self):
-        if self.killed:
-            return
+        with self.kill_lock:
+            self.killed = True
         if self.pid is not None:
             try:
                 os.kill(self.pid, signal.SIGTERM)
             except OSError:
                 pass
-        self.killed = True
+
+    def is_killed(self):
+        with self.kill_lock:
+            return self.killed
 
     # helper function from subprocess module
     def _handle_exitstatus(self, sts, _WIFSIGNALED=os.WIFSIGNALED,
@@ -132,11 +136,14 @@ class ProcessRunner(threading.Thread):
         except OSError:
             pass
 
-        if self.killed:
-            return
+        # Even with locking, kill detection is not reliable; sleeping seems to
+        # help. *sigh* -- threading.
+        time.sleep(0.2)
 
-        if self.returncode:
-            sys.stderr.write("Warning: Program exited non-zero.\nCommand: %s\n" % self.command)
+        if self.is_killed():
+            return
+        elif self.returncode:
+            sys.stderr.write("Warning: Program exited non-zero (%d).\nCommand: %s\n" % (self.returncode, self.command))
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
             sys.stderr.write("  " + "\n  ".join(self.out.splitlines()) + "\n")
