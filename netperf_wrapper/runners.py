@@ -81,7 +81,7 @@ class ProcessRunner(threading.Thread):
             return
         if self.pid is not None:
             try:
-                os.kill(self.pid, signal.SIGINT)
+                os.kill(self.pid, signal.SIGTERM)
             except OSError:
                 pass
         self.killed = True
