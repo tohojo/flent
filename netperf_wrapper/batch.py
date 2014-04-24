@@ -18,7 +18,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import sys, pprint, string, re, time, os
+import sys, pprint, string, re, time, os, subprocess
 
 try:
     from configparser import RawConfigParser
@@ -163,10 +163,19 @@ class BatchRunner(object):
         return commands
 
     def run_command(self, command):
-        ret = run(command)
+        cmd = command['exec'].strip()
+        if command['type'] in ('pre', 'post'):
+            try:
+                res = subprocess.check_output(cmd, universal_newlines=True, shell=True,
+                                              stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                if command.get('essential', False):
+                    raise RuntimeError("Essential command '%s' failed. Return code: %s.\nOutput:\n %s." % (cmd, e.returncode, "\n ".join(e.output.splitlines())))
 
-        if ret != 0 and command.get('essential', False):
-            raise RuntimeError("Essential command failed: '%s'." % command)
+    def run_commands(self, commands, ctype):
+        for c in commands:
+            if c['type'] == ctype:
+                self.run_command(c)
 
 
     def run_batch(self, batchname):
@@ -177,27 +186,24 @@ class BatchRunner(object):
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
         pause = int(batch.get('pause', 0))
 
-        for arg in args:
+        for i,arg in enumerate(args):
             settings = self.settings.copy()
-            settings.FORMATTER = 'null'
+            settings.FORMAT = 'null'
             commands = self.commands_for(batchname, arg)
-            for c in commands:
-                if c['type'] == 'pre':
-                    self.run_command(c)
-            print("Running test %s for arg %s" % (batch['test_name'], arg))
-            settings.load_rcvalues(self.apply_args(arg), override=True)
+            a = self.args[arg]
+            a['arg'] = arg
+            b = self.apply_args(batch, a)
 
-            for c in commands:
-                if c['type'] == 'monitor':
-                    self.run_command(c)
+            self.run_commands(commands, 'pre')
+            settings.load_rcvalues(b.items(), override=True)
+            settings.NAME = b['test_name']
+
+            self.run_commands(commands, 'monitor')
             self.run_test(settings)
+            self.run_commands(commands, 'post')
 
-            for c in commands:
-                if c['type'] == 'post':
-                    self.run_command(c)
-            # TODO
-            print("Sleeping for %d seconds" % pause)
-            time.sleep(pause)
+            if i+1 < len(args):
+                time.sleep(pause)
 
     def run_test(self, settings):
         settings = settings.copy()

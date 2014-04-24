@@ -499,6 +499,7 @@ class Settings(optparse.Values, object):
     def load_rcvalues(self, items, override=False):
 
         for k,v in items:
+            k = k.upper()
             if k in CONFIG_TYPES and (override or getattr(self,k) == DEFAULT_SETTINGS[k]):
                 if CONFIG_TYPES[k] == 'str':
                     setattr(self, k, v)
@@ -509,7 +510,9 @@ class Settings(optparse.Values, object):
                 elif CONFIG_TYPES[k] == 'list':
                     setattr(self, k, [i.strip() for i in v.split(",")])
                 elif CONFIG_TYPES[k] == 'bool':
-                    if v.lower() in ('1', 'yes', 'true', 'on'):
+                    if type(v) == bool:
+                        setattr(self, k, v)
+                    elif v.lower() in ('1', 'yes', 'true', 'on'):
                         setattr(self, k, True)
                     elif v.lower() in ('0', 'no', 'false', 'off'):
                         setattr(self, k, False)

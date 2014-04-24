@@ -57,7 +57,7 @@ RECORDED_SETTINGS = (
 def new(settings):
     d = {}
     for a in RECORDED_SETTINGS:
-        d[a] = getattr(settings,a)
+        d[a] = getattr(settings,a,None)
     return ResultSet(**d)
 
 def load(filename):

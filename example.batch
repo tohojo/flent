@@ -1,5 +1,5 @@
 [Command::setup_qdiscs]
-exec = setup_qdiscs.sh ${qdisc_name} ${qdisc_args}
+exec = ./setup_qdiscs.sh ${qdisc_name} ${qdisc_args}
 type = pre
 essential = yes
 
@@ -30,6 +30,7 @@ remote_metadata = egress_router_hostname, ingress_router_hostname
 extended_metadata = yes
 title = ${test_name} ${arg} qdisc
 ip_version = 4
+length=5
 
 # how long to pause after each run?
 pause = 5
