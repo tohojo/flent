@@ -18,7 +18,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import sys, pprint, string, re, time
+import sys, pprint, string, re, time, os
 
 try:
     from configparser import RawConfigParser
@@ -29,12 +29,17 @@ try:
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 
+from netperf_wrapper import aggregators, formatters, resultset
+from netperf_wrapper.metadata import record_extended_metadata
+
 # Python2/3 compatibility
 try:
     basestring
 except NameError:
     basestring=str
 
+def new(settings):
+    return BatchRunner(settings)
 
 class BatchRunner(object):
 
@@ -47,7 +52,11 @@ class BatchRunner(object):
         self.batches = {}
         self.commands = {}
         self.settings = settings
+        self.killed = False
         self.interpolation_values = dict()
+
+        for f in settings.BATCH_FILES:
+            self.read(f)
 
 
     def read(self, filename):
@@ -153,6 +162,12 @@ class BatchRunner(object):
 
         return commands
 
+    def run_command(self, command):
+        ret = run(command)
+
+        if ret != 0 and command.get('essential', False):
+            raise RuntimeError("Essential command failed: '%s'." % command)
+
 
     def run_batch(self, batchname):
         if not batchname in self.batches:
@@ -163,11 +178,80 @@ class BatchRunner(object):
         pause = int(batch.get('pause', 0))
 
         for arg in args:
+            settings = self.settings.copy()
+            settings.FORMATTER = 'null'
             commands = self.commands_for(batchname, arg)
+            for c in commands:
+                if c['type'] == 'pre':
+                    self.run_command(c)
             print("Running test %s for arg %s" % (batch['test_name'], arg))
+            settings.load_rcvalues(self.apply_args(arg), override=True)
+
+            for c in commands:
+                if c['type'] == 'monitor':
+                    self.run_command(c)
+            self.run_test(settings)
+
+            for c in commands:
+                if c['type'] == 'post':
+                    self.run_command(c)
             # TODO
             print("Sleeping for %d seconds" % pause)
             time.sleep(pause)
+
+    def run_test(self, settings):
+        settings = settings.copy()
+        settings.load_test()
+        res = resultset.new(settings)
+        if settings.EXTENDED_METADATA:
+            record_extended_metadata(res, settings.REMOTE_METADATA)
+
+        if not settings.HOSTS:
+            raise RuntimeError("Must specify host (-H option).")
+
+        self.agg = aggregators.new(settings)
+        res = self.agg.postprocess(self.agg.aggregate(res))
+        if self.killed:
+            return
+        res.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
+
+        formatter = formatters.new(settings)
+        formatter.format([res])
+
+    def load_input(self, settings):
+        settings = settings.copy()
+        results = []
+        test_name = None
+        for filename in settings.INPUT:
+            r = resultset.load(filename)
+            if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
+                raise RuntimeError("Result sets must be from same test (found %s/%s)" % (test_name, r.meta("NAME")))
+            test_name = r.meta("NAME")
+            results.append(r)
+
+        if settings.GUI:
+            load_gui(settings)
+
+        settings.update(results[0].meta())
+        settings.load_test(informational=True)
+
+        formatter = formatters.new(settings)
+        formatter.format(results)
+
+    def run(self):
+        if self.settings.INPUT:
+            return self.load_input(self.settings)
+        elif self.settings.BATCH_NAME:
+            return self.run_batch(self.settings.BATCH_NAME)
+        else:
+            return self.run_test(self.settings)
+
+    def kill(self):
+        self.killed = True
+        try:
+            self.agg.kill_runners()
+        except AttributeError:
+            pass
 
     def p(self):
         for t in 'args', 'batches', 'commands':

@@ -33,11 +33,8 @@ try:
     from collections import OrderedDict
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
-from netperf_wrapper.resultset import ResultSet
 from netperf_wrapper.build_info import DATA_DIR, VERSION
-from netperf_wrapper.metadata import record_extended_metadata
-from netperf_wrapper.batch import BatchRunner
-from netperf_wrapper import util
+from netperf_wrapper import util, resultset
 
 DEFAULT_SETTINGS = {
     'NAME': None,
@@ -460,6 +457,8 @@ parser.add_option_group(ditg_group)
 
 class Settings(optparse.Values, object):
 
+    NETPERF_WRAPPER_VERSION = VERSION
+
     def __init__(self, defs):
 
         # Copy everything from defaults to make sure the defaults are not modified.
@@ -497,10 +496,10 @@ class Settings(optparse.Values, object):
                 items.extend(config.items(self.NAME))
             self.load_rcvalues(items)
 
-    def load_rcvalues(self, items):
+    def load_rcvalues(self, items, override=False):
 
         for k,v in items:
-            if k in CONFIG_TYPES and getattr(self,k) == DEFAULT_SETTINGS[k]:
+            if k in CONFIG_TYPES and (override or getattr(self,k) == DEFAULT_SETTINGS[k]):
                 if CONFIG_TYPES[k] == 'str':
                     setattr(self, k, v)
                 elif CONFIG_TYPES[k] == 'int':
@@ -520,14 +519,19 @@ class Settings(optparse.Values, object):
     def load_test(self, test_name=None, informational=False):
         if test_name is not None:
             self.NAME=test_name
-        if self.NAME is None:
-            raise RuntimeError("Missing test name.")
         if self.HOSTS:
             self.HOST = self.HOSTS[0]
+        if hasattr(self, 'TOTAL_LENGTH'):
+            self.TOTAL_LENGTH = self.LENGTH
 
-        if not self.INPUT and not self.GUI:
+        if not informational:
             self.lookup_hosts()
 
+        if self.NAME is None:
+            if informational:
+                # Informational lookups should not fail
+                return
+            raise RuntimeError("Missing test name.")
         test_env = TestEnvironment(self.__dict__, informational)
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")
         s = test_env.execute(filename)
@@ -541,8 +545,6 @@ class Settings(optparse.Values, object):
                 if not hasattr(self, k):
                     setattr(self, k, v)
 
-        if not 'TOTAL_LENGTH' in s:
-            self.TOTAL_LENGTH = self.LENGTH
 
     def lookup_hosts(self):
         """If no explicit IP version is set, do a hostname lookup and try to"""
@@ -610,44 +612,6 @@ def load():
 
     settings.load_rcfile()
 
-    batch = BatchRunner(settings)
-    for f in settings.BATCH_FILES:
-        batch.read(f)
-
-    if settings.INPUT:
-        results = []
-        test_name = None
-        for filename in settings.INPUT:
-            r = ResultSet.load_file(filename)
-            if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
-                raise RuntimeError("Result sets must be from same test (found %s/%s)" % (test_name, r.meta("NAME")))
-            test_name = r.meta("NAME")
-            results.append(r)
-
-        if settings.GUI:
-            load_gui(settings)
-
-        settings.update(results[0].meta())
-        settings.load_test(informational=True)
-    elif settings.GUI:
-        load_gui(settings)
-    else:
-        settings.load_test()
-        results = [ResultSet(NAME=settings.NAME,
-                            HOST=settings.HOST,
-                            HOSTS=settings.HOSTS,
-                            TIME=settings.TIME,
-                            LOCAL_HOST=settings.LOCAL_HOST,
-                            TITLE=settings.TITLE,
-                            NOTE=settings.NOTE,
-                            LENGTH=settings.LENGTH,
-                            TOTAL_LENGTH=settings.TOTAL_LENGTH,
-                            STEP_SIZE=settings.STEP_SIZE,
-                            NETPERF_WRAPPER_VERSION=VERSION,
-                            IP_VERSION=settings.IP_VERSION)]
-        if settings.EXTENDED_METADATA:
-            record_extended_metadata(results[0], settings.REMOTE_METADATA)
-
     if settings.SCALE_DATA:
         scale_data = []
         for filename in settings.SCALE_DATA:
@@ -656,21 +620,16 @@ def load():
                 # of files for plot scaling and supply each one to -i without
                 # having to change the other command line options each time.
                 continue
-            r = ResultSet.load_file(filename)
-            if r.meta("NAME") != settings.NAME:
-                raise RuntimeError("Setting name mismatch between test "
-                                   "data and scale file %s" % filename)
+            r = resultset.load(filename)
             scale_data.append(r)
         settings.SCALE_DATA = scale_data
 
+    settings.load_test(informational=True)
 
     if hasattr(settings, 'LIST_PLOTS') and settings.LIST_PLOTS:
         list_plots()
 
-    if not settings.HOSTS and not results[0]:
-        raise RuntimeError("Must specify host (-H option).")
-
-    return settings, results
+    return settings
 
 def list_tests():
     tests = sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')])

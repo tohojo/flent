@@ -25,27 +25,25 @@ import sys
 try:
     import optparse, os
 
-    from netperf_wrapper import aggregators, formatters
+    from netperf_wrapper import batch
     from netperf_wrapper.settings import load
 
     if __name__ == "__main__":
         try:
-            settings,results = load()
-
-            agg = aggregators.new(settings)
-            formatter = formatters.new(settings)
-
-            if not results[0]:
-                results[0] = agg.postprocess(agg.aggregate(results[0]))
-                results[0].dump_dir(os.path.dirname(settings.OUTPUT) or ".")
-            formatter.format(results)
+            settings = load()
+            if settings.GUI:
+                from netperf_wrapper.gui import run_gui
+                run_gui(settings) # does not return
+            else:
+                b = batch.new(settings)
+                b.run()
 
         except RuntimeError as e:
-            sys.stderr.write("Error occurred: %s\n"% str(e))
+            sys.stderr.write("Fatal error: %s\n"% str(e))
             sys.exit(1)
 except KeyboardInterrupt:
     try:
-        agg.kill_runners()
+        b.kill()
     except NameError:
         pass
     sys.exit(1)

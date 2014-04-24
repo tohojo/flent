@@ -106,6 +106,12 @@ class Formatter(object):
         if results[0].dump_file is not None:
             sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_file)
 
+class NullFormatter(Formatter):
+    def check_output(self, output):
+        pass
+    def format(self, results):
+        pass
+
 DefaultFormatter = Formatter
 
 class TableFormatter(Formatter):

@@ -37,7 +37,31 @@ from .util import gzip_open
 # Controls pretty-printing of json dumps
 JSON_INDENT=None
 
-__all__ = ['ResultSet']
+__all__ = ['new']
+
+RECORDED_SETTINGS = (
+    "NAME",
+    "HOST",
+    "HOSTS",
+    "TIME",
+    "LOCAL_HOST",
+    "TITLE",
+    "NOTE",
+    "LENGTH",
+    "TOTAL_LENGTH",
+    "STEP_SIZE",
+    "NETPERF_WRAPPER_VERSION",
+    "IP_VERSION",
+    )
+
+def new(settings):
+    d = {}
+    for a in RECORDED_SETTINGS:
+        d[a] = getattr(settings,a)
+    return ResultSet(**d)
+
+def load(filename):
+    return ResultSet.load_file(filename)
 
 class ResultSet(object):
     def __init__(self, **kwargs):
