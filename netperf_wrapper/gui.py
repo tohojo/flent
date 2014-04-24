@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+import sys, os, signal
 
 # Python 2/3 compatibility
 try:
@@ -55,6 +55,12 @@ __all__ = ['run_gui']
 def run_gui(settings):
     if check_running(settings):
         sys.exit(0)
+
+    # Python does not get a chance to process SIGINT while in the Qt event loop,
+    # so reset to the default signal handler which just kills the application.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    # Start up the Qt application and exit when it does
     app = QApplication(sys.argv[:1])
     mainwindow = MainWindow(settings)
     mainwindow.show()
