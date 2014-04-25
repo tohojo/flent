@@ -18,6 +18,7 @@
 ##
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys, pprint, string, re, time, os, subprocess
 
 try:
@@ -54,6 +55,7 @@ class BatchRunner(object):
         self.settings = settings
         self.killed = False
         self.interpolation_values = dict()
+        self.children = []
 
         for f in settings.BATCH_FILES:
             self.read(f)
@@ -101,7 +103,15 @@ class BatchRunner(object):
             new['inherits'] = "%s, %s" % (parent['inherits'], child['inherits'])
         return new
 
-    def interpolate(self, string, ivars):
+    def get_ivar(self, name, ivars, settings):
+        if name in ivars:
+            return ivars[name]
+        elif hasattr(settings, name.upper()):
+            return unicode(getattr(settings, name.upper()))
+        else:
+            return "$${%s}" % name
+
+    def interpolate(self, string, ivars, settings=None):
         """Perform recursive expansion of ${vars}.
 
         Works by looking for a string matching the expansion syntax and
@@ -113,15 +123,15 @@ class BatchRunner(object):
         if not isinstance(string, basestring):
             return string
 
+        if settings is None:
+            settings = self.settings
+
         ret = string
         m = self._INTERP_REGEX.search(ret)
         i = 0
         while m is not None:
             k = m.group(3)
-            if k in ivars:
-                ret = ret.replace(m.group(2), ivars[k])
-            else:
-                ret = ret.replace(m.group(2), "$"+m.group(2))
+            ret = ret.replace(m.group(2), self.get_ivar(k, ivars, settings))
             m = self._INTERP_REGEX.search(ret)
             i += 1
             if i > self._MAX_INTERP:
@@ -129,17 +139,17 @@ class BatchRunner(object):
 
         return ret.replace("$$", "$")
 
-    def apply_args(self, values, args=None):
+    def apply_args(self, values, args=None, settings=None):
         new = self.interpolation_values.copy()
         if args is not None:
             new.update(args)
         new.update(values)
         for k,v in new.items():
-            new[k] = self.interpolate(v, new)
+            new[k] = self.interpolate(v, new, settings)
 
         return new
 
-    def commands_for(self, batchname, arg=None):
+    def commands_for(self, batchname, arg=None, settings=None):
         if arg and not arg in self.args:
             raise RuntimeError("Can't find arg '%s' when expanding batch commands." % arg)
         if not batchname in self.batches:
@@ -158,7 +168,7 @@ class BatchRunner(object):
             a = args.copy()
             if arg:
                 a.update(self.args[arg])
-            commands.append(self.apply_args(self.commands[c], a))
+            commands.append(self.apply_args(self.commands[c], a, settings))
 
         return commands
 
@@ -170,7 +180,21 @@ class BatchRunner(object):
                                               stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 if command.get('essential', False):
-                    raise RuntimeError("Essential command '%s' failed. Return code: %s.\nOutput:\n %s." % (cmd, e.returncode, "\n ".join(e.output.splitlines())))
+                    raise RuntimeError("Essential command '%s' failed. "
+                                       "Return code: %s.\nOutput:\n %s." % (cmd, e.returncode,
+                                                                            "\n ".join(e.output.splitlines())))
+        elif command['type'] in ('monitor',):
+            proc = subprocess.Popen(cmd, universal_newlines=True, shell=True,
+                                              stderr=subprocess.STDOUT)
+            self.children.append((proc,command.get('kill', False)))
+
+    def kill_children(self, force=False):
+        for proc,kill in self.children:
+            if kill or force:
+                proc.terminate()
+            else:
+                proc.wait()
+        self.children = []
 
     def run_commands(self, commands, ctype):
         for c in commands:
@@ -184,26 +208,39 @@ class BatchRunner(object):
         batch = self.batches[batchname]
 
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
+        hosts = [i.strip() for i in batch.get('for_hosts', '').split(',')]
         pause = int(batch.get('pause', 0))
 
         for i,arg in enumerate(args):
-            settings = self.settings.copy()
-            settings.FORMAT = 'null'
-            commands = self.commands_for(batchname, arg)
-            a = self.args[arg]
-            a['arg'] = arg
-            b = self.apply_args(batch, a)
+            for j,host in enumerate(hosts):
+                settings = self.settings.copy()
+                settings.FORMAT = 'null'
 
-            self.run_commands(commands, 'pre')
-            settings.load_rcvalues(b.items(), override=True)
-            settings.NAME = b['test_name']
+                expand_vars = {}
+                if arg:
+                    expand_vars.update(self.args[arg])
+                if host:
+                    expand_vars['hosts'] = host
+                b = self.apply_args(batch, expand_vars, settings)
+                print(b)
 
-            self.run_commands(commands, 'monitor')
-            self.run_test(settings)
-            self.run_commands(commands, 'post')
+                settings.load_rcvalues(b.items(), override=True)
+                settings.NAME = b['test_name']
+                settings.load_test()
 
-            if i+1 < len(args):
-                time.sleep(pause)
+                commands = self.commands_for(batchname, arg, settings)
+
+                pprint.pprint(commands)
+
+
+                self.run_commands(commands, 'pre')
+                self.run_commands(commands, 'monitor')
+                self.run_test(settings)
+                self.kill_children()
+                self.run_commands(commands, 'post')
+
+                if i+1 < len(args) or j+1 < len(hosts):
+                    time.sleep(pause)
 
     def run_test(self, settings):
         settings = settings.copy()
@@ -254,6 +291,7 @@ class BatchRunner(object):
 
     def kill(self):
         self.killed = True
+        self.kill_children(force=True)
         try:
             self.agg.kill_runners()
         except AttributeError:

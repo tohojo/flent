@@ -5,14 +5,24 @@ essential = yes
 
 [Command::tcpdump]
 filename = ${data_filename}
-exec = ssh ${hostname} "timeout ${duration} tcpdump -n -i ${interface} -s ${capsize} -w /tmp/${filename}.cap; mv /tmp/${filename}.cap /home/data/${batch_name}/"
+exec = ssh ${hostname} "tcpdump -n -i ${interface} -s ${capsize} -w /tmp/${filename}.cap"
 type = monitor
-kill = no
+kill = yes
+
+[Command::tcpdump_move]
+filename = ${data_filename}
+exec = ssh ${hostname} "mv /tmp/${filename}.cap /home/data/${batch_name}/"
+type = post
 
 [Command::tcpdump_egress]
 inherits = tcpdump
 hostname = ${egress_router_hostname}
 interface = ${egress_router_iface}
+filename = ${data_filename}_egress
+
+[Command::tcpdump_egress_move]
+inherits = tcpdump_move
+hostname = ${egress_router_hostname}
 filename = ${data_filename}_egress
 
 [Command::tcpdump_ingress]
@@ -21,6 +31,12 @@ hostname = ${ingress_router_hostname}
 interface = ${ingress_router_iface}
 filename = ${data_filename}_ingress
 
+[Command::tcpdump_ingress_move]
+inherits = tcpdump_move
+hostname = ${ingress_router_hostname}
+filename = ${data_filename}_ingress
+
+
 [Command::tcpdump_test]
 inherits = tcpdump_ingress
 
@@ -28,7 +44,7 @@ inherits = tcpdump_ingress
 # rc file keys
 remote_metadata = egress_router_hostname, ingress_router_hostname
 extended_metadata = yes
-title = ${test_name} ${arg} qdisc
+title = ${qdisc_name} qdisc
 ip_version = 4
 length=5
 
@@ -37,7 +53,7 @@ pause = 5
 
 [Batch::rrul]
 inherits = global
-commands = setup_qdiscs, tcpdump_egress, tcpdump_ingress
+commands = setup_qdiscs, tcpdump_egress, tcpdump_egress_move, tcpdump_ingress, tcpdump_ingress_move
 for_args = pie, codel, fq_codel
 test_name = rrul
 
