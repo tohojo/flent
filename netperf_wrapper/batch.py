@@ -107,7 +107,7 @@ class BatchRunner(object):
         if name in ivars:
             return ivars[name]
         elif hasattr(settings, name.upper()):
-            return unicode(getattr(settings, name.upper()))
+            return str(getattr(settings, name.upper()))
         else:
             return "$${%s}" % name
 
@@ -222,16 +222,15 @@ class BatchRunner(object):
                 if host:
                     expand_vars['hosts'] = host
                 b = self.apply_args(batch, expand_vars, settings)
-                print(b)
 
                 settings.load_rcvalues(b.items(), override=True)
                 settings.NAME = b['test_name']
                 settings.load_test()
+                settings.DATA_FILENAME = resultset.new(settings).dump_file.replace(".json.gz", "")
 
                 commands = self.commands_for(batchname, arg, settings)
 
                 pprint.pprint(commands)
-
 
                 self.run_commands(commands, 'pre')
                 self.run_commands(commands, 'monitor')
