@@ -95,6 +95,7 @@ CONFIG_TYPES = {
     'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
     'EXTENDED_METADATA': 'bool',
+    'REMOTE_METADATA': 'list',
     'DITG_CONTROL_HOST': 'str',
     'DITG_CONTROL_PORT': 'int',
     'DITG_CONTROL_SECRET': 'str',
@@ -357,7 +358,8 @@ parser.add_option("--remote-metadata", action="append", type="string", dest="REM
                   help="Collect extended metadata from a remote host. HOSTNAME is passed "
                   "verbatim to ssh, so can include hosts specified in ~/.ssh/config. This "
                   "option can be specified multiple times. Note that gathering the data can "
-                  "take some time, since it involves executing several remote commands.")
+                  "take some time, since it involves executing several remote commands. This option "
+                  "implies --extended-metadata.")
 parser.add_option("--gui", action="store_true", dest="GUI",
                   help="Run the netperf-wrapper GUI. All other options are used as defaults "
                   "in the GUI, but can be changed once it is running.")
@@ -495,6 +497,7 @@ class Settings(optparse.Values, object):
             if self.NAME is not None and config.has_section(self.NAME):
                 items.extend(config.items(self.NAME))
             self.load_rcvalues(items)
+        self.update_implications()
 
     def load_rcvalues(self, items, override=False):
 
@@ -579,6 +582,25 @@ class Settings(optparse.Values, object):
     def copy(self):
         return Settings(self)
 
+    def update_implications(self):
+        # If run with no args and no controlling TTY, launch the GUI by default
+        if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
+          and len(sys.argv) < 2:
+          self.GUI = True
+        # Passing --new-gui-instance on the command line implies --gui, but setting
+        # it in the rc file does not. When set here, before the rc file is loaded,
+        # this has the desired effect.
+        elif self.NEW_GUI_INSTANCE:
+            self.GUI = True
+
+        if self.REMOTE_METADATA:
+            self.EXTENDED_METADATA = True
+
+        if hasattr(self, 'PLOT'):
+            self.FORMAT = 'plot'
+
+
+
 settings = Settings(DEFAULT_SETTINGS)
 
 def load_gui(settings):
@@ -588,21 +610,8 @@ def load_gui(settings):
 def load():
     (dummy,args) = parser.parse_args(values=settings)
 
-    # If run with no args and no controlling TTY, launch the GUI by default
-    if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
-        and len(sys.argv) < 2:
-        settings.GUI = True
-    # Passing --new-gui-instance on the command line implies --gui, but setting
-    # it in the rc file does not. When set here, before the rc file is loaded,
-    # this has the desired effect.
-    elif settings.NEW_GUI_INSTANCE:
-        settings.GUI = True
-
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
         list_tests()
-
-    if hasattr(settings, 'PLOT'):
-        settings.FORMAT = 'plot'
 
     for a in args:
         if os.path.exists(a):

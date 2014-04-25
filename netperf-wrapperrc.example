@@ -133,6 +133,13 @@
 # Corresponding command line option: --extended-metadata
 ;extended_metadata = no
 
+# Remote hosts to gather metadata from.
+#
+# Multiple hosts are separated with commas; setting this also turns on
+# extended_metadata.
+# Corresponding command line option: --remote-metadata
+;remote_metadata = hostname1, hostname2
+
 # Host to connect to the D-ITG control server on (only used for D-ITG tests; see
 # man page).
 #
