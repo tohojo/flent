@@ -79,7 +79,7 @@ def record_extended_metadata(results, hostnames):
         m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
         m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
-        if 'src' in m['EGRESS_INFO']:
+        if m['EGRESS_INFO'] is not None and 'src' in m['EGRESS_INFO']:
             m['REMOTE_METADATA'][h]['INGRESS_INFO'] = get_egress_info(target=m['EGRESS_INFO']['src'], ip_version=m['IP_VERSION'])
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
 

@@ -230,8 +230,6 @@ class BatchRunner(object):
 
                 commands = self.commands_for(batchname, arg, settings)
 
-                pprint.pprint(commands)
-
                 self.run_commands(commands, 'pre')
                 self.run_commands(commands, 'monitor')
                 self.run_test(settings)

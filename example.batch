@@ -42,7 +42,7 @@ inherits = tcpdump_ingress
 
 [Batch::global]
 # rc file keys
-remote_metadata = egress_router_hostname, ingress_router_hostname
+remote_metadata = ${egress_router_hostname}, ${ingress_router_hostname}
 extended_metadata = yes
 title = ${qdisc_name} qdisc
 ip_version = 4
