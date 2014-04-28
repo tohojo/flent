@@ -62,6 +62,7 @@ __all__ = ['record_extended_metadata']
 
 def record_extended_metadata(results, hostnames):
     m = results.meta()
+    get_command_output.set_hostname(None)
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
     m['IP_ADDRS'] = get_ip_addrs()
