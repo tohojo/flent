@@ -52,6 +52,7 @@ RECORDED_SETTINGS = (
     "STEP_SIZE",
     "NETPERF_WRAPPER_VERSION",
     "IP_VERSION",
+    "BATCH_NAME",
     )
 
 def new(settings):
