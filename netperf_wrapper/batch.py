@@ -209,7 +209,7 @@ class BatchRunner(object):
 
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
         hosts = [i.strip() for i in batch.get('for_hosts', '').split(',')]
-        reps = range(1,batch.get('repetitions', 1)+1)
+        reps = range(1,int(batch.get('repetitions', 1))+1)
         pause = int(batch.get('pause', 0))
 
         for arg,host,rep in itertools.product(args, hosts, reps):
