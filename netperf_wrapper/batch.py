@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, pprint, string, re, time, os, subprocess
+import sys, pprint, string, re, time, os, subprocess, itertools
 
 try:
     from configparser import RawConfigParser
@@ -209,35 +209,34 @@ class BatchRunner(object):
 
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
         hosts = [i.strip() for i in batch.get('for_hosts', '').split(',')]
+        reps = range(1,batch.get('repetitions', 1)+1)
         pause = int(batch.get('pause', 0))
 
-        for i,arg in enumerate(args):
-            for j,host in enumerate(hosts):
-                settings = self.settings.copy()
-                settings.FORMAT = 'null'
+        for arg,host,rep in itertools.product(args, hosts, reps):
+            settings = self.settings.copy()
+            settings.FORMAT = 'null'
 
-                expand_vars = {}
-                if arg:
-                    expand_vars.update(self.args[arg])
-                if host:
-                    expand_vars['hosts'] = host
-                b = self.apply_args(batch, expand_vars, settings)
+            expand_vars = {}
+            if arg:
+                expand_vars.update(self.args[arg])
+            if host:
+                expand_vars['hosts'] = host
+            b = self.apply_args(batch, expand_vars, settings)
 
-                settings.load_rcvalues(b.items(), override=True)
-                settings.NAME = b['test_name']
-                settings.load_test()
-                settings.DATA_FILENAME = resultset.new(settings).dump_file.replace(".json.gz", "")
+            settings.load_rcvalues(b.items(), override=True)
+            settings.NAME = b['test_name']
+            settings.load_test()
+            settings.DATA_FILENAME = resultset.new(settings).dump_file.replace(".json.gz", "")
 
-                commands = self.commands_for(batchname, arg, settings)
+            commands = self.commands_for(batchname, arg, settings)
 
-                self.run_commands(commands, 'pre')
-                self.run_commands(commands, 'monitor')
-                self.run_test(settings)
-                self.kill_children()
-                self.run_commands(commands, 'post')
+            self.run_commands(commands, 'pre')
+            self.run_commands(commands, 'monitor')
+            self.run_test(settings)
+            self.kill_children()
+            self.run_commands(commands, 'post')
 
-                if i+1 < len(args) or j+1 < len(hosts):
-                    time.sleep(pause)
+            time.sleep(pause)
 
     def run_test(self, settings):
         settings = settings.copy()
