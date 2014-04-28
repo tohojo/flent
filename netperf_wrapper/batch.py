@@ -216,7 +216,7 @@ class BatchRunner(object):
             settings = self.settings.copy()
             settings.FORMAT = 'null'
 
-            expand_vars = {'repetition': rep}
+            expand_vars = {'repetition': str(rep)}
             if arg:
                 expand_vars.update(self.args[arg])
             if host:
