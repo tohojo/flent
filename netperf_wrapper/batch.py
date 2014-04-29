@@ -49,9 +49,9 @@ class BatchRunner(object):
 
 
     def __init__(self, settings):
-        self.args = {}
-        self.batches = {}
-        self.commands = {}
+        self.args = OrderedDict()
+        self.batches = OrderedDict()
+        self.commands = OrderedDict()
         self.settings = settings
         self.killed = False
         self.interpolation_values = dict()
