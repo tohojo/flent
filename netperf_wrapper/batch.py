@@ -158,19 +158,26 @@ class BatchRunner(object):
         if not 'commands' in batch:
             return []
         cmdnames = [i.strip() for i in batch['commands'].split(',')]
-        commands = []
+        commands = OrderedDict()
 
         args = {'batch_name': batchname}
+        if arg:
+            args.update(self.args[arg])
 
-        for c in cmdnames:
+        while cmdnames:
+            c = cmdnames.pop(0)
+            if c in commands:
+                continue
             if not c in self.commands:
                 raise RuntimeError("Can't find command '%s' when expanding batch command." % c)
-            a = args.copy()
-            if arg:
-                a.update(self.args[arg])
-            commands.append(self.apply_args(self.commands[c], a, settings))
+            cmd = self.apply_args(self.commands[c], args, settings)
+            # Commands can specify extra commands to run; expand those, use the
+            # dictionary to prevent duplicates
+            extra = [i.strip() for i in cmd.get('extra_commands', '').split(',') if i.strip()]
+            cmdnames.extend(extra)
+            commands[c] = cmd
 
-        return commands
+        return commands.values()
 
     def run_command(self, command):
         cmd = command['exec'].strip()
