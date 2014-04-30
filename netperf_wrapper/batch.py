@@ -198,7 +198,7 @@ class BatchRunner(object):
                                        "Return code: %s.\nOutput:\n %s." % (cmd, e.returncode,
                                                                             "\n ".join(e.output.splitlines())))
                 else:
-                    self.log("%s err(%d): %s", % (cmd, e.returncode,
+                    self.log("%s err(%d): %s" % (cmd, e.returncode,
                                                   "\n ".join(e.output.splitlines())))
         elif command['type'] in ('monitor',):
             proc = subprocess.Popen(cmd, universal_newlines=True, shell=True,
