@@ -213,9 +213,10 @@ class BatchRunner(object):
                 proc.wait()
         self.children = []
 
-    def run_commands(self, commands, ctype):
+    def run_commands(self, commands, ctype, essential_only=False):
         for c in commands:
-            if c['type'] == ctype:
+            if c['type'] == ctype and (not essential_only
+                                       or c.get('essential', False)):
                 self.run_command(c)
 
 
@@ -259,7 +260,11 @@ class BatchRunner(object):
 
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
-            self.run_test(settings)
+            try:
+                self.run_test(settings)
+            except KeyboardInterrupt:
+                self.run_commands(commands, 'post', essential_only=True)
+                raise
             self.kill_children()
             self.run_commands(commands, 'post')
             self.log_fd.close()
