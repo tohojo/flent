@@ -171,6 +171,11 @@ class BatchRunner(object):
             if not c in self.commands:
                 raise RuntimeError("Can't find command '%s' when expanding batch command." % c)
             cmd = self.apply_args(self.commands[c], args, settings)
+
+            # Don't include disabled commands
+            if not cmd.get('enabled', True):
+                continue
+
             # Commands can specify extra commands to run; expand those, use the
             # dictionary to prevent duplicates
             extra = [i.strip() for i in cmd.get('extra_commands', '').split(',') if i.strip()]
