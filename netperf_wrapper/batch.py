@@ -56,6 +56,7 @@ class BatchRunner(object):
         self.killed = False
         self.interpolation_values = dict()
         self.children = []
+        self.log_fd = None
 
         for f in settings.BATCH_FILES:
             self.read(f)
@@ -190,11 +191,15 @@ class BatchRunner(object):
             try:
                 res = subprocess.check_output(cmd, universal_newlines=True, shell=True,
                                               stderr=subprocess.STDOUT)
+                self.log("%s: %s" % (cmd, res))
             except subprocess.CalledProcessError as e:
                 if command.get('essential', False):
                     raise RuntimeError("Essential command '%s' failed. "
                                        "Return code: %s.\nOutput:\n %s." % (cmd, e.returncode,
                                                                             "\n ".join(e.output.splitlines())))
+                else:
+                    self.log("%s err(%d): %s", % (cmd, e.returncode,
+                                                  "\n ".join(e.output.splitlines())))
         elif command['type'] in ('monitor',):
             proc = subprocess.Popen(cmd, universal_newlines=True, shell=True,
                                               stderr=subprocess.STDOUT)
@@ -203,7 +208,7 @@ class BatchRunner(object):
     def kill_children(self, force=False):
         for proc,kill in self.children:
             if kill or force:
-                proc.send_signal(signal.SIGINT)
+                proc.terminate()
             else:
                 proc.wait()
         self.children = []
@@ -250,14 +255,22 @@ class BatchRunner(object):
             settings.DATA_FILENAME = self.gen_filename(settings, b, arg, host, rep)
 
             commands = self.commands_for(batchname, arg, settings)
+            self.log_fd = open("%s.log" % settings.DATA_FILENAME, "a")
 
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
             self.run_test(settings)
             self.kill_children()
             self.run_commands(commands, 'post')
+            self.log_fd.close()
+            self.log_fd = None
 
             time.sleep(pause)
+
+
+    def log(self, text):
+        if self.log_fd is not None:
+            self.log_fd.write(text + "\n")
 
     def run_test(self, settings):
         settings = settings.copy()
