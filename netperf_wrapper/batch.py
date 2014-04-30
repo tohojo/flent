@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, pprint, string, re, time, os, subprocess, itertools
+import sys, pprint, string, re, time, os, subprocess, signal, itertools
 
 try:
     from configparser import RawConfigParser
@@ -203,7 +203,7 @@ class BatchRunner(object):
     def kill_children(self, force=False):
         for proc,kill in self.children:
             if kill or force:
-                proc.terminate()
+                proc.send_signal(signal.SIGINT)
             else:
                 proc.wait()
         self.children = []
