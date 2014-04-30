@@ -20,11 +20,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import sys, signal, os
 
 try:
-    import optparse, os
-
     from netperf_wrapper import batch
     from netperf_wrapper.settings import load
 
@@ -46,4 +44,12 @@ except KeyboardInterrupt:
         b.kill()
     except NameError:
         pass
-    sys.exit(1)
+
+    # Proper behaviour on SIGINT is re-killing self with SIGINT to properly
+    # signal to surrounding shell what happened.
+    # Ref: http://mywiki.wooledge.org/SignalTrap
+    try:
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        os.kill(os.getpid(), signal.SIGINT)
+    except:
+        sys.exit(1) # Just in case...
