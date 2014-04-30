@@ -1,3 +1,12 @@
+2013-04-30: Fix parsing of netperf output to not include spurious results at the end
+            of UDP measurement flows giving a huge RTT because the measurement flow
+            was lost during the test.
+
+2013-04-30: Fix SIGINT behaviour so netperf-wrapper exits by SIGINT'ing itself after
+            having cleaned up runners etc.
+
+2013-04-30: Add batch run mode to automatically run several parameterised tests.
+
 2013-04-09: On GUI startup, by default search for a running instance and pass
             the file name to that rather than starting a new instance.
 
