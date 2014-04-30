@@ -53,6 +53,7 @@ RECORDED_SETTINGS = (
     "NETPERF_WRAPPER_VERSION",
     "IP_VERSION",
     "BATCH_NAME",
+    "DATA_FILENAME",
     )
 
 def new(settings):
@@ -66,13 +67,19 @@ def load(filename):
 
 class ResultSet(object):
     def __init__(self, **kwargs):
-        self.metadata = kwargs
-        if not 'TIME' in self.metadata:
-            self.metadata['TIME'] = datetime.now()
-        if not 'NAME' in self.metadata:
-            raise RuntimeError("Missing name for resultset")
         self._x_values = []
         self._results = OrderedDict()
+        self._filename = None
+        self.metadata = kwargs
+        if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
+            self.metadata['TIME'] = datetime.now()
+        if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
+            raise RuntimeError("Missing name for resultset")
+        if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
+            self.metadata['DATA_FILENAME'] = self._gen_filename()
+        if not self.metadata['DATA_FILENAME'].endswith('.json.gz'):
+            self.metadata['DATA_FILENAME'] += ".json.gz"
+        self._filename = self.metadata['DATA_FILENAME']
 
     def meta(self, k=None):
         if k:
@@ -199,6 +206,8 @@ class ResultSet(object):
         return self._gen_filename()
 
     def _gen_filename(self):
+        if self._filename is not None:
+            return self._filename
         if 'TITLE' in self.metadata and self.metadata['TITLE']:
             return "%s-%s.%s.json.gz" % (self.metadata['NAME'],
                                          self.metadata['TIME'].isoformat().replace(":", ""),

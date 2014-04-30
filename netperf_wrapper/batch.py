@@ -214,6 +214,15 @@ class BatchRunner(object):
                 self.run_command(c)
 
 
+    def gen_filename(self, settings, batch, arg, host, rep):
+        filename = "batch-%s-%s-%s" % (
+            settings.BATCH_NAME,
+            settings.TIME.strftime("%Y-%m-%dT%H%M%S"),
+            batch.get('filename_extra', "%s-%s-%s" % (arg, host, rep))
+            )
+        return re.sub("[^A-Za-z0-9_-]", "_", filename)
+
+
     def run_batch(self, batchname):
         if not batchname in self.batches:
             raise RuntimeError("Can't find batch '%s' to run." % name)
@@ -238,7 +247,7 @@ class BatchRunner(object):
             settings.load_rcvalues(b.items(), override=True)
             settings.NAME = b['test_name']
             settings.load_test()
-            settings.DATA_FILENAME = resultset.new(settings).dump_file.replace(".json.gz", "")
+            settings.DATA_FILENAME = self.gen_filename(settings, b, arg, host, rep)
 
             commands = self.commands_for(batchname, arg, settings)
 
