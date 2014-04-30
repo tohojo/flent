@@ -246,10 +246,24 @@ class NetperfDemoRunner(ProcessRunner):
 
         result = []
         lines = output.split("\n")
+        avg_dur = None
+        alpha = 0.5
         for line in lines:
             if line.startswith("Interim"):
                 parts = line.split()
-                result.append([float(parts[9]), float(parts[2])])
+
+                # Calculate an EWMA of the netperf sampling duration and exclude
+                # data points from a sampling period that is more than an order
+                # of magnitude higher than this average; these are probably the
+                # result of netperf spitting out a measurement at the end of a
+                # run after having lost the measurement flow during the run
+                dur = float(parts[5])
+                if avg_dur is None:
+                    avg_dur = dur
+
+                if dur < avg_dur * 10:
+                    result.append([float(parts[9]), float(parts[2])])
+                    avg_dur = alpha * avg_dur + (1.0-alpha) * dur
 
         return result
 
