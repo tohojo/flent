@@ -647,7 +647,7 @@ class PlotFormatter(Formatter):
             # For the interactive viewer there's no bbox_extra_artists, so we
             # need to reduce the axis sizes to make room for the legend.
             if self.settings.PRINT_LEGEND and all_legends:
-                self.plt.draw() # Legend width is not set before it's drawn
+                self.figure.canvas.draw() # Legend width is not set before it's drawn
                 legend_width = max([l.get_window_extent().width for l in all_legends])
                 for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
                     ax_width = a.get_window_extent().width
