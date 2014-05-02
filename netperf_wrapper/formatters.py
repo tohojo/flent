@@ -663,21 +663,15 @@ class PlotFormatter(Formatter):
                 all_legends += legends
 
         artists += all_legends + self._annotate_plot(skip_title)
+        self.legends = all_legends
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
         # Otherwise, the filename is passed to matplotlib, which selects an
         # appropriate output format based on the file name.
         if self.output == "-":
-            # For the interactive viewer there's no bbox_extra_artists, so we
-            # need to reduce the axis sizes to make room for the legend.
-            if self.settings.PRINT_LEGEND and all_legends:
-                self.figure.canvas.draw() # Legend width is not set before it's drawn
-                legend_width = max([l.get_window_extent().width for l in all_legends])
-                for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
-                    ax_width = a.get_window_extent().width
-                    box = a.get_position()
-                    a.set_position([box.x0, box.y0, box.width * (1.0 - legend_width/ax_width), box.height])
+            self.figure.canvas.mpl_connect('resize_event', self.size_legends)
+            self.size_legends()
             if not self.settings.GUI:
                 self.plt.show()
         else:
@@ -685,6 +679,23 @@ class PlotFormatter(Formatter):
                 self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
+
+    def size_legends(self, event=None):
+        # For the interactive viewer there's no bbox_extra_artists, so we
+        # need to reduce the axis sizes to make room for the legend.
+        if self.settings.PRINT_LEGEND and self.legends:
+            self.figure.canvas.draw() # Legend width is not set before it's drawn
+            legend_width = max([l.get_window_extent().width for l in self.legends])
+            canvas_width = self.figure.canvas.get_width_height()[0]
+            for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+                # Save the original width of the (in the interval [0..1]) and
+                # use that as a base to scale the axis on subsequent calls.
+                # Otherwise, each call will shrink the axis.
+                if not hasattr(a, 'orig_width'):
+                    a.orig_width = a.get_position().width
+                ax_width = a.get_window_extent().width
+                box = a.get_position()
+                a.set_position([box.x0, box.y0, (a.orig_width - legend_width/canvas_width), box.height])
 
 
     def _annotate_plot(self, skip_title=False):
