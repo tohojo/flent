@@ -776,7 +776,7 @@ class PlotFormatter(Formatter):
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
             axis.set_ylim(ymin=btm_scale, ymax=top_scale)
-            if top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
+            if btm_percentile > 0 and top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
                 axis.set_yscale('log')
 
         if self.settings.INVERT_Y and unit in self.inverted_units:
