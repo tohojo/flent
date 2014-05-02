@@ -233,6 +233,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             return
 
         filenames = self.get_opennames()
+        if not filenames:
+            return
         added = widget.load_files(filenames)
 
         if added == 0:
