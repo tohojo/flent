@@ -72,6 +72,7 @@ DEFAULT_SETTINGS = {
     'DITG_CONTROL_PORT': 8000,
     'DITG_CONTROL_SECRET': '',
     'BATCH_NAME': None,
+    'BATCH_NAMES': [],
     'BATCH_FILES': [],
     }
 
@@ -367,9 +368,9 @@ parser.add_option("--new-gui-instance", action="store_true", dest="NEW_GUI_INSTA
                   help="Start a new GUI instance. Otherwise, netperf-wrapper will try to "
                   "connect to an already running GUI instance and have that load any new "
                   "data files specified as arguments. Implies --gui.")
-parser.add_option("-b", "--batch", action="store", type="string", dest="BATCH_NAME",
+parser.add_option("-b", "--batch", action="append", type="string", dest="BATCH_NAMES", metavar="BATCH_NAME",
                   help="Run test batch BATCH_NAME (must be specified in a batch file loaded "
-                  "by the --batch-file option).")
+                  "by the --batch-file option). Can be supplied multiple times.")
 parser.add_option("-B", "--batch-file", action="append", type="string", dest="BATCH_FILES",
                   metavar="BATCH_FILE",
                   help="Load batch file BATCH_FILE. Can be specified multiple times, in which "

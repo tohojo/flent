@@ -242,6 +242,7 @@ class BatchRunner(object):
         for arg,host,rep in itertools.product(args, hosts, reps):
             settings = self.settings.copy()
             settings.FORMAT = 'null'
+            settings.BATCH_NAME = batchname
 
             expand_vars = {'repetition': "%02d" % rep}
             if arg:
@@ -319,8 +320,10 @@ class BatchRunner(object):
     def run(self):
         if self.settings.INPUT:
             return self.load_input(self.settings)
-        elif self.settings.BATCH_NAME:
-            return self.run_batch(self.settings.BATCH_NAME)
+        elif self.settings.BATCH_NAMES:
+            for b in self.settings.BATCH_NAMES:
+                self.run_batch(b)
+            return True
         else:
             return self.run_test(self.settings)
 
