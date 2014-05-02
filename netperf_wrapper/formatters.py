@@ -328,6 +328,7 @@ class PlotFormatter(Formatter):
         axis.set_xlabel('')
 
         self.start_position = 1
+        self.settings.LOG_SCALE = False
 
 
     def _init_cdf_plot(self, config=None, axis=None):
@@ -445,6 +446,9 @@ class PlotFormatter(Formatter):
         ticklabels = []
         ticks = []
         pos = 1
+        all_data = []
+        for a in config['axes']:
+            all_data.append([])
 
         colours = ['b', 'g', 'c', 'm', 'k']
         while len(colours) < len(results):
@@ -459,6 +463,7 @@ class PlotFormatter(Formatter):
             data = []
             for r in results:
                 d = [d for d in r.series(s['data']) if d is not None]
+                all_data[a].extend(d)
                 if not d:
                     data.append([0.0])
                 else:
@@ -484,7 +489,8 @@ class PlotFormatter(Formatter):
                         self.plt.setp(bp[k][j*2+1], color=colours[j])
 
             pos += group_size+1
-            self._do_scaling(config['axes'][a], reduce(lambda x,y:x+y, data), 0, 100, self.units[a])
+        for i,a in enumerate(config['axes']):
+            self._do_scaling(a, all_data[i], 0, 100, self.units[i])
 
 
         axis.set_xticks(ticks)
