@@ -84,6 +84,13 @@ def stop_tcpdump(filename, dest_dir=DEFAULT_DEST_DIR):
         sys.stderr.write("Destination data or log file already exists. Not copying.\n")
         sys.exit(1)
 
+    if not os.path.exists(dest_dir):
+        try:
+            os.mkdir(dest_dir)
+        except OSError as e:
+            sys.stderr.write("Unable to create destination directory: %s.\n" % e)
+            sys.exit(1)
+
     time.sleep(0.5)
 
     shutil.copyfile(logfile, dest_log)
