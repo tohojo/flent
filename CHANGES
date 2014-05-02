@@ -1,49 +1,58 @@
-2013-04-30: Fix parsing of netperf output to not include spurious results at the end
+2014-05-02: Manage plot series colours to make them consistent when combining
+            plots, and instead cycle line styles and markers to differentiate
+            result sets in a combined plot.
+
+2014-05-02: Fix plot scaling on box plots.
+
+2014-05-02: Fix several bugs in the resizing of plots to make room for the
+            legend (in interactive mode).
+
+2014-04-30: Fix parsing of netperf output to not include spurious results at the end
             of UDP measurement flows giving a huge RTT because the measurement flow
             was lost during the test.
 
-2013-04-30: Fix SIGINT behaviour so netperf-wrapper exits by SIGINT'ing itself after
+2014-04-30: Fix SIGINT behaviour so netperf-wrapper exits by SIGINT'ing itself after
             having cleaned up runners etc.
 
-2013-04-30: Add batch run mode to automatically run several parameterised tests.
+2014-04-30: Add batch run mode to automatically run several parameterised tests.
 
-2013-04-09: On GUI startup, by default search for a running instance and pass
+2014-04-09: On GUI startup, by default search for a running instance and pass
             the file name to that rather than starting a new instance.
 
-2013-04-09: Add .desktop file and mime info for data files.
+2014-04-09: Add .desktop file and mime info for data files.
 
-2013-04-09: Add toggle to invert y-axis on latency measurements.
+2014-04-09: Add toggle to invert y-axis on latency measurements.
 
-2013-04-04: Add Q-Q plot type.
+2014-04-04: Add Q-Q plot type.
 
-2013-03-24: Allow tests to specify axis labels explicitly. Use this to write
+2014-03-24: Allow tests to specify axis labels explicitly. Use this to write
             something better than 'ms' on the latency axes.
 
-2013-03-24: Add box plot type.
+2014-03-24: Add box plot type.
 
-2013-03-23: Disable hostname lookup when loading data files or the GUI; should
+2014-03-23: Disable hostname lookup when loading data files or the GUI; should
             fix issue with hostname lookup failing when a datafile with an
             unreachable host is loaded.
 
-2013-03-23: Add GUI for interactive browsing of results.
+2014-03-23: Add GUI for interactive browsing of results.
 
-2013-03-20: rc-file should specify hosts rather than host.
+2014-03-20: rc-file should specify hosts rather than host.
 
-2013-03-19: Record path towards machine running test in INGRESS_INFO of remote
+2014-03-19: Record path towards machine running test in INGRESS_INFO of remote
             metadata object.
 
-2013-03-19: Capture IP address info per-interface.
+2014-03-19: Capture IP address info per-interface.
 
-2013-03-16: Scale x axis to include all captures data points, even if they go beyond
+2014-03-16: Scale x axis to include all captures data points, even if they go beyond
             the configured test duration.
 
-2013-03-16: Run ping with -n.
+2014-03-16: Run ping with -n.
 
-2013-03-05: Add remote metadata support.
+2014-03-05: Add remote metadata support.
 
-2013-03-04: More extended metadata.
+2014-03-04: More extended metadata.
 
-2013-03-01: Support an rcfile and supply an example file.
+2014-03-01: Support an rcfile and supply an example file.
 
 2014-03-01: Add metadata output formatter to extract metadata from stored data files.
 
