@@ -23,6 +23,7 @@ import json, sys, csv, math, inspect, os
 
 from .util import cum_prob, frange, classname
 from functools import reduce
+from itertools import product,cycle,islice
 
 PLOT_KWARGS = (
     'alpha',
@@ -234,6 +235,10 @@ class PlotFormatter(Formatter):
     open_mode = "wb"
     inverted_units = ('ms')
 
+    linestyles = ['-', '--', ':']
+    markers = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
+    colours = ['b', 'g', 'r', 'c', 'm', 'k', 'orange', 'grey', '#a52a2a', 'lime']
+
     def __init__(self, settings):
         Formatter.__init__(self, settings)
         try:
@@ -257,6 +262,7 @@ class PlotFormatter(Formatter):
             self.plt = plt
             self.np = numpy
             self.figure = self.plt.figure()
+            self.build_styles()
             self.init_plots()
         except ImportError:
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
@@ -271,6 +277,13 @@ class PlotFormatter(Formatter):
             parent_config.update(config)
             return parent_config
         return config
+
+    def build_styles(self):
+        self.styles = []
+        for ls in self.linestyles:
+            self.styles.append(dict(linestyle=ls))
+        for m in self.markers:
+            self.styles.append(dict(marker=m))
 
     def init_plots(self):
         self.figure.clear()
@@ -384,12 +397,13 @@ class PlotFormatter(Formatter):
 
     def do_timeseries_plot(self, results, config=None, axis=None):
         if len(results) > 1:
+            styles = cycle(self.styles)
             for r in results:
-                self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label())
+                self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles))
         else:
             self._do_timeseries_plot(results[0], config=config, axis=axis)
 
-    def _do_timeseries_plot(self, results, config=None, axis=None, postfix=""):
+    def _do_timeseries_plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}):
         if axis is None:
             axis = self.figure.gca()
         if config is None:
@@ -399,6 +413,8 @@ class PlotFormatter(Formatter):
         data = []
         for i in range(len(config['axes'])):
             data.append([])
+
+        colours = cycle(self.colours)
 
         for s in config['series']:
             if not s['data'] in results.series_names:
@@ -414,6 +430,11 @@ class PlotFormatter(Formatter):
 
             if 'label' in kwargs:
                 kwargs['label']+=postfix
+
+            if not 'color' in kwargs:
+                kwargs['color'] = next(colours)
+
+            kwargs.update(extra_kwargs)
 
             y_values = results.series(s['data'], smooth)
             if 'axis' in s and s['axis'] == 2:
@@ -450,9 +471,8 @@ class PlotFormatter(Formatter):
         for a in config['axes']:
             all_data.append([])
 
-        colours = ['b', 'g', 'c', 'm', 'k']
-        while len(colours) < len(results):
-            colours = colours *2
+        # The median lines are red, so filter out red from the list of colours
+        colours = list(islice(cycle([c for c in self.colours if c != 'r']), len(results)))
 
         for i,s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
@@ -500,17 +520,19 @@ class PlotFormatter(Formatter):
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
+            styles = cycle(self.styles)
             for r in results:
-                self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label())
+                self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles))
         else:
             self._do_cdf_plot(results[0], config=config, axis=axis)
 
-    def _do_cdf_plot(self, results, config=None, axis=None, postfix=""):
+    def _do_cdf_plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}):
         if axis is None:
             axis = self.figure.gca()
         if config is None:
             config = self.config
 
+        colours = cycle(self.colours)
         data = []
         sizes = []
         max_value = 0.0
@@ -552,6 +574,9 @@ class PlotFormatter(Formatter):
                     kwargs[k] = s[k]
             if 'label' in kwargs:
                 kwargs['label']+=postfix
+            if not 'color' in kwargs:
+                kwargs['color'] = next(colours)
+            kwargs.update(extra_kwargs)
             axis.plot(x_values,
                       [cum_prob(data[i], point, sizes[i]) for point in x_values],
                       **kwargs)
