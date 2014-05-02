@@ -340,6 +340,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.update_end.connect(self.busy_end)
             widget.plot_changed.connect(self.update_plots)
             self.viewArea.setCurrentIndex(self.viewArea.addTab(widget, widget.title))
+            self.last_dir = os.path.dirname(unicode(f))
         self.busy_end()
 
 class PlotModel(QStringListModel):
