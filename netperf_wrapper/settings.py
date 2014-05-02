@@ -58,6 +58,7 @@ DEFAULT_SETTINGS = {
     'TIME': datetime.now(),
     'SCALE_DATA': [],
     'SCALE_MODE': False,
+    'SUBPLOT_COMBINE': False,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
     'PRINT_LEGEND': True,
@@ -89,6 +90,7 @@ CONFIG_TYPES = {
     'DELAY': 'int',
     'SOCKET_TIMEOUT': 'int',
     'SCALE_MODE': 'bool',
+    'SUBPLOT_COMBINE': 'bool',
     'ANNOTATE': 'bool',
     'PRINT_TITLE': 'bool',
     'PRINT_LEGEND': 'bool',
@@ -426,6 +428,9 @@ plot_group.add_option("--scale-data", action="append", type="string", dest="SCAL
 plot_group.add_option("-S", "--scale-mode", action="store_true", dest="SCALE_MODE",
                   help="Treat file names (except for the first one) passed as unqualified "
                   "arguments as if passed as --scale-data (default as if passed as --input).")
+plot_group.add_option("--subplot-combine", action="store_true", dest="SUBPLOT_COMBINE",
+                  help="When plotting multiple data series, plot each one on a separate subplot "
+                  "instead of combining them into one plot (not supported for all plot types).")
 plot_group.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
                   help="Exclude annotation with hostnames, time and test length from plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",

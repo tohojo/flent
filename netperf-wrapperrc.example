@@ -77,6 +77,15 @@
 # Corresponding command line option: --scale-mode
 ;scale_mode = no
 
+# Whether to plot each data series in a separate subplot when combining multiple
+# data series into a single plot. Only supported for some plot types, and only
+# works if scale_mode is not set.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --subplot-combine
+;subplot_combine = no
+
 # Whether to print annotations (hostname etc) on plots.
 #
 # Note that boolean options, if changed from the default, current cannot be

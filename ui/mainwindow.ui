@@ -109,42 +109,16 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="0">
-      <widget class="QCheckBox" name="checkTitle">
+     <item row="0" column="1">
+      <widget class="QCheckBox" name="checkDisableLog">
        <property name="toolTip">
-        <string>Draw plot title?</string>
+        <string>Disable automatic log scaling of axes?</string>
        </property>
        <property name="statusTip">
-        <string>Draw plot title?</string>
+        <string>Disable automatic log scaling of axes?</string>
        </property>
        <property name="text">
-        <string>Title</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QCheckBox" name="checkLegend">
-       <property name="toolTip">
-        <string>Draw plot legend?</string>
-       </property>
-       <property name="statusTip">
-        <string>Draw plot legend?</string>
-       </property>
-       <property name="text">
-        <string>Legend</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="checkAnnotation">
-       <property name="toolTip">
-        <string>Annotate plot (at the bottom)?</string>
-       </property>
-       <property name="statusTip">
-        <string>Annotate plot (at the bottom)?</string>
-       </property>
-       <property name="text">
-        <string>Annotation</string>
+        <string>Disable log scale</string>
        </property>
       </widget>
      </item>
@@ -158,19 +132,6 @@
        </property>
        <property name="text">
         <string>Zero Y-axis</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QCheckBox" name="checkDisableLog">
-       <property name="toolTip">
-        <string>Disable automatic log scaling of axes?</string>
-       </property>
-       <property name="statusTip">
-        <string>Disable automatic log scaling of axes?</string>
-       </property>
-       <property name="text">
-        <string>Disable log scale</string>
        </property>
       </widget>
      </item>
@@ -197,6 +158,58 @@
        </property>
        <property name="text">
         <string>Scale mode</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QCheckBox" name="checkSubplotCombine">
+       <property name="toolTip">
+        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
+       </property>
+       <property name="statusTip">
+        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
+       </property>
+       <property name="text">
+        <string>Subplot combine</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QCheckBox" name="checkAnnotation">
+       <property name="toolTip">
+        <string>Annotate plot (at the bottom)?</string>
+       </property>
+       <property name="statusTip">
+        <string>Annotate plot (at the bottom)?</string>
+       </property>
+       <property name="text">
+        <string>Annotation</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QCheckBox" name="checkLegend">
+       <property name="toolTip">
+        <string>Draw plot legend?</string>
+       </property>
+       <property name="statusTip">
+        <string>Draw plot legend?</string>
+       </property>
+       <property name="text">
+        <string>Legend</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QCheckBox" name="checkTitle">
+       <property name="toolTip">
+        <string>Draw plot title?</string>
+       </property>
+       <property name="statusTip">
+        <string>Draw plot title?</string>
+       </property>
+       <property name="text">
+        <string>Title</string>
        </property>
       </widget>
      </item>

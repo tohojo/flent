@@ -241,6 +241,7 @@ class PlotFormatter(Formatter):
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
+        self.subplot_combine_disabled = False
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
@@ -382,28 +383,47 @@ class PlotFormatter(Formatter):
             raise RuntimeError("Can't do Q-Q plot with more than one series.")
 
 
-    def _init_meta_plot(self):
+    def _init_meta_plot(self, config=None):
+        if config is None:
+            config = self.config
         self.configs = []
         ax = self.figure.gca()
         ax.set_axis_off()
-        for i,subplot in enumerate(self.config['subplots']):
-            axis = self.figure.add_subplot(len(self.config['subplots']),1,i+1, sharex=self.figure.gca())
-            config = self._load_plotconfig(subplot)
-            self.configs.append(config)
-            getattr(self, '_init_%s_plot' % config['type'])(config=config, axis=axis)
-            if i < len(self.config['subplots'])-1:
+        if 'subplot_params' in config:
+            subplot_params = config['subplot_params']
+        else:
+            subplot_params = [{}] * len(config['subplots'])
+        for i,subplot in enumerate(config['subplots']):
+            axis = self.figure.add_subplot(len(config['subplots']),1,i+1, sharex=self.figure.gca(), **subplot_params[i])
+            cfg = self._load_plotconfig(subplot)
+            self.configs.append(cfg)
+            getattr(self, '_init_%s_plot' % cfg['type'])(config=cfg, axis=axis)
+            if i < len(config['subplots'])-1:
                 axis.set_xlabel("")
+
+    def subplot_combine(self, callback, results):
+        if self.settings.SUBPLOT_COMBINE and not self.subplot_combine_disabled:
+            config = {'subplots': [self.settings.PLOT] * len(results),
+                      'subplot_params': [{'title': r.meta('TITLE')} for r in results],}
+            self.figure.clear()
+            self._init_meta_plot(config=config)
+            for c,r in zip(self.configs,results):
+                callback(r, config=c, extra_scale_data=results)
+            return True
+        return False
 
 
     def do_timeseries_plot(self, results, config=None, axis=None):
         if len(results) > 1:
+            if self.subplot_combine(self._do_timeseries_plot, results):
+                return
             styles = cycle(self.styles)
             for r in results:
                 self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles))
         else:
             self._do_timeseries_plot(results[0], config=config, axis=axis)
 
-    def _do_timeseries_plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}):
+    def _do_timeseries_plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}, extra_scale_data=[]):
         if axis is None:
             axis = self.figure.gca()
         if config is None:
@@ -442,7 +462,7 @@ class PlotFormatter(Formatter):
             else:
                 a = 0
             data[a] += y_values
-            for r in self.settings.SCALE_DATA:
+            for r in self.settings.SCALE_DATA+extra_scale_data:
                 data[a] += r.series(s['data'], smooth)
             config['axes'][a].plot(results.x_values,
                    y_values,
@@ -520,17 +540,19 @@ class PlotFormatter(Formatter):
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
+            if self.subplot_combine(self._do_cdf_plot, results):
+                return
             styles = cycle(self.styles)
             for r in results:
                 self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles))
         else:
             self._do_cdf_plot(results[0], config=config, axis=axis)
 
-    def _do_cdf_plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}):
-        if axis is None:
-            axis = self.figure.gca()
+    def _do_cdf_plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}, extra_scale_data=[]):
         if config is None:
             config = self.config
+        if axis is None:
+            axis = config['axes'][0]
 
         colours = cycle(self.colours)
         data = []
@@ -558,7 +580,7 @@ class PlotFormatter(Formatter):
                 self.min_vals.append(min(d))
                 max_value = max([max_value]+d)
 
-                for r in self.settings.SCALE_DATA:
+                for r in self.settings.SCALE_DATA + extra_scale_data:
                     d_s = [x for x in r.series(s['data']) if x is not None]
                     if d_s:
                         max_value = max([max_value]+d_s)
@@ -566,6 +588,9 @@ class PlotFormatter(Formatter):
 
         x_values = list(frange(0, max_value, 0.1))
 
+        if max_value > 10:
+            max_value += 10-(max_value%10) # round up to nearest value divisible by 10
+        axis.set_xlim(right=max_value)
 
         for i,s in enumerate(config['series']):
             kwargs = {}
@@ -645,12 +670,15 @@ class PlotFormatter(Formatter):
 
 
     def do_meta_plot(self, results):
+        self.subplot_combine_disabled = True
         for i,config in enumerate(self.configs):
             getattr(self, 'do_%s_plot' % config['type'])(results, config=config)
 
     def format(self, results):
         if not results[0]:
             return
+
+        self.subplot_combine_disabled = False
 
         getattr(self, 'do_%s_plot' % self.config['type'])(results)
         skip_title = len(results) > 1

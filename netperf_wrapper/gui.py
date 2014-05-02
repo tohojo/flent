@@ -156,18 +156,20 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkZeroY.setChecked(self.settings.ZERO_Y)
         self.checkInvertY.setChecked(self.settings.INVERT_Y)
         self.checkDisableLog.setChecked(not self.settings.LOG_SCALE)
+        self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
+        self.checkSubplotCombine.setChecked(self.settings.SUBPLOT_COMBINE)
         self.checkAnnotation.setChecked(self.settings.ANNOTATE)
         self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
-        self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
         self.checkDisableLog.toggled.connect(self.update_checkboxes)
+        self.checkScaleMode.toggled.connect(self.update_checkboxes)
+        self.checkSubplotCombine.toggled.connect(self.update_checkboxes)
         self.checkAnnotation.toggled.connect(self.update_checkboxes)
         self.checkLegend.toggled.connect(self.update_checkboxes)
         self.checkTitle.toggled.connect(self.update_checkboxes)
-        self.checkScaleMode.toggled.connect(self.update_checkboxes)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -189,10 +191,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.zero_y(self.checkZeroY.isChecked())
             widget.invert_y(self.checkInvertY.isChecked())
             widget.disable_log(self.checkDisableLog.isChecked())
+            widget.scale_mode(self.checkScaleMode.isChecked())
+            widget.subplot_combine(self.checkSubplotCombine.isChecked())
             widget.draw_annotation(self.checkAnnotation.isChecked())
             widget.draw_legend(self.checkLegend.isChecked())
             widget.draw_title(self.checkTitle.isChecked())
-            widget.scale_mode(self.checkScaleMode.isChecked())
 
     def new_connection(self):
         sock = self.server.nextPendingConnection()
@@ -534,6 +537,18 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.update()
         return not self.settings.LOG_SCALE
 
+    def scale_mode(self, val=None):
+        if val is not None and val != self.settings.SCALE_MODE:
+            self.settings.SCALE_MODE = val
+            self.update()
+        return self.settings.SCALE_MODE
+
+    def subplot_combine(self, val=None):
+        if val is not None and val != self.settings.SUBPLOT_COMBINE:
+            self.settings.SUBPLOT_COMBINE = val
+            self.update()
+        return self.settings.SUBPLOT_COMBINE
+
     def draw_annotation(self, val=None):
         if val is not None and val != self.settings.ANNOTATE:
             self.settings.ANNOTATE = val
@@ -551,12 +566,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.PRINT_TITLE = val
             self.update()
         return self.settings.PRINT_TITLE
-
-    def scale_mode(self, val=None):
-        if val is not None and val != self.settings.SCALE_MODE:
-            self.settings.SCALE_MODE = val
-            self.update()
-        return self.settings.SCALE_MODE
 
     def change_plot(self, plot_name):
         if isinstance(plot_name, QModelIndex):

@@ -182,6 +182,11 @@ Treat file names (except for the first one) passed as
 unqualified arguments as if passed as \fB\-\-scale\-data\fR
 (default as if passed as \fB\-\-input\fR).
 .TP
+\fB\-\-subplot\-combine\fR
+When plotting multiple data series, plot each one on a separate subplot instead
+of combining them into one plot. This mode is not supported for all plot types,
+and only works when \fB--scale-mode\fR is disabled.
+.TP
 \fB\-\-no\-annotation\fR
 Exclude annotation with hostnames, time and test
 length from plots.

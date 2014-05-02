@@ -1,3 +1,6 @@
+2014-05-02: Add --subplot-combine option to combine multiple data sets into
+            separate subplots rather than plotting them onto the same plot.
+
 2014-05-02: Manage plot series colours to make them consistent when combining
             plots, and instead cycle line styles and markers to differentiate
             result sets in a combined plot.
