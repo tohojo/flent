@@ -23,6 +23,7 @@ import sys, os, optparse, socket, subprocess, time
 
 from datetime import datetime
 from fnmatch import fnmatch
+from copy import deepcopy
 
 try:
     from configparser import RawConfigParser
@@ -472,10 +473,7 @@ class Settings(optparse.Values, object):
         # Copy everything from defaults to make sure the defaults are not modified.
         defaults = {}
         for k,v in defs.items():
-            if hasattr(v, 'copy'):
-                defaults[k] = v.copy()
-            else:
-                defaults[k] = v
+            defaults[k] = deepcopy(v)
         optparse.Values.__init__(self, defaults)
 
     def load_test_or_host(self, test_name):
