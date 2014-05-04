@@ -204,8 +204,9 @@ class DitgRunner(ProcessRunner):
         utc_offset = 0
         results = {}
         try:
-            # The control server has a grace period after the test ends, so we don't know exactly
-            # when the test results are going to be ready. We assume that
+            # The control server has a grace period after the test ends, so we
+            # don't know exactly when the test results are going to be ready. We
+            # assume that it will be within ten seconds.
             for i in range(10):
                 res = self.proxy.get_test_results(self.test_id)
                 if res['status'] == 'OK':
