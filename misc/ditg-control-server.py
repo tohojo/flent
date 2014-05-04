@@ -317,8 +317,10 @@ class DITGManager(object):
                     idx_e = data.index('Size>')
                     t,microsec = data[idx_s:idx_e].split(".")
                     h,m,s = t.split(":")
-                    dt = datetime.utcnow()
-                    dt.replace(hour=int(h), minute=int(m), second=int(s), microsecond=int(microsec))
+                    dt = datetime.utcnow().replace(hour=int(h),
+                                                   minute=int(m),
+                                                   second=int(s),
+                                                   microsecond=int(microsec))
                     ret['utc_offset'] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
                 except Exception as e:
                     ret['utc_offset'] = None
