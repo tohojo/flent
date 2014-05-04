@@ -104,7 +104,11 @@ class Aggregator(object):
                     self.postprocessors.append(t.result)
                 elif hasattr(t.result, 'keys'):
                     for k in t.result.keys():
-                        result["%s::%s" % (n,k)] = t.result[k]
+                        key = "%s::%s" % (n,k)
+                        result[key] = t.result[k]
+                        if key in self.instances and 'transformers' in self.instances[key]:
+                            for tr in self.instances[key]['transformers']:
+                                result[key] = tr(result[key])
                 else:
                     result[n] = t.result
                     if 'transformers' in self.instances[n]:
