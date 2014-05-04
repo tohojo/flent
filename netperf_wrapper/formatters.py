@@ -814,6 +814,10 @@ class PlotFormatter(Formatter):
         top_scale = top_percentile + space
         btm_scale = btm_percentile - space
         if self.settings.ZERO_Y:
+            # When y is set at zero, set space at the top to be one percent room
+            # of the *axis* range, not the data range (this may be a big
+            # difference if the data range is small).
+            top_scale = top_percentile*1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
             axis.set_ylim(ymin=btm_scale, ymax=top_scale)
