@@ -332,7 +332,7 @@ class PlotFormatter(Formatter):
             else:
                 config['axes'][i].set_ylabel(unit[i])
 
-        self.units = unit
+        config['units'] =  unit
 
     def _init_box_plot(self, config=None, axis=None):
         if axis is None:
@@ -477,7 +477,7 @@ class PlotFormatter(Formatter):
 
         for a in range(len(config['axes'])):
             if data[a]:
-                self._do_scaling(config['axes'][a], data[a], btm, top, self.units[a])
+                self._do_scaling(config['axes'][a], data[a], btm, top, config['units'][a])
 
 
     def do_box_plot(self, results, config=None, axis=None):
@@ -532,7 +532,7 @@ class PlotFormatter(Formatter):
 
             pos += group_size+1
         for i,a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, self.units[i])
+            self._do_scaling(a, all_data[i], 0, 100, config['units'][i])
 
 
         axis.set_xticks(ticks)
