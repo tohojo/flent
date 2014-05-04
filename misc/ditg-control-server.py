@@ -69,11 +69,14 @@ parser.add_option('-m', '--max-instances', action='store', type='int', dest='MAX
                   default=100, help="Maximum number of running instances before new requests are denied (default 100).")
 parser.add_option('-S', '--secret', action='store', type='string', dest='SECRET',
                   default="", help="Secret for request authentication. Default: ''.")
+parser.add_option('--debug', action='store_true', dest='DEBUG',
+                  default=False,  help="Debug mode: Don't delete temporary files.")
 
 class DITGManager(object):
     datafile_pattern = "%s.json"
 
-    def __init__(self, bind_address, start_port, max_test_time, max_instances, secret):
+    def __init__(self, bind_address, start_port, max_test_time, max_instances, secret,
+                 debug=False):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
@@ -84,6 +87,7 @@ class DITGManager(object):
         self.hmac = hmac.new(secret.encode(), digestmod=hashlib.sha256)
         self.start_port = self.current_port = start_port
         self.id_length = 20
+        self.debug = debug
 
         signal.signal(signal.SIGINT, self._exit)
         signal.signal(signal.SIGTERM, self._exit)
@@ -204,6 +208,8 @@ class DITGManager(object):
             return pipe_w, True
 
     def _unlink(self, filename):
+        if self.debug:
+            return
         try:
             os.unlink(filename)
         except:
@@ -368,7 +374,7 @@ class DITGManager(object):
         sys.exit(1)
 
     def __del__(self):
-        if self.toplevel:
+        if self.toplevel and not self.debug:
             shutil.rmtree(self.working_dir, ignore_errors=True)
 
 
@@ -384,7 +390,8 @@ def run():
                           start_port = options.START_PORT,
                           max_test_time = options.MAX_TEST_TIME,
                           max_instances = options.MAX_INSTANCES,
-                          secret = options.SECRET)
+                          secret = options.SECRET,
+                          debug = options.DEBUG,)
     server.register_instance(manager)
     server.register_introspection_functions()
     server.serve_forever()
