@@ -321,7 +321,7 @@ class BatchRunner(object):
         if self.settings.INPUT:
             return self.load_input(self.settings)
         elif self.settings.BATCH_NAMES:
-            if len(settings.BATCH_NAMES) == 1 and settings.BATCH_NAMES[0] == 'ALL':
+            if len(self.settings.BATCH_NAMES) == 1 and self.settings.BATCH_NAMES[0] == 'ALL':
                 batches = self.batches.keys()
             else:
                 batches = self.settings.BATCH_NAMES
