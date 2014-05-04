@@ -224,8 +224,9 @@ class DitgRunner(ProcessRunner):
         except xmlrpc.Fault as e:
             self.err = "Error while getting results: %s" % e
 
-        dt = datetime.utcfromtimestamp(utc_offset)
-        offset = float(calendar.timegm(dt.timetuple())) + dt.microsecond / 10**6
+        now = time.time()
+        tzoffset = (datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)).seconds
+        offset = utc_offset + tzoffset
 
         for line in data.splitlines():
             if not line.strip():
