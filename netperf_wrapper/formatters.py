@@ -53,10 +53,12 @@ PLOT_KWARGS = (
 
 def new(settings):
     formatter_name = classname(settings.FORMAT, 'Formatter')
+    if not formatter_name in globals():
+        raise RuntimeError("Formatter not found: '%s'." % settings.FORMAT)
     try:
         return globals()[formatter_name](settings)
-    except KeyError:
-        raise RuntimeError("Formatter not found: '%s'." % settings.FORMAT)
+    except Exception as e:
+        raise RuntimeError("Error loading %s: %r." % (formatter_name, e))
 
 
 class Formatter(object):

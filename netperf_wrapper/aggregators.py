@@ -30,13 +30,15 @@ import collections
 
 def new(settings):
     cname = classname(settings.AGGREGATOR, "Aggregator")
+    if not cname in globals():
+        raise RuntimeError("Aggregator not found: '%s'" % settings.AGGREGATOR)
     try:
         agg = globals()[cname](settings)
         for s in list(settings.DATA_SETS.items()):
             agg.add_instance(*s)
         return agg
-    except KeyError:
-        raise RuntimeError("Aggregator not found: '%s'" % settings.AGGREGATOR)
+    except Exception as e:
+        raise RuntimeError("Error loading %s: %s." % (cname, e))
 
 
 class Aggregator(object):
