@@ -231,7 +231,7 @@ class BatchRunner(object):
 
     def run_batch(self, batchname):
         if not batchname in self.batches:
-            raise RuntimeError("Can't find batch '%s' to run." % name)
+            raise RuntimeError("Can't find batch '%s' to run." % batchname)
         batch = self.batches[batchname]
 
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
