@@ -326,7 +326,10 @@ class BatchRunner(object):
             else:
                 batches = self.settings.BATCH_NAMES
             for b in batches:
-                self.run_batch(b)
+                try:
+                    self.run_batch(b)
+                except Exception as e:
+                    raise RuntimeError("Error while running batch '%s': %r." % (b, e))
             return True
         else:
             return self.run_test(self.settings)
