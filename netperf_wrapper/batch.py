@@ -102,6 +102,10 @@ class BatchRunner(object):
         new.update(child)
         if 'inherits' in parent:
             new['inherits'] = "%s, %s" % (parent['inherits'], child['inherits'])
+
+        # Make sure children are not declared abstract.
+        if 'abstract' in new:
+            del new['abstract']
         return new
 
     def get_ivar(self, name, ivars, settings):
@@ -233,6 +237,10 @@ class BatchRunner(object):
         if not batchname in self.batches:
             raise RuntimeError("Can't find batch '%s' to run." % batchname)
         batch = self.batches[batchname]
+
+        # A batch declared 'abstract' is not runnable
+        if batch.get('abstract', False):
+            return True
 
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
         hosts = [i.strip() for i in batch.get('for_hosts', '').split(',')]
