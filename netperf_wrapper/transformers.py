@@ -34,3 +34,6 @@ def rr_to_ms(results):
             return None
         return 1000.0/x
     return transform_results(results, safe_divide)
+
+def s_to_ms(results):
+    return transform_results(results, lambda x: x*1000.0)
