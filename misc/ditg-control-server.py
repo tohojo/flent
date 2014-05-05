@@ -269,9 +269,12 @@ class DITGManager(object):
             os.write(pipe, str(e).encode())
         else:
             time.sleep(0.1)
-            w = os.waitpid(proc.pid, os.WNOHANG)
+            try:
+                w = os.waitpid(proc.pid, os.WNOHANG)
+            except OSError as e:
+                w = (0,str(e))
             if w != (0,0):
-                ret = {'status': 'Error', 'message': 'ITGRecv exited immediately with code %d' % w[1]}
+                ret = {'status': 'Error', 'message': 'ITGRecv exited immediately with code %s.' % w[1]}
                 os.write(pipe, ret['message'].encode())
             else:
                 self.children.append(proc.pid)
@@ -334,10 +337,12 @@ class DITGManager(object):
 
     def _collect_garbage(self, *args):
         for p in self.children:
-            if os.waitpid(p, os.WNOHANG) != (0,0):
+            try:
+                if os.waitpid(p, os.WNOHANG) != (0,0):
+                    self.children.remove(p)
+            except OSError:
                 self.children.remove(p)
-
-                # When no more children are alive, reset the current port
+        # When no more children are alive, reset the current port
         if not self.children:
             self.current_port = self.start_port
         if not self.toplevel:
