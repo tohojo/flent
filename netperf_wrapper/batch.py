@@ -274,7 +274,7 @@ class BatchRunner(object):
             self.run_commands(commands, 'monitor')
             try:
                 self.run_test(settings)
-            except KeyboardInterrupt:
+            except:
                 self.run_commands(commands, 'post', essential_only=True)
                 raise
             self.kill_children()
