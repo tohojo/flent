@@ -270,6 +270,11 @@ class PlotFormatter(Formatter):
         except ImportError:
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
+    def __del__(self):
+        try:
+            self.plt.close(self.figure)
+        except Exception:
+            pass
 
     def _load_plotconfig(self, plot):
         if not plot in self.settings.PLOTS:
