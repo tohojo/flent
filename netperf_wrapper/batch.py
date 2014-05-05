@@ -221,7 +221,13 @@ class BatchRunner(object):
         for c in commands:
             if c['type'] == ctype and (not essential_only
                                        or c.get('essential', False)):
-                self.run_command(c)
+                try:
+                    self.run_command(c)
+                except:
+                    # When running in essential only mode, suppress errors to
+                    # make sure subsequent commands don't fail
+                    if not essential_only:
+                        raise
 
 
     def gen_filename(self, settings, batch, arg, host, rep):
