@@ -262,6 +262,9 @@ class BatchRunner(object):
                 expand_vars['hosts'] = host
             b = self.apply_args(batch, expand_vars, settings)
 
+            if not 'test_name' in b:
+                raise RuntimeError("Missing test name.")
+
             settings.load_rcvalues(b.items(), override=True)
             settings.NAME = b['test_name']
             settings.load_test()
