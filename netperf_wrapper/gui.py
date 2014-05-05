@@ -319,8 +319,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def activate_tab(self, idx=None):
         if idx is None:
             return
-
         widget = self.viewArea.widget(idx)
+        if widget is None:
+            return
+
         self.plotView.setModel(widget.plotModel)
         self.plotView.setSelectionModel(widget.plotSelectionModel)
         self.metadataView.setModel(widget.metadataModel)
