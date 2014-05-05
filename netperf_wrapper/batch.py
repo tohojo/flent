@@ -248,6 +248,7 @@ class BatchRunner(object):
         pause = int(batch.get('pause', 0))
 
         for arg,host,rep in itertools.product(args, hosts, reps):
+            sys.stderr.write(" arg:%s host:%s rep:%02d.\n" % (arg,host,rep))
             settings = self.settings.copy()
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
@@ -330,11 +331,13 @@ class BatchRunner(object):
             return self.load_input(self.settings)
         elif self.settings.BATCH_NAMES:
             if len(self.settings.BATCH_NAMES) == 1 and self.settings.BATCH_NAMES[0] == 'ALL':
+                sys.stderr.write("Running all batches.\n")
                 batches = self.batches.keys()
             else:
                 batches = self.settings.BATCH_NAMES
             for b in batches:
                 try:
+                    sys.stderr.write("Running batch '%s'.\n" % b)
                     self.run_batch(b)
                 except Exception as e:
                     raise RuntimeError("Error while running batch '%s': %r." % (b, e))
