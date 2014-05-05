@@ -128,6 +128,23 @@ def get_ip_addrs(iface=None):
             addresses[iface] = addrs
     return addresses or None
 
+def get_link_params(iface):
+    link_params = {}
+    output = get_command_output("ip link show dev %s" % iface)
+
+    if output is None:
+        output = get_command_output("ifconfig %s" % iface)
+
+    if output is not None:
+        m = re.search("(qlen|txqueuelen) (\d+)", output)
+        if m:
+            link_params['qlen'] = m.group(2)
+        m = re.search("ether ([0-9a-f:]{17})", output)
+        if m:
+            link_params['ether'] = m.group(1)
+
+    return link_params or None
+
 def get_offloads(iface):
     offloads = {}
 
@@ -237,6 +254,7 @@ def get_egress_info(target, ip_version):
         route['offloads'] = get_offloads(route['iface'])
         route['bql'] = get_bql(route['iface'])
         route['driver'] = get_driver(route['iface'])
+        route['link_params'] = get_link_params(route['iface'])
         route['target'] = ip
         if not 'nexthop' in route:
             route['nexthop'] = None
