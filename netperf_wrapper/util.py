@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, os, gzip, io, socket
+import math, os, gzip, io, socket, re
 from bisect import bisect_left
 from datetime import datetime
 
@@ -46,6 +46,12 @@ def parse_date(timestring):
         return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%f")
     except ValueError:
         return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S")
+
+def clean_path(path, allow_dirs=False):
+    if allow_dirs:
+        return re.sub("[^A-Za-z0-9_/-]", "_", path)
+    else:
+        return re.sub("[^A-Za-z0-9_-]", "_", path)
 
 # Calculate discrete cdf function using bisect_left.
 def cum_prob(data, val, size):

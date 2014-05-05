@@ -32,6 +32,7 @@ except ImportError:
 
 from netperf_wrapper import aggregators, formatters, resultset
 from netperf_wrapper.metadata import record_extended_metadata
+from netperf_wrapper.util import clean_path
 
 # Python2/3 compatibility
 try:
@@ -227,10 +228,10 @@ class BatchRunner(object):
     def gen_filename(self, settings, batch, arg, host, rep):
         filename = "batch-%s-%s-%s" % (
             settings.BATCH_NAME,
-            settings.TIME.strftime("%Y-%m-%dT%H%M%S"),
+            batch['batch_date'],
             batch.get('filename_extra', "%s-%s-%s" % (arg, host, rep))
             )
-        return re.sub("[^A-Za-z0-9_-]", "_", filename)
+        return clean_path(filename)
 
 
     def run_batch(self, batchname):
@@ -255,7 +256,8 @@ class BatchRunner(object):
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
 
-            expand_vars = {'repetition': "%02d" % rep}
+            expand_vars = {'repetition': "%02d" % rep,
+                           'batch_date': settings.TIME.strftime("%Y-%m-%dT%H%M%S")}
             if arg:
                 expand_vars.update(self.args[arg])
             if host:
@@ -270,13 +272,23 @@ class BatchRunner(object):
             settings.load_test()
             settings.DATA_FILENAME = self.gen_filename(settings, b, arg, host, rep)
 
+            if 'output_path' in b:
+                output_path = clean_path(b['output_path'], allow_dirs=True)
+            else:
+                output_path = os.path.dirname(settings.OUTPUT) or "."
+            if not os.path.exists(output_path):
+                try:
+                    os.makedirs(output_path)
+                except OSError as e:
+                    raise RuntimeError("Unable to create output path '%s': %s." % (output_path,e))
+
             commands = self.commands_for(batchname, arg, settings)
-            self.log_fd = open("%s.log" % settings.DATA_FILENAME, "a")
+            self.log_fd = open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "a")
 
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
             try:
-                self.run_test(settings)
+                self.run_test(settings, output_path)
             except:
                 self.run_commands(commands, 'post', essential_only=True)
                 raise
@@ -292,7 +304,7 @@ class BatchRunner(object):
         if self.log_fd is not None:
             self.log_fd.write(text + "\n")
 
-    def run_test(self, settings):
+    def run_test(self, settings, output_path):
         settings = settings.copy()
         settings.load_test()
         res = resultset.new(settings)
@@ -306,7 +318,7 @@ class BatchRunner(object):
         res = self.agg.postprocess(self.agg.aggregate(res))
         if self.killed:
             return
-        res.dump_dir(os.path.dirname(settings.OUTPUT) or ".")
+        res.dump_dir(output_path)
 
         formatter = formatters.new(settings)
         formatter.format([res])
@@ -344,11 +356,13 @@ class BatchRunner(object):
                 try:
                     sys.stderr.write("Running batch '%s'.\n" % b)
                     self.run_batch(b)
+                except RuntimeError:
+                    raise
                 except Exception as e:
                     raise RuntimeError("Error while running batch '%s': %r." % (b, e))
             return True
         else:
-            return self.run_test(self.settings)
+            return self.run_test(self.settings, os.path.dirname(self.settings.OUTPUT) or ".")
 
     def kill(self):
         self.killed = True
