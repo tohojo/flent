@@ -241,6 +241,8 @@ class BatchRunner(object):
         # A batch declared 'abstract' is not runnable
         if batch.get('abstract', False):
             return True
+        elif batch.get('disabled', False):
+            sys.stderr.write(" Batch disabled.\n")
 
         args = [i.strip() for i in batch.get('for_args', '').split(',')]
         hosts = [i.strip() for i in batch.get('for_hosts', '').split(',')]
