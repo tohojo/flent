@@ -49,14 +49,15 @@ filename_extra = ${qdisc_name}-${hosts}-${rate_down}-${rate_up}-${repetition}
 ip_version = 4
 length=60
 commands = setup_qdiscs, tcpdump_egress, tcpdump_ingress
-for_args = ared-10mbit, ared, fq_codel-10mbit, fq_codel, codel-10mbit, codel, pie-10mbit, pie
+for_qdiscs = ared, fq_codel, codel, pie
+for_bandwidths = 10mbit, 1mbit
 
 # how long to pause after each run?
 pause = 5
 
 [Batch::rrul]
 inherits = global
-for_hosts = testserv-01, testserv-02
+hosts = testserv-02
 repetitions = 1
 test_name = rrul
 
@@ -85,35 +86,32 @@ qdisc_args = limit 100
 rate_down = 10Mbit
 rate_up = 1Mbit
 
+[Arg::10mbit]
+rate_up = 10Mbit
+
+[Arg::1mbit]
+rate_up = 1Mbit
+
 [Arg::pie]
 inherits = global
 qdisc_name = pie
 
-[Arg::pie-10mbit]
-inherits = pie
-rate_up = 10Mbit
-
 [Arg::codel]
 inherits = global
 qdisc_name = codel
-
-[Arg::codel-10mbit]
-inherits = codel
-rate_up = 10Mbit
 
 [Arg::fq_codel]
 inherits = global
 qdisc_name = fq_codel
 qdisc_args = limit 1000 noecn
 
-[Arg::fq_codel-10mbit]
-inherits = fq_codel
-rate_up = 10Mbit
-
 [Arg::ared]
 inherits = global
 qdisc_name = red
 qdisc_args = limit 151400 avpkt 1000 adaptive
+qdisc_args_up = ${qdisc_args} bandwidth ${rate_up}
+qdisc_args_down = ${qdisc_args} bandwidth ${rate_down}
+qdisc_label = ared
 
 [Arg::ared-10mbit]
 inherits = global

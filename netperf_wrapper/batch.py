@@ -261,23 +261,32 @@ class BatchRunner(object):
             sys.stderr.write(" Batch disabled.\n")
             return False
 
-        args = [i.strip() for i in batch.get('for_args', '').split(',')]
-        hosts = [i.strip() for i in batch.get('for_hosts', '').split(',')]
+        argsets = []
+
+        for k in batch.keys():
+            if k.startswith("for_"):
+                argsets.append([i.strip() for i in batch[k].split(',')])
+
         reps = range(1,int(batch.get('repetitions', 1))+1)
+        argsets.append(reps)
+
         pause = int(batch.get('pause', 0))
 
-        for arg,host,rep in itertools.product(args, hosts, reps):
-            sys.stderr.write(" arg:%s host:%s rep:%02d.\n" % (arg,host,rep))
+        for argset in itertools.product(*argsets):
+            rep = argset[-1]
+            argset = argset[:-1]
+            sys.stderr.write(" args:%s rep:%02d.\n" % (",".join(argset),rep))
             settings = self.settings.copy()
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
 
             expand_vars = {'repetition': "%02d" % rep,
                            'batch_date': settings.TIME.strftime("%Y-%m-%dT%H%M%S")}
-            if arg:
+
+            for arg in argset:
+                if not arg in self.args:
+                    raise RuntimeError("Invalid arg: '%s'." % arg)
                 expand_vars.update(self.args[arg])
-            if host:
-                expand_vars['hosts'] = host
             b = self.apply_args(batch, expand_vars, settings)
 
             if not 'test_name' in b:
