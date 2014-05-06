@@ -76,6 +76,7 @@ DEFAULT_SETTINGS = {
     'BATCH_NAME': None,
     'BATCH_NAMES': [],
     'BATCH_FILES': [],
+    'BATCH_OVERRIDE': [],
     }
 
 CONFIG_TYPES = {
@@ -379,6 +380,10 @@ parser.add_option("-B", "--batch-file", action="append", type="string", dest="BA
                   help="Load batch file BATCH_FILE. Can be specified multiple times, in which "
                   "case the files will be combined (with identically-named sections being overridden "
                   "by later files). See the man page for an explanation of the batch file format.")
+parser.add_option("--batch-override", action="append", type="string", dest="BATCH_OVERRIDE",
+                  metavar="OVERRIDE",
+                  help="Specify a parameter to override in the batch config. Format is name=value. "
+                  "Name will be case folded to lower case. Can be specified multiple times.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",

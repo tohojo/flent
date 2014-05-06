@@ -245,6 +245,14 @@ class BatchRunner(object):
             raise RuntimeError("Can't find batch '%s' to run." % batchname)
         batch = self.batches[batchname]
 
+        for override in self.settings.BATCH_OVERRIDE:
+            if not '=' in override:
+                raise RuntimeError("Missing = in override: '%s'." % override)
+            name,value = override.split("=", 1)
+            name = name.strip().lower()
+            value = value.strip()
+            batch[name] = value
+
         # A batch declared 'abstract' is not runnable
         if batch.get('abstract', False):
             return True
