@@ -298,6 +298,8 @@ class BatchRunner(object):
 
             commands = self.commands_for(batchname, arg, settings)
             self.log_fd = open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "a")
+            if b.get('debug_log', False):
+                settings.LOG_FILE = os.path.join(output_path,"%s.debug.log" % settings.DATA_FILENAME)
 
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
