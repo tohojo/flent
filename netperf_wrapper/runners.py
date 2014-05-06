@@ -257,14 +257,16 @@ class NetperfDemoRunner(ProcessRunner):
 
                 # Calculate an EWMA of the netperf sampling duration and exclude
                 # data points from a sampling period that is more than an order
-                # of magnitude higher than this average; these are probably the
-                # result of netperf spitting out a measurement at the end of a
-                # run after having lost the measurement flow during the run
+                # of magnitude higher or lower than this average; these are
+                # probably the result of netperf spitting out a measurement at
+                # the end of a run after having lost the measurement flow during
+                # the run, or a very short interval giving a very high bandwidth
+                # measurement
                 dur = float(parts[5])
                 if avg_dur is None:
                     avg_dur = dur
 
-                if dur < avg_dur * 10:
+                if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
                     result.append([float(parts[9]), float(parts[2])])
                     avg_dur = alpha * avg_dur + (1.0-alpha) * dur
 
