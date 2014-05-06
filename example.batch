@@ -1,6 +1,6 @@
 # -*- mode:conf -*-
 [Command::setup_qdiscs]
-exec = ./setup_qdiscs.sh ${rate_down} ${rate_up} ${qdisc_name} "${qdisc_args}"
+exec = ./setup_qdiscs.sh ${qdisc_name} "${qdisc_args_down}" "${qdisc_args_up}" ${rate_down} ${rate_up} ${rtt}
 type = pre
 essential = yes
 
@@ -44,37 +44,55 @@ filename = ${data_filename}_ingress
 # rc file keys
 remote_metadata = ${egress_router_hostname}, ${ingress_router_hostname}
 extended_metadata = yes
-title = qdisc:${qdisc_name} target:${hosts} rep:${repetition} rate:${rate_down}/${rate_up}
-filename_extra = ${qdisc_name}-${hosts}-${rate_down}-${rate_up}-${repetition}
+title = qdisc:${qdisc_label} rep:${repetition} rtt:${rtt}ms rate:${rate_down}/${rate_up}
+filename_extra = ${rtt}ms-${rate_up}-${qdisc_label}-${repetition}
+output_path = batch-${batch_date}/${batch_name}/${rtt}ms-${rate_up}-${repetition}
 ip_version = 4
 length=60
 commands = setup_qdiscs, tcpdump_egress, tcpdump_ingress
-for_qdiscs = ared, fq_codel, codel, pie
+for_qdiscs = ared, fq_codel, fq_nocodel, codel, pie, pfifo_fast, sfq
 for_bandwidths = 10mbit, 1mbit
+for_rtts = 50ms
+repetitions = 1
+debug_log = yes
+hosts = testserv-05
+
+# Not runnable
+abstract = yes
 
 # how long to pause after each run?
 pause = 5
 
 [Batch::rrul]
 inherits = global
-hosts = testserv-02
-repetitions = 1
 test_name = rrul
 
 [Batch::tcp-upload]
 inherits = global
-hosts = testserv-02
 test_name = tcp_1up_noping
 
 [Batch::tcp-upload-compete]
 inherits = global
-hosts = testserv-02
 test_name = tcp_2up_delay
 
 [Batch::rtt-fair]
 inherits = global
 hosts = testserv-01, testserv-02, testserv-03, testserv-04
 test_name = rtt_fair4be
+disabled = yes
+
+[Batch::voip]
+inherits = global
+test_name = voip
+disabled = yes
+
+[Batch::voip-1up]
+inherits = global
+test_name = voip-1up
+
+[Batch::voip-rrul]
+inherits = global
+test_name = voip-rrul
 
 [Arg::global]
 egress_router_hostname = testbed-02
@@ -82,28 +100,42 @@ egress_router_iface = eth2
 ingress_router_hostname = testbed-04
 ingress_router_iface = eth1
 capsize = 128
-qdisc_args = limit 100
+qdisc_args =
+qdisc_label = ${qdisc_name}
 rate_down = 10Mbit
+rate_up = 10Mbit
+rtt = 50
+qdisc_args_up = ${qdisc_args}
+qdisc_args_down = ${qdisc_args}
+
+[Arg::1mbit]
 rate_up = 1Mbit
 
 [Arg::10mbit]
 rate_up = 10Mbit
 
-[Arg::1mbit]
-rate_up = 1Mbit
+[Arg::50ms]
+rtt = 50
 
 [Arg::pie]
 inherits = global
 qdisc_name = pie
+qdisc_args = limit 100
 
 [Arg::codel]
 inherits = global
 qdisc_name = codel
+qdisc_args = limit 100
 
 [Arg::fq_codel]
 inherits = global
 qdisc_name = fq_codel
-qdisc_args = limit 1000 noecn
+qdisc_args = limit 100 noecn
+
+[Arg::fq_nocodel]
+inherits = fq_codel
+qdisc_args = limit 100 noecn target 100s
+qdisc_label = fq_nocodel
 
 [Arg::ared]
 inherits = global
@@ -113,8 +145,11 @@ qdisc_args_up = ${qdisc_args} bandwidth ${rate_up}
 qdisc_args_down = ${qdisc_args} bandwidth ${rate_down}
 qdisc_label = ared
 
-[Arg::ared-10mbit]
+[Arg::pfifo_fast]
 inherits = global
-qdisc_name = red
-qdisc_args = limit 151400 avpkt 1000 adaptive
-rate_up = 10Mbit
+qdisc_name = pfifo_fast
+
+[Arg::sfq]
+inherits = global
+qdisc_name = sfq
+qdisc_args = limit 100 headdrop
