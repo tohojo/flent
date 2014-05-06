@@ -72,11 +72,11 @@ class BatchRunner(object):
         for s in parser.sections():
             typ,nam = s.split("::")
             if typ.lower() == 'arg':
-                self.args[nam.lower()] = dict(parser.items(s))
+                self.args[nam.lower()] = OrderedDict(parser.items(s))
             elif typ.lower() == 'batch':
-                self.batches[nam.lower()] = dict(parser.items(s))
+                self.batches[nam.lower()] = OrderedDict(parser.items(s))
             elif typ.lower() == 'command':
-                self.commands[nam.lower()] = dict(parser.items(s))
+                self.commands[nam.lower()] = OrderedDict(parser.items(s))
             else:
                 raise RuntimeError("Unknown section type: '%s'." % typ)
 
