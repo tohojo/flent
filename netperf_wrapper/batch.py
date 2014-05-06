@@ -55,7 +55,6 @@ class BatchRunner(object):
         self.commands = OrderedDict()
         self.settings = settings
         self.killed = False
-        self.interpolation_values = dict()
         self.children = []
         self.log_fd = None
 
@@ -145,30 +144,19 @@ class BatchRunner(object):
 
         return ret.replace("$$", "$")
 
-    def apply_args(self, values, args=None, settings=None):
-        new = self.interpolation_values.copy()
-        if args is not None:
-            new.update(args)
+    def apply_args(self, values, args={}, settings=None):
+        new = OrderedDict(args)
         new.update(values)
         for k,v in new.items():
             new[k] = self.interpolate(v, new, settings)
 
         return new
 
-    def commands_for(self, batchname, arg=None, settings=None):
-        if arg and not arg in self.args:
-            raise RuntimeError("Can't find arg '%s' when expanding batch commands." % arg)
-        if not batchname in self.batches:
-            raise RuntimeError("Can't find batch '%s' to expand." % batchname)
-        batch = self.batches[batchname]
+    def commands_for(self, batch, settings=None):
         if not 'commands' in batch:
             return []
         cmdnames = [i.strip() for i in batch['commands'].split(',')]
         commands = OrderedDict()
-
-        args = {'batch_name': batchname}
-        if arg:
-            args.update(self.args[arg])
 
         while cmdnames:
             c = cmdnames.pop(0)
@@ -176,7 +164,7 @@ class BatchRunner(object):
                 continue
             if not c in self.commands:
                 raise RuntimeError("Can't find command '%s' when expanding batch command." % c)
-            cmd = self.apply_args(self.commands[c], args, settings)
+            cmd = self.apply_args(self.commands[c], batch, settings)
 
             # Don't include disabled commands
             if not cmd.get('enabled', True):
@@ -231,11 +219,11 @@ class BatchRunner(object):
                         raise
 
 
-    def gen_filename(self, settings, batch, arg, host, rep):
+    def gen_filename(self, settings, batch, argset, rep):
         filename = "batch-%s-%s-%s" % (
             settings.BATCH_NAME,
             batch['batch_date'],
-            batch.get('filename_extra', "%s-%s-%s" % (arg, host, rep))
+            batch.get('filename_extra', "%s-%s" % (argset, rep))
             )
         return clean_path(filename)
 
@@ -295,7 +283,7 @@ class BatchRunner(object):
             settings.load_rcvalues(b.items(), override=True)
             settings.NAME = b['test_name']
             settings.load_test()
-            settings.DATA_FILENAME = self.gen_filename(settings, b, arg, host, rep)
+            settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
 
             if 'output_path' in b:
                 output_path = clean_path(b['output_path'], allow_dirs=True)
@@ -307,7 +295,7 @@ class BatchRunner(object):
                 except OSError as e:
                     raise RuntimeError("Unable to create output path '%s': %s." % (output_path,e))
 
-            commands = self.commands_for(batchname, arg, settings)
+            commands = self.commands_for(b, settings)
             self.log_fd = open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "a")
             if b.get('debug_log', False):
                 settings.LOG_FILE = os.path.join(output_path,"%s.debug.log" % settings.DATA_FILENAME)
