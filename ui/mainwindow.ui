@@ -48,6 +48,7 @@
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionCloseTab"/>
+    <addaction name="actionCloseAll"/>
     <addaction name="actionSavePlot"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -350,6 +351,14 @@
   <action name="actionScaleOpen">
    <property name="text">
     <string>&amp;Scale open data files</string>
+   </property>
+  </action>
+  <action name="actionCloseAll">
+   <property name="text">
+    <string>Close &amp;all tabs</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+W</string>
    </property>
   </action>
  </widget>

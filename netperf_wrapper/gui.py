@@ -136,6 +136,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.actionOpen.activated.connect(self.on_open)
         self.actionCloseTab.activated.connect(self.close_tab)
+        self.actionCloseAll.activated.connect(self.close_all)
         self.actionSavePlot.activated.connect(self.save_plot)
         self.actionLoadExtra.activated.connect(self.load_extra)
         self.actionOtherExtra.activated.connect(self.other_extra)
@@ -312,6 +313,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.viewArea.removeTab(idx)
             widget.setParent(None)
             widget.deleteLater()
+
+    def close_all(self):
+        widgets = []
+        for i in range(self.viewArea.count()):
+            widgets.append(self.viewArea.widget(i))
+        self.viewArea.clear()
+        for w in widgets:
+            w.setParent(None)
+            w.deleteLater()
 
     def move_tab(self, move_by):
         count = self.viewArea.count()
