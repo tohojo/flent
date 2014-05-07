@@ -140,6 +140,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionLoadExtra.activated.connect(self.load_extra)
         self.actionOtherExtra.activated.connect(self.other_extra)
         self.actionClearExtra.activated.connect(self.clear_extra)
+        self.actionScaleOpen.activated.connect(self.scale_open)
         self.actionNextTab.activated.connect(self.next_tab)
         self.actionPrevTab.activated.connect(self.prev_tab)
         self.actionRefresh.activated.connect(self.refresh_plot)
@@ -264,6 +265,20 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.clear_extra()
+
+    def scale_open(self):
+        self.checkScaleMode.setChecked(True)
+        self.update_checkboxes()
+        if self.viewArea.count() < 2:
+            return
+        all_results = []
+        for i in range(self.viewArea.count()):
+            all_results.append(self.viewArea.widget(i).results)
+        for i in range(self.viewArea.count()):
+            for r in [j[1] for j in enumerate(all_results) if j != i]:
+                self.viewArea.widget(i).add_extra(r)
+
+        self.viewArea.currentWidget().update()
 
     def save_plot(self):
         widget = self.viewArea.currentWidget()

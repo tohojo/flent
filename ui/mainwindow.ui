@@ -72,6 +72,8 @@
     <addaction name="actionLoadExtra"/>
     <addaction name="actionOtherExtra"/>
     <addaction name="actionClearExtra"/>
+    <addaction name="separator"/>
+    <addaction name="actionScaleOpen"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
@@ -343,6 +345,11 @@
    </property>
    <property name="shortcut">
     <string>F5</string>
+   </property>
+  </action>
+  <action name="actionScaleOpen">
+   <property name="text">
+    <string>&amp;Scale open data files</string>
    </property>
   </action>
  </widget>
