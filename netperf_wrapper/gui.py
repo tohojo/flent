@@ -587,6 +587,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def change_plot(self, plot_name):
         if isinstance(plot_name, QModelIndex):
             plot_name = self.plotModel.name_of(plot_name)
+        plot_name = unicode(plot_name)
         if plot_name != self.settings.PLOT:
             self.settings.PLOT = plot_name
             self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
