@@ -251,14 +251,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             return
 
         added = 0
-        for i in range(self.viewArea.count()):
-            if i != idx:
-                if  widget.add_extra(self.viewArea.widget(i).results):
+        with widget.updates_disabled():
+            for i in range(self.viewArea.count()):
+                if i != idx and widget.add_extra(self.viewArea.widget(i).results):
                     added += 1
 
-        if added > 0:
-            widget.update()
-        else:
+        if not added:
             self.warn_nomatch()
 
     def clear_extra(self):
@@ -275,8 +273,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for i in range(self.viewArea.count()):
             all_results.append(self.viewArea.widget(i).results)
         for i in range(self.viewArea.count()):
-            for r in [j[1] for j in enumerate(all_results) if j != i]:
-                self.viewArea.widget(i).add_extra(r)
+            widget = self.viewArea.widget(i)
+            with widget.updates_disabled():
+                for r in [j[1] for j in enumerate(all_results) if j != i]:
+                    widget.add_extra(r)
 
         self.viewArea.currentWidget().update()
 
@@ -344,7 +344,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save())
-        widget.visibility_changed()
+        widget.redraw()
 
     def update_plots(self, testname, plotname):
         for i in range(self.viewArea.count()):
@@ -458,6 +458,15 @@ class MetadataModel(QAbstractItemModel):
         return self.createIndex(row, column, item.children[row])
 
 
+class UpdateDisabler(object):
+    def __init__(self, widget):
+        self.widget = widget
+    def __enter__(self):
+        self.widget.setUpdatesEnabled(False)
+    def __exit__(self, *ignored):
+        self.widget.setUpdatesEnabled(True)
+        self.widget.update()
+
 class ResultWidget(get_ui_class("resultwidget.ui")):
 
     update_start = pyqtSignal()
@@ -514,14 +523,14 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         added = 0
         for f in filenames:
             if self.add_extra(ResultSet.load_file(unicode(f))):
-                added += 1
-        if added > 0:
-            self.update()
+                self.update(False)
+        self.redraw()
         return added
 
     def add_extra(self, resultset):
         if resultset.meta('NAME') == self.settings.NAME:
             self.extra_results.append(resultset)
+            self.update()
             return True
         return False
 
@@ -596,13 +605,16 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.plot_changed.emit(self.settings.NAME, self.settings.PLOT)
             self.update()
 
-    def visibility_changed(self):
-        if self.dirty:
-            self.update()
+    def updates_disabled(self):
+        return UpdateDisabler(self)
 
-    def update(self):
-        if not self.isVisible():
-            self.dirty = True
+    def update(self, redraw=True):
+        self.dirty = True
+        if redraw and self.isVisible() and self.updatesEnabled():
+            self.redraw()
+
+    def redraw(self):
+        if not self.dirty:
             return
         self.update_start.emit()
         self.formatter.init_plots()
