@@ -354,13 +354,16 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def load_files(self, filenames):
         self.busy_start()
+        widget = None
         for f in filenames:
             widget = ResultWidget(self.viewArea, f, self.settings)
             widget.update_start.connect(self.busy_start)
             widget.update_end.connect(self.busy_end)
             widget.plot_changed.connect(self.update_plots)
-            self.viewArea.setCurrentIndex(self.viewArea.addTab(widget, widget.title))
+            self.viewArea.addTab(widget, widget.title)
             self.last_dir = os.path.dirname(unicode(f))
+        if widget is not None:
+            self.viewArea.setCurrentWidget(widget)
         self.busy_end()
 
 class PlotModel(QStringListModel):
@@ -465,7 +468,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         super(ResultWidget, self).__init__(parent)
         self.filename = unicode(filename)
         self.settings = settings.copy()
-        self.dirty = False
+        self.dirty = True
         self.settings.OUTPUT = "-"
 
         self.results = ResultSet.load_file(self.filename)
@@ -506,8 +509,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         else:
             self.title = "%s - %s" % (self.settings.NAME,
                                       self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
-
-        self.update()
 
     def load_files(self, filenames):
         added = 0
