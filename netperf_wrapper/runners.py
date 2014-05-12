@@ -272,23 +272,35 @@ class NetperfDemoRunner(ProcessRunner):
 
         return result
 
-class PingRunner(ProcessRunner):
-    """Runner for ping/ping6 in timestamped (-D) mode."""
+class RegexpRunner(ProcessRunner):
 
-    pingline_regex = re.compile(r'^\[([0-9]+\.[0-9]+)\].*time=([0-9]+(?:\.[0-9]+)?) ms$')
-    fpingline_regex = re.compile(r'^\[([0-9]+\.[0-9]+)\].*:.*, ([0-9]+(?:\.[0-9]+)?) ms \(.*\)$')
+    """Runner that matches each line to one or more regular expressions,
+    returning the values from the first matched.
+
+    The regular expressions must define symbolic groups 'time' and 'value'."""
+
+    regexes = []
 
     def parse(self, output):
         result = []
         lines = output.split("\n")
         for line in lines:
-            match = self.pingline_regex.match(line)
-            if not match:
-                match = self.fpingline_regex.match(line)
-            if match:
-                result.append([float(match.group(1)), float(match.group(2))])
-
+            for regexp in self.regexes:
+                match = regexp.match(line)
+                if match:
+                    result.append([float(match.group('time')), float(match.group('value'))])
+                    break # only match one regexp per line
         return result
+
+class PingRunner(RegexpRunner):
+    """Runner for ping/ping6 in timestamped (-D) mode."""
+
+    regexes = [re.compile(r'^\[(?P<time>[0-9]+\.[0-9]+)\].*time=(?P<value>[0-9]+(?:\.[0-9]+)?) ms$'),
+               re.compile(r'^\[(?P<time>[0-9]+\.[0-9]+)\].*:.*, (?P<value>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
+
+class HttpGetterRunner(RegexpRunner):
+
+    regexes = [re.compile(r'^\[(?P<time>[0-9]+\.[0-9]+)\].*in (?P<value>[0-9]+(?:\.[0-9]+)?) seconds.$')]
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
