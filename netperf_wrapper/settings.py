@@ -190,8 +190,8 @@ class TestEnvironment(object):
         try:
             exec(compile(open(filename).read(), filename, 'exec'), self.env)
             return self.env
-        except (IOError, SyntaxError):
-            raise RuntimeError("Unable to read test config file: '%s'" % filename)
+        except (IOError, SyntaxError) as e:
+            raise RuntimeError("Unable to read test config file '%s': '%s'." % (filename, e))
 
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
