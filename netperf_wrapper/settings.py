@@ -109,6 +109,9 @@ CONFIG_TYPES = {
     'DITG_CONTROL_SECRET': 'str',
     'NEW_GUI_INSTANCE': 'bool',
     'BATCH_FILES': 'list',
+    'HTTP_GETTER_URLLIST': 'str',
+    'HTTP_GETTER_DNS': 'str',
+    'HTTP_GETTER_WORKERS': 'int',
     }
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
