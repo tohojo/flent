@@ -77,6 +77,9 @@ DEFAULT_SETTINGS = {
     'BATCH_NAMES': [],
     'BATCH_FILES': [],
     'BATCH_OVERRIDE': [],
+    'HTTP_GETTER_URLLIST': None,
+    'HTTP_GETTER_DNS': None,
+    'HTTP_GETTER_WORKERS': 4,
     }
 
 CONFIG_TYPES = {
@@ -176,10 +179,12 @@ class TestEnvironment(object):
             'find_ping': self.find_ping,
             'find_netperf': self.find_netperf,
             'find_itgsend': self.find_itgsend,
+            'find_http_getter': self.find_http_getter,
             })
         self.informational = informational
         self.netperf = None
         self.itgsend = None
+        self.http_getter = None
 
     def execute(self, filename):
         try:
@@ -314,7 +319,41 @@ class TestEnvironment(object):
             dest_host=host,
             args=test_args)
 
+    def find_http_getter(self, interval, length, workers = None, ip_version = None, dns_servers = None, url_file = None):
+        args = "-i %d -l %d" % (int(interval*1000.0), length)
 
+        if url_file is None:
+            url_file = self.env['HTTP_GETTER_URLLIST']
+
+        if dns_servers is None:
+            dns_servers = self.env['HTTP_GETTER_DNS']
+
+        if workers is None:
+            workers = self.env['HTTP_GETTER_WORKERS']
+
+        if ip_version == 4:
+            args += " -4"
+        elif ip_version == 6:
+            args += " -6"
+
+        if workers is not None:
+            args += " -n %d" % workers
+
+        if dns_servers is not None:
+            args += " -d '%s'" % dns_servers
+
+        if url_file is None:
+            args += " http://%s/filelist.txt" % self.env['HOST']
+        else:
+            args += " %s" % url_file
+
+        if self.http_getter is None:
+            http_getter = util.which('http-getter')
+            if http_getter is None:
+                raise RuntimeError("No netperf binary found in PATH.")
+            self.http_getter = http_getter
+
+        return "%s %s" % (self.http_getter, args)
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
@@ -446,6 +485,32 @@ plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
 parser.add_option_group(plot_group)
 
 
+tool_group = optparse.OptionGroup(parser, "Test tool-related options")
+tool_group.add_option("--ditg-control-host", action="store", type="string", dest="DITG_CONTROL_HOST",
+                      metavar="HOST",
+                      help="Hostname for D-ITG control server. Default: First hostname of test target.")
+tool_group.add_option("--ditg-control-port", action="store", type=int, dest="DITG_CONTROL_PORT",
+                      metavar="PORT",
+                      help="Port for D-ITG control server. Default: %d." % DEFAULT_SETTINGS['DITG_CONTROL_PORT'])
+tool_group.add_option("--ditg-control-secret", action="store", type="string", dest="DITG_CONTROL_SECRET",
+                      metavar="SECRET",
+                      help="Secret for D-ITG control server authentication. Default: '%s'." % DEFAULT_SETTINGS['DITG_CONTROL_SECRET'])
+tool_group.add_option("--http-getter-urllist", action="store", type="string", dest="HTTP_GETTER_URLLIST",
+                      metavar="FILENAME",
+                      help="Filename containing the list of HTTP URLs to get. Can also be a URL, which will then "
+                      "be downloaded as part of each test iteration. If not specified, this is set to "
+                      "http://<hostname>/filelist.txt where <hostname> is the first test hostname.")
+tool_group.add_option("--http-getter-dns-servers", action="store", type="string", dest="HTTP_GETTER_DNS",
+                      metavar="DNS_SERVERS",
+                      help="DNS servers to use for http-getter lookups. Format is host[:port][,host[:port]]... "
+                      "This option will only work if libcurl supports it (needs to be built with the ares resolver). "
+                      "Default is none (use the system resolver).")
+tool_group.add_option("--http-getter-workers", action="store", type="int", dest="HTTP_GETTER_WORKERS",
+                      metavar="NUMBER",
+                      help="Number of workers to use for getting HTTP urls. Default is 4.")
+parser.add_option_group(tool_group)
+
+
 misc_group = optparse.OptionGroup(parser, "Misc and debugging options")
 misc_group.add_option("-L", "--log-file", action="store", type="string", dest="LOG_FILE",
                   help="Write debug log (test program output) to log file.")
@@ -457,17 +522,7 @@ misc_group.add_option("-V", "--version", action="callback", callback=version,
                   help="Show netperf-wrapper version information and exit.")
 parser.add_option_group(misc_group)
 
-ditg_group = optparse.OptionGroup(parser, "D-ITG-related options")
-ditg_group.add_option("--ditg-control-host", action="store", type="string", dest="DITG_CONTROL_HOST",
-                      metavar="HOST",
-                      help="Hostname for D-ITG control server. Default: First hostname of test target.")
-ditg_group.add_option("--ditg-control-port", action="store", type=int, dest="DITG_CONTROL_PORT",
-                      metavar="PORT",
-                      help="Port for D-ITG control server. Default: %d." % DEFAULT_SETTINGS['DITG_CONTROL_PORT'])
-ditg_group.add_option("--ditg-control-secret", action="store", type="string", dest="DITG_CONTROL_SECRET",
-                      metavar="SECRET",
-                      help="Secret for D-ITG control server authentication. Default: '%s'." % DEFAULT_SETTINGS['DITG_CONTROL_SECRET'])
-parser.add_option_group(ditg_group)
+
 
 class Settings(optparse.Values, object):
 
