@@ -534,6 +534,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         for f in filenames:
             if self.add_extra(ResultSet.load_file(unicode(f))):
                 self.update(False)
+                added += 1
         self.redraw()
         return added
 
