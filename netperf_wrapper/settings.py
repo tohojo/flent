@@ -334,6 +334,9 @@ class TestEnvironment(object):
         if workers is None:
             workers = self.env['HTTP_GETTER_WORKERS']
 
+        if ip_version is None:
+            ip_version = self.env['IP_VERSION']
+
         if ip_version == 4:
             args += " -4"
         elif ip_version == 6:
