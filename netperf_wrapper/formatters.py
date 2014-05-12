@@ -426,7 +426,7 @@ class PlotFormatter(Formatter):
                 return
             styles = cycle(self.styles)
             for r in results:
-                self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles))
+                self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles), extra_scale_data=results)
         else:
             self._do_timeseries_plot(results[0], config=config, axis=axis)
 
@@ -551,7 +551,7 @@ class PlotFormatter(Formatter):
                 return
             styles = cycle(self.styles)
             for r in results:
-                self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles))
+                self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles), extra_scale_data=results)
         else:
             self._do_cdf_plot(results[0], config=config, axis=axis)
 
@@ -613,13 +613,17 @@ class PlotFormatter(Formatter):
                       [cum_prob(data[i], point, sizes[i]) for point in x_values],
                       **kwargs)
 
-        if self.medians and max(self.medians)/min(self.medians) > 10.0:
-            # More than an order of magnitude difference; switch to log scale
-            axis.set_xscale('log')
+        if self.settings.ZERO_Y:
+            axis.set_xlim(left=0)
+        else:
             min_val = min(self.min_vals)
             if min_val > 10:
                 min_val -= min_val%10 # nearest value divisible by 10
             axis.set_xlim(left=min_val)
+
+        if self.medians and max(self.medians)/min(self.medians) > 10.0:
+            # More than an order of magnitude difference; switch to log scale
+            axis.set_xscale('log')
 
 
     def do_qq_plot(self, results):
