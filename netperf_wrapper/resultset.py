@@ -54,6 +54,9 @@ RECORDED_SETTINGS = (
     "IP_VERSION",
     "BATCH_NAME",
     "DATA_FILENAME",
+    "HTTP_GETTER_URLLIST",
+    "HTTP_GETTER_DNS",
+    "HTTP_GETTER_WORKERS",
     )
 
 def new(settings):
