@@ -79,6 +79,7 @@ DEFAULT_SETTINGS = {
     'BATCH_OVERRIDE': [],
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
+    'HTTP_GETTER_TIMEOUT': None,
     'HTTP_GETTER_WORKERS': 4,
     }
 
@@ -111,6 +112,7 @@ CONFIG_TYPES = {
     'BATCH_FILES': 'list',
     'HTTP_GETTER_URLLIST': 'str',
     'HTTP_GETTER_DNS': 'str',
+    'HTTP_GETTER_TIMEOUT': 'int',
     'HTTP_GETTER_WORKERS': 'int',
     }
 
@@ -322,7 +324,8 @@ class TestEnvironment(object):
             dest_host=host,
             args=test_args)
 
-    def find_http_getter(self, interval, length, workers = None, ip_version = None, dns_servers = None, url_file = None):
+    def find_http_getter(self, interval, length, workers = None, ip_version = None,
+                         dns_servers = None, url_file = None, timeout = None):
         args = "-i %d -l %d" % (int(interval*1000.0), length)
 
         if url_file is None:
@@ -330,6 +333,9 @@ class TestEnvironment(object):
 
         if dns_servers is None:
             dns_servers = self.env['HTTP_GETTER_DNS']
+
+        if timeout is None:
+            workers = self.env['HTTP_GETTER_TIMEOUT']
 
         if workers is None:
             workers = self.env['HTTP_GETTER_WORKERS']
@@ -341,6 +347,11 @@ class TestEnvironment(object):
             args += " -4"
         elif ip_version == 6:
             args += " -6"
+
+        if timeout is None:
+            args += " -t %d" % int(length * 1000)
+        else:
+            args += " -t %d" % timeout
 
         if workers is not None:
             args += " -n %d" % workers
@@ -511,6 +522,9 @@ tool_group.add_option("--http-getter-dns-servers", action="store", type="string"
                       help="DNS servers to use for http-getter lookups. Format is host[:port][,host[:port]]... "
                       "This option will only work if libcurl supports it (needs to be built with the ares resolver). "
                       "Default is none (use the system resolver).")
+tool_group.add_option("--http-getter-timeout", action="store", type="int", dest="HTTP_GETTER_TIMEOUT",
+                      metavar="MILLISECONDS",
+                      help="Timeout for HTTP connections. Default is to use the test length.")
 tool_group.add_option("--http-getter-workers", action="store", type="int", dest="HTTP_GETTER_WORKERS",
                       metavar="NUMBER",
                       help="Number of workers to use for getting HTTP urls. Default is 4.")
