@@ -99,13 +99,15 @@ class BatchRunner(object):
 
     def inherit(self, parent, child):
         new = parent.copy()
-        new.update(child)
-        if 'inherits' in parent:
-            new['inherits'] = "%s, %s" % (parent['inherits'], child['inherits'])
 
         # Make sure children are not declared abstract.
         if 'abstract' in new:
             del new['abstract']
+
+        new.update(child)
+        if 'inherits' in parent:
+            new['inherits'] = "%s, %s" % (parent['inherits'], child['inherits'])
+
         return new
 
     def get_ivar(self, name, ivars, settings):
