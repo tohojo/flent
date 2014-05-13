@@ -167,7 +167,7 @@ class BatchRunner(object):
             cmd = self.apply_args(self.commands[c], batch, settings)
 
             # Don't include disabled commands
-            if not cmd.get('enabled', True):
+            if cmd.get('disabled', False) or not cmd.get('enabled', True):
                 continue
 
             # Commands can specify extra commands to run; expand those, use the
@@ -245,7 +245,7 @@ class BatchRunner(object):
         if batch.get('abstract', False):
             sys.stderr.write(" Batch marked as abstract. Not running.\n")
             return False
-        elif batch.get('disabled', False):
+        elif batch.get('disabled', False) or not batch.get('enabled', True):
             sys.stderr.write(" Batch disabled.\n")
             return False
 
