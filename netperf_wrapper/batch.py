@@ -21,6 +21,8 @@
 
 import sys, pprint, string, re, time, os, subprocess, signal, itertools
 
+from datetime import datetime
+
 try:
     from configparser import RawConfigParser
 except ImportError:
@@ -57,6 +59,7 @@ class BatchRunner(object):
         self.killed = False
         self.children = []
         self.log_fd = None
+        self.tests_run = 0
 
         for f in settings.BATCH_FILES:
             self.read(f)
@@ -340,6 +343,8 @@ class BatchRunner(object):
         formatter = formatters.new(settings)
         formatter.format([res])
 
+        self.tests_run += 1
+
     def load_input(self, settings):
         settings = settings.copy()
         results = []
@@ -364,6 +369,8 @@ class BatchRunner(object):
         if self.settings.INPUT:
             return self.load_input(self.settings)
         elif self.settings.BATCH_NAMES:
+            start_time = self.settings.TIME
+            sys.stderr.write("Started batch sequence at %s.\n" % start_time.strftime("%Y-%m-%d %H:%M:%S"))
             if len(self.settings.BATCH_NAMES) == 1 and self.settings.BATCH_NAMES[0] == 'ALL':
                 sys.stderr.write("Running all batches.\n")
                 batches = self.batches.keys()
@@ -377,6 +384,9 @@ class BatchRunner(object):
                     raise
                 except Exception as e:
                     raise RuntimeError("Error while running batch '%s': %r." % (b, e))
+            end_time = datetime.now()
+            sys.stderr.write("Ended batch sequence at %s. Ran %d tests in %s.\n" % (end_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                                                                    self.tests_run, (end_time - start_time)))
             return True
         else:
             return self.run_test(self.settings, os.path.dirname(self.settings.OUTPUT) or ".")
