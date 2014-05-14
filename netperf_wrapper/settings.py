@@ -172,6 +172,16 @@ class Glob(object):
                 l[i:i+1] = pattern.filter(values, exclude)
         return l
 
+def finder(fn):
+    """Decorator to put on find_* methods that makes sure common operations
+    (i.e. skip if self.informational is set) are carried out correctly."""
+
+    def decorated(self, *args, **kwargs):
+        if self.informational:
+            return ""
+        return fn(self, *args, **kwargs)
+    return decorated
+
 class TestEnvironment(object):
 
     def __init__(self, env={}, informational=False):
@@ -201,15 +211,11 @@ class TestEnvironment(object):
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
 
+    @finder
     def find_ping(self, ip_version, interval, length, host):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
-
-        # This can take a while, so skip if the tests are only loaded for informational
-        # purposes (e.g. for --list-tests)
-        if self.informational:
-            return ""
 
         if ip_version == 6:
             suffix = "6"
@@ -239,12 +245,9 @@ class TestEnvironment(object):
 
         raise RuntimeError("No suitable ping tool found.")
 
+    @finder
     def find_netperf(self, test, length, host, ip_version=None, marking=None, interval=None, extra_args=None):
         """Find a suitable netperf executable, and test for the required capabilities."""
-        # This can take a while, so skip if the tests are only loaded for informational
-        # purposes (e.g. for --list-tests)
-        if self.informational:
-            return ""
         if ip_version is None:
             ip_version = self.env['IP_VERSION']
 
@@ -304,9 +307,8 @@ class TestEnvironment(object):
 
         return "%s %s" % (self.netperf['executable'], args)
 
+    @finder
     def find_itgsend(self, test_args, length, host):
-        if self.informational:
-            return ""
 
         if self.itgsend is None:
             self.itgsend = util.which("ITGSend", fail=True)
@@ -320,10 +322,9 @@ class TestEnvironment(object):
             dest_host=host,
             args=test_args)
 
+    @finder
     def find_http_getter(self, interval, length, workers = None, ip_version = None,
                          dns_servers = None, url_file = None, timeout = None):
-        if self.informational:
-            return ""
 
         args = "-i %d -l %d" % (int(interval*1000.0), length)
 
