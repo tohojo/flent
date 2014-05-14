@@ -185,7 +185,7 @@ def finder(fn):
 class TestEnvironment(object):
 
     def __init__(self, env={}, informational=False):
-        self.env = dict(env)
+        self.env = deepcopy(env)
         self.env.update({
             'glob': Glob,
             'o': OrderedDict,
@@ -335,7 +335,7 @@ class TestEnvironment(object):
             dns_servers = self.env['HTTP_GETTER_DNS']
 
         if timeout is None:
-            workers = self.env['HTTP_GETTER_TIMEOUT']
+            timeout = self.env['HTTP_GETTER_TIMEOUT']
 
         if workers is None:
             workers = self.env['HTTP_GETTER_WORKERS']
