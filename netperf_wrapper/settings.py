@@ -326,6 +326,9 @@ class TestEnvironment(object):
 
     def find_http_getter(self, interval, length, workers = None, ip_version = None,
                          dns_servers = None, url_file = None, timeout = None):
+        if self.informational:
+            return ""
+
         args = "-i %d -l %d" % (int(interval*1000.0), length)
 
         if url_file is None:
@@ -367,7 +370,7 @@ class TestEnvironment(object):
         if self.http_getter is None:
             http_getter = util.which('http-getter')
             if http_getter is None:
-                raise RuntimeError("No netperf binary found in PATH.")
+                raise RuntimeError("No http-getter binary found in PATH.")
             self.http_getter = http_getter
 
         return "%s %s" % (self.http_getter, args)
