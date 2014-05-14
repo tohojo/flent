@@ -263,9 +263,7 @@ class TestEnvironment(object):
         args += " -H %s -t %s -l %d" % (host, test, length)
 
         if self.netperf is None:
-            netperf = util.which('netperf')
-            if netperf is None:
-                raise RuntimeError("No netperf binary found in PATH.")
+            netperf = util.which('netperf', fail=True)
 
             # Try to figure out whether this version of netperf supports the -e
             # option for socket timeout on UDP_RR tests, and whether it has been
@@ -311,9 +309,7 @@ class TestEnvironment(object):
             return ""
 
         if self.itgsend is None:
-            self.itgsend = util.which("ITGSend")
-            if self.itgsend is None:
-                raise RuntimeError("ITGSend not found in PATH.")
+            self.itgsend = util.which("ITGSend", fail=True)
 
         # We put placeholders in the command string to be filled out by string
         # format expansion by the runner once it has communicated with the control
@@ -368,10 +364,7 @@ class TestEnvironment(object):
             args += " %s" % url_file
 
         if self.http_getter is None:
-            http_getter = util.which('http-getter')
-            if http_getter is None:
-                raise RuntimeError("No http-getter binary found in PATH.")
-            self.http_getter = http_getter
+            self.http_getter = util.which('http-getter', fail=True)
 
         return "%s %s" % (self.http_getter, args)
 

@@ -81,7 +81,7 @@ def frange(limit1, limit2 = None, increment = 1.):
 def is_executable(filename):
     return os.path.isfile(filename) and os.access(filename, os.X_OK)
 
-def which(executable):
+def which(executable, fail=False):
     pathname, filename = os.path.split(executable)
     if pathname:
         if is_executable(executable):
@@ -92,6 +92,8 @@ def which(executable):
             if is_executable(filename):
                 return filename
 
+    if fail:
+        raise RuntimeError("No %s binary found in PATH." % executable)
     return None
 
 def lookup_host(hostname, version=None):
