@@ -77,6 +77,7 @@ DEFAULT_SETTINGS = {
     'BATCH_NAMES': [],
     'BATCH_FILES': [],
     'BATCH_OVERRIDE': [],
+    'BATCH_DRY': False,
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
@@ -437,6 +438,8 @@ parser.add_option("--batch-override", action="append", type="string", dest="BATC
                   metavar="OVERRIDE",
                   help="Specify a parameter to override in the batch config. Format is name=value. "
                   "Name will be case folded to lower case. Can be specified multiple times.")
+parser.add_option("--batch-dry-run", action="store_true", dest="BATCH_DRY",
+                  help="Dry batch run. Prints what would be done, but doesn't actually run any tests.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",

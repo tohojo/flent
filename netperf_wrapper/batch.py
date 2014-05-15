@@ -35,6 +35,7 @@ except ImportError:
 from netperf_wrapper import aggregators, formatters, resultset
 from netperf_wrapper.metadata import record_extended_metadata
 from netperf_wrapper.util import clean_path
+from netperf_wrapper.settings import CONFIG_TYPES
 
 # Python2/3 compatibility
 try:
@@ -185,6 +186,13 @@ class BatchRunner(object):
 
     def run_command(self, command):
         cmd = command['exec'].strip()
+        if self.settings.BATCH_DRY:
+            sys.stderr.write("  Would run '%s'" % cmd)
+            if command.get('essential', False):
+                sys.stderr.write(" (essential).\n")
+            else:
+                sys.stderr.write(" (non-essential).")
+            return
         if command['type'] in ('pre', 'post'):
             try:
                 res = subprocess.check_output(cmd, universal_newlines=True, shell=True,
@@ -287,37 +295,52 @@ class BatchRunner(object):
 
             settings.load_rcvalues(b.items(), override=True)
             settings.NAME = b['test_name']
-            settings.load_test()
+            settings.load_test(informational=settings.BATCH_DRY)
             settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
 
             if 'output_path' in b:
                 output_path = clean_path(b['output_path'], allow_dirs=True)
             else:
                 output_path = os.path.dirname(settings.OUTPUT) or "."
-            if not os.path.exists(output_path):
+
+            if settings.BATCH_DRY:
+                sys.stderr.write("  Would output to: %s.\n" % output_path)
+            elif not os.path.exists(output_path):
                 try:
                     os.makedirs(output_path)
                 except OSError as e:
                     raise RuntimeError("Unable to create output path '%s': %s." % (output_path,e))
 
             commands = self.commands_for(b, settings)
-            self.log_fd = open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "a")
+            if not settings.BATCH_DRY:
+                self.log_fd = open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "a")
             if b.get('debug_log', False):
                 settings.LOG_FILE = os.path.join(output_path,"%s.debug.log" % settings.DATA_FILENAME)
 
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
             try:
-                self.run_test(settings, output_path)
+                if settings.BATCH_DRY:
+                    sys.stderr.write("  Would run test '%s'.\n" % settings.NAME)
+                    sys.stderr.write("   data_filename=%s.\n" % settings.DATA_FILENAME)
+                    for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
+                        if k in b:
+                            sys.stderr.write("   %s=%s.\n" % (k, b[k]))
+                else:
+                    self.run_test(settings, output_path)
             except:
                 self.run_commands(commands, 'post', essential_only=True)
                 raise
             self.kill_children()
             self.run_commands(commands, 'post')
-            self.log_fd.close()
+            if self.log_fd:
+                self.log_fd.close()
             self.log_fd = None
 
-            time.sleep(pause)
+            if settings.BATCH_DRY:
+                sys.stderr.write("  Would sleep for %d seconds.\n" % pause)
+            else:
+                time.sleep(pause)
 
 
     def log(self, text):
