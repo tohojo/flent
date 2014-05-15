@@ -191,7 +191,7 @@ class BatchRunner(object):
             if command.get('essential', False):
                 sys.stderr.write(" (essential).\n")
             else:
-                sys.stderr.write(" (non-essential).")
+                sys.stderr.write(" (non-essential).\n")
             return
         if command['type'] in ('pre', 'post'):
             try:
