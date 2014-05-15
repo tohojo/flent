@@ -23,6 +23,26 @@ import sys, os, socket, subprocess, time, re
 
 from netperf_wrapper import util
 
+INTERESTING_OFFLOADS = ['tcp-segmentation-offload',
+                        'udp-fragmentation-offload',
+                        'large-receive-offload',
+                        'generic-segmentation-offload',
+                        'generic-receive-offload']
+
+INTERESTING_SYSCTLS = ['net.ipv4.tcp_autocorking',
+                       'net.ipv4.tcp_early_retrans',
+                       'net.ipv4.tcp_ecn',
+                       'net.ipv4.tcp_dsack',
+                       'net.ipv4.tcp_fack',
+                       'net.ipv4.tcp_sack',
+                       'net.ipv4.tcp_fastopen',
+                       'net.ipv4.tcp_syncookies',
+                       'net.ipv4.tcp_window_scaling',
+                       'net.ipv4.tcp_congestion_control',
+                       'net.ipv4.tcp_allowed_congestion_control',
+                       'net.ipv4.tcp_available_congestion_control',
+                       'net.ipv4.tcp_no_metrics_save']
+
 class CommandRunner(object):
 
     def __init__(self):
@@ -67,6 +87,7 @@ def record_extended_metadata(results, hostnames):
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
     m['IP_ADDRS'] = get_ip_addrs()
     m['GATEWAYS'] = get_gateways()
+    m['SYSCTLS'] = get_sysctls()
     m['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
 
     m['REMOTE_METADATA'] = {}
@@ -79,10 +100,12 @@ def record_extended_metadata(results, hostnames):
         m['REMOTE_METADATA'][h]['KERNEL_RELEASE'] = get_command_output("uname -r")
         m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
         m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
+        m['REMOTE_METADATA'][h]['SYSCTLS'] = get_sysctls()
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
         if m['EGRESS_INFO'] is not None and 'src' in m['EGRESS_INFO']:
             m['REMOTE_METADATA'][h]['INGRESS_INFO'] = get_egress_info(target=m['EGRESS_INFO']['src'], ip_version=m['IP_VERSION'])
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
+
 
 def get_ip_addrs(iface=None):
     """Try to get IP addresses associated to this machine. Uses iproute2 if available,
@@ -150,16 +173,11 @@ def get_offloads(iface):
 
     output = get_command_output("ethtool -k %s" % iface)
     val_map = {'on': True, 'off': False}
-    interesting_offloads = ['tcp-segmentation-offload',
-                            'udp-fragmentation-offload',
-                            'large-receive-offload',
-                            'generic-segmentation-offload',
-                            'generic-receive-offload']
     if output is not None:
         for l in output.splitlines():
             parts = l.split()
             key = parts[0].strip(":")
-            if key in interesting_offloads:
+            if key in INTERESTING_OFFLOADS:
                 try:
                     offloads[key] = val_map[parts[1]]
                 except KeyError:
@@ -307,3 +325,20 @@ def get_bql(iface):
 
 def get_driver(iface):
     return get_command_output("basename $(readlink /sys/class/net/%s/device/driver)" % iface)
+
+def get_sysctls():
+    sysctls = {}
+
+    output = get_command_output("sysctl -e %s" % " ".join(INTERESTING_SYSCTLS))
+    if output is not None:
+        for line in output.splitlines():
+            parts = line.split("=")
+            if len(parts) != 2:
+                continue
+            k,v = [i.strip() for i in parts]
+            try:
+                sysctls[k] = int(v)
+            except ValueError:
+                sysctls[k] = v
+
+    return sysctls
