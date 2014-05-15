@@ -323,10 +323,10 @@ class BatchRunner(object):
             try:
                 if settings.BATCH_DRY:
                     sys.stderr.write("  Would run test '%s'.\n" % settings.NAME)
-                    sys.stderr.write("   data_filename=%s.\n" % settings.DATA_FILENAME)
+                    sys.stderr.write("   data_filename=%s\n" % settings.DATA_FILENAME)
                     for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
                         if k in b:
-                            sys.stderr.write("   %s=%s.\n" % (k, b[k]))
+                            sys.stderr.write("   %s=%s\n" % (k, b[k]))
                 else:
                     self.run_test(settings, output_path)
             except:
