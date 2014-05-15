@@ -179,7 +179,8 @@ class BatchRunner(object):
             # Commands can specify extra commands to run; expand those, use the
             # dictionary to prevent duplicates
             extra = [i.strip() for i in cmd.get('extra_commands', '').split(',') if i.strip()]
-            cmdnames.extend(extra)
+            for e in reversed(extra):
+                cmdnames.insert(0, e)
             commands[c] = cmd
 
         return commands.values()
