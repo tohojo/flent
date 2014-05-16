@@ -364,12 +364,18 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def load_files(self, filenames):
         self.busy_start()
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            current_plot = widget.current_plot()
+        else:
+            current_plot = None
         widget = None
         for f in filenames:
             widget = ResultWidget(self.viewArea, f, self.settings)
             widget.update_start.connect(self.busy_start)
             widget.update_end.connect(self.busy_end)
             widget.plot_changed.connect(self.update_plots)
+            widget.change_plot(current_plot)
             self.viewArea.addTab(widget, widget.title)
             self.last_dir = os.path.dirname(unicode(f))
         if widget is not None:
@@ -609,12 +615,17 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if isinstance(plot_name, QModelIndex):
             plot_name = self.plotModel.name_of(plot_name)
         plot_name = unicode(plot_name)
-        if plot_name != self.settings.PLOT:
+        if plot_name != self.settings.PLOT and plot_name in self.settings.PLOTS:
             self.settings.PLOT = plot_name
             self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
                                                     QItemSelectionModel.SelectCurrent)
             self.plot_changed.emit(self.settings.NAME, self.settings.PLOT)
             self.update()
+            return True
+        return False
+
+    def current_plot(self):
+        return self.settings.PLOT
 
     def updates_disabled(self):
         return UpdateDisabler(self)
