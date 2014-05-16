@@ -78,6 +78,7 @@ DEFAULT_SETTINGS = {
     'BATCH_FILES': [],
     'BATCH_OVERRIDE': [],
     'BATCH_DRY': False,
+    'BATCH_REPS': None,
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
@@ -440,6 +441,8 @@ parser.add_option("--batch-override", action="append", type="string", dest="BATC
                   "Name will be case folded to lower case. Can be specified multiple times.")
 parser.add_option("--batch-dry-run", action="store_true", dest="BATCH_DRY",
                   help="Dry batch run. Prints what would be done, but doesn't actually run any tests.")
+parser.add_option("--batch-repetitions", action="store", type='int', dest="BATCH_REPS", metavar="REPETITIONS",
+                  help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -682,6 +685,9 @@ class Settings(optparse.Values, object):
 
         if hasattr(self, 'PLOT'):
             self.FORMAT = 'plot'
+
+        if self.BATCH_REPS is not None:
+            self.BATCH_OVERRIDE.append('repetitions=%d' % self.BATCH_REPS)
 
 
 
