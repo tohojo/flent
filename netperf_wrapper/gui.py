@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, signal
+import sys, os, signal, traceback
 
 # Python 2/3 compatibility
 try:
@@ -503,9 +503,14 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
         try:
             self.formatter = PlotFormatter(self.settings)
-        except RuntimeError as e:
+        except Exception as e:
+            traceback.print_exc()
+            if isinstance(e, RuntimeError):
+                err = "%s." % e
+            else:
+                err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
             QMessageBox.warning(self, "Error loading plot",
-                                "%s\nFalling back to default plot" % e)
+                                "Error while loading plot:\n\n%s\nFalling back to default plot. Full traceback output to console." % err)
 
             self.settings.PLOT = self.settings.DEFAULTS['PLOT']
             self.formatter = PlotFormatter(self.settings)
@@ -639,13 +644,20 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if not self.dirty:
             return
         self.update_start.emit()
-        self.formatter.init_plots()
-        if self.settings.SCALE_MODE:
-            self.settings.SCALE_DATA = self.extra_results
-            self.formatter.format([self.results])
-        else:
-            self.settings.SCALE_DATA = []
-            self.formatter.format([self.results] + self.extra_results)
-        self.canvas.draw()
-        self.dirty = False
-        self.update_end.emit()
+        try:
+            self.formatter.init_plots()
+            if self.settings.SCALE_MODE:
+                self.settings.SCALE_DATA = self.extra_results
+                self.formatter.format([self.results])
+            else:
+                self.settings.SCALE_DATA = []
+                self.formatter.format([self.results] + self.extra_results)
+            self.canvas.draw()
+            self.dirty = False
+        except Exception as e:
+            traceback.print_exc()
+            err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
+            QMessageBox.warning(self, "Error plotting",
+                                "Unhandled exception while plotting:\n\n%s\nAborting. Full traceback output to console." % err)
+        finally:
+            self.update_end.emit()
