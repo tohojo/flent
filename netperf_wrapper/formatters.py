@@ -409,24 +409,33 @@ class PlotFormatter(Formatter):
                 axis.set_xlabel("")
 
     def subplot_combine(self, callback, results):
+        config = {'subplots': [self.settings.PLOT] * len(results),
+                  'subplot_params': [{'title': r.meta('TITLE')} for r in results],}
+        self.figure.clear()
+        self._init_meta_plot(config=config)
+        for c,r in zip(self.configs,results):
+            callback(r, config=c, extra_scale_data=results)
+
+    def dataseries_combine(self, callback, results, config=None, axis=None):
+        styles = cycle(self.styles)
+        colours = cycle(self.colours)
+        for r in results:
+            style = next(styles).copy()
+            if (config and 'series' in config and len(config['series']) == 1) or \
+                ('series' in self.config and len(self.config['series']) == 1):
+                style['color'] = next(colours)
+            callback(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=style, extra_scale_data=results)
+
+    def combine(self, callback, results, config=None, axis=None):
         if self.settings.SUBPLOT_COMBINE and not self.subplot_combine_disabled:
-            config = {'subplots': [self.settings.PLOT] * len(results),
-                      'subplot_params': [{'title': r.meta('TITLE')} for r in results],}
-            self.figure.clear()
-            self._init_meta_plot(config=config)
-            for c,r in zip(self.configs,results):
-                callback(r, config=c, extra_scale_data=results)
-            return True
-        return False
+            self.subplot_combine(callback, results)
+        else:
+            self.dataseries_combine(callback, results, config, axis)
 
 
     def do_timeseries_plot(self, results, config=None, axis=None):
         if len(results) > 1:
-            if self.subplot_combine(self._do_timeseries_plot, results):
-                return
-            styles = cycle(self.styles)
-            for r in results:
-                self._do_timeseries_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles), extra_scale_data=results)
+            self.combine(self._do_timeseries_plot, results, config, axis)
         else:
             self._do_timeseries_plot(results[0], config=config, axis=axis)
 
@@ -547,11 +556,7 @@ class PlotFormatter(Formatter):
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
-            if self.subplot_combine(self._do_cdf_plot, results):
-                return
-            styles = cycle(self.styles)
-            for r in results:
-                self._do_cdf_plot(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=next(styles), extra_scale_data=results)
+            self.combine(self._do_cdf_plot, results, config, axis)
         else:
             self._do_cdf_plot(results[0], config=config, axis=axis)
 
