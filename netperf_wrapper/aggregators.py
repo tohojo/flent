@@ -207,18 +207,14 @@ class TimeseriesAggregator(Aggregator):
                 t_prev = v_prev = None
                 t_next = v_next = None
 
-                # Some measurements (notably UDP pings) give a spurious value
-                # for the last measurement, so cut off the very last data point
-                # from each series. This should hopefully not lose any valuable
-                # data.
-                for i in range(len(r)-1):
+                for i in range(len(r)):
                     if r[i][0] > t:
                         if i > 0:
                             t_prev,v_prev = r[i-1]
                         else:
                             # minimum interpolation distance on first entry to
                             # avoid multiple interpolations to the same value
-                            max_dist = 0.1
+                            max_dist = self.step*0.5
                         t_next,v_next = r[i]
                         break
                 if t_next is None:
@@ -228,7 +224,7 @@ class TimeseriesAggregator(Aggregator):
                     if t_prev is None:
                         # The first/last data point for this measurement is after the
                         # current t. Don't interpolate, just use the value.
-                        if last and results.last_datapoint(n) == v_next:
+                        if last and results.last_datapoint(n) in (v_next,None):
                             # Avoid repeating last interpolation
                             result[n] = None
                         else:
