@@ -53,11 +53,16 @@ RECORDED_SETTINGS = (
     "NETPERF_WRAPPER_VERSION",
     "IP_VERSION",
     "BATCH_NAME",
+    "BATCH_TIME",
     "DATA_FILENAME",
     "HTTP_GETTER_URLLIST",
     "HTTP_GETTER_DNS",
     "HTTP_GETTER_WORKERS",
     )
+
+# Time settings will be serialised as ISO timestamps and stored in memory as
+# datetime instances
+TIME_SETTINGS = ("TIME", "BATCH_TIME")
 
 def new(settings):
     d = {}
@@ -179,8 +184,10 @@ class ResultSet(object):
         return len(self._x_values)
 
     def serialise_metadata(self):
-        metadata = dict(self.metadata)
-        metadata['TIME'] = metadata['TIME'].isoformat()
+        metadata = self.metadata.copy())
+        for t in TIME_SETTINGS:
+            if t in metadata:
+                metadata[t] = metadata[t].isoformat()
         return metadata
 
     def serialise(self):
@@ -236,8 +243,9 @@ class ResultSet(object):
     @classmethod
     def unserialise(cls, obj):
         metadata = dict(obj['metadata'])
-        if 'TIME' in metadata:
-            metadata['TIME'] = parse_date(metadata['TIME'])
+        for t in TIME_SETTINGS:
+            if t in metadata:
+                metadata[t] = parse_date(metadata[t])
         rset = cls(**metadata)
         rset.x_values = obj['x_values']
         for k,v in list(obj['results'].items()):

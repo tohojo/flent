@@ -236,7 +236,7 @@ class BatchRunner(object):
     def gen_filename(self, settings, batch, argset, rep):
         filename = "batch-%s-%s-%s" % (
             settings.BATCH_NAME,
-            batch['batch_date'],
+            batch['batch_time'],
             batch.get('filename_extra', "%s-%s" % (argset, rep))
             )
         return clean_path(filename)
@@ -281,10 +281,11 @@ class BatchRunner(object):
             settings = self.settings.copy()
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
+            settings.BATCH_TIME = self.settings.TIME
             settings.TIME = datetime.now()
 
             expand_vars = {'repetition': "%02d" % rep,
-                           'batch_date': self.settings.TIME.strftime("%Y-%m-%dT%H%M%S")}
+                           'batch_time': settings.BATCH_TIME.strftime("%Y-%m-%dT%H%M%S")}
 
             for arg in argset:
                 if not arg in self.args:
