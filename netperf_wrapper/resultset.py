@@ -184,7 +184,7 @@ class ResultSet(object):
         return len(self._x_values)
 
     def serialise_metadata(self):
-        metadata = self.metadata.copy())
+        metadata = self.metadata.copy()
         for t in TIME_SETTINGS:
             if t in metadata:
                 metadata[t] = metadata[t].isoformat()
