@@ -481,3 +481,15 @@ class SumRunner(ComputingRunner):
     command = "Sum (computed)"
     def compute(self,values):
         return math.fsum(values)
+
+class DiffMinRunner(ComputingRunner):
+    command = "Diff from min (computed)"
+    def result(self, res):
+        if not self.keys:
+            return res
+
+        key = self.keys[0]
+
+        min_val = min(res[key])
+        res.add_result(self.name, [i-min_val if i is not None else None for i in res[key]])
+        return res

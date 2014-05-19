@@ -139,6 +139,9 @@ class ResultSet(object):
             return self.smoothed(name, smooth)
         return self._results[name]
 
+    def __getitem__(self, name):
+        return self.series(name)
+
     def smoothed(self, name, amount):
         res = self._results[name]
         smooth_res = []
