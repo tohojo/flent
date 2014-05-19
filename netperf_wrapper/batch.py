@@ -281,9 +281,10 @@ class BatchRunner(object):
             settings = self.settings.copy()
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
+            settings.TIME = datetime.now()
 
             expand_vars = {'repetition': "%02d" % rep,
-                           'batch_date': settings.TIME.strftime("%Y-%m-%dT%H%M%S")}
+                           'batch_date': self.settings.TIME.strftime("%Y-%m-%dT%H%M%S")}
 
             for arg in argset:
                 if not arg in self.args:
