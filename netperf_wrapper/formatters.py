@@ -637,7 +637,7 @@ class PlotFormatter(Formatter):
                     elif combine_mode == 'mean_span':
                         d = [p for p in d if p is not None]
                         min_val = min(d)
-                        d = map(lambda i:i-min_val, d)
+                        d = [i-min_val for i in d]
                         data[s['data']] = self.np.mean(d)
                     elif combine_mode == 'mean_zero':
                         d = [p if p is not None else 0 for p in d]
@@ -878,7 +878,7 @@ class PlotFormatter(Formatter):
         if self.settings.FILTER_LEGEND:
             substr = long_substr(labels)
             if len(substr) > 0:
-                labels = map(lambda l: l.replace(substr, ''), labels)
+                labels = [l.replace(substr, '') for l in labels]
 
         kwargs = {}
         if 'legend_title' in config:
