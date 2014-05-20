@@ -611,7 +611,7 @@ class PlotFormatter(Formatter):
                 groups[n] = [results[i]]
 
         for k in sorted(groups.keys()):
-            res = ResultSet(TITLE=k, NAME=results[0].meta('NAME'))
+            res = ResultSet(TITLE="%s (n=%d)" % (k, len(groups[k])), NAME=results[0].meta('NAME'))
             res.create_series([s['data'] for s in config['series']])
             x = 0
             for r in groups[k]:
