@@ -414,7 +414,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 if isinstance(e, RuntimeError):
                     err = "%s" % e
                 else:
-                    err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
+                    typ,val,tra = sys.exc_info()
+                    err = "".join(traceback.format_exception_only(typ,val))
                 QMessageBox.warning(self, "Error loading file",
                                     "Error while loading data file:\n\n%s\n\nSkipping. Full traceback output to console." % err)
                 continue
@@ -556,7 +557,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             if isinstance(e, RuntimeError):
                 err = "%s" % e
             else:
-                err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
+                typ,val,tra = sys.exc_info()
+                err = "".join(traceback.format_exception_only(typ,val))
             QMessageBox.warning(self, "Error loading plot",
                                 "Error while loading plot:\n\n%s\nFalling back to default plot. Full traceback output to console." % err)
 
@@ -711,7 +713,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.dirty = False
         except Exception as e:
             traceback.print_exc()
-            err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
+            typ,val,tra = sys.exc_info()
+            err = "".join(traceback.format_exception_only(typ,val))
             QMessageBox.warning(self, "Error plotting",
                                 "Unhandled exception while plotting:\n\n%s\nAborting. Full traceback output to console." % err)
         finally:
