@@ -112,6 +112,19 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout">
+     <item row="2" column="0">
+      <widget class="QCheckBox" name="checkSubplotCombine">
+       <property name="toolTip">
+        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
+       </property>
+       <property name="statusTip">
+        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
+       </property>
+       <property name="text">
+        <string>Subplot combine</string>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="1">
       <widget class="QCheckBox" name="checkDisableLog">
        <property name="toolTip">
@@ -164,19 +177,6 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="checkSubplotCombine">
-       <property name="toolTip">
-        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
-       </property>
-       <property name="statusTip">
-        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
-       </property>
-       <property name="text">
-        <string>Subplot combine</string>
-       </property>
-      </widget>
-     </item>
      <item row="2" column="1">
       <widget class="QCheckBox" name="checkAnnotation">
        <property name="toolTip">
@@ -213,6 +213,19 @@
        </property>
        <property name="text">
         <string>Title</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QCheckBox" name="checkFilterLegend">
+       <property name="toolTip">
+        <string>Filter legend labels by removing the longest common substring from all entries.</string>
+       </property>
+       <property name="statusTip">
+        <string>Filter legend labels by removing the longest common substring from all entries.</string>
+       </property>
+       <property name="text">
+        <string>Filter legend</string>
        </property>
       </widget>
      </item>

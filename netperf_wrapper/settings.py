@@ -63,6 +63,7 @@ DEFAULT_SETTINGS = {
     'ANNOTATE': True,
     'PRINT_TITLE': True,
     'PRINT_LEGEND': True,
+    'FILTER_LEGEND': False,
     'ZERO_Y': False,
     'INVERT_Y': False,
     'LOG_SCALE': True,
@@ -102,6 +103,7 @@ CONFIG_TYPES = {
     'ANNOTATE': 'bool',
     'PRINT_TITLE': 'bool',
     'PRINT_LEGEND': 'bool',
+    'FILTER_LEGEND': 'bool',
     'ZERO_Y': 'bool',
     'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
@@ -502,6 +504,8 @@ plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
                   help="Exclude legend from plots.")
 plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
                   help="Exclude title from plots.")
+plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
+                  help="Filter legend labels by removing the longest common substring from all entries.")
 parser.add_option_group(plot_group)
 
 

@@ -164,6 +164,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkAnnotation.setChecked(self.settings.ANNOTATE)
         self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
+        self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
@@ -173,6 +174,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkAnnotation.toggled.connect(self.update_checkboxes)
         self.checkLegend.toggled.connect(self.update_checkboxes)
         self.checkTitle.toggled.connect(self.update_checkboxes)
+        self.checkFilterLegend.toggled.connect(self.update_checkboxes)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -199,6 +201,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.draw_annotation(self.checkAnnotation.isChecked())
             widget.draw_legend(self.checkLegend.isChecked())
             widget.draw_title(self.checkTitle.isChecked())
+            widget.filter_legend(self.checkFilterLegend.isChecked())
 
     def new_connection(self):
         sock = self.server.nextPendingConnection()
@@ -661,6 +664,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.PRINT_TITLE = val
             self.update()
         return self.settings.PRINT_TITLE
+
+    def filter_legend(self, val=None):
+        if val is not None and val != self.settings.FILTER_LEGEND:
+            self.settings.FILTER_LEGEND = val
+            self.update()
+        return self.settings.FILTER_LEGEND
 
     def change_plot(self, plot_name):
         if isinstance(plot_name, QModelIndex):

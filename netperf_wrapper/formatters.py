@@ -872,9 +872,13 @@ class PlotFormatter(Formatter):
         # all plot lines
         handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
                                  [a.get_legend_handles_labels() for a in axes])
-
         if not labels:
             return []
+
+        if self.settings.FILTER_LEGEND:
+            substr = long_substr(labels)
+            if len(substr) > 0:
+                labels = map(lambda l: l.replace(substr, ''), labels)
 
         kwargs = {}
         if 'legend_title' in config:
