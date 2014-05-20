@@ -53,6 +53,26 @@ def clean_path(path, allow_dirs=False):
     else:
         return re.sub("[^A-Za-z0-9_-]", "_", path)
 
+
+def long_substr(data, prefix_only=False):
+    """Find the longest common substring between a list of strings.
+    Optionally limit search to prefixes only.
+
+    Brute force approach (i.e. not very efficient...).
+    Based on https://stackoverflow.com/questions/2892931/longest-common-substring-from-more-than-two-strings-python"""
+    substr = ''
+    if len(data) > 1 and len(data[0]) > 0:
+        if prefix_only:
+            start_pos = [0]
+        else:
+            start_pos = range(len(data[0]))
+        for i in start_pos:
+            for j in range(len(data[0])-i+1):
+                if j > len(substr) and all(data[0][i:i+j] in x for x in data):
+                    substr = data[0][i:i+j]
+    return substr
+
+
 # Calculate discrete cdf function using bisect_left.
 def cum_prob(data, val, size):
     return bisect_left(data, val)/size

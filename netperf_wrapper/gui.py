@@ -45,6 +45,7 @@ except ImportError:
 from netperf_wrapper.build_info import DATA_DIR
 from netperf_wrapper.resultset import ResultSet
 from netperf_wrapper.formatters import PlotFormatter
+from netperf_wrapper import util
 
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "netperf-wrapper-socket-"
@@ -305,6 +306,37 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.load_files(self.defer_load)
             self.defer_load = None
 
+    def shorten_tabs(self):
+        """Try to shorten tab labels by filtering out common substrings.
+
+        Approach: Find longest common substring and replace that with ellipses
+        in the name. Also, find longest common *prefix* and filter that out as
+        well.
+
+        Since tab titles start with the test name, and several tests are
+        commonly loaded as well, this double substring search helps cut off the
+        (common) test name in the case where the longest substring is in the
+        middle of the tab name."""
+
+        titles = []
+        long_titles = []
+        for i in range(self.viewArea.count()):
+            titles.append(self.viewArea.widget(i).title)
+            long_titles.append(self.viewArea.widget(i).long_title)
+
+        substr = util.long_substr(titles)
+        prefix = util.long_substr(titles, prefix_only=True)
+        for i,t in enumerate(titles):
+            if len(substr) > 0:
+                text = t.replace(substr, "...")
+            if len(prefix) > 0 and prefix != substr:
+                text = text.replace(prefix, "...").replace("......", "...")
+            if len(substr) == 0 or text == "...":
+                text = t
+            self.viewArea.setTabText(i, text)
+            self.viewArea.setTabToolTip(i, long_titles[i])
+
+
     def close_tab(self, idx=None):
         if idx is None:
             idx = self.viewArea.currentIndex()
@@ -313,6 +345,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.viewArea.removeTab(idx)
             widget.setParent(None)
             widget.deleteLater()
+            self.shorten_tabs()
 
     def close_all(self):
         widgets = []
@@ -380,6 +413,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.last_dir = os.path.dirname(unicode(f))
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
+        self.shorten_tabs()
         self.busy_end()
 
 class PlotModel(QStringListModel):
@@ -534,11 +568,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.metadataSelectionModel = QItemSelectionModel(self.metadataModel)
 
         if self.settings.TITLE:
-            self.title = "%s - %s - %s" % (self.settings.NAME, self.settings.TITLE,
-                                           self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
+            self.title = "%s - %s" % (self.settings.NAME, self.settings.TITLE)
+            self.long_title = "%s - %s" % (self.title, self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
         else:
             self.title = "%s - %s" % (self.settings.NAME,
                                       self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
+            self.long_title = self.title
 
     def load_files(self, filenames):
         added = 0
