@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, pprint, string, re, time, os, subprocess, signal, itertools
+import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback
 
 from datetime import datetime
 
@@ -333,12 +333,14 @@ class BatchRunner(object):
                     self.run_test(settings, output_path)
             except:
                 self.run_commands(commands, 'post', essential_only=True)
-                raise
-            self.kill_children()
-            self.run_commands(commands, 'post')
-            if self.log_fd:
-                self.log_fd.close()
-            self.log_fd = None
+                sys.stderr.write("  Error running test: %s" % "  ".join(traceback.format_exception_only(sys.exc_type, sys.exc_value)))
+            else:
+                self.run_commands(commands, 'post')
+            finally:
+                self.kill_children()
+                if self.log_fd:
+                    self.log_fd.close()
+                self.log_fd = None
 
             if settings.BATCH_DRY:
                 sys.stderr.write("  Would sleep for %d seconds.\n" % pause)
