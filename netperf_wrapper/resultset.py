@@ -186,7 +186,7 @@ class ResultSet(object):
     def serialise_metadata(self):
         metadata = self.metadata.copy()
         for t in TIME_SETTINGS:
-            if t in metadata:
+            if t in metadata and metadata[t] is not None:
                 metadata[t] = metadata[t].isoformat()
         return metadata
 
@@ -244,7 +244,7 @@ class ResultSet(object):
     def unserialise(cls, obj):
         metadata = dict(obj['metadata'])
         for t in TIME_SETTINGS:
-            if t in metadata:
+            if t in metadata and metadata[t] is not None:
                 metadata[t] = parse_date(metadata[t])
         rset = cls(**metadata)
         rset.x_values = obj['x_values']
