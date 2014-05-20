@@ -404,7 +404,18 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             current_plot = None
         widget = None
         for f in filenames:
-            widget = ResultWidget(self.viewArea, f, self.settings)
+            try:
+                widget = ResultWidget(self.viewArea, f, self.settings)
+            except Exception as e:
+                traceback.print_exc()
+                if isinstance(e, RuntimeError):
+                    err = "%s" % e
+                else:
+                    err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
+                QMessageBox.warning(self, "Error loading file",
+                                    "Error while loading data file:\n\n%s\n\nSkipping. Full traceback output to console." % err)
+                continue
+
             widget.update_start.connect(self.busy_start)
             widget.update_end.connect(self.busy_end)
             widget.plot_changed.connect(self.update_plots)
@@ -540,7 +551,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         except Exception as e:
             traceback.print_exc()
             if isinstance(e, RuntimeError):
-                err = "%s." % e
+                err = "%s" % e
             else:
                 err = "".join(traceback.format_exception_only(sys.exc_type, sys.exc_value))
             QMessageBox.warning(self, "Error loading plot",
