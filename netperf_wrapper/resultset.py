@@ -37,7 +37,7 @@ from .util import gzip_open
 # Controls pretty-printing of json dumps
 JSON_INDENT=None
 
-__all__ = ['new']
+__all__ = ['new', 'load']
 
 RECORDED_SETTINGS = (
     "NAME",
@@ -74,6 +74,7 @@ def load(filename):
     return ResultSet.load_file(filename)
 
 class ResultSet(object):
+    SUFFIX = '.json.gz'
     def __init__(self, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
@@ -84,9 +85,9 @@ class ResultSet(object):
         if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
             raise RuntimeError("Missing name for resultset")
         if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
-            self.metadata['DATA_FILENAME'] = self._gen_filename()
-        if not self.metadata['DATA_FILENAME'].endswith('.json.gz'):
-            self.metadata['DATA_FILENAME'] += ".json.gz"
+            self.metadata['DATA_FILENAME'] = self.dump_file
+        if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
+            self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
     def meta(self, k=None):
@@ -101,7 +102,7 @@ class ResultSet(object):
         return self._x_values
     def set_x_values(self, x_values):
         assert not self._x_values
-        self._x_values = x_values
+        self._x_values = list(x_values)
     x_values = property(get_x_values, set_x_values)
 
     def add_result(self, name, data):
@@ -222,11 +223,12 @@ class ResultSet(object):
         if self._filename is not None:
             return self._filename
         if 'TITLE' in self.metadata and self.metadata['TITLE']:
-            return "%s-%s.%s.json.gz" % (self.metadata['NAME'],
+            return "%s-%s.%s%s" % (self.metadata['NAME'],
                                          self.metadata['TIME'].isoformat().replace(":", ""),
-                                         re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:50])
+                                         re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:50],
+                                         self.SUFFIX)
         else:
-            return "%s-%s.json.gz" % (self.metadata['NAME'], self.metadata['TIME'].isoformat().replace(":", ""))
+            return "%s-%s%s" % (self.metadata['NAME'], self.metadata['TIME'].isoformat().replace(":", ""), self.SUFFIX)
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())

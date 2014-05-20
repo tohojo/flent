@@ -19,9 +19,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, sys, csv, math, inspect, os
+import json, sys, csv, math, inspect, os, re
 
-from .util import cum_prob, frange, classname
+from .util import cum_prob, frange, classname, long_substr
+from .resultset import ResultSet
 from functools import reduce
 from itertools import product,cycle,islice
 
@@ -351,6 +352,9 @@ class PlotFormatter(Formatter):
         self.start_position = 1
         self.settings.LOG_SCALE = False
 
+    def _init_box_combine_plot(self, config=None, axis=None):
+        self._init_box_plot(config, axis)
+
 
     def _init_cdf_plot(self, config=None, axis=None):
         if axis is None:
@@ -553,6 +557,97 @@ class PlotFormatter(Formatter):
         axis.set_xticklabels(ticklabels)
         axis.set_xlim(0,pos-1)
 
+
+    # Match a word of all digits, optionally with a non-alphanumeric character
+    # preceding or succeeding it. For instance a series of files numbered as
+    # -01, -02, etc.
+    serial_regex = re.compile(r'\W?\b\d+\b\W?')
+    def do_box_combine_plot(self, results, config=None, axis=None):
+
+        """Combines several result sets into one box plot by grouping them on
+        unique data file name parts and then combining each group into a single
+        data set."""
+
+        if config is None:
+            config = self.config
+
+        # Group the result sets into the groups that will appear as new data
+        # sets. This is done on the file name, by first removing the file
+        # extension and the longest common prefix from all the loaded file
+        # names, then removing the first word boundary-delimited sequence of
+        # digits.
+        #
+        # The idea is that the data files will be named by a common prefix, with
+        # the distinguishing attribute (for instance configured qdisc) at the
+        # end, followed by a number signifying test iteration. So for instance
+        # given the filenames:
+        #
+        # rrul-fq_codel-01.json.gz
+        # rrul-fq_codel-02.json.gz
+        # rrul-fq_codel-03.json.gz
+        # rrul-pfifo_fast-01.json.gz
+        # rrul-pfifo_fast-02.json.gz
+        # rrul-pfifo_fast-03.json.gz
+        #
+        # two new data sets will be created ('fq_codel' and 'pfifo_fast'), each
+        # with three data points created from each of the data files. The
+        # function used to map the data points of each result set into a single
+        # data point is specified in the test config, and can be one of:
+        #
+        # mean, median, min, max : resp value computed from all valid data points
+        # span: max()-min() from all data points
+        # mean_span: mean of all data points' difference from the min value
+        # mean_zero: mean value with missing data points interpreted as 0 rather
+        #            than being filtered out
+        groups = {}
+        new_results = []
+        filenames = [r.meta('DATA_FILENAME').replace(r.SUFFIX, '') for r in results]
+        prefix = long_substr(filenames, prefix_only=True)
+        names = map(lambda s: self.serial_regex.sub("", s.replace(prefix, ""), count=1), filenames)
+        for i,n in enumerate(names):
+            if n in groups:
+                groups[n].append(results[i])
+            else:
+                groups[n] = [results[i]]
+
+        for k in sorted(groups.keys()):
+            res = ResultSet(TITLE=k, NAME=results[0].meta('NAME'))
+            res.create_series([s['data'] for s in config['series']])
+            x = 0
+            for r in groups[k]:
+                data = {}
+                for s in config['series']:
+                    combine_mode = s.get('combine_mode', 'mean')
+                    d = r[s['data']]
+                    if 'cutoff' in config:
+                        # cut off values from the beginning and end before doing the
+                        # plot; for e.g. pings that run long than the streams, we don't
+                        # want the unloaded ping values
+                        start,end = config['cutoff']
+                        end = -int(end/self.settings.STEP_SIZE)
+                        if end == 0:
+                            end = None
+                        d = d[int(start/self.settings.STEP_SIZE):end]
+                    if combine_mode in ('mean', 'median', 'min', 'max'):
+                        d = [p for p in d if p is not None]
+                        data[s['data']] = getattr(self.np, combine_mode)(d)
+                    elif combine_mode == 'span':
+                        d = [p for p in d if p is not None]
+                        data[s['data']] = self.np.max(d)-self.np.min(d)
+                    elif combine_mode == 'mean_span':
+                        d = [p for p in d if p is not None]
+                        min_val = min(d)
+                        d = map(lambda i:i-min_val, d)
+                        data[s['data']] = self.np.mean(d)
+                    elif combine_mode == 'mean_zero':
+                        d = [p if p is not None else 0 for p in d]
+                        data[s['data']] = self.np.mean(d)
+
+                res.append_datapoint(x, data)
+                x += 1
+            new_results.append(res)
+
+        self.do_box_plot(new_results, config, axis)
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
