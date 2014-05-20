@@ -60,8 +60,8 @@ class ProcessRunner(threading.Thread):
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
         # running on Windows/cygwin.
-        self.stdout = tempfile.NamedTemporaryFile(delete=False)
-        self.stderr = tempfile.NamedTemporaryFile(delete=False)
+        self.stdout = tempfile.NamedTemporaryFile(prefix="netperf-wrapper-", delete=False)
+        self.stderr = tempfile.NamedTemporaryFile(prefix="netperf-wrapper-", delete=False)
 
         pid = os.fork()
 
