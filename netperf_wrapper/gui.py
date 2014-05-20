@@ -244,7 +244,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         filenames = self.get_opennames()
         if not filenames:
             return
-        added = widget.load_files(filenames)
+        with widget.updates_disabled():
+            added = widget.load_files(filenames)
 
         if added == 0:
             self.warn_nomatch()
