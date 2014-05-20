@@ -490,6 +490,10 @@ class DiffMinRunner(ComputingRunner):
 
         key = self.keys[0]
 
-        min_val = min(res[key])
-        res.add_result(self.name, [i-min_val if i is not None else None for i in res[key]])
+        data = [i for i in res[key] if i is not None]
+        if not data:
+            res.add_result(self.name, [None]*len(res[key]))
+        else:
+            min_val = min(data)
+            res.add_result(self.name, [i-min_val if i is not None else None for i in res[key]])
         return res
