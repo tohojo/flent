@@ -600,6 +600,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                                       self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
             self.long_title = self.title
 
+        if self.settings.GUI_NO_DEFER:
+            self.redraw()
+
     def disconnect_all(self):
         for s in (self.update_start, self.update_end, self.plot_changed):
             s.disconnect()
@@ -707,7 +710,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def update(self, redraw=True):
         self.dirty = True
-        if redraw and self.isVisible() and self.updatesEnabled():
+        if redraw and ((self.isVisible() and self.updatesEnabled()) or self.settings.GUI_NO_DEFER):
             self.redraw()
 
     def redraw(self):

@@ -71,6 +71,7 @@ DEFAULT_SETTINGS = {
     'REMOTE_METADATA': [],
     'GUI': False,
     'NEW_GUI_INSTANCE': False,
+    'GUI_NO_DEFER': False,
     'DITG_CONTROL_HOST': None,
     'DITG_CONTROL_PORT': 8000,
     'DITG_CONTROL_SECRET': '',
@@ -429,6 +430,12 @@ parser.add_option("--new-gui-instance", action="store_true", dest="NEW_GUI_INSTA
                   help="Start a new GUI instance. Otherwise, netperf-wrapper will try to "
                   "connect to an already running GUI instance and have that load any new "
                   "data files specified as arguments. Implies --gui.")
+parser.add_option("--gui-no-defer", action="store_true", dest="GUI_NO_DEFER",
+                  help="Normally, the GUI defers redrawing plots until they are needed to avoid "
+                  "redrawing all open plots every time an option changes. This switch turns off "
+                  "that optimisation in favour of always redrawing everything straight away. "
+                  "This is useful when loading a bunch of plots from the command line and then "
+                  "wanting to flip through them without drawing delay.")
 parser.add_option("-b", "--batch", action="append", type="string", dest="BATCH_NAMES", metavar="BATCH_NAME",
                   help="Run test batch BATCH_NAME (must be specified in a batch file loaded "
                   "by the --batch-file option). Can be supplied multiple times.")
