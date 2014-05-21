@@ -26,6 +26,10 @@ from .resultset import ResultSet
 from functools import reduce
 from itertools import product,cycle,islice
 try:
+    from itertools import izip_longest as zip_longest
+except ImportError:
+    from itertools import zip_longest
+try:
     from collections import OrderedDict
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
@@ -614,44 +618,71 @@ class PlotFormatter(Formatter):
             else:
                 groups[n] = [results[i]]
 
-        for k in groups.keys():
-            res = ResultSet(TITLE="%s (n=%d)" % (k, len(groups[k])), NAME=results[0].meta('NAME'))
-            res.create_series([s['data'] for s in config['series']])
-            x = 0
-            for r in groups[k]:
-                data = {}
-                for s in config['series']:
-                    combine_mode = s.get('combine_mode', 'mean')
-                    d = r[s['data']]
-                    if 'cutoff' in config:
-                        # cut off values from the beginning and end before doing the
-                        # plot; for e.g. pings that run long than the streams, we don't
-                        # want the unloaded ping values
-                        start,end = config['cutoff']
-                        end = -int(end/self.settings.STEP_SIZE)
-                        if end == 0:
-                            end = None
-                        d = d[int(start/self.settings.STEP_SIZE):end]
-                    if combine_mode in ('mean', 'median', 'min', 'max'):
-                        d = [p for p in d if p is not None]
-                        data[s['data']] = getattr(self.np, combine_mode)(d)
-                    elif combine_mode == 'span':
-                        d = [p for p in d if p is not None]
-                        data[s['data']] = self.np.max(d)-self.np.min(d)
-                    elif combine_mode == 'mean_span':
-                        d = [p for p in d if p is not None]
-                        min_val = min(d)
-                        d = [i-min_val for i in d]
-                        data[s['data']] = self.np.mean(d)
-                    elif combine_mode == 'mean_zero':
-                        d = [p if p is not None else 0 for p in d]
-                        data[s['data']] = self.np.mean(d)
 
-                res.append_datapoint(x, data)
-                x += 1
-            new_results.append(res)
+        group_by = config.get('group_by', 'groups')
+        # group_by == 'groups' means preserve the data series and group the data
+        # by the data groups identified above -- i.e. they become the items in
+        # the legend.
+        if group_by == 'groups':
+            for k in groups.keys():
+                res = ResultSet(TITLE="%s (n=%d)" % (k, len(groups[k])), NAME=results[0].meta('NAME'))
+                res.create_series([s['data'] for s in config['series']])
+                x = 0
+                for r in groups[k]:
+                    data = {}
+                    for s in config['series']:
+                        data[s['data']] = self._combine_data(r[s['data']], s.get('combine_mode', 'mean'), config.get('cutoff', None))
+
+                    res.append_datapoint(x, data)
+                    x += 1
+                new_results.append(res)
+
+        # group_by == 'series' means flip the group and series, so the groups
+        # become the entries on the x axis, while the series become the new
+        # groups (in the legend)
+        elif group_by == 'series':
+            for s in config['series']:
+                res = ResultSet(TITLE=s['label'], NAME=results[0].meta('NAME'))
+                res.create_series(groups.keys())
+                x = 0
+                for d in zip_longest(*groups.values()):
+                    data = {}
+                    for k,v in zip(groups.keys(), d):
+                        data[k] = self._combine_data(v[s['data']], s.get('combine_mode', 'mean'), config.get('cutoff', None)) if v is not None else None
+                    res.append_datapoint(x, data)
+                    x += 1
+                new_results.append(res)
+            new_series = []
+            for k in groups.keys():
+                new_series.append({'data': k, 'label': "%s\n(n=%d)" % (k, len(groups[k]))})
+            config['series'] = new_series
 
         self.do_box_plot(new_results, config, axis)
+
+    def _combine_data(self, d, combine_mode, cutoff=None):
+        if cutoff is not None:
+            # cut off values from the beginning and end before doing the
+            # plot; for e.g. pings that run long than the streams, we don't
+            # want the unloaded ping values
+            start,end = cutoff
+            end = -int(end/self.settings.STEP_SIZE)
+            if end == 0:
+                end = None
+            d = d[int(start/self.settings.STEP_SIZE):end]
+        if combine_mode in ('mean', 'median', 'min', 'max'):
+            d = [p for p in d if p is not None]
+            return getattr(self.np, combine_mode)(d)
+        elif combine_mode == 'span':
+            d = [p for p in d if p is not None]
+            return self.np.max(d)-self.np.min(d)
+        elif combine_mode == 'mean_span':
+            d = [p for p in d if p is not None]
+            min_val = min(d)
+            d = [i-min_val for i in d]
+            return self.np.mean(d)
+        elif combine_mode == 'mean_zero':
+            d = [p if p is not None else 0 for p in d]
+            return self.np.mean(d)
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
