@@ -348,7 +348,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.widget(idx)
         if widget is not None:
             widget.setUpdatesEnabled(False)
-            widget.disconnect()
+            widget.disconnect_all()
             self.viewArea.removeTab(idx)
             widget.setParent(None)
             widget.deleteLater()
@@ -363,7 +363,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.viewArea.clear()
         for w in widgets:
             w.setUpdatesEnabled(False)
-            w.disconnect()
+            w.disconnect_all()
             w.setParent(None)
             w.deleteLater()
         self.busy_end()
@@ -599,6 +599,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.title = "%s - %s" % (self.settings.NAME,
                                       self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
             self.long_title = self.title
+
+    def disconnect_all(self):
+        for s in (self.update_start, self.update_end, self.plot_changed):
+            s.disconnect()
 
     def load_files(self, filenames):
         added = 0
