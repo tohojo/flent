@@ -671,18 +671,20 @@ class PlotFormatter(Formatter):
             d = d[int(start/self.settings.STEP_SIZE):end]
         if combine_mode in ('mean', 'median', 'min', 'max'):
             d = [p for p in d if p is not None]
-            return getattr(self.np, combine_mode)(d)
+            return getattr(self.np, combine_mode)(d) if d else None
         elif combine_mode == 'span':
             d = [p for p in d if p is not None]
-            return self.np.max(d)-self.np.min(d)
+            return self.np.max(d)-self.np.min(d) if d else None
         elif combine_mode == 'mean_span':
             d = [p for p in d if p is not None]
+            if not d:
+                return None
             min_val = min(d)
             d = [i-min_val for i in d]
             return self.np.mean(d)
         elif combine_mode == 'mean_zero':
             d = [p if p is not None else 0 for p in d]
-            return self.np.mean(d)
+            return self.np.mean(d) if d else None
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
