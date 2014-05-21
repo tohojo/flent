@@ -253,6 +253,7 @@ class PlotFormatter(Formatter):
     def __init__(self, settings):
         Formatter.__init__(self, settings)
         self.subplot_combine_disabled = False
+        self.disable_cleanup = False
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
@@ -280,10 +281,11 @@ class PlotFormatter(Formatter):
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
     def __del__(self):
-        try:
-            self.plt.close(self.figure)
-        except Exception:
-            pass
+        if not self.disable_cleanup:
+            try:
+                self.plt.close(self.figure)
+            except Exception:
+                pass
 
     def _load_plotconfig(self, plot):
         if not plot in self.settings.PLOTS:

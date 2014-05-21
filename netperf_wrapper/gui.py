@@ -182,6 +182,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.server.newConnection.connect(self.new_connection)
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
 
+    def closeEvent(self, event):
+        # Cleaning up matplotlib figures can take a long time; disable it when
+        # the application is exiting.
+        for i in range(self.viewArea.count()):
+            widget = self.viewArea.widget(i)
+            widget.setUpdatesEnabled(False)
+            widget.disable_cleanup()
+        event.accept()
+
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
@@ -606,6 +615,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def disconnect_all(self):
         for s in (self.update_start, self.update_end, self.plot_changed):
             s.disconnect()
+
+    def disable_cleanup(self):
+        self.formatter.disable_cleanup = True
 
     def load_files(self, filenames):
         added = 0
