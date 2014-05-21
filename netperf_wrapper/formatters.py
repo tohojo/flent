@@ -25,6 +25,10 @@ from .util import cum_prob, frange, classname, long_substr
 from .resultset import ResultSet
 from functools import reduce
 from itertools import product,cycle,islice
+try:
+    from collections import OrderedDict
+except ImportError:
+    from netperf_wrapper.ordereddict import OrderedDict
 
 PLOT_KWARGS = (
     'alpha',
@@ -599,7 +603,7 @@ class PlotFormatter(Formatter):
         # mean_span: mean of all data points' difference from the min value
         # mean_zero: mean value with missing data points interpreted as 0 rather
         #            than being filtered out
-        groups = {}
+        groups = OrderedDict()
         new_results = []
         filenames = [r.meta('DATA_FILENAME').replace(r.SUFFIX, '') for r in results]
         prefix = long_substr(filenames, prefix_only=True)
@@ -610,7 +614,7 @@ class PlotFormatter(Formatter):
             else:
                 groups[n] = [results[i]]
 
-        for k in sorted(groups.keys()):
+        for k in groups.keys():
             res = ResultSet(TITLE="%s (n=%d)" % (k, len(groups[k])), NAME=results[0].meta('NAME'))
             res.create_series([s['data'] for s in config['series']])
             x = 0
