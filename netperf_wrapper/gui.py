@@ -342,23 +342,31 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
 
     def close_tab(self, idx=None):
+        self.busy_start()
         if idx is None:
             idx = self.viewArea.currentIndex()
         widget = self.viewArea.widget(idx)
         if widget is not None:
+            widget.setUpdatesEnabled(False)
+            widget.disconnect()
             self.viewArea.removeTab(idx)
             widget.setParent(None)
             widget.deleteLater()
             self.shorten_tabs()
+        self.busy_end()
 
     def close_all(self):
+        self.busy_start()
         widgets = []
         for i in range(self.viewArea.count()):
             widgets.append(self.viewArea.widget(i))
         self.viewArea.clear()
         for w in widgets:
+            w.setUpdatesEnabled(False)
+            w.disconnect()
             w.setParent(None)
             w.deleteLater()
+        self.busy_end()
 
     def move_tab(self, move_by):
         count = self.viewArea.count()
