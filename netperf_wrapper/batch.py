@@ -331,10 +331,11 @@ class BatchRunner(object):
                             sys.stderr.write("   %s=%s\n" % (k, b[k]))
                 else:
                     self.run_test(settings, output_path)
-            except Exception as e:
+            except KeyboardInterrupt:
                 self.run_commands(commands, 'post', essential_only=True)
-                if isinstance(e, KeyboardInterrupt):
-                    raise
+                raise
+            except:
+                self.run_commands(commands, 'post', essential_only=True)
                 sys.stderr.write("  Error running test: %s\n" % "  ".join(traceback.format_exception_only(sys.exc_info()[:2])))
             else:
                 self.run_commands(commands, 'post')
