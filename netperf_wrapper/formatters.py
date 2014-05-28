@@ -558,6 +558,8 @@ class PlotFormatter(Formatter):
                         self.plt.setp(bp[k][j*2], color=colours[j])
                         self.plt.setp(bp[k][j*2+1], color=colours[j])
 
+
+            config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
         for i,a in enumerate(config['axes']):
             self._do_scaling(a, all_data[i], 0, 100, config['units'][i])
