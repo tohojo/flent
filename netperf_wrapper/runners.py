@@ -418,6 +418,7 @@ class NullRunner(object):
 
 class ComputingRunner(object):
     command = "Computed"
+    supported_meta = ['MEAN_VALUE']
     def __init__(self, name, settings, apply_to=None, *args, **kwargs):
         self.name = name
         self.settings = settings
@@ -454,6 +455,16 @@ class ComputingRunner(object):
                 new_res.append(None)
             else:
                 new_res.append(self.compute(values))
+
+        meta = res.meta('SERIES_META')
+        meta[self.name] = {}
+        for mk in self.supported_meta:
+            vals = []
+            for k in keys:
+                if k in meta and mk in meta[k]:
+                    vals.append(meta[k][mk])
+            if vals:
+                meta[self.name][mk] = self.compute(vals)
 
         res.add_result(self.name, new_res)
         return res
