@@ -56,6 +56,7 @@ class ProcessRunner(threading.Thread):
         self.pid = None
         self.returncode = None
         self.kill_lock = threading.Lock()
+        self.metadata = {}
 
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
@@ -248,7 +249,7 @@ class NetperfDemoRunner(ProcessRunner):
         pairs."""
 
         result = []
-        lines = output.split("\n")
+        lines = output.strip().splitlines()
         avg_dur = None
         alpha = 0.5
         for line in lines:
@@ -269,6 +270,10 @@ class NetperfDemoRunner(ProcessRunner):
                 if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
                     result.append([float(parts[9]), float(parts[2])])
                     avg_dur = alpha * avg_dur + (1.0-alpha) * dur
+        try:
+            self.metadata['MEAN_VALUE'] = float(lines[-1])
+        except ValueError:
+            pass
 
         return result
 

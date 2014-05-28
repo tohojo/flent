@@ -90,8 +90,10 @@ class ResultSet(object):
             self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
-    def meta(self, k=None):
+    def meta(self, k=None, v=None):
         if k:
+            if v:
+                self.metadata[k] = v
             return self.metadata[k]
         return self.metadata
 

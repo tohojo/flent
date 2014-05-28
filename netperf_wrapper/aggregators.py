@@ -87,6 +87,7 @@ class Aggregator(object):
             self.logfile.write("Start run at %s\n" % datetime.now())
 
         result = {}
+        metadata = {}
         try:
             for n,i in list(self.instances.items()):
                 self.threads[n] = i['runner'](n, self.settings, **i)
@@ -114,6 +115,8 @@ class Aggregator(object):
                     if 'transformers' in self.instances[n]:
                         for tr in self.instances[n]['transformers']:
                             result[n] = tr(result[n])
+                if hasattr(t, 'metadata'):
+                    metadata[n] = t.metadata
         except KeyboardInterrupt:
             self.kill_runners()
             raise
@@ -121,7 +124,7 @@ class Aggregator(object):
         if self.logfile is not None:
             self.logfile.write("Raw aggregated data:\n")
             pprint.pprint(result, self.logfile)
-        return result
+        return result,metadata
 
     def kill_runners(self):
         for t in list(self.threads.values()):
@@ -152,7 +155,8 @@ class IterationAggregator(Aggregator):
 
     def aggregate(self, results):
         for i in range(self.iterations):
-            data = self.collect()
+            data,metadata = self.collect()
+            results.meta('SERIES_META', metadata)
             if i == 0:
                 results.create_series(data.keys())
             results.append_datapoint(i, data)
@@ -171,9 +175,10 @@ class TimeseriesAggregator(Aggregator):
         self.max_distance = self.step * 5.0
 
     def aggregate(self, results):
-        measurements = self.collect()
+        measurements,metadata = self.collect()
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
+        results.meta('SERIES_META', metadata)
         results.create_series(list(measurements.keys()))
 
         # We start steps at the minimum time value, and do as many steps as are
