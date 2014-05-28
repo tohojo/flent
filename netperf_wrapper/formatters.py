@@ -635,7 +635,7 @@ class PlotFormatter(Formatter):
                 for r in groups[k]:
                     data = {}
                     for s in config['series']:
-                        data[s['data']] = self._combine_data(r[s['data']], s.get('combine_mode', 'mean'), config.get('cutoff', None))
+                        data[s['data']] = self._combine_data(r, s['data'], s.get('combine_mode', 'mean'), config.get('cutoff', None))
 
                     res.append_datapoint(x, data)
                     x += 1
@@ -652,7 +652,7 @@ class PlotFormatter(Formatter):
                 for d in zip_longest(*groups.values()):
                     data = {}
                     for k,v in zip(groups.keys(), d):
-                        data[k] = self._combine_data(v[s['data']], s.get('combine_mode', 'mean'), config.get('cutoff', None)) if v is not None else None
+                        data[k] = self._combine_data(v, s['data'], s.get('combine_mode', 'mean'), config.get('cutoff', None)) if v is not None else None
                     res.append_datapoint(x, data)
                     x += 1
                 new_results.append(res)
@@ -663,7 +663,8 @@ class PlotFormatter(Formatter):
 
         self.do_box_plot(new_results, config, axis)
 
-    def _combine_data(self, d, combine_mode, cutoff=None):
+    def _combine_data(self, resultset, key, combine_mode, cutoff=None):
+        d = resultset[key]
         if cutoff is not None:
             # cut off values from the beginning and end before doing the
             # plot; for e.g. pings that run long than the streams, we don't
@@ -689,6 +690,9 @@ class PlotFormatter(Formatter):
         elif combine_mode == 'mean_zero':
             d = [p if p is not None else 0 for p in d]
             return self.np.mean(d) if d else None
+        elif combine_mode.startswith('meta:'):
+            metakey = combine_mode.split(":", 1)[1]
+            return resultset.meta('SERIES_META')[key][metakey]
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
