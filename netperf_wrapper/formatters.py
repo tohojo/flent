@@ -404,6 +404,36 @@ class PlotFormatter(Formatter):
             raise RuntimeError("Can't do Q-Q plot with more than one series.")
 
 
+    def _init_ellipsis_plot(self, config=None, axis=None):
+        try:
+            from netperf_wrapper.error_ellipse import plot_point_cov
+            self.plot_point_cov = plot_point_cov
+        except ImportError:
+            raise RuntimeError("Unable to load error_ellipse plotting functions.")
+
+        if axis is None:
+            axis = self.figure.gca()
+        if config is None:
+            config = self.config
+
+        axis.minorticks_on()
+        config['axes'] = [axis]
+
+        if len(config['series']) != 2:
+            raise RuntimeError("Ellipsis plots requires exactly 2 series to plot.")
+
+        for i,a in enumerate(['x','y']):
+            unit = self.settings.DATA_SETS[config['series'][i]['data']]['units']
+            if self.settings.INVERT_Y and unit in self.inverted_units:
+                config['invert_'+a] = True
+            else:
+                config['invert_'+a] = False
+            if 'axis_labels' in config and config['axis_labels'][i]:
+                getattr(axis, 'set_'+a+'label')(config['axis_labels'][i])
+            else:
+                getattr(axis, 'set_'+a+'label')(self.settings.DATA_SETS[config['series'][i]['data']]['units'])
+
+
     def _init_meta_plot(self, config=None):
         if config is None:
             config = self.config
@@ -430,21 +460,22 @@ class PlotFormatter(Formatter):
         for c,r in zip(self.configs,results):
             callback(r, config=c, extra_scale_data=results)
 
-    def dataseries_combine(self, callback, results, config=None, axis=None):
+    def dataseries_combine(self, callback, results, always_colour, config=None, axis=None):
         styles = cycle(self.styles)
         colours = cycle(self.colours)
-        for r in results:
+        labels = self._filter_labels([r.label() for r in results])
+        for l,r in zip(labels,results):
             style = next(styles).copy()
             if (config and 'series' in config and len(config['series']) == 1) or \
-                ('series' in self.config and len(self.config['series']) == 1):
+                ('series' in self.config and len(self.config['series']) == 1) or always_colour:
                 style['color'] = next(colours)
-            callback(r, config=config, axis=axis, postfix=" - "+r.label(), extra_kwargs=style, extra_scale_data=results)
+            callback(r, config=config, axis=axis, postfix=" - "+l, extra_kwargs=style, extra_scale_data=results)
 
-    def combine(self, callback, results, config=None, axis=None):
+    def combine(self, callback, results, config=None, axis=None, always_colour = False):
         if self.settings.SUBPLOT_COMBINE and not self.subplot_combine_disabled:
-            self.subplot_combine(callback, results)
+            self.subplot_combine(callback, results, always_colour)
         else:
-            self.dataseries_combine(callback, results, config, axis)
+            self.dataseries_combine(callback, results, always_colour, config, axis)
 
 
     def do_timeseries_plot(self, results, config=None, axis=None):
@@ -780,8 +811,65 @@ class PlotFormatter(Formatter):
         series = self.config['series'][0]
         axis = self.config['axes'][0]
 
-        x_values = self.np.sort([r for r in results[0].series(series['data']) if r is not None])
-        y_values = self.np.sort([r for r in results[1].series(series['data']) if r is not None])
+        x_values,y_values = self._equal_length(results[0].series(series['data']), results[1].series(series['data']))
+
+        axis.plot(x_values, y_values, 'r.', label=series['label'])
+
+        max_val = max(x_values.max(), y_values.max())
+        axis.plot([0,max_val], [0,max_val], 'b-', label="Ref (x=y)")
+
+        axis.set_xlabel(results[0].label())
+        axis.set_ylabel(results[1].label())
+
+        axis.set_xlim(min(x_values)*0.99, max(x_values)*1.01)
+        axis.set_ylim(min(y_values)*0.99, max(y_values)*1.01)
+
+    def do_ellipsis_plot(self, results, config=None, axis=None):
+        self.xvals = []
+        self.yvals = []
+        if len(results) > 1:
+            self.combine(self._do_ellipsis_plot, results, config, axis, always_colour=True)
+        else:
+            self._do_ellipsis_plot(results[0], config=config, axis=axis)
+
+    def _do_ellipsis_plot(self, results, config=None, axis=None, extra_kwargs={}, postfix="", **kwargs):
+        if config is None:
+            config = self.config
+        if axis is None:
+            axis = config['axes'][0]
+
+        series = config['series']
+
+        label = postfix.replace(" - ", "") if postfix else results.label()
+
+        carg = {}
+        if 'color' in extra_kwargs:
+            carg['color'] = extra_kwargs['color']
+
+        data = [i for i in zip(results.series(series[0]['data']), results.series(series[1]['data'])) if i[0] is not None and i[1] is not None]
+        points = self.np.array(data)
+        x_values,y_values = zip(*data)
+        el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
+        med = self.np.median(points, axis=0)
+        self.xvals.append(el.center[0]-el.width/2)
+        self.xvals.append(el.center[0]+el.width/2)
+        self.yvals.append(el.center[1]-el.height/2)
+        self.yvals.append(el.center[1]+el.height/2)
+        self.xvals.append(med[0])
+        self.yvals.append(med[1])
+        axis.plot(*med, marker='o', linestyle=" ", **carg)
+        axis.annotate(label, med, ha='center', annotation_clip=True, xytext=(0,8), textcoords='offset points')
+        axis.set_xlim(min(self.xvals)*0.99, max(self.xvals)*1.1)
+        axis.set_ylim(min(self.yvals)*0.99, max(self.yvals)*1.1)
+        if config['invert_x']:
+            axis.invert_xaxis()
+        if config['invert_y']:
+            axis.invert_yaxis()
+
+
+    def _equal_length(self, x, y):
+        x_values = self.np.sort([r for r in x if r is not None])
+        y_values = self.np.sort([r for r in y if r is not None])
 
         # If data sets are not of equal sample size, the larger one is shrunk by
         # interpolating values into the length of the smallest data set.
@@ -813,16 +901,7 @@ class PlotFormatter(Formatter):
                                                        num=len(y_values), endpoint=False),
                                       range(len(x_values)), x_values)
 
-        axis.plot(x_values, y_values, 'r.', label=series['label'])
-
-        max_val = max(x_values.max(), y_values.max())
-        axis.plot([0,max_val], [0,max_val], 'b-', label="Ref (x=y)")
-
-        axis.set_xlabel(results[0].label())
-        axis.set_ylabel(results[1].label())
-
-        axis.set_xlim(min(x_values)*0.99, max(x_values)*1.01)
-        axis.set_ylim(min(y_values)*0.99, max(y_values)*1.01)
+        return x_values, y_values
 
 
     def do_meta_plot(self, results):
@@ -906,6 +985,16 @@ class PlotFormatter(Formatter):
                                             fontsize=8))
         return titles
 
+    def _filter_labels(self, labels):
+        if self.settings.FILTER_LEGEND and labels:
+            substr = long_substr(labels)
+            if len(substr) > 0:
+                labels = [l.replace(substr, '') for l in labels]
+            prefix = long_substr(labels, prefix_only=True)
+            if prefix and len(prefix) < len(labels[0]):
+                labels = [l.replace(prefix, '') for l in labels]
+        return labels
+
     def _do_legend(self, config, postfix=""):
         if not self.settings.PRINT_LEGEND:
             return []
@@ -919,11 +1008,6 @@ class PlotFormatter(Formatter):
                                  [a.get_legend_handles_labels() for a in axes])
         if not labels:
             return []
-
-        if self.settings.FILTER_LEGEND:
-            substr = long_substr(labels)
-            if len(substr) > 0:
-                labels = [l.replace(substr, '') for l in labels]
 
         kwargs = {}
         if 'legend_title' in config:
