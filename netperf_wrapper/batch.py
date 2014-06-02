@@ -336,7 +336,7 @@ class BatchRunner(object):
                 raise
             except:
                 self.run_commands(commands, 'post', essential_only=True)
-                sys.stderr.write("  Error running test: %s\n" % "  ".join(traceback.format_exception_only(sys.exc_info()[:2])))
+                sys.stderr.write("  Error running test: %s\n" % "  ".join(traceback.format_exception_only(*sys.exc_info()[:2])))
             else:
                 self.run_commands(commands, 'post')
             finally:
