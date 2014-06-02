@@ -365,6 +365,11 @@ class PlotFormatter(Formatter):
     def _init_box_combine_plot(self, config=None, axis=None):
         self._init_box_plot(config, axis)
 
+    def _init_ellipsis_combine_plot(self, config=None, axis=None):
+        self._init_ellipsis_plot(config, axis)
+
+    def _init_cdf_combine_plot(self, config=None, axis=None):
+        self._init_cdf_plot(config, axis)
 
     def _init_cdf_plot(self, config=None, axis=None):
         if axis is None:
@@ -601,11 +606,20 @@ class PlotFormatter(Formatter):
         axis.set_xlim(0,pos-1)
 
 
+    def do_box_combine_plot(self, results, config=None, axis=None):
+        self.do_combine_many_plot(self.do_box_plot, results, config, axis)
+
+    def do_ellipsis_combine_plot(self, results, config=None, axis=None):
+        self.do_combine_many_plot(self.do_ellipsis_plot, results, config, axis)
+
+    def do_cdf_combine_plot(self, results, config=None, axis=None):
+        self.do_combine_many_plot(self.do_cdf_plot, results, config, axis)
+
     # Match a word of all digits, optionally with a non-alphanumeric character
     # preceding or succeeding it. For instance a series of files numbered as
     # -01, -02, etc.
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
-    def do_box_combine_plot(self, results, config=None, axis=None):
+    def do_combine_many_plot(self, callback, results, config=None, axis=None):
 
         """Combines several result sets into one box plot by grouping them on
         unique data file name parts and then combining each group into a single
@@ -692,7 +706,9 @@ class PlotFormatter(Formatter):
                 new_series.append({'data': k, 'label': "%s\n(n=%d)" % (k, len(groups[k]))})
             config['series'] = new_series
 
-        self.do_box_plot(new_results, config, axis)
+        config['cutoff'] = None
+
+        callback(new_results, config, axis)
 
     def _combine_data(self, resultset, key, combine_mode, cutoff=None):
         d = resultset[key]
@@ -746,7 +762,7 @@ class PlotFormatter(Formatter):
                 data.append([])
                 continue
             s_data = results.series(s['data'])
-            if 'cutoff' in config:
+            if 'cutoff' in config and config['cutoff']:
                 # cut off values from the beginning and end before doing the
                 # plot; for e.g. pings that run long than the streams, we don't
                 # want the unloaded ping values
@@ -797,7 +813,7 @@ class PlotFormatter(Formatter):
                 min_val -= min_val%10 # nearest value divisible by 10
             axis.set_xlim(left=min_val)
 
-        if self.medians and max(self.medians)/min(self.medians) > 10.0:
+        if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.settings.LOG_SCALE:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
 
@@ -988,7 +1004,7 @@ class PlotFormatter(Formatter):
     def _filter_labels(self, labels):
         if self.settings.FILTER_LEGEND and labels:
             substr = long_substr(labels)
-            if len(substr) > 0:
+            if len(substr) > 0 and substr != " - ":
                 labels = [l.replace(substr, '') for l in labels]
             prefix = long_substr(labels, prefix_only=True)
             if prefix and len(prefix) < len(labels[0]):
@@ -1008,6 +1024,8 @@ class PlotFormatter(Formatter):
                                  [a.get_legend_handles_labels() for a in axes])
         if not labels:
             return []
+
+        labels = self._filter_labels(labels)
 
         kwargs = {}
         if 'legend_title' in config:
