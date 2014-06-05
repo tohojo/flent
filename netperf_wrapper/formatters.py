@@ -424,9 +424,6 @@ class PlotFormatter(Formatter):
         axis.minorticks_on()
         config['axes'] = [axis]
 
-        if len(config['series']) != 2:
-            raise RuntimeError("Ellipsis plots requires exactly 2 series to plot.")
-
         for i,a in enumerate(['x','y']):
             unit = self.settings.DATA_SETS[config['series'][i]['data']]['units']
             if self.settings.INVERT_Y and unit in self.inverted_units:
@@ -862,19 +859,26 @@ class PlotFormatter(Formatter):
         if 'color' in extra_kwargs:
             carg['color'] = extra_kwargs['color']
 
-        data = [i for i in zip(results.series(series[0]['data']), results.series(series[1]['data'])) if i[0] is not None and i[1] is not None]
-        points = self.np.array(data)
-        x_values,y_values = zip(*data)
-        el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
-        med = self.np.median(points, axis=0)
-        self.xvals.append(el.center[0]-el.width/2)
-        self.xvals.append(el.center[0]+el.width/2)
-        self.yvals.append(el.center[1]-el.height/2)
-        self.yvals.append(el.center[1]+el.height/2)
-        self.xvals.append(med[0])
-        self.yvals.append(med[1])
-        axis.plot(*med, marker='o', linestyle=" ", **carg)
-        axis.annotate(label, med, ha='center', annotation_clip=True, xytext=(0,8), textcoords='offset points')
+        x_values = results.series(series[0]['data'])
+
+        for s in series[1:]:
+            data = [i for i in zip(x_values, results.series(s['data'])) if i[0] is not None and i[1] is not None]
+            points = self.np.array(data)
+            x_values,y_values = zip(*data)
+            el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
+            med = self.np.median(points, axis=0)
+            self.xvals.append(el.center[0]-el.width/2)
+            self.xvals.append(el.center[0]+el.width/2)
+            self.yvals.append(el.center[1]-el.height/2)
+            self.yvals.append(el.center[1]+el.height/2)
+            self.xvals.append(med[0])
+            self.yvals.append(med[1])
+            axis.plot(*med, marker='o', linestyle=" ", **carg)
+            axis.annotate(label, med, ha='center', annotation_clip=True, xytext=(0,8), textcoords='offset points')
+
+        if self.settings.ZERO_Y:
+            self.xvals.append(0.0)
+            self.yvals.append(0.0)
         axis.set_xlim(min(self.xvals)*0.99, max(self.xvals)*1.1)
         axis.set_ylim(min(self.yvals)*0.99, max(self.yvals)*1.1)
         if config['invert_x']:
