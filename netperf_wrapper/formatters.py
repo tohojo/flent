@@ -481,9 +481,9 @@ class PlotFormatter(Formatter):
 
     def combine(self, callback, results, config=None, axis=None, always_colour = False):
         if self.settings.SUBPLOT_COMBINE and not self.subplot_combine_disabled:
-            self.subplot_combine(callback, results, always_colour)
+            return self.subplot_combine(callback, results, always_colour)
         else:
-            self.dataseries_combine(callback, results, always_colour, config, axis)
+            return self.dataseries_combine(callback, results, always_colour, config, axis)
 
 
     def do_timeseries_plot(self, results, config=None, axis=None):
@@ -617,6 +617,8 @@ class PlotFormatter(Formatter):
         axis.set_xticklabels(ticklabels, rotation=45, ha='right')
         axis.set_xlim(0,pos-1)
 
+        return texts
+
 
     def do_box_plot(self, results, config=None, axis=None):
         if config is None:
@@ -682,7 +684,7 @@ class PlotFormatter(Formatter):
 
 
     def do_bar_combine_plot(self, results, config=None, axis=None):
-        self.do_combine_many_plot(self.do_bar_plot, results, config, axis)
+        return self.do_combine_many_plot(self.do_bar_plot, results, config, axis)
 
     def do_box_combine_plot(self, results, config=None, axis=None):
         self.do_combine_many_plot(self.do_box_plot, results, config, axis)
@@ -786,7 +788,7 @@ class PlotFormatter(Formatter):
 
         config['cutoff'] = None
 
-        callback(new_results, config, axis)
+        return callback(new_results, config, axis)
 
     def _combine_data(self, resultset, key, combine_mode, cutoff=None):
         d = resultset[key]
@@ -1016,10 +1018,11 @@ class PlotFormatter(Formatter):
 
         self.subplot_combine_disabled = False
 
-        getattr(self, 'do_%s_plot' % self.config['type'])(results)
+        artists = getattr(self, 'do_%s_plot' % self.config['type'])(results)
         skip_title = len(results) > 1
 
-        artists = []
+        if not artists:
+            artists = []
         all_legends = []
         for c in self.configs:
             legends = self._do_legend(c)
