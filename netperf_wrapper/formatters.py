@@ -611,13 +611,11 @@ class PlotFormatter(Formatter):
 
             bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colours[i],
                                        alpha=0.75, width=width)
-            texts.append(config['axes'][0].text(pos+group_size/2, 14, s['label'], ha='center'))
+            if len(config['series']) > 1 or self.settings.PRINT_TITLE:
+                texts.append(config['axes'][0].text(pos+group_size/2, 14, s['label'], ha='center'))
 
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
-        for i,a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, config['units'][i], allow_log=False)
-            a.set_ylim(bottom=max(0,a.get_ylim()[0]))
 
         min_y,max_y = config['axes'][0].get_ylim()
 
