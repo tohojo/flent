@@ -899,8 +899,11 @@ class PlotFormatter(Formatter):
                 idx_1 = y_values.index(1.0)+1
             else:
                 idx_1 = len(y_values)
-            axis.plot(x_values[:idx_1],
-                      y_values[:idx_1],
+            idx_0 = 0
+            while y_values[idx_0+1] == 0.0:
+                idx_0 +=1
+            axis.plot(x_values[idx_0:idx_1],
+                      y_values[idx_0:idx_1],
                       **kwargs)
 
         if self.settings.ZERO_Y:
