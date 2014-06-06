@@ -819,7 +819,10 @@ class PlotFormatter(Formatter):
             return self.np.mean(d) if d else None
         elif combine_mode.startswith('meta:'):
             metakey = combine_mode.split(":", 1)[1]
-            return resultset.meta('SERIES_META')[key][metakey]
+            try:
+                return resultset.meta('SERIES_META')[key][metakey]
+            except KeyError:
+                return None
 
     def do_cdf_plot(self, results, config=None, axis=None):
         if len(results) > 1:
