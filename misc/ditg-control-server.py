@@ -181,6 +181,7 @@ class DITGManager(object):
         pid = os.fork()
         if pid:
             self.children.append(pid)
+            os.close(pipe_w)
             return pipe_r, False
         else:
             try:
