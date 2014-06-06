@@ -783,7 +783,7 @@ class PlotFormatter(Formatter):
                 new_results.append(res)
             new_series = []
             for k in groups.keys():
-                new_series.append({'data': k, 'label': "%s\n(n=%d)" % (k, len(groups[k]))})
+                new_series.append({'data': k, 'label': k})
             config['series'] = new_series
 
         config['cutoff'] = None
