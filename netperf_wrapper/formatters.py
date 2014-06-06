@@ -878,7 +878,7 @@ class PlotFormatter(Formatter):
                         max_value = max([max_value]+d_s)
 
 
-        x_values = list(frange(0, max_value, 0.1))
+        x_values = list(frange(0, max_value+0.1, 0.1))
 
         if max_value > 10:
             max_value += 10-(max_value%10) # round up to nearest value divisible by 10
