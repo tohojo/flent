@@ -360,7 +360,6 @@ class PlotFormatter(Formatter):
         axis.set_xlabel('')
 
         self.start_position = 1
-        self.settings.LOG_SCALE = False
 
     def _init_bar_plot(self, config=None, axis=None):
         self._init_box_plot(config, axis)
@@ -613,7 +612,7 @@ class PlotFormatter(Formatter):
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
         for i,a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, config['units'][i])
+            self._do_scaling(a, all_data[i], 0, 100, config['units'][i], allow_log=False)
             a.set_ylim(bottom=max(0,a.get_ylim()[0]))
 
         min_y,max_y = config['axes'][0].get_ylim()
@@ -685,7 +684,7 @@ class PlotFormatter(Formatter):
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
         for i,a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, config['units'][i])
+            self._do_scaling(a, all_data[i], 0, 100, config['units'][i], allow_log=False)
 
 
         axis.set_xticks(ticks)
@@ -1161,7 +1160,7 @@ class PlotFormatter(Formatter):
         legends.append(l)
         return legends
 
-    def _do_scaling(self, axis, data, btm, top, unit=None):
+    def _do_scaling(self, axis, data, btm, top, unit=None, allow_log=True):
         """Scale the axis to the selected bottom/top percentile"""
         data = [x for x in data if x is not None]
         if not data:
@@ -1182,7 +1181,7 @@ class PlotFormatter(Formatter):
             top_scale = top_percentile*1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
-            if btm_percentile > 0 and top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE:
+            if btm_percentile > 0 and top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE and allow_log:
                 axis.set_yscale('log')
                 axis.set_ylim(ymin=max(0,btm_scale), ymax=top_scale)
             else:
