@@ -894,8 +894,13 @@ class PlotFormatter(Formatter):
             if not 'color' in kwargs:
                 kwargs['color'] = next(colours)
             kwargs.update(extra_kwargs)
-            axis.plot(x_values,
-                      [cum_prob(data[i], point, sizes[i]) for point in x_values],
+            y_values = [cum_prob(data[i], point, sizes[i]) for point in x_values]
+            if 1.0 in y_values:
+                idx_1 = y_values.index(1.0)+1
+            else:
+                idx_1 = len(y_values)
+            axis.plot(x_values[:idx_1],
+                      y_values[:idx_1],
                       **kwargs)
 
         if self.settings.ZERO_Y:
