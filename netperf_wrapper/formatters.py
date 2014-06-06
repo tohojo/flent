@@ -362,6 +362,12 @@ class PlotFormatter(Formatter):
         self.start_position = 1
         self.settings.LOG_SCALE = False
 
+    def _init_bar_plot(self, config=None, axis=None):
+        self._init_box_plot(config, axis)
+
+    def _init_bar_combine_plot(self, config=None, axis=None):
+        self._init_bar_plot(config, axis)
+
     def _init_box_combine_plot(self, config=None, axis=None):
         self._init_box_plot(config, axis)
 
@@ -541,6 +547,76 @@ class PlotFormatter(Formatter):
                 self._do_scaling(config['axes'][a], data[a], btm, top, config['units'][a])
 
 
+    def do_bar_plot(self, results, config=None, axis=None):
+        if config is None:
+            config = self.config
+        axis = config['axes'][0]
+
+        group_size = len(results)
+        ticklabels = []
+        ticks = []
+        pos = 1
+        all_data = []
+        for a in config['axes']:
+            all_data.append([])
+
+        errcol = 'k'
+        width = 1.0
+
+        # The median lines are red, so filter out red from the list of colours
+        colours = list(islice(cycle([c for c in self.colours if c != errcol]), len(config['series'])))
+
+        labels = self._filter_labels([r.label() for r in results])
+        texts = []
+
+        for i,s in enumerate(config['series']):
+            if 'axis' in s and s['axis'] == 2:
+                a = 1
+            else:
+                a = 0
+
+            data = []
+            errors = []
+            for r in results:
+                d = [d for d in r.series(s['data']) if d is not None]
+                if not d:
+                    data.append(0.0)
+                    errors.append(0.0)
+                    all_data[a].append(0.0)
+                else:
+                    d = self.np.array(d)
+                    data.append(d.mean())
+                    errors.append(d.std())
+                    all_data[a].append(data[-1]+errors[-1])
+                    all_data[a].append(data[-1]-errors[-1])
+
+
+            positions = [p-width/2.0 for p in range(pos,pos+group_size)]
+            ticks.extend(list(range(pos,pos+group_size)))
+            ticklabels.extend(labels)
+
+            bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colours[i],
+                                       alpha=0.75, width=width)
+            texts.append(config['axes'][0].text(pos+group_size/2, 14, s['label'], ha='center'))
+
+            config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
+            pos += group_size+1
+        for i,a in enumerate(config['axes']):
+            self._do_scaling(a, all_data[i], 0, 100, config['units'][i])
+            a.set_ylim(bottom=max(0,a.get_ylim()[0]))
+
+        min_y,max_y = config['axes'][0].get_ylim()
+
+        for t in texts:
+            x,y = t.get_position()
+            t.set_position((x, max_y+abs(max_y-min_y)*0.01))
+
+
+        axis.set_xticks(ticks)
+        axis.set_xticklabels(ticklabels, rotation=45, ha='right')
+        axis.set_xlim(0,pos-1)
+
+
     def do_box_plot(self, results, config=None, axis=None):
         if config is None:
             config = self.config
@@ -602,6 +678,9 @@ class PlotFormatter(Formatter):
         axis.set_xticklabels(ticklabels)
         axis.set_xlim(0,pos-1)
 
+
+    def do_bar_combine_plot(self, results, config=None, axis=None):
+        self.do_combine_many_plot(self.do_bar_plot, results, config, axis)
 
     def do_box_combine_plot(self, results, config=None, axis=None):
         self.do_combine_many_plot(self.do_box_plot, results, config, axis)
