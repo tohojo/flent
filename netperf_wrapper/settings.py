@@ -67,6 +67,9 @@ DEFAULT_SETTINGS = {
     'ZERO_Y': False,
     'INVERT_Y': False,
     'LOG_SCALE': True,
+    'FIG_WIDTH': None,
+    'FIG_HEIGHT': None,
+    'FIG_DPI': None,
     'EXTENDED_METADATA': False,
     'REMOTE_METADATA': [],
     'GUI': False,
@@ -513,6 +516,14 @@ plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
                   help="Exclude title from plots.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
+plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
+                  help="Figure width in inches. Used when saving plots to file and for default size of "
+                  "the interactive plot window.")
+plot_group.add_option("--figure-height", action="store", type='float', dest="FIG_HEIGHT",
+                  help="Figure height in inches. Used when saving plots to file and for default size of "
+                  "the interactive plot window.")
+plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DPI",
+                  help="Figure DPI. Used when saving plots to file.")
 parser.add_option_group(plot_group)
 
 

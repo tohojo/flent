@@ -306,6 +306,10 @@ class PlotFormatter(Formatter):
 
     def init_plots(self):
         self.figure.clear()
+        if self.settings.FIG_WIDTH is not None:
+            self.figure.set_figwidth(self.settings.FIG_WIDTH)
+        if self.settings.FIG_HEIGHT is not None:
+            self.figure.set_figheight(self.settings.FIG_HEIGHT)
         self.config = self._load_plotconfig(self.settings.PLOT)
         self.configs = [self.config]
         getattr(self, '_init_%s_plot' % self.config['type'])()
@@ -1064,7 +1068,8 @@ class PlotFormatter(Formatter):
                 self.plt.show()
         else:
             try:
-                self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight')
+                self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight',
+                                    dpi=self.settings.FIG_DPI)
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
