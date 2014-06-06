@@ -452,8 +452,19 @@ class PlotFormatter(Formatter):
             subplot_params = config['subplot_params']
         else:
             subplot_params = [{}] * len(config['subplots'])
+
+        if config.get('share_axis', True):
+            sharex=ax
+        else:
+            sharex = None
         for i,subplot in enumerate(config['subplots']):
-            axis = self.figure.add_subplot(len(config['subplots']),1,i+1, sharex=self.figure.gca(), **subplot_params[i])
+            if config.get('orientation', 'vertical') == 'vertical':
+                rows = len(config['subplots'])
+                cols = 1
+            else:
+                cols = len(config['subplots'])
+                rows = 1
+            axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
             cfg = self._load_plotconfig(subplot)
             self.configs.append(cfg)
             getattr(self, '_init_%s_plot' % cfg['type'])(config=cfg, axis=axis)
