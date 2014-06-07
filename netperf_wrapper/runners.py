@@ -236,7 +236,7 @@ class DitgRunner(ProcessRunner):
         # sometimes it runs amok and outputs megabytes of erroneous data. So, if
         # the length of the data is more than ten times the expected value,
         # abort rather than try to process the data.
-        if len(data) > (duration/interval) * 500:
+        if len(data) > (self.duration/self.interval) * 500:
             self.err += "D-ITG output too much data (%d bytes).\n" % len(data)
             return results
 
