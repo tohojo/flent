@@ -57,6 +57,8 @@ class ProcessRunner(threading.Thread):
         self.returncode = None
         self.kill_lock = threading.Lock()
         self.metadata = {}
+        self.out = ""
+        self.err = ""
 
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
@@ -119,7 +121,7 @@ class ProcessRunner(threading.Thread):
         self._handle_exitstatus(sts)
 
         self.stdout.seek(0)
-        self.out = self.stdout.read().decode()
+        self.out += self.stdout.read().decode()
         try:
             # Close and remove the temporary file. This might fail, but we're going
             # to assume that is okay.
@@ -130,7 +132,7 @@ class ProcessRunner(threading.Thread):
             pass
 
         self.stderr.seek(0)
-        self.err = self.stderr.read().decode()
+        self.err += self.stderr.read().decode()
         try:
             filename = self.stderr.name
             self.stderr.close()
@@ -219,11 +221,11 @@ class DitgRunner(ProcessRunner):
                 time.sleep(1)
             if res['status'] != 'OK':
                 if 'message' in res:
-                    self.err = "Error while getting results. Control server reported error: %s" % res['message']
+                    self.err += "Error while getting results. Control server reported error: %s.\n" % res['message']
                 else:
-                    self.err = "Error while getting results. Control server reported unknown error."
+                    self.err += "Error while getting results. Control server reported unknown error.\n"
         except xmlrpc.Fault as e:
-            self.err = "Error while getting results: %s" % e
+            self.err += "Error while getting results: %s.\n" % e
 
         now = time.time()
         tzoffset = (datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)).seconds
