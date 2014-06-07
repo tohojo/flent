@@ -399,7 +399,7 @@ class BatchRunner(object):
             for dname, dvals in settings.DATA_SETS.items():
                 if not dname in res:
                     runner = runners.get(dvals['runner'])
-                    if isinstance(runner.result, collections.Callable):
+                    if hasattr(runner, 'result') and isinstance(runner.result, collections.Callable):
                         try:
                             runner = runner(dname, settings, **dvals)
                             runner.result(res)
