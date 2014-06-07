@@ -232,6 +232,14 @@ class DitgRunner(ProcessRunner):
         tzoffset = (datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)).seconds
         offset = utc_offset + tzoffset
 
+        # D-ITG *should* output about 50 bytes of data per data point. However,
+        # sometimes it runs amok and outputs megabytes of erroneous data. So, if
+        # the length of the data is more than ten times the expected value,
+        # abort rather than try to process the data.
+        if len(data) > (duration/interval) * 500:
+            self.err += "D-ITG output too much data (%d bytes).\n" % len(data)
+            return results
+
         for line in data.splitlines():
             if not line.strip():
                 continue
