@@ -532,3 +532,8 @@ class DiffMinRunner(ComputingRunner):
             min_val = min(data)
             res.add_result(self.name, [i-min_val if i is not None else None for i in res[key]])
         return res
+
+class FairnessRunner(ComputingRunner):
+    command = "Fairness (computed)"
+    def compute(self,values):
+        return math.fsum(values)**2/(len(values)*math.fsum([x**2 for x in values]))
