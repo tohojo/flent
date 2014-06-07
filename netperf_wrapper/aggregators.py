@@ -62,7 +62,7 @@ class Aggregator(object):
             instance['delay'] = 0
 
 
-        instance['runner'] = getattr(runners, classname(instance['runner'], 'Runner'))
+        instance['runner'] = runners.get(instance['runner'])
 
         if 'data_transform' in config:
             instance['transformers'] = []

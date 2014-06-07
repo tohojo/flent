@@ -150,6 +150,9 @@ class ResultSet(object):
     def __getitem__(self, name):
         return self.series(name)
 
+    def __contains__(self, name):
+        return name in self._results
+
     def smoothed(self, name, amount):
         res = self._results[name]
         smooth_res = []

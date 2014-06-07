@@ -24,6 +24,8 @@ import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
 
 from datetime import datetime
 
+from .util import classname
+
 try:
     from defusedxml.xmlrpc import monkey_patch
     monkey_patch()
@@ -40,6 +42,12 @@ except ImportError:
 
 
 from .settings import Glob
+
+def get(name):
+    cname = classname(name, "Runner")
+    if not cname in globals():
+        raise RuntimeError("Runner not found: '%s'" % name)
+    return globals()[cname]
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
