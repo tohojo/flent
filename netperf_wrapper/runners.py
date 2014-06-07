@@ -197,6 +197,7 @@ class DitgRunner(ProcessRunner):
                 else:
                     raise RuntimeError("Unable to request D-ITG test. Control server reported an unspecified error.")
             self.test_id = params['test_id']
+            self.out += "Test ID: %s\n" % self.test_id
         except (xmlrpc.Fault, socket.error) as e:
             raise RuntimeError("Error while requesting D-ITG test: %s" % e)
         self.command = self.command.format(signal_port = params['port'], dest_port=params['port']+1)
