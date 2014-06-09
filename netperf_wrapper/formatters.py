@@ -905,8 +905,10 @@ class PlotFormatter(Formatter):
             idx_0 = 0
             while y_values[idx_0+1] == 0.0:
                 idx_0 +=1
-            axis.plot(x_values[idx_0:idx_1],
-                      y_values[idx_0:idx_1],
+
+            x_vals, y_vals = self._filter_dup_vals(x_values[idx_0:idx_1], y_values[idx_0:idx_1])
+            axis.plot(x_vals,
+                      y_vals,
                       **kwargs)
 
         if self.settings.ZERO_Y:
@@ -920,6 +922,20 @@ class PlotFormatter(Formatter):
         if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.settings.LOG_SCALE:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
+
+    def _filter_dup_vals(self, x_vals, y_vals):
+        """Filter out series of identical y-vals, also removing the corresponding x-vals.
+
+        Lowers the amount of plotted points and avoids strings of markers on CDFs."""
+        x_vals = list(x_vals)
+        y_vals = list(y_vals)
+        i = 0
+        while i < len(x_vals)-2:
+            while y_vals[i] == y_vals[i+1] and y_vals[i] == y_vals[i+2]:
+                del x_vals[i+1]
+                del y_vals[i+1]
+            i +=1
+        return x_vals,y_vals
 
 
     def do_qq_plot(self, results):
