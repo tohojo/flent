@@ -880,14 +880,16 @@ class PlotFormatter(Formatter):
                         max_value = max([max_value]+d_s)
 
 
-        step = max(max_value/1000.0, 0.1)
-        x_values = list(frange(0, max_value+2*step, step))
 
         if max_value > 10:
             max_value += 10-(max_value%10) # round up to nearest value divisible by 10
         axis.set_xlim(right=max_value)
 
         for i,s in enumerate(config['series']):
+            max_val = max(data[i])
+            min_val = min(data[i])
+            step = (max_val-min_val)/1000.0
+            x_values = list(frange(min_val-2*step, max_val+2*step, step))
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
