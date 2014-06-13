@@ -348,9 +348,15 @@ class PlotFormatter(Formatter):
         axis.set_xlabel('Time')
         for i,u in enumerate(unit):
             if 'axis_labels' in config and config['axis_labels'][i]:
-                config['axes'][i].set_ylabel(config['axis_labels'][i])
+                l = config['axis_labels'][i]
             else:
-                config['axes'][i].set_ylabel(unit[i])
+                l = unit[i]
+
+            if self.settings.NORM_FACTORS:
+                l = l[0].lower() + l[1:]
+                l = "Normalised %s" % l
+            config['axes'][i].set_ylabel(l)
+
 
         config['units'] =  unit
 
@@ -583,6 +589,11 @@ class PlotFormatter(Formatter):
         labels = self._filter_labels([r.label() for r in results])
         texts = []
 
+        if self.settings.NORM_FACTORS:
+            norms = list(islice(cycle(self.settings.NORM_FACTORS), len(config['series'])))
+        else:
+            norms = None
+
         for i,s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
                 a = 1
@@ -592,15 +603,17 @@ class PlotFormatter(Formatter):
             data = []
             errors = []
             for r in results:
-                d = [d for d in r.series(s['data']) if d is not None]
-                if not d:
+                dp = [d for d in r.series(s['data']) if d is not None]
+                if norms is not None:
+                    dp = [d/norms[i] for d in dp]
+                if not dp:
                     data.append(0.0)
                     errors.append(0.0)
                     all_data[a].append(0.0)
                 else:
-                    d = self.np.array(d)
-                    data.append(d.mean())
-                    errors.append(d.std())
+                    dp = self.np.array(dp)
+                    data.append(dp.mean())
+                    errors.append(dp.std())
                     all_data[a].append(data[-1]+errors[-1])
                     all_data[a].append(data[-1]-errors[-1])
 

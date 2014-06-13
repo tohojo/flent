@@ -67,6 +67,7 @@ DEFAULT_SETTINGS = {
     'ZERO_Y': False,
     'INVERT_Y': False,
     'LOG_SCALE': True,
+    'NORM_FACTORS': [],
     'FIG_WIDTH': None,
     'FIG_HEIGHT': None,
     'FIG_DPI': None,
@@ -497,6 +498,10 @@ plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INV
                   "upwards').")
 plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
                   help="Disable log scales on plots.")
+plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS",
+                  help="Factor to normalise data by. I.e. divide all data points by this value. "
+                  "Can be specified multiple times, in which case each value corresponds to a "
+                  "data series.")
 plot_group.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
                   help="Additional data files to consider when scaling the plot axes "
                   "(for plotting several plots with identical axes). Note, this displays "
