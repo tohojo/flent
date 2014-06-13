@@ -639,7 +639,7 @@ class PlotFormatter(Formatter):
 
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
-        axis.set_xticklabels(ticklabels, rotation=45, ha='right')
+        axis.set_xticklabels(ticklabels, rotation=90, ha='center')
         axis.set_xlim(0,pos-1)
 
         return texts
