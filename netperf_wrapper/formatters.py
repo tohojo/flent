@@ -811,6 +811,36 @@ class PlotFormatter(Formatter):
                 new_series.append({'data': k, 'label': k})
             config['series'] = new_series
 
+        # group_by == 'both' means that the group names should be split by a
+        # delimiter (currently '-') and the first part specifies the group, the
+        # second the series. Currently only works if there's just one series
+        # name configured in the plot config.
+        elif group_by == 'both':
+            assert len(config['series']) == 1
+            series_names = []
+            group_names = []
+            old_s = config['series'][0]
+            for k in groups.keys():
+                s,g = k.rsplit("-",1)
+                if not s in series_names:
+                    series_names.append(s)
+                if not g in group_names:
+                    group_names.append(g)
+            new_series = [{'data': s, 'label': s} for s in series_names]
+            new_results = []
+            for s in group_names:
+                res = ResultSet(TITLE=s,NAME=results[0].meta('NAME'))
+                res.create_series(series_names)
+                x = 0
+                for d in zip_longest(*[g[1] for g in groups.items() if g[0].endswith("-%s" % s)]):
+                    data = {}
+                    for k,v in zip([k.rsplit("-",1)[0] for k in groups.keys() if k.endswith("-%s" % s)], d):
+                        data[k] = self._combine_data(v, old_s['data'], old_s.get('combine_mode', 'mean'), config.get('cutoff', None)) if v is not None else None
+                    res.append_datapoint(x, data)
+                    x += 1
+                new_results.append(res)
+            config['series'] = new_series
+
         config['cutoff'] = None
 
         return callback(new_results, config, axis)
