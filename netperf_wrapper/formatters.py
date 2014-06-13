@@ -249,6 +249,8 @@ class PlotFormatter(Formatter):
     linestyles = ['-', '--', ':']
     markers = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
     colours = ['b', 'g', 'r', 'c', 'm', 'k', 'orange', 'grey', '#a52a2a', 'lime']
+    dashes = [[8,4,2,4],
+              ]
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
@@ -301,6 +303,8 @@ class PlotFormatter(Formatter):
         self.styles = []
         for ls in self.linestyles:
             self.styles.append(dict(linestyle=ls))
+        for d in self.dashes:
+            self.styles.append(dict(dashes=d))
         for m in self.markers:
             self.styles.append(dict(marker=m))
 
