@@ -919,6 +919,8 @@ class PlotFormatter(Formatter):
             min_val = min(self.min_vals)
             if min_val > 10:
                 min_val -= min_val%10 # nearest value divisible by 10
+            if min_val > 100:
+                min_val -= min_val%100
             axis.set_xlim(left=min_val)
 
         if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.settings.LOG_SCALE:
