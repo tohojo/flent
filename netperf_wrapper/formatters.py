@@ -933,6 +933,8 @@ class PlotFormatter(Formatter):
         axis.set_xlim(right=max_value)
 
         for i,s in enumerate(config['series']):
+            if not data[i]:
+                continue
             max_val = max(data[i])
             min_val = min(data[i])
             step = (max_val-min_val)/1000.0
