@@ -964,7 +964,7 @@ class PlotFormatter(Formatter):
 
         if self.settings.ZERO_Y:
             axis.set_xlim(left=0)
-        else:
+        elif self.min_vals:
             min_val = min(self.min_vals)
             if min_val > 10:
                 min_val -= min_val%10 # nearest value divisible by 10
