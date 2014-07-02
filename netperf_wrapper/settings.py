@@ -60,6 +60,7 @@ DEFAULT_SETTINGS = {
     'SCALE_DATA': [],
     'SCALE_MODE': False,
     'CONCATENATE': False,
+    'ABSOLUTE_TIME': False,
     'SUBPLOT_COMBINE': False,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
@@ -513,6 +514,8 @@ plot_group.add_option("-S", "--scale-mode", action="store_true", dest="SCALE_MOD
                   "arguments as if passed as --scale-data (default as if passed as --input).")
 plot_group.add_option("--concatenate", action="store_true", dest="CONCATENATE",
                   help="Concatenate multiple result sets into one data series.")
+plot_group.add_option("--absolute-time", action="store_true", dest="ABSOLUTE_TIME",
+                  help="Plot data points with absolute UNIX time on the x-axis.")
 plot_group.add_option("--subplot-combine", action="store_true", dest="SUBPLOT_COMBINE",
                   help="When plotting multiple data series, plot each one on a separate subplot "
                   "instead of combining them into one plot (not supported for all plot types).")

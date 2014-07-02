@@ -21,6 +21,8 @@
 
 import json, os, math, re, sys
 from datetime import datetime
+from calendar import timegm
+from itertools import repeat
 
 try:
     from dateutil.parser import parse as parse_date
@@ -70,8 +72,8 @@ def new(settings):
         d[a] = getattr(settings,a,None)
     return ResultSet(**d)
 
-def load(filename):
-    return ResultSet.load_file(filename)
+def load(filename, absolute=False):
+    return ResultSet.load_file(filename, absolute)
 
 class ResultSet(object):
     SUFFIX = '.json.gz'
@@ -79,6 +81,7 @@ class ResultSet(object):
         self._x_values = []
         self._results = OrderedDict()
         self._filename = None
+        self._absolute = False
         self.metadata = kwargs
         if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.now()
@@ -134,7 +137,15 @@ class ResultSet(object):
             raise RuntimeError("Unexpected data point(s): %s" % list(data.keys()))
 
     def concatenate(self, res):
-        x0 = self.x_values[-1] + self.meta("STEP_SIZE")
+        if self._absolute:
+            x0 = 0.0
+            # When concatenating using absolute values, insert an empty data
+            # point midway between the data series, to prevent the lines for
+            # each distinct data series from being joined together.
+            xnext = (self.x_values[-1] + res.x_values[0])/2.0
+            self.append_datapoint(xnext, zip(res.series_names, repeat(None)))
+        else:
+            x0 = self.x_values[-1] + self.meta("STEP_SIZE")
         for point in res:
             x = point[0] + x0
             data = dict(zip(res.series_names, point[1:]))
@@ -255,33 +266,39 @@ class ResultSet(object):
             self._dump_file = None
 
     @classmethod
-    def unserialise(cls, obj):
+    def unserialise(cls, obj, absolute=False):
         metadata = dict(obj['metadata'])
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
                 metadata[t] = parse_date(metadata[t])
         rset = cls(**metadata)
-        rset.x_values = obj['x_values']
+        if absolute:
+            t0 = metadata.get('T0', metadata.get('TIME'))
+            x0 = timegm(t0.timetuple()) + t0.microsecond / 1000000.0
+            rset.x_values = [x+x0 for x in obj['x_values']]
+            rset._absolute = True
+        else:
+            rset.x_values = obj['x_values']
         for k,v in list(obj['results'].items()):
             rset.add_result(k,v)
         return rset
 
     @classmethod
-    def load(cls, fp):
-        obj = cls.unserialise(json.load(fp))
+    def load(cls, fp, absolute=False):
+        obj = cls.unserialise(json.load(fp), absolute)
         if hasattr(fp, 'name'):
             obj._dump_file = fp.name
         return obj
 
     @classmethod
-    def load_file(cls, filename):
+    def load_file(cls, filename, absolute=False):
         try:
             if filename.endswith(".gz"):
                 o = gzip_open
             else:
                 o = open
             fp = o(filename, 'rt')
-            r = cls.load(fp)
+            r = cls.load(fp, absolute)
             fp.close()
             return r
         except IOError:

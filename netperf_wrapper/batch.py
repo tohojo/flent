@@ -381,7 +381,7 @@ class BatchRunner(object):
         results = []
         test_name = None
         for filename in settings.INPUT:
-            r = resultset.load(filename)
+            r = resultset.load(filename, settings.ABSOLUTE_TIME)
             if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
                 raise RuntimeError("Result sets must be from same test (found %s/%s)" % (test_name, r.meta("NAME")))
             test_name = r.meta("NAME")
