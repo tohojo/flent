@@ -62,7 +62,7 @@ RECORDED_SETTINGS = (
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
-TIME_SETTINGS = ("TIME", "BATCH_TIME")
+TIME_SETTINGS = ("TIME", "BATCH_TIME", "T0")
 
 def new(settings):
     d = {}

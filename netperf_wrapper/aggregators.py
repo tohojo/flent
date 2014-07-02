@@ -192,6 +192,8 @@ class TimeseriesAggregator(Aggregator):
         t_max = max(last_times)
         steps = int(math.ceil((t_max-t_0)/self.step))
 
+        results.meta('T0', datetime.fromtimestamp(t_0))
+
         time_labels = []
 
         for s in range(steps):
