@@ -305,8 +305,9 @@ class PlotFormatter(Formatter):
             self.styles.append(dict(linestyle=ls))
         for d in self.dashes:
             self.styles.append(dict(dashes=d))
-        for m in self.markers:
-            self.styles.append(dict(marker=m))
+        if self.settings.USE_MARKERS:
+            for m in self.markers:
+                self.styles.append(dict(marker=m))
 
     def init_plots(self):
         self.figure.clear()

@@ -64,6 +64,7 @@ DEFAULT_SETTINGS = {
     'SUBPLOT_COMBINE': False,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
+    'USE_MARKERS': True,
     'PRINT_LEGEND': True,
     'FILTER_LEGEND': False,
     'ZERO_Y': False,
@@ -521,10 +522,12 @@ plot_group.add_option("--subplot-combine", action="store_true", dest="SUBPLOT_CO
                   "instead of combining them into one plot (not supported for all plot types).")
 plot_group.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
                   help="Exclude annotation with hostnames, time and test length from plots.")
-plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
-                  help="Exclude legend from plots.")
 plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
                   help="Exclude title from plots.")
+plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
+                  help="Don't use line markers to differentiate data series on plots.")
+plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
+                  help="Exclude legend from plots.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
