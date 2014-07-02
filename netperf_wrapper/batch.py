@@ -385,7 +385,10 @@ class BatchRunner(object):
             if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
                 raise RuntimeError("Result sets must be from same test (found %s/%s)" % (test_name, r.meta("NAME")))
             test_name = r.meta("NAME")
-            results.append(r)
+            if results and settings.CONCATENATE:
+                results[0].concatenate(r)
+            else:
+                results.append(r)
 
         if settings.GUI:
             load_gui(settings)

@@ -133,6 +133,13 @@ class ResultSet(object):
         if data:
             raise RuntimeError("Unexpected data point(s): %s" % list(data.keys()))
 
+    def concatenate(self, res):
+        x0 = self.x_values[-1] + self.meta("STEP_SIZE")
+        for point in res:
+            x = point[0] + x0
+            data = dict(zip(res.series_names, point[1:]))
+            self.append_datapoint(x, data)
+
     def last_datapoint(self, series):
         data = self.series(series)
         if not data:
