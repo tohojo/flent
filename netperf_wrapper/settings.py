@@ -250,6 +250,8 @@ class TestEnvironment(object):
                 interval = int(interval * 1000)
 
                 return "%s -D -p %d -c %d %s" % (fping, interval, count, host)
+            elif "must run as root?" in str(err):
+                sys.stderr.write("Found fping but it seems to be missing permissions (no SUID?). Not using.\n")
 
         if ping is not None:
             # No checks atm; should check for presence of -D parameter
