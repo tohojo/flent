@@ -19,10 +19,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, optparse, socket, subprocess, time
+import sys, os, optparse, socket, subprocess, time, collections
 
 from datetime import datetime
-from fnmatch import fnmatch
 from copy import deepcopy
 
 try:
@@ -35,7 +34,8 @@ try:
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 from netperf_wrapper.build_info import DATA_DIR, VERSION
-from netperf_wrapper import util, resultset
+from netperf_wrapper import util, resultset, runners
+from netperf_wrapper.util import Glob
 
 DEFAULT_SETTINGS = {
     'NAME': None,
@@ -141,48 +141,6 @@ def version(*args):
     sys.exit(0)
 
 
-class Glob(object):
-    """Object for storing glob patterns in matches"""
-
-    def __init__(self, pattern, exclude=None):
-        if exclude is None:
-            self.exclude = []
-        else:
-            self.exclude = exclude
-        self.pattern = pattern
-
-    def filter(self, values, exclude):
-        exclude += self.exclude
-        return [x for x in values if fnmatch(x, self.pattern) and x not in exclude]
-
-    def __iter__(self):
-        return iter((self,)) # allow list(g) to return [g]
-
-    @classmethod
-    def filter_dict(cls, d):
-        # Expand glob patterns in parameters. Go through all items in the
-        # dictionary looking for subkeys that is a Glob instance or a list
-        # that has a Glob instance in it.
-        for k,v in list(d.items()):
-            for g_k in list(v.keys()):
-                try:
-                    v[g_k] = cls.expand_list(v[g_k], list(d.keys()), [k])
-                except TypeError:
-                    continue
-        return d
-
-    @classmethod
-    def expand_list(cls, l, values, exclude=None):
-        l = list(l) # copy list, turns lone Glob objects into [obj]
-        if exclude is None:
-            exclude = []
-        # Expand glob patterns in list. Go through all items in the
-        # list  looking for Glob instances and expanding them.
-        for i in range(len(l)):
-            pattern = l[i]
-            if isinstance(pattern, cls):
-                l[i:i+1] = pattern.filter(values, exclude)
-        return l
 
 def finder(fn):
     """Decorator to put on find_* methods that makes sure common operations
@@ -675,6 +633,19 @@ class Settings(optparse.Values, object):
             for k,v in list(s['DEFAULTS'].items()):
                 if not hasattr(self, k):
                     setattr(self, k, v)
+
+    def compute_missing_results(self, results):
+        for dname, dvals in self.DATA_SETS.items():
+            if not dname in results:
+                runner = runners.get(dvals['runner'])
+                if hasattr(runner, 'result') and isinstance(runner.result, collections.Callable):
+                    try:
+                        runner = runner(dname, settings, **dvals)
+                        runner.result(results)
+                    except Exception as e:
+                        sys.stderr.write("Unable to compute missing data series '%s': '%s'.\n" % (dname, e))
+                        raise
+
 
 
     def lookup_hosts(self):

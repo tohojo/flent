@@ -567,6 +567,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.extra_results = []
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
+        self.settings.compute_missing_results(self.results)
 
         try:
             self.formatter = PlotFormatter(self.settings)

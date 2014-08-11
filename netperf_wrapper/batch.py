@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback, collections
+import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback
 
 from datetime import datetime
 
@@ -32,7 +32,7 @@ try:
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 
-from netperf_wrapper import aggregators, formatters, resultset, runners
+from netperf_wrapper import aggregators, formatters, resultset
 from netperf_wrapper.metadata import record_extended_metadata
 from netperf_wrapper.util import clean_path
 from netperf_wrapper.settings import CONFIG_TYPES
@@ -403,15 +403,7 @@ class BatchRunner(object):
         # Look for missing data series, and if they are computed from other
         # values, try to compute them.
         for res in results:
-            for dname, dvals in settings.DATA_SETS.items():
-                if not dname in res:
-                    runner = runners.get(dvals['runner'])
-                    if hasattr(runner, 'result') and isinstance(runner.result, collections.Callable):
-                        try:
-                            runner = runner(dname, settings, **dvals)
-                            runner.result(res)
-                        except Exception as e:
-                            sys.stderr.write("Unable to compute missing data series '%s': '%s'.\n" % (dname, e))
+            settings.compute_missing_results(res)
 
         formatter = formatters.new(settings)
         formatter.format(results)
