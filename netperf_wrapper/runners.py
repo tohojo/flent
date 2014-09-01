@@ -41,7 +41,7 @@ except ImportError:
     import xmlrpc.client as xmlrpc
 
 
-from .settings import Glob
+from .util import Glob
 
 def get(name):
     cname = classname(name, "Runner")

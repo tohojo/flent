@@ -22,6 +22,7 @@
 import math, os, gzip, io, socket, re
 from bisect import bisect_left
 from datetime import datetime
+from fnmatch import fnmatch
 
 try:
     import configparser
@@ -215,3 +216,47 @@ class DefaultConfigParser(configparser.ConfigParser):
                 raise
             else:
                 return default
+
+
+class Glob(object):
+    """Object for storing glob patterns in matches"""
+
+    def __init__(self, pattern, exclude=None):
+        if exclude is None:
+            self.exclude = []
+        else:
+            self.exclude = exclude
+        self.pattern = pattern
+
+    def filter(self, values, exclude):
+        exclude += self.exclude
+        return [x for x in values if fnmatch(x, self.pattern) and x not in exclude]
+
+    def __iter__(self):
+        return iter((self,)) # allow list(g) to return [g]
+
+    @classmethod
+    def filter_dict(cls, d):
+        # Expand glob patterns in parameters. Go through all items in the
+        # dictionary looking for subkeys that is a Glob instance or a list
+        # that has a Glob instance in it.
+        for k,v in list(d.items()):
+            for g_k in list(v.keys()):
+                try:
+                    v[g_k] = cls.expand_list(v[g_k], list(d.keys()), [k])
+                except TypeError:
+                    continue
+        return d
+
+    @classmethod
+    def expand_list(cls, l, values, exclude=None):
+        l = list(l) # copy list, turns lone Glob objects into [obj]
+        if exclude is None:
+            exclude = []
+        # Expand glob patterns in list. Go through all items in the
+        # list  looking for Glob instances and expanding them.
+        for i in range(len(l)):
+            pattern = l[i]
+            if isinstance(pattern, cls):
+                l[i:i+1] = pattern.filter(values, exclude)
+        return l

@@ -1209,7 +1209,7 @@ class PlotFormatter(Formatter):
     def _filter_labels(self, labels):
         if self.settings.FILTER_LEGEND and labels:
             substr = long_substr(labels)
-            if len(substr) > 0 and substr != " - ":
+            if len(substr) > 3 and substr != " - ":
                 labels = [l.replace(substr, '') for l in labels]
             prefix = long_substr(labels, prefix_only=True)
             if prefix and len(prefix) < len(labels[0]):
