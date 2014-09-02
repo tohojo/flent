@@ -965,7 +965,7 @@ class PlotFormatter(Formatter):
                 continue
             max_val = max(data[i])
             min_val = min(data[i])
-            step = (max_val-min_val)/1000.0
+            step = (max_val-min_val)/1000.0 if min_val != max_val else 1.0
             x_values = list(frange(min_val-2*step, max_val+2*step, step))
             kwargs = {}
             for k in PLOT_KWARGS:
