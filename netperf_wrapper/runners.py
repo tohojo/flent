@@ -51,6 +51,7 @@ def get(name):
 
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
+    silent = False
 
     def __init__(self, name, settings, command, delay, *args, **kwargs):
         threading.Thread.__init__(self)
@@ -162,7 +163,7 @@ class ProcessRunner(threading.Thread):
             self.result = None
         else:
             self.result = self.parse(self.out)
-            if not self.result:
+            if not self.result and not self.silent:
                 sys.stderr.write("Warning: Command produced no valid data.\n"
                                  "Data series: %s\n"
                                  "Runner: %s\n"
@@ -180,8 +181,9 @@ class ProcessRunner(threading.Thread):
 DefaultRunner = ProcessRunner
 
 class SilentProcessRunner(ProcessRunner):
+    silent = True
     def parse(self, output):
-        return 1
+        return None
 
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
