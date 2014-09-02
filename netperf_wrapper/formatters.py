@@ -717,7 +717,12 @@ class PlotFormatter(Formatter):
                 self.plt.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
                     bp['caps'][j*2].set_label(r.label())
-                for k in 'caps','whiskers','fliers':
+                if len(bp['fliers']) == len(results):
+                    self.plt.setp([bp['fliers'][j]], markeredgecolor=colours[j])
+                    keys = 'caps','whiskers'
+                else:
+                    keys = 'caps','whiskers','fliers'
+                for k in keys:
                     if bp[k]:
                         self.plt.setp(bp[k][j*2], color=colours[j])
                         self.plt.setp(bp[k][j*2+1], color=colours[j])
