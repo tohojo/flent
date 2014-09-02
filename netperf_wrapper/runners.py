@@ -179,6 +179,10 @@ class ProcessRunner(threading.Thread):
 
 DefaultRunner = ProcessRunner
 
+class SilentProcessRunner(ProcessRunner):
+    def parse(self, output):
+        return 1
+
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
 
