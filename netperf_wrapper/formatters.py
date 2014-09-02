@@ -273,24 +273,7 @@ class PlotFormatter(Formatter):
                     matplotlib.use('agg')
                 else:
                     raise RuntimeError("Unrecognised file format for output '%s'" % output)
-                import matplotlib.pyplot as plt
-            else:
-                # In some cases matplotlib fails to load a suitable interactive
-                # backend, and plotting just fails silently. Try to explicitly
-                # load all interactive backends until one succeeds, and fail
-                # with a descriptive error message otherwise.
-                for backend in matplotlib.rcsetup.interactive_bk:
-                    try:
-                        # Some backends don't actually fail to load until pyplot
-                        # is imported, so force reloading of subsequent
-                        # backends and turn off warnings.
-                        matplotlib.use(backend, warn=False, force=True)
-                        import matplotlib.pyplot as plt
-                    except ImportError as e:
-                        continue
-                    else:
-                        break
-                    raise RuntimeError("Unable to load a suitable interactive matplotlib backend. Try saving plots to file instead.")
+            import matplotlib.pyplot as plt
             self.plt = plt
             self.np = numpy
             self.figure = self.plt.figure()
