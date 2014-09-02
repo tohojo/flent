@@ -23,6 +23,7 @@ import json, os, math, re, sys
 from datetime import datetime
 from calendar import timegm
 from itertools import repeat
+from copy import deepcopy
 
 try:
     from dateutil.parser import parse as parse_date
@@ -52,6 +53,7 @@ RECORDED_SETTINGS = (
     "LENGTH",
     "TOTAL_LENGTH",
     "STEP_SIZE",
+    "TEST_PARAMETERS",
     "NETPERF_WRAPPER_VERSION",
     "IP_VERSION",
     "BATCH_NAME",
@@ -69,7 +71,7 @@ TIME_SETTINGS = ("TIME", "BATCH_TIME", "T0")
 def new(settings):
     d = {}
     for a in RECORDED_SETTINGS:
-        d[a] = getattr(settings,a,None)
+        d[a] = deepcopy(getattr(settings,a,None))
     return ResultSet(**d)
 
 def load(filename, absolute=False):

@@ -56,6 +56,7 @@ DEFAULT_SETTINGS = {
     'IP_VERSION': None,
     'DELAY': 5,
     'SOCKET_TIMEOUT': 2,
+    'TEST_PARAMETERS': {},
     'TIME': datetime.now(),
     'SCALE_DATA': [],
     'SCALE_MODE': False,
@@ -85,7 +86,7 @@ DEFAULT_SETTINGS = {
     'BATCH_NAME': None,
     'BATCH_NAMES': [],
     'BATCH_FILES': [],
-    'BATCH_OVERRIDE': [],
+    'BATCH_OVERRIDE': {},
     'BATCH_DRY': False,
     'BATCH_REPS': None,
     'HTTP_GETTER_URLLIST': None,
@@ -357,8 +358,30 @@ class TestEnvironment(object):
             else:
                 raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
 
+
+def check_keyval(option, opt, value):
+    return {k:v}
+
+class ExtendedOption(optparse.Option):
+    ACTIONS = optparse.Option.ACTIONS + ("update",)
+    STORE_ACTIONS = optparse.Option.STORE_ACTIONS + ("update",)
+    TYPED_ACTIONS = optparse.Option.TYPED_ACTIONS + ("update",)
+    ALWAYS_TYPED_ACTIONS = optparse.Option.ALWAYS_TYPED_ACTIONS + ("update",)
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if action == 'update':
+            if not '=' in value:
+                raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
+            k,v = value.split('=', 1)
+            values.ensure_value(dest, {})[k.lower()] = v
+        else:
+            optparse.Option.take_action(self, action, dest, opt, value, values, parser)
+
+
+
 parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests.',
-                               usage="Usage: %prog [options] <host|test|input file ...> ")
+                               usage="Usage: %prog [options] <host|test|input file ...> ",
+                               option_class=ExtendedOption)
 
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
                   help="File to write processed output to (default standard out). The JSON "
@@ -411,10 +434,10 @@ parser.add_option("-B", "--batch-file", action="append", type="string", dest="BA
                   help="Load batch file BATCH_FILE. Can be specified multiple times, in which "
                   "case the files will be combined (with identically-named sections being overridden "
                   "by later files). See the man page for an explanation of the batch file format.")
-parser.add_option("--batch-override", action="append", type="string", dest="BATCH_OVERRIDE",
-                  metavar="OVERRIDE",
-                  help="Specify a parameter to override in the batch config. Format is name=value. "
-                  "Name will be case folded to lower case. Can be specified multiple times.")
+parser.add_option("--batch-override", action="update", type="string", dest="BATCH_OVERRIDE",
+                  metavar="key=value",
+                  help="Override parameter 'key' in the batch config and set it to 'value'. "
+                  "The key name will be case folded to lower case. Can be specified multiple times.")
 parser.add_option("--batch-dry-run", action="store_true", dest="BATCH_DRY",
                   help="Dry batch run. Prints what would be done, but doesn't actually run any tests.")
 parser.add_option("--batch-repetitions", action="store", type='int', dest="BATCH_REPS", metavar="REPETITIONS",
@@ -446,6 +469,12 @@ test_group.add_option("--socket-timeout", action="store", type=int, dest="SOCKET
                   "stalls on packet loss. Only enabled if the installed netperf version is "
                   "detected to support this (requires SVN version of netperf). "
                   "Default value: %d seconds. Set to 0 to disable." % DEFAULT_SETTINGS['SOCKET_TIMEOUT'])
+test_group.add_option("--test-parameter", action="update", dest="TEST_PARAMETERS", metavar='key=value',
+                  help="Arbitrary test parameter in key=value format. "
+                  "Key will be case folded to lower case. Some test configurations may "
+                  "alter behaviour based on values passed as test parameters. Additionally, "
+                  "the values are stored with the results metadata, and so can be used for "
+                  "arbitrary resultset categorisation. Can be specified multiple times.")
 parser.add_option_group(test_group)
 
 plot_group = optparse.OptionGroup(parser, "Plot configuration",
@@ -696,7 +725,7 @@ class Settings(optparse.Values, object):
             self.FORMAT = 'plot'
 
         if self.BATCH_REPS is not None:
-            self.BATCH_OVERRIDE.append('repetitions=%d' % self.BATCH_REPS)
+            self.BATCH_OVERRIDE['repetitions'] = self.BATCH_REPS
 
 
 
