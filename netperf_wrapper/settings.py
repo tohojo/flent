@@ -107,6 +107,7 @@ CONFIG_TYPES = {
     'IP_VERSION': 'int',
     'DELAY': 'int',
     'SOCKET_TIMEOUT': 'int',
+    'TEST_PARAMETERS': 'dict',
     'SCALE_MODE': 'bool',
     'SUBPLOT_COMBINE': 'bool',
     'ANNOTATE': 'bool',
@@ -624,6 +625,8 @@ class Settings(optparse.Values, object):
                     setattr(self, k, float(v))
                 elif CONFIG_TYPES[k] == 'list':
                     setattr(self, k, [i.strip() for i in v.split(",")])
+                elif CONFIG_TYPES[k] == 'dict':
+                    setattr(self, k, [dict([i.strip().split('=',1)]) for i in v.split(',')])
                 elif CONFIG_TYPES[k] == 'bool':
                     if type(v) == bool:
                         setattr(self, k, v)
