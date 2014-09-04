@@ -228,7 +228,7 @@ class TestEnvironment(object):
         if interval is None:
             interval = self.env['STEP_SIZE']
 
-        args = "-P 0 -v 0 -D -%.1f" % interval
+        args = "-P 0 -v 0 -D -%.2f" % interval
         if ip_version == 4:
             args += " -4"
         elif ip_version == 6:
