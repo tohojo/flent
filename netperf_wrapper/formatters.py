@@ -506,7 +506,7 @@ class PlotFormatter(Formatter):
 
     def combine(self, callback, results, config=None, axis=None, always_colour = False):
         if self.settings.SUBPLOT_COMBINE and not self.subplot_combine_disabled:
-            return self.subplot_combine(callback, results, always_colour)
+            return self.subplot_combine(callback, results)
         else:
             return self.dataseries_combine(callback, results, always_colour, config, axis)
 
