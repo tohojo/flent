@@ -38,7 +38,7 @@ try:
     import matplotlib
     matplotlib.use("Agg")
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
