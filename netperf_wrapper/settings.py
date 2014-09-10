@@ -184,7 +184,7 @@ class TestEnvironment(object):
         self.execute(os.path.join(TEST_PATH, name))
 
     @finder
-    def find_ping(self, ip_version, interval, length, host):
+    def find_ping(self, ip_version, interval, length, host, marking=None):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
@@ -208,14 +208,19 @@ class TestEnvironment(object):
                 # of pings to send
                 count = length // interval + 1
                 interval = int(interval * 1000)
-
-                return "%s -D -p %d -c %d %s" % (fping, interval, count, host)
+                if marking is not None:
+                    return "%s -D -p %d -c %d -O %s %s" % (fping, interval, count, marking, host)
+                else:
+                    return "%s -D -p %d -c %d %s" % (fping, interval, count, host)
             elif "must run as root?" in str(err):
                 sys.stderr.write("Found fping but it seems to be missing permissions (no SUID?). Not using.\n")
 
         if ping is not None:
             # No checks atm; should check for presence of -D parameter
-            return "%s -n -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
+            if marking is not None:
+                return "%s -n -D -i %.2f -w %d -Q %s %s" % (ping, max(0.2, interval), length, marking, host)
+            else:
+                return "%s -n -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
 
         raise RuntimeError("No suitable ping tool found.")
 
