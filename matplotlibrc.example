@@ -1,0 +1,36 @@
+# This is an example matplotlibrc file that will make plots be drawn on a grey
+# background with a white grid (as the Seaborn package does; see
+# http://stanford.edu/~mwaskom/software/seaborn/tutorial/aesthetics.html). Copy
+# this file to $XDG_CONFIG_HOME/matplotlib/matplotlibrc to enable. See
+# http://matplotlib.org/users/customizing.html for more information on
+# matplotlib rc files.
+
+# Using an rc-file can break matplotlib auto-loading of backends. If running
+# `netperf-wrapper -f plot` does not pop up a plot, set this to a suitable
+# value:
+#backend: Qt4Agg
+
+# From Seaborn default style.
+axes.axisbelow: True
+axes.edgecolor: white
+axes.facecolor: EAEAF2
+axes.grid: True
+axes.labelcolor: .15
+axes.linewidth: 0
+grid.color: white
+grid.linestyle: -
+image.cmap: Greys
+legend.frameon: False
+legend.numpoints: 1
+legend.scatterpoints: 1
+lines.solid_capstyle: round
+pdf.fonttype: 42
+text.color: .15
+xtick.color: .15
+xtick.direction: out
+xtick.major.size: 0
+xtick.minor.size: 0
+ytick.color: .15
+ytick.direction: out
+ytick.major.size: 0
+ytick.minor.size: 0
