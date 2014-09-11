@@ -1,7 +1,7 @@
 # Maintainer: Toke Høiland-Jørgensen <toke at toke dot dk>
 
 pkgname=netperf-wrapper
-pkgver=0.6.1
+pkgver=0.7.0
 pkgrel=1
 pkgdesc='A wrapper for the `netperf` benchmark utility, used for testing for bufferbloat.'
 arch=('any')
@@ -12,7 +12,7 @@ optdepends=(
     'python-matplotlib: for outputting graphs'
 )
 source=("https://pypi.python.org/packages/source/n/netperf-wrapper/netperf-wrapper-${pkgver}.tar.gz")
-sha1sums=('e5be991ceb08e1ccd7b1bd68c64ffebc43d9df3c')
+sha1sums=('008016980a6e2894280c416c98f3dfe4bded1c23')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
