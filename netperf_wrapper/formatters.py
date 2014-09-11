@@ -1173,16 +1173,18 @@ class PlotFormatter(Formatter):
 
     def _annotate_plot(self, skip_title=False):
         titles = []
-        if self.settings.PRINT_TITLE:
+        title_y=0.98
+        if self.settings.OVERRIDE_TITLE:
+            titles.append(self.figure.suptitle(self.settings.OVERRIDE_TITLE, fontsize=14, y=title_y))
+        elif self.settings.PRINT_TITLE:
             plot_title = self.settings.DESCRIPTION
-            y=0.98
             if 'description' in self.config:
                 plot_title += "\n" + self.config['description']
             if self.settings.TITLE and not skip_title:
                 plot_title += "\n" + self.settings.TITLE
             if 'description' in self.config and self.settings.TITLE and not skip_title:
                 y=1.00
-            titles.append(self.figure.suptitle(plot_title, fontsize=14, y=y))
+            titles.append(self.figure.suptitle(plot_title, fontsize=14, y=title_y))
 
         if self.settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (

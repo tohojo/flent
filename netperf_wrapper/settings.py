@@ -47,6 +47,7 @@ DEFAULT_SETTINGS = {
     'OUTPUT': '-',
     'FORMAT': 'default',
     'TITLE': '',
+    'OVERRIDE_TITLE': '',
     'NOTE': '',
     'RCFILE': os.path.expanduser("~/.netperf-wrapperrc"),
     'LOG_FILE': None,
@@ -523,6 +524,9 @@ plot_group.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
                   help="Exclude annotation with hostnames, time and test length from plots.")
 plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
                   help="Exclude title from plots.")
+plot_group.add_option("--override-title", action="store", type='string', dest="OVERRIDE_TITLE",
+                  metavar="TITLE", help="Override plot title with this string. This parameter takes "
+                  "precedence over --no-title.")
 plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
                   help="Don't use line markers to differentiate data series on plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
