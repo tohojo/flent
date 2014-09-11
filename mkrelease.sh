@@ -20,7 +20,7 @@ if [[ ! "$VERSION" =~ -git$ ]]; then
 
     echo ==== Creating and signing release tarball... ====
     python setup.py sdist  || die error
-    gpg --detach-sign dist/netperf-wrapper-${VERSION}.tar.gz  || die error
+    gpg --detach-sign --armor dist/netperf-wrapper-${VERSION}.tar.gz  || die error
 
     echo ==== Updating packaging files... ====
     SHA1=$(sha1sum dist/netperf-wrapper-${VERSION}.tar.gz | awk '{print $1}')
