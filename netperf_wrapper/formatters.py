@@ -794,7 +794,8 @@ class PlotFormatter(Formatter):
         # the legend.
         if group_by == 'groups':
             for k in groups.keys():
-                res = ResultSet(TITLE="%s (n=%d)" % (k, len(groups[k])), NAME=results[0].meta('NAME'))
+                title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
+                res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
                 res.create_series([s['data'] for s in config['series']])
                 x = 0
                 for r in groups[k]:

@@ -63,6 +63,7 @@ DEFAULT_SETTINGS = {
     'CONCATENATE': False,
     'ABSOLUTE_TIME': False,
     'SUBPLOT_COMBINE': False,
+    'COMBINE_PRINT_N': True,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
     'USE_MARKERS': True,
@@ -110,6 +111,7 @@ CONFIG_TYPES = {
     'TEST_PARAMETERS': 'dict',
     'SCALE_MODE': 'bool',
     'SUBPLOT_COMBINE': 'bool',
+    'COMBINE_PRINT_N': 'bool',
     'ANNOTATE': 'bool',
     'PRINT_TITLE': 'bool',
     'PRINT_LEGEND': 'bool',
@@ -515,6 +517,8 @@ plot_group.add_option("--absolute-time", action="store_true", dest="ABSOLUTE_TIM
 plot_group.add_option("--subplot-combine", action="store_true", dest="SUBPLOT_COMBINE",
                   help="When plotting multiple data series, plot each one on a separate subplot "
                   "instead of combining them into one plot (not supported for all plot types).")
+plot_group.add_option("--no-print-n", action="store_false", dest="COMBINE_PRINT_N",
+                  help="Do not print the number of data points on combined plots.")
 plot_group.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
                   help="Exclude annotation with hostnames, time and test length from plots.")
 plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
