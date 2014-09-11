@@ -499,7 +499,7 @@ plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INV
                   "upwards').")
 plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
                   help="Disable log scales on plots.")
-plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS",
+plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS", metavar="FACTOR",
                   help="Factor to normalise data by. I.e. divide all data points by this value. "
                   "Can be specified multiple times, in which case each value corresponds to a "
                   "data series.")
@@ -540,7 +540,7 @@ plot_group.add_option("--figure-height", action="store", type='float', dest="FIG
                   help="Figure height in inches. Used when saving plots to file and for default size of "
                   "the interactive plot window.")
 plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DPI",
-                  help="Figure DPI. Used when saving plots to file.")
+                  help="Figure DPI. Used when saving plots to raster format files.")
 parser.add_option_group(plot_group)
 
 

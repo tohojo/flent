@@ -115,6 +115,33 @@ the rc file. Note that when multiple GUI instances are running, there is no
 guarantee as to which instance will get a subsequent open request (if run again
 without \fB--new-gui-instance\fR).
 .TP
+\fB--gui-no-defer\fR 
+Normally, the GUI defers redrawing plots until they are needed to avoid
+redrawing all open plots every time an option changes. This switch turns off
+that optimisation in favour of always redrawing everything straight away. This
+is useful when loading a bunch of plots from the command line and then wanting
+to flip through them without drawing delay.
+.TP
+\fB\-b\fR BATCH_NAME, \fB\-\-batch\-name\fR=\fIBATCH_NAME\fR
+Run test batch BATCH_NAME (must be specified in a batch file loaded by the
+\fB--batch-file\fR option). Can be supplied multiple times.
+.TP
+\fB\-B\fR BATCH_FILE, \fB\-\-batch\-file\fR=\fIBATCH_FILE\fR
+Load batch file BATCH_FILE. Can be specified multiple times, in which case the
+files will be combined (with identically-named sections being overridden by
+later files). See appropriate section below for an explanation of the batch file
+format.
+.TP
+\fB\-\-batch\-override\fR=\fIkey=value\fR
+Override parameter 'key' in the batch config and set it to 'value'. The key name
+will be case folded to lower case. Can be specified multiple times.
+.TP
+\fB--batch-dry-run\fR 
+Dry batch run. Prints what would be done, but doesn't actually run any tests.
+.TP
+\fB\-\-batch\-repetitions\fR=\fIREPETITIONS\fR
+Shorthand for \fB--batch-override\fR \fI'repetitions=REPETITIONS'\fR.
+.TP
 \fBTest configuration:\fR
 .PP
 These options affect the behaviour of the test being run and have no
@@ -156,6 +183,13 @@ parameter is an implicit upper bound on how long a round-trip time that can be
 measured. As such you may need to adjust it if you are experiencing latency
 above the default value. Set to 0 to disable.
 .TP
+\fB\-\-test\-parameter\fR=\fIkey=value\fR
+Arbitrary test parameter in key=value format. Key will be case folded to lower
+case. Some test configurations may alter behaviour based on values passed as
+test parameters. Additionally, the values are stored with the results metadata,
+and so can be used for arbitrary resultset categorisation. Can be specified
+multiple times.
+.TP
 \fBPlot configuration:\fR
 .PP
 These options are used to configure the appearance of plot output and
@@ -170,6 +204,10 @@ Invert the y-axis for latency data series (making plots show 'better values upwa
 \fB\-\-disable\-log\fR
 Disable log scales on plots.
 .TP
+\fB\-\-norm\-factor\fR=\fIFACTOR\fR
+Factor to normalise data by. I.e. divide all data points by this value. Can be
+specified multiple times, in which case each value corresponds to a data series.
+.TP
 \fB\-\-scale\-data\fR=\fISCALE_DATA\fR
 Additional data files to consider when scaling the
 plot axes (for plotting several plots with identical
@@ -182,20 +220,100 @@ Treat file names (except for the first one) passed as
 unqualified arguments as if passed as \fB\-\-scale\-data\fR
 (default as if passed as \fB\-\-input\fR).
 .TP
+\fB\-\-concatenate\fR
+Concatenate multiple result sets into one data series. This means that each data
+file will have its time axis shifted by the preceding series duration and
+appended to the first data set specified. Only works for data sets from the same
+test, obviously.
+.TP
+\fB\-\-absolute\-time\fR
+Plot data points with absolute UNIX time on the x-axis. This requires the
+absolute starting time for the test run to be stored in the data file, and so it
+won't work with data files that predates this feature.
+.TP
 \fB\-\-subplot\-combine\fR
 When plotting multiple data series, plot each one on a separate subplot instead
 of combining them into one plot. This mode is not supported for all plot types,
 and only works when \fB--scale-mode\fR is disabled.
 .TP
+\fB\-\-no\-print\-n\fR
+Do not print the number of data points on combined plots. When using plot types
+that combines results from several test runs, the number of data series in each
+combined data point is normally added after the series name, (n=X) for X data
+series. This option turns that off.
+.TP
 \fB\-\-no\-annotation\fR
 Exclude annotation with hostnames, time and test
 length from plots.
 .TP
+\fB\-\-no\-title\fR
+Exclude title from plots.
+.TP
+\fB\-\-override\-title\fR=\fITITLE\fR 
+Override plot title with this string. Completely discards the configured title
+(from the test configuration), as well as the title stored in the data set, and
+replaces it with the value supplied here. This is useful to override the plot
+title \fIat the time of plotting\fR, for instance to add a title to an aggregate
+plot from several data series. When this parameter is specified,
+\fB--no-title\fR has no effect.
+.TP
+\fB\-\-no\-markers\fR
+Don't use line markers to differentiate data series on plots.
+.TP
 \fB\-\-no\-legend\fR
 Exclude legend from plots.
 .TP
-\fB\-\-no\-title\fR
-Exclude title from plots.
+\fB\-\-filter\-legend\fR
+Filter legend labels by removing the longest common substring from all entries.
+This is not particularly smart, so should be used with care.
+.TP
+\fB\-\-figure\-width\fR=\fIFIG_WIDTH\fR 
+Figure width in inches. Used when saving plots to file and for default size of
+the interactive plot window.
+.TP
+\fB\-\-figure\-height\fR=\fIFIG_HEIGHT\fR 
+Figure height in inches. Used when saving plots to file and for default size of
+the interactive plot window.
+.TP
+\fB\-\-figure\-dpi\fR=\fIFIG_DPI\fR 
+Figure DPI. Used when saving plots to raster format files.
+.IP
+.TP
+\fBTest tool-related options:\fR
+.TP
+\fB\-\-ditg\-control\-host\fR=\fIHOST\fR
+Hostname for D-ITG control server. Default: First hostname of test target. When
+running tests that uses D-ITG as a test tool (such as the voip-* tests), the
+control server is needed to manage the D-ITG daemon and transfer the output to
+netperf-wrapper after the test has ended (see section below on running tests
+with D-ITG). This option can be used to point netperf-wrapper to a different
+host for the control server (for instance, to run the control server
+communication over a separate control network).
+.TP
+\fB\-\-ditg\-control\-port\fR=\fIPORT\fR 
+Port for D-ITG control server. Default: 8000.
+.TP
+\fB\-\-ditg\-control\-secret\fR=\fISECRET\fR 
+Secret for D-ITG control server authentication. Default: ''.
+.TP
+\fB\-\-http\-getter\-urllist\fR=\fIFILENAME\fR
+When running HTTP tests, the http-getter tool is used to fetch URLs (see
+https://github.com/tohojo/http-getter). This option specifies the filename
+containing the list of HTTP URLs to get. Can also be a URL, which will then be
+downloaded as part of each test iteration. If not specified, this is set to
+http://<hostname>/filelist.txt where <hostname> is the first test hostname.
+.TP
+\fB\-\-http\-getter\-dns\-servers\fR=\fIDNS_SERVERS\fR
+DNS servers to use for http-getter lookups. Format is
+host[:port][,host[:port]]... This option will only work if libcurl supports it
+(needs to be built with the ares resolver). Default is none (use the system
+resolver).
+.TP
+\fB\-\-http\-getter\-timeout\fR=\fIMILLISECONDS\fR
+Timeout for HTTP connections. Default is to use the test length.
+.TP
+\fB\-\-http\-getter\-workers\fR=\fINUMBER\fR
+Number of workers to use for getting HTTP urls. Default is 4.
 .IP
 .TP
 \fBMisc and debugging options:\fR
@@ -317,6 +435,21 @@ The rc file allows options to be specified globally, an optionally overridden
 for specific tests. For an explanation of the options, refer to the annotated
 example rc file, by default installed to
 \fI/usr/share/doc/netperf-wrapper/netperf-wrapperrc.example\fR.
+
+.SH BATCH FILES
+Netperf-wrapper supports reading batch files to automate running several tests
+and do setup/teardown of test environment etc. This greatly aids reproducibility
+of tests.
+
+The batch file format is based on the standard .ini file format, with sections
+being split into three namespaces: Commands, starting with Command::, batches,
+starting with Batch::, and arguments, starting with Arg::. Briefly, a batch is
+the entity that will be run, commands can be run before or after each batch
+iteration, and arguments allows parameterising batches.
+
+\fBFIXME\fR: Expand this section; for now, try looking at the
+\fIexample.batch\fR file supplied with the source code, and try to work things
+out from there :).
 
 .SH RUNNING TESTS WITH THE D-ITG TOOL
 This version of netperf-wrapper has experimental support for running and parsing
