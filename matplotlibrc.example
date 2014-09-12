@@ -12,17 +12,22 @@
 
 # From Seaborn default style.
 axes.axisbelow: True
+axes.color_cycle: 1b9e77, d95f02, 7570b3, e7298a, 66a61e, e6ab02, a6761d, 666666
 axes.edgecolor: white
 axes.facecolor: EAEAF2
 axes.grid: True
 axes.labelcolor: .15
 axes.linewidth: 0
+figure.edgecolor: white
+figure.facecolor: white
+figure.frameon: False
 grid.color: white
 grid.linestyle: -
 image.cmap: Greys
 legend.frameon: False
 legend.numpoints: 1
 legend.scatterpoints: 1
+lines.color: .15
 lines.solid_capstyle: round
 pdf.fonttype: 42
 text.color: .15
