@@ -267,6 +267,11 @@ Exclude legend from plots.
 Filter legend labels by removing the longest common substring from all entries.
 This is not particularly smart, so should be used with care.
 .TP
+\fB\-\-filter\-regexp\fR=\fIREGEXP\fR
+Filter the plot legend by the supplied regular expression. Note that for
+combining several plot results, the regular expression is also applied before
+the grouping logic, meaning that a too wide filter can mess up the grouping.
+.TP
 \fB\-\-figure\-width\fR=\fIFIG_WIDTH\fR 
 Figure width in inches. Used when saving plots to file and for default size of
 the interactive plot window.

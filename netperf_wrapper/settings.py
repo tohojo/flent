@@ -70,6 +70,7 @@ DEFAULT_SETTINGS = {
     'USE_MARKERS': True,
     'PRINT_LEGEND': True,
     'FILTER_LEGEND': False,
+    'FILTER_REGEXP': None,
     'ZERO_Y': False,
     'INVERT_Y': False,
     'LOG_SCALE': True,
@@ -533,6 +534,8 @@ plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
                   help="Exclude legend from plots.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
+plot_group.add_option("--filter-regexp", action="store", dest="FILTER_REGEXP", metavar="REGEXP",
+                  help="Filter out supplied regular expression from legend names.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
                   help="Figure width in inches. Used when saving plots to file and for default size of "
                   "the interactive plot window.")

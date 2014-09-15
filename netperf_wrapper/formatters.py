@@ -779,6 +779,8 @@ class PlotFormatter(Formatter):
         groups = OrderedDict()
         new_results = []
         filenames = [r.meta('DATA_FILENAME').replace(r.SUFFIX, '') for r in results]
+        if self.settings.FILTER_REGEXP:
+            filenames = [re.sub(self.settings.FILTER_REGEXP, "", f) for f in filenames]
         prefix = long_substr(filenames, prefix_only=True)
         names = map(lambda s: self.serial_regex.sub("", s.replace(prefix, ""), count=1), filenames)
         for i,n in enumerate(names):
@@ -1198,6 +1200,8 @@ class PlotFormatter(Formatter):
         return titles
 
     def _filter_labels(self, labels):
+        if self.settings.FILTER_REGEXP and labels:
+            labels = [re.sub(self.settings.FILTER_REGEXP, "", l) for l in labels]
         if self.settings.FILTER_LEGEND and labels:
             substr = long_substr(labels)
             if len(substr) > 3 and substr != " - ":
