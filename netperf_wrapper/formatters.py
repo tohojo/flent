@@ -633,9 +633,9 @@ class PlotFormatter(Formatter):
             ticklabels.extend(labels)
 
             bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colours[i],
-                                       alpha=0.75, width=width)
+                                       alpha=0.75, width=width, align='edge')
             if len(config['series']) > 1 or self.settings.PRINT_TITLE:
-                texts.append(config['axes'][0].text(pos+group_size/2, 14, s['label'], ha='center'))
+                texts.append(config['axes'][0].text(pos+group_size/2.0-0.5, 14, s['label'], ha='center'))
 
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
