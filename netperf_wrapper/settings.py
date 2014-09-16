@@ -163,7 +163,6 @@ def finder(fn):
         if self.informational:
             return ""
         ret = fn(self, *args, **kwargs)
-        print(ret)
         return ret
     return decorated
 
