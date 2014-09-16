@@ -129,7 +129,7 @@ CONFIG_TYPES = {
     'EXTENDED_METADATA': 'bool',
     'REMOTE_METADATA': 'list',
     'CONTROL_HOST': 'str',
-    'CONTROL_LOCAL_BIND': 'int',
+    'CONTROL_LOCAL_BIND': 'str',
     'NETPERF_CONTROL_PORT': 'int',
     'DITG_CONTROL_PORT': 'int',
     'DITG_CONTROL_SECRET': 'str',
