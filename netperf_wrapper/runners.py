@@ -274,6 +274,7 @@ class NetperfDemoRunner(ProcessRunner):
         pairs."""
 
         result = []
+        raw_values = []
         lines = output.strip().splitlines()
         avg_dur = None
         alpha = 0.5
@@ -289,12 +290,18 @@ class NetperfDemoRunner(ProcessRunner):
                 # the run, or a very short interval giving a very high bandwidth
                 # measurement
                 dur = float(parts[5])
+                time = float(parts[9])
+                value = float(parts[2])
                 if avg_dur is None:
                     avg_dur = dur
 
+                raw_values.append({'dur': dur, 't': time, 'val': value})
+
                 if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
-                    result.append([float(parts[9]), float(parts[2])])
+                    result.append([time, value])
                     avg_dur = alpha * avg_dur + (1.0-alpha) * dur
+        if self.settings.SAVE_RAW:
+            self.metadata['RAW_VALUES'] = raw_values
         try:
             self.metadata['MEAN_VALUE'] = float(lines[-1])
         except ValueError:
@@ -313,13 +320,19 @@ class RegexpRunner(ProcessRunner):
 
     def parse(self, output):
         result = []
+        raw_values = []
         lines = output.split("\n")
         for line in lines:
             for regexp in self.regexes:
                 match = regexp.match(line)
                 if match:
-                    result.append([float(match.group('time')), float(match.group('value'))])
+                    time = float(match.group('time'))
+                    value = float(match.group('value'))
+                    result.append([time, value])
+                    raw_values.append({'t': time, 'val': value})
                     break # only match one regexp per line
+        if self.settings.SAVE_RAW:
+            self.metadata['RAW_VALUES'] = raw_values
         return result
 
 class PingRunner(RegexpRunner):

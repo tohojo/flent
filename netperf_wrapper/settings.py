@@ -46,6 +46,7 @@ DEFAULT_SETTINGS = {
     'LOCAL_BIND': None,
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
+    'SAVE_RAW': False,
     'OUTPUT': '-',
     'FORMAT': 'default',
     'TITLE': '',
@@ -113,6 +114,7 @@ CONFIG_TYPES = {
     'NOTE': 'str',
     'LOG_FILE': 'str',
     'IP_VERSION': 'int',
+    'SAVE_RAW': 'bool',
     'DELAY': 'int',
     'SOCKET_TIMEOUT': 'int',
     'TEST_PARAMETERS': 'dict',
@@ -496,6 +498,9 @@ test_group.add_option("-s", "--step-size", action="store", type="float", dest="S
 test_group.add_option("-d", "--delay", action="store", type="int", dest="DELAY",
                   help="Number of seconds to delay parts of test (such as bandwidth "
                   "loaders).")
+test_group.add_option("--save-raw-data", action="store_true", dest="SAVE_RAW",
+                  help="Save raw parsed data (after parsing but before the interpolation step). "
+                  "Enabling this will substantially increase the size of the data file.")
 test_group.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
                   help="Use IPv4 for tests (some tests may ignore this).")
 test_group.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
