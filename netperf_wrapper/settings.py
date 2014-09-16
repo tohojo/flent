@@ -29,6 +29,7 @@ try:
 except ImportError:
     from ConfigParser import RawConfigParser
 
+from collections import defaultdict
 try:
     from collections import OrderedDict
 except ImportError:
@@ -42,6 +43,7 @@ DEFAULT_SETTINGS = {
     'HOST': None,
     'HOSTS': [],
     'LOCAL_HOST': socket.gethostname(),
+    'LOCAL_BIND': None,
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
     'OUTPUT': '-',
@@ -83,7 +85,9 @@ DEFAULT_SETTINGS = {
     'GUI': False,
     'NEW_GUI_INSTANCE': False,
     'GUI_NO_DEFER': False,
-    'DITG_CONTROL_HOST': None,
+    'CONTROL_HOST': None,
+    'CONTROL_LOCAL_BIND': None,
+    'NETPERF_CONTROL_PORT': 12865,
     'DITG_CONTROL_PORT': 8000,
     'DITG_CONTROL_SECRET': '',
     'BATCH_NAME': None,
@@ -100,6 +104,7 @@ DEFAULT_SETTINGS = {
 
 CONFIG_TYPES = {
     'HOSTS': 'list',
+    'LOCAL_BIND': 'str',
     'STEP_SIZE': 'float',
     'LENGTH': 'int',
     'OUTPUT': 'str',
@@ -123,7 +128,9 @@ CONFIG_TYPES = {
     'LOG_SCALE': 'bool',
     'EXTENDED_METADATA': 'bool',
     'REMOTE_METADATA': 'list',
-    'DITG_CONTROL_HOST': 'str',
+    'CONTROL_HOST': 'str',
+    'CONTROL_LOCAL_BIND': 'int',
+    'NETPERF_CONTROL_PORT': 'int',
     'DITG_CONTROL_PORT': 'int',
     'DITG_CONTROL_SECRET': 'str',
     'NEW_GUI_INSTANCE': 'bool',
@@ -155,7 +162,9 @@ def finder(fn):
     def decorated(self, *args, **kwargs):
         if self.informational:
             return ""
-        return fn(self, *args, **kwargs)
+        ret = fn(self, *args, **kwargs)
+        print(ret)
+        return ret
     return decorated
 
 class TestEnvironment(object):
@@ -188,7 +197,7 @@ class TestEnvironment(object):
         self.execute(os.path.join(TEST_PATH, name))
 
     @finder
-    def find_ping(self, ip_version, interval, length, host, marking=None):
+    def find_ping(self, ip_version, interval, length, host, marking=None, local_bind=None):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
@@ -198,6 +207,10 @@ class TestEnvironment(object):
         else:
             suffix = ""
 
+        if local_bind is None:
+            local_bind = self.env['LOCAL_BIND']
+
+
         fping = util.which('fping'+suffix)
         ping = util.which('ping'+suffix)
 
@@ -206,47 +219,39 @@ class TestEnvironment(object):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out,err = proc.communicate()
+            # check for presence of timestamp option
             if "print timestamp before each output line" in str(out):
-                # fping has timestamp option, use it
-                # there's no timeout parameter for fping, calculate a total number
-                # of pings to send
-                count = length // interval + 1
-                interval = int(interval * 1000)
-                if marking is not None:
-                    return "%s -D -p %d -c %d -O %s %s" % (fping, interval, count, marking, host)
-                else:
-                    return "%s -D -p %d -c %d %s" % (fping, interval, count, host)
+                return "{binary} -D -p {interval:.0f} -c {count:.0f} {marking} {local_bind} {host}".format(
+                    binary=fping,
+                    interval=interval * 1000, # fping expects interval in milliseconds
+                    # since there's no timeout parameter for fping, calculate a total number
+                    # of pings to send
+                    count=length // interval + 1,
+                    marking="-O {0}".format(marking) if marking else "",
+                    local_bind="-I {0}".format(local_bind) if local_bind else "",
+                    host=host)
             elif "must run as root?" in str(err):
                 sys.stderr.write("Found fping but it seems to be missing permissions (no SUID?). Not using.\n")
 
         if ping is not None:
-            # No checks atm; should check for presence of -D parameter
-            if marking is not None:
-                return "%s -n -D -i %.2f -w %d -Q %s %s" % (ping, max(0.2, interval), length, marking, host)
-            else:
-                return "%s -n -D -i %.2f -w %d %s" % (ping, max(0.2, interval), length, host)
+            # Ping can't handle hostnames for the -I parameter, so do a lookup first.
+            if local_bind:
+                local_bind=util.lookup_host(local_bind, ip_version)[4][0]
+
+            # FIXME: check for support for -D parameter
+            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} {local_bind} {host}".format(
+                binary=ping,
+                interval=max(0.2, interval),
+                length=length,
+                marking="-Q {0}".format(marking) if marking else "",
+                local_bind="-I {0}".format(local_bind) if local_bind else "",
+                host=host)
 
         raise RuntimeError("No suitable ping tool found.")
 
     @finder
-    def find_netperf(self, test, length, host, ip_version=None, marking=None, interval=None, extra_args=None):
+    def find_netperf(self, test, length, host, **kwargs):
         """Find a suitable netperf executable, and test for the required capabilities."""
-        if ip_version is None:
-            ip_version = self.env['IP_VERSION']
-
-        if interval is None:
-            interval = self.env['STEP_SIZE']
-
-        args = "-P 0 -v 0 -D -%.2f" % interval
-        if ip_version == 4:
-            args += " -4"
-        elif ip_version == 6:
-            args += " -6"
-
-        if marking is not None:
-            args += " -Y %s" % marking
-
-        args += " -H %s -t %s -l %d" % (host, test, length)
 
         if self.netperf is None:
             netperf = util.which('netperf', fail=True)
@@ -276,33 +281,53 @@ class TestEnvironment(object):
             if not "netperf: invalid option -- 'e'" in str(err):
                 self.netperf['-e'] = True
 
+        kwargs.setdefault('ip_version', self.env['IP_VERSION'])
+        kwargs.setdefault('interval', self.env['STEP_SIZE'])
+        kwargs.setdefault('control_host', self.env['CONTROL_HOST'])
+        kwargs.setdefault('local_bind', self.env['LOCAL_BIND'] or "")
+        kwargs.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or "")
 
-        if extra_args is not None:
-            args += " " + extra_args
+        args = defaultdict(str,
+                           binary=self.netperf['executable'],
+                           host=host,
+                           test=test,
+                           length=length,
+                           **kwargs
+                           )
+
+        if 'marking' in args:
+            args['marking'] = "-Y {0}".format(args['marking'])
+
+        for c in 'local_bind', 'control_local_bind':
+            if args[c]:
+                args[c] = "-L {0}".format(args[c])
 
         if test == "UDP_RR" and self.netperf["-e"]:
-            # -- might have been passed as extra_args
-            if not "--" in args:
-                args += " --"
-            args += " -e %d" % self.env['SOCKET_TIMEOUT']
+            args['socket_timeout'] = "-e {0:d}".format(self.env['SOCKET_TIMEOUT'])
         elif test in ("TCP_STREAM", "TCP_MAERTS", "omni"):
-            args += " -f m"
+            args['format'] = "-f m"
 
-        return "%s %s" % (self.netperf['executable'], args)
+        return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} -H {control_host} -t {test} " \
+               "-l {length:d} {format} {control_local_bind} {extra_args} -- {socket_timeout} {local_bind} -H {host} " \
+               "{extra_test_args}".format(**args)
 
     @finder
-    def find_itgsend(self, test_args, length, host):
+    def find_itgsend(self, test_args, length, host, local_bind=None):
 
         if self.itgsend is None:
             self.itgsend = util.which("ITGSend", fail=True)
 
+        if local_bind is None:
+            local_bind = self.env['LOCAL_BIND']
+
         # We put placeholders in the command string to be filled out by string
         # format expansion by the runner once it has communicated with the control
         # server and obtained the port values.
-        return "{binary} -Sdp {{signal_port}} -t {length} -a {dest_host} -rp {{dest_port}} {args}".format(
+        return "{binary} -Sdp {{signal_port}} -t {length} -a {dest_host} {local_bind} -rp {{dest_port}} {args}".format(
             binary=self.itgsend,
             length=int(length*1000),
             dest_host=host,
+            local_bind="-sa {0}".format(local_bind) if local_bind else "",
             args=test_args)
 
     @finder
@@ -463,6 +488,8 @@ test_group.add_option("-H", "--host", action="append", type="string", dest="HOST
                   "specified as unqualified arguments; this parameter guarantees that the "
                   "argument be interpreted as a host name (rather than being subject to "
                   "auto-detection between input files, hostnames and test names).")
+test_group.add_option("--local-bind", action="store", type="string", dest="LOCAL_BIND",
+                  help="Local hostname or IP address to bind to (for test tools that support this).")
 test_group.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="Base test length (some tests may add some time to this).")
 test_group.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
@@ -548,9 +575,17 @@ parser.add_option_group(plot_group)
 
 
 tool_group = optparse.OptionGroup(parser, "Test tool-related options")
-tool_group.add_option("--ditg-control-host", action="store", type="string", dest="DITG_CONTROL_HOST",
+tool_group.add_option("--control-host", action="store", type="string", dest="CONTROL_HOST",
                       metavar="HOST",
-                      help="Hostname for D-ITG control server. Default: First hostname of test target.")
+                      help="Hostname for control connection for test tools that support it (netperf and D_ITG). "
+                      "If not supplied, this will be the same as the test target.")
+tool_group.add_option("--control-local-bind", action="store", type="string", dest="CONTROL_LOCAL_BIND",
+                      metavar="IP",
+                      help="Local IP to bind control connection to (for test tools that support it;"
+                      " currently netperf). If not supplied, the value for --local-bind will be used.")
+tool_group.add_option("--netperf-control-port", action="store", type=int, dest="NETPERF_CONTROL_PORT",
+                      metavar="PORT",
+                      help="Port for Netperf control server. Default: %d." % DEFAULT_SETTINGS['NETPERF_CONTROL_PORT'])
 tool_group.add_option("--ditg-control-port", action="store", type=int, dest="DITG_CONTROL_PORT",
                       metavar="PORT",
                       help="Port for D-ITG control server. Default: %d." % DEFAULT_SETTINGS['DITG_CONTROL_PORT'])
@@ -652,6 +687,7 @@ class Settings(optparse.Values, object):
                         setattr(self, k, False)
                     else:
                         raise ValueError("Not a boolean: %s" % v)
+        self.update_implications()
 
     def load_test(self, test_name=None, informational=False):
         if test_name is not None:
@@ -745,6 +781,14 @@ class Settings(optparse.Values, object):
 
         if self.BATCH_REPS is not None:
             self.BATCH_OVERRIDE['repetitions'] = self.BATCH_REPS
+
+        if self.HOST is None and self.HOSTS:
+            self.HOST = self.HOSTS[0]
+
+        if self.CONTROL_LOCAL_BIND is None:
+            self.CONTROL_LOCAL_BIND = self.LOCAL_BIND
+        if self.CONTROL_HOST is None:
+            self.CONTROL_HOST = self.HOST
 
 
 

@@ -156,6 +156,9 @@ the argument be interpreted as a host name (rather
 than being subject to auto\-detection between input
 files, hostnames and test names).
 .TP
+\fB\-\-local-bind\fR=\fIIP\fR
+Local hostname or IP address to bind to (for test tools that support this).
+.TP
 \fB\-l\fR LENGTH, \fB\-\-length\fR=\fILENGTH\fR
 Base test length (some tests may add some time to
 this).
@@ -286,14 +289,27 @@ Figure DPI. Used when saving plots to raster format files.
 .TP
 \fBTest tool-related options:\fR
 .TP
-\fB\-\-ditg\-control\-host\fR=\fIHOST\fR
-Hostname for D-ITG control server. Default: First hostname of test target. When
-running tests that uses D-ITG as a test tool (such as the voip-* tests), the
-control server is needed to manage the D-ITG daemon and transfer the output to
-netperf-wrapper after the test has ended (see section below on running tests
-with D-ITG). This option can be used to point netperf-wrapper to a different
-host for the control server (for instance, to run the control server
-communication over a separate control network).
+\fB\-\-control\-host\fR=\fIHOST\fR
+Hostname for the test control connection (for test tools that support this).
+Default: First hostname of test target.
+
+When running tests that uses D-ITG as a test tool (such as the voip-* tests),
+this switch controls where netperf-wrapper will look for the D-ITG control
+server (see section below on running tests with D-ITG). For Netperf-based tests,
+this option is passed to Netperf to control where to point the control
+connection. This is useful to, for instance, to run the control server
+communication over a separate control network so as to not interfere with test
+traffic.
+.TP
+\fB\-\-control\-local-bind\fR=\fIIP\fR
+Local hostname or IP to bind control connection to (for test tools that support
+it; currently netperf). If not supplied, the value for --local-bind will be
+used. Note that if this value is passed but \fB--local-bind\fR is \fBnot\fR,
+netperf will use the value specified here to bind the data connections to as
+well.
+.TP
+\fB\-\-netperf\-control\-port\fR=\fIPORT\fR 
+Port for Netperf control server. Default: 12865.
 .TP
 \fB\-\-ditg\-control\-port\fR=\fIPORT\fR 
 Port for D-ITG control server. Default: 8000.
