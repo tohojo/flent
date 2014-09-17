@@ -479,15 +479,14 @@ class Settings(optparse.Values, object):
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")
         s = test_env.execute(filename)
 
-        if not informational:
-            for k,v in list(s.items()):
-                if k == k.upper():
-                    setattr(self, k, v)
+        for k,v in list(s.items()):
+             if k == k.upper():
+                 setattr(self, k, v)
 
-            if 'DEFAULTS' in s:
-                for k,v in list(s['DEFAULTS'].items()):
-                    if not hasattr(self, k):
-                        setattr(self, k, v)
+        if 'DEFAULTS' in s:
+            for k,v in list(s['DEFAULTS'].items()):
+                if not hasattr(self, k):
+                    setattr(self, k, v)
 
 
 

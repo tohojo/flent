@@ -62,10 +62,16 @@ class TestEnvironment(object):
         self.netperf = None
         self.itgsend = None
         self.http_getter = None
+        self.orig_hosts = self.env['HOSTS']
 
     def execute(self, filename):
         try:
             exec(compile(open(filename).read(), filename, 'exec'), self.env)
+
+            # Informational loading can override HOSTS to satisfy
+            # require_host_count(); this should not be propagated.
+            if self.informational:
+                self.env['HOSTS'] = self.orig_hosts
             return self.env
         except (IOError, SyntaxError) as e:
             raise RuntimeError("Unable to read test config file '%s': '%s'." % (filename, e))
