@@ -713,14 +713,17 @@ class Settings(optparse.Values, object):
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")
         s = test_env.execute(filename)
 
-        for k,v in list(s.items()):
-            if k == k.upper():
-                setattr(self, k, v)
-
-        if 'DEFAULTS' in s:
-            for k,v in list(s['DEFAULTS'].items()):
-                if not hasattr(self, k):
+        if not informational:
+            for k,v in list(s.items()):
+                if k == k.upper():
                     setattr(self, k, v)
+
+            if 'DEFAULTS' in s:
+                for k,v in list(s['DEFAULTS'].items()):
+                    if not hasattr(self, k):
+                        setattr(self, k, v)
+
+
 
     def compute_missing_results(self, results):
         for dname, dvals in self.DATA_SETS.items():
