@@ -152,6 +152,11 @@ def version(*args):
         print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, numpy.__version__))
     except ImportError:
         print("No matplotlib found. Plots won't be available.")
+    try:
+        from PyQt4 import QtCore
+        print("Using PyQt4 version %s" % QtCore.PYQT_VERSION_STR)
+    except ImportError:
+        print("No PyQt4. GUI won't work.")
     sys.exit(0)
 
 
