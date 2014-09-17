@@ -29,7 +29,6 @@ try:
 except ImportError:
     from ConfigParser import RawConfigParser
 
-from collections import defaultdict
 try:
     from collections import OrderedDict
 except ImportError:
@@ -251,7 +250,7 @@ class TestEnvironment(object):
         raise RuntimeError("No suitable ping tool found.")
 
     @finder
-    def find_netperf(self, test, length, host, **kwargs):
+    def find_netperf(self, test, length, host, **args):
         """Find a suitable netperf executable, and test for the required capabilities."""
 
         if self.netperf is None:
@@ -282,19 +281,20 @@ class TestEnvironment(object):
             if not "netperf: invalid option -- 'e'" in str(err):
                 self.netperf['-e'] = True
 
-        kwargs.setdefault('ip_version', self.env['IP_VERSION'])
-        kwargs.setdefault('interval', self.env['STEP_SIZE'])
-        kwargs.setdefault('control_host', self.env['CONTROL_HOST'])
-        kwargs.setdefault('local_bind', self.env['LOCAL_BIND'] or "")
-        kwargs.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or "")
+        args.setdefault('ip_version', self.env['IP_VERSION'])
+        args.setdefault('interval', self.env['STEP_SIZE'])
+        args.setdefault('control_host', self.env['CONTROL_HOST'])
+        args.setdefault('local_bind', self.env['LOCAL_BIND'] or "")
+        args.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or "")
+        args.setdefault('extra_args', "")
+        args.setdefault('extra_test_args', "")
+        args.setdefault('socket_timeout', "")
 
-        args = defaultdict(str,
-                           binary=self.netperf['executable'],
-                           host=host,
-                           test=test,
-                           length=length,
-                           **kwargs
-                           )
+        args.update({'binary': self.netperf['executable'],
+                       'host': host,
+                       'test': test,
+                       'length': length})
+
 
         if 'marking' in args:
             args['marking'] = "-Y {0}".format(args['marking'])
