@@ -283,9 +283,9 @@ class TestEnvironment(object):
 
         args.setdefault('ip_version', self.env['IP_VERSION'])
         args.setdefault('interval', self.env['STEP_SIZE'])
-        args.setdefault('control_host', self.env['CONTROL_HOST'])
+        args.setdefault('control_host', self.env['CONTROL_HOST'] or host)
         args.setdefault('local_bind', self.env['LOCAL_BIND'] or "")
-        args.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or "")
+        args.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or args['local_bind'])
         args.setdefault('extra_args', "")
         args.setdefault('extra_test_args', "")
         args.setdefault('socket_timeout', "")
@@ -791,11 +791,6 @@ class Settings(optparse.Values, object):
 
         if self.HOST is None and self.HOSTS:
             self.HOST = self.HOSTS[0]
-
-        if self.CONTROL_LOCAL_BIND is None:
-            self.CONTROL_LOCAL_BIND = self.LOCAL_BIND
-        if self.CONTROL_HOST is None:
-            self.CONTROL_HOST = self.HOST
 
 
 
