@@ -38,7 +38,7 @@ except ImportError:
 from .util import gzip_open
 
 # Controls pretty-printing of json dumps
-JSON_INDENT=None
+JSON_INDENT=2
 
 __all__ = ['new', 'load']
 
@@ -236,7 +236,7 @@ class ResultSet(object):
         return fp.write(data)
 
     def dumps(self):
-        return json.dumps(self.serialise(), indent=JSON_INDENT)
+        return json.dumps(self.serialise(), indent=JSON_INDENT, sort_keys=True)
 
     @property
     def dump_file(self):
