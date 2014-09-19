@@ -593,7 +593,7 @@ class PlotFormatter(Formatter):
         errcol = 'k'
         width = 1.0
 
-        # The median lines are red, so filter out red from the list of colours
+        # The error bars lines are black, so filter out black from the list of colours
         colours = list(islice(cycle([c for c in self.colours if c != errcol]), len(config['series'])))
 
         labels = self._filter_labels([r.label() for r in results])
@@ -631,8 +631,12 @@ class PlotFormatter(Formatter):
             positions = [p-width/2.0 for p in range(pos,pos+group_size)]
             ticks.extend(list(range(pos,pos+group_size)))
             ticklabels.extend(labels)
+            if config.get('colour_by', 'groups') == 'groups':
+                colour = colours[i]
+            else:
+                colour = self.colours[:len(data)]
 
-            bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colours[i],
+            bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colour,
                                        alpha=0.75, width=width, align='edge')
             if len(config['series']) > 1 or self.settings.PRINT_TITLE:
                 texts.append(config['axes'][0].text(pos+group_size/2.0-0.5, 14, s['label'], ha='center'))
