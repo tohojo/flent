@@ -75,7 +75,8 @@ class build_py(_build_py):
             with open(module_file, 'wb') as module_fp:
                 module_fp.write(orig_content)
 
-data_files = [('share/netperf-wrapper/tests',
+data_files = [('share/netperf-wrapper', ['matplotlibrc.dist']),
+              ('share/netperf-wrapper/tests',
                glob("tests/*.conf") + \
                    glob("tests/*.inc")),
               ('share/netperf-wrapper/ui',

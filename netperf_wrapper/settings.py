@@ -73,6 +73,7 @@ DEFAULT_SETTINGS = {
     'USE_MARKERS': True,
     'PRINT_LEGEND': True,
     'FILTER_LEGEND': False,
+    'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': None,
     'ZERO_Y': False,
     'INVERT_Y': False,
@@ -341,6 +342,9 @@ plot_group.add_option("--figure-height", action="store", type='float', dest="FIG
                   "the interactive plot window.")
 plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DPI",
                   help="Figure DPI. Used when saving plots to raster format files.")
+plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATPLOTLIBRC",
+                  help="Don't load included matplotlibrc values. Use this if autodetection of custom "
+                  "matplotlibrc fails and netperf-wrapper is inadvertently overriding rc values.")
 parser.add_option_group(plot_group)
 
 

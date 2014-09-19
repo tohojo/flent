@@ -1,8 +1,11 @@
 # This is an example matplotlibrc file that will make plots be drawn on a grey
 # background with a white grid (as the Seaborn package does; see
 # http://stanford.edu/~mwaskom/software/seaborn/tutorial/aesthetics.html). Copy
-# this file to $XDG_CONFIG_HOME/matplotlib/matplotlibrc to enable. See
-# http://matplotlib.org/users/customizing.html for more information on
+# this file to $XDG_CONFIG_HOME/matplotlib/matplotlibrc to customise.
+# Netperf-wrapper will try to detect if matplotlib loads a file from inside
+# $HOME, and, if not, autoload this file.
+#
+# See http://matplotlib.org/users/customizing.html for more information on
 # matplotlib rc files.
 
 # Using an rc-file can break matplotlib auto-loading of backends. If running

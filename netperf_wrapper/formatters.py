@@ -33,6 +33,7 @@ try:
     from collections import OrderedDict
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
+from netperf_wrapper.build_info import DATA_DIR
 
 PLOT_KWARGS = (
     'alpha',
@@ -274,6 +275,7 @@ class PlotFormatter(Formatter):
                 else:
                     raise RuntimeError("Unrecognised file format for output '%s'" % output)
             import matplotlib.pyplot as plt
+            self.mpl = matplotlib
             self.plt = plt
             self.np = numpy
             self.figure = self.plt.figure()
@@ -310,6 +312,14 @@ class PlotFormatter(Formatter):
                 self.styles.append(dict(marker=m))
 
     def init_plots(self):
+        # Try to detect if a custom matplotlibrc is installed, and if so don't
+        # load our own values.
+        if self.settings.LOAD_MATPLOTLIBRC \
+          and not os.environ['HOME'] in self.mpl.matplotlib_fname() \
+          and not 'MATPLOTLIBRC' in os.environ:
+            self.mpl.rc_file(os.path.join(DATA_DIR, 'matplotlibrc.dist'))
+        self.colours = self.mpl.rcParams['axes.color_cycle']
+
         self.figure.clear()
         if self.settings.FIG_WIDTH is not None:
             self.figure.set_figwidth(self.settings.FIG_WIDTH)
