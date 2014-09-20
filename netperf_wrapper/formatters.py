@@ -23,6 +23,7 @@ import json, sys, csv, math, inspect, os, re
 
 from .util import cum_prob, frange, classname, long_substr
 from .resultset import ResultSet
+from .build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice
 try:
@@ -33,7 +34,6 @@ try:
     from collections import OrderedDict
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
-from netperf_wrapper.build_info import DATA_DIR
 
 PLOT_KWARGS = (
     'alpha',
@@ -257,6 +257,7 @@ class PlotFormatter(Formatter):
         Formatter.__init__(self, settings)
         self.subplot_combine_disabled = False
         self.disable_cleanup = False
+        self.title = None
         try:
             import matplotlib, numpy
             # If saving to file, try our best to set a proper backend for
@@ -1164,10 +1165,22 @@ class PlotFormatter(Formatter):
                 self.plt.show()
         else:
             try:
-                self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight',
+                if isinstance(self.figure.canvas, self.mpl.backends.backend_pdf.FigureCanvasPdf):
+                    self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), artists)
+                else:
+                    self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight',
                                     dpi=self.settings.FIG_DPI)
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
+
+    def save_pdf(self, filename, data_filename, artists):
+        with self.mpl.backends.backend_pdf.PdfPages(filename) as pdf:
+            pdf.infodict()['Producer'] = 'netperf-wrapper v%s' % VERSION
+            pdf.infodict()['Subject'] = data_filename
+            if self.title:
+                pdf.infodict()['Title'] = self.title.replace("\n", "; ")
+            self.figure.savefig(pdf, bbox_extra_artists=artists, bbox_inches='tight',
+                                dpi=self.settings.FIG_DPI)
 
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
@@ -1192,6 +1205,7 @@ class PlotFormatter(Formatter):
         title_y=0.98
         if self.settings.OVERRIDE_TITLE:
             titles.append(self.figure.suptitle(self.settings.OVERRIDE_TITLE, fontsize=14, y=title_y))
+            self.title = self.settings.OVERRIDE_TITLE
         elif self.settings.PRINT_TITLE:
             plot_title = self.settings.DESCRIPTION
             if 'description' in self.config:
@@ -1201,6 +1215,7 @@ class PlotFormatter(Formatter):
             if 'description' in self.config and self.settings.TITLE and not skip_title:
                 y=1.00
             titles.append(self.figure.suptitle(plot_title, fontsize=14, y=title_y))
+            self.title = plot_title
 
         if self.settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
