@@ -1165,7 +1165,7 @@ class PlotFormatter(Formatter):
                 self.plt.show()
         else:
             try:
-                if isinstance(self.figure.canvas, self.mpl.backends.backend_pdf.FigureCanvasPdf):
+                if self.plt.get_backend() == 'pdf':
                     self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), artists)
                 else:
                     self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight',
