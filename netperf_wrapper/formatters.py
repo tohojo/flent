@@ -1089,8 +1089,8 @@ class PlotFormatter(Formatter):
         if self.settings.ZERO_Y:
             self.xvals.append(0.0)
             self.yvals.append(0.0)
-        axis.set_xlim(min(self.xvals)*0.99, max(self.xvals)*1.1)
-        axis.set_ylim(min(self.yvals)*0.99, max(self.yvals)*1.1)
+        axis.set_xlim(max(min(self.xvals)*0.99,0), max(self.xvals)*1.1)
+        axis.set_ylim(max(min(self.yvals)*0.99,0), max(self.yvals)*1.1)
         if config['invert_x']:
             axis.invert_xaxis()
         if config['invert_y']:
