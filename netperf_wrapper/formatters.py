@@ -343,6 +343,8 @@ class PlotFormatter(Formatter):
             second_axis.yaxis.set_label_position('right')
             second_axis.yaxis.set_offset_position('right')
             second_axis.xaxis.set_visible(False)
+            axis.grid(False)
+            second_axis.grid(False)
             config['axes'] = [axis,second_axis]
         else:
             config['axes'] = [axis]
@@ -384,6 +386,9 @@ class PlotFormatter(Formatter):
 
         self._init_timeseries_plot(config, axis)
         axis.set_xlabel('')
+
+        for a in config['axes']:
+            a.grid(False, axis='x')
 
         self.start_position = 1
 
