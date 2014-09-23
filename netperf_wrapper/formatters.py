@@ -330,6 +330,9 @@ class PlotFormatter(Formatter):
         self.configs = [self.config]
         getattr(self, '_init_%s_plot' % self.config['type'])()
 
+    def _init_timeseries_combine_plot(self, config=None, axis=None):
+        self._init_timeseries_plot(config, axis)
+
     def _init_timeseries_plot(self, config=None, axis=None):
         if axis is None:
             axis = self.figure.gca()
@@ -526,6 +529,9 @@ class PlotFormatter(Formatter):
         else:
             return self.dataseries_combine(callback, results, always_colour, config, axis)
 
+
+    def do_timeseries_combine_plot(self, results, config=None, axis=None):
+        return self.do_combine_many_plot(self.do_timeseries_plot, results, config, axis)
 
     def do_timeseries_plot(self, results, config=None, axis=None):
         if len(results) > 1:
@@ -838,6 +844,30 @@ class PlotFormatter(Formatter):
                     x += 1
                 new_results.append(res)
 
+        # groups_points means group by series, but do per-point combinations, to
+        # e.g. create a data series that is the mean of several others
+        elif group_by == 'groups_points':
+            for k in groups.keys():
+                title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
+                res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
+                x_values = []
+                for r in groups[k]:
+                    if len(r.x_values) > len(x_values):
+                        x_values = r.x_values
+                cutoff = config.get('cutoff', None)
+                if cutoff is not None:
+                    res.x_values = [x for x in x_values if x >= cutoff[0] and x <= max(x_values)-cutoff[1]]
+                else:
+                    res.x_values = x_values
+                for s in config['series']:
+                    data = zip_longest(x_values, *[r[s['data']] for r in groups[k]])
+                    new_data = []
+                    for d in data:
+                        if cutoff is None or (d[0] >= cutoff[0] and d[0] <= max(x_values)-cutoff[1]):
+                            new_data.append(self._combine_data(res, s['data'], s.get('combine_mode', 'mean'), None, d=d[1:]))
+                    res.add_result(s['data'], new_data)
+                new_results.append(res)
+
         # group_by == 'series' means flip the group and series, so the groups
         # become the entries on the x axis, while the series become the new
         # groups (in the legend)
@@ -892,8 +922,9 @@ class PlotFormatter(Formatter):
 
         return callback(new_results, config, axis)
 
-    def _combine_data(self, resultset, key, combine_mode, cutoff=None):
-        d = resultset[key]
+    def _combine_data(self, resultset, key, combine_mode, cutoff=None, d=None):
+        if d is None:
+            d = resultset[key]
         if cutoff is not None:
             # cut off values from the beginning and end before doing the
             # plot; for e.g. pings that run long than the streams, we don't
