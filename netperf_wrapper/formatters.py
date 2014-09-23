@@ -592,6 +592,10 @@ class PlotFormatter(Formatter):
             if data[a]:
                 self._do_scaling(config['axes'][a], data[a], btm, top, config['units'][a])
 
+        for a,b in zip(config['axes'], self.settings.BOUNDS_X):
+            a.set_xbound(b)
+        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+            a.set_ybound(b)
 
     def do_bar_plot(self, results, config=None, axis=None):
         if config is None:
@@ -659,6 +663,9 @@ class PlotFormatter(Formatter):
 
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
+
+        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+            a.set_ybound(b)
 
         min_y,max_y = config['axes'][0].get_ylim()
 
@@ -736,6 +743,8 @@ class PlotFormatter(Formatter):
         for i,a in enumerate(config['axes']):
             self._do_scaling(a, all_data[i], 0, 100, config['units'][i], allow_log=False)
 
+        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+            a.set_ybound(b)
 
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
@@ -1009,6 +1018,9 @@ class PlotFormatter(Formatter):
         if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.settings.LOG_SCALE:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
+
+        for a,b in zip(config['axes'], self.settings.BOUNDS_X):
+            a.set_xbound(b)
 
     def _filter_dup_vals(self, x_vals, y_vals):
         """Filter out series of identical y-vals, also removing the corresponding x-vals.

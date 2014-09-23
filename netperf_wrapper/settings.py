@@ -22,7 +22,7 @@
 import sys, os, optparse, socket, subprocess, time, collections
 
 from datetime import datetime
-from copy import deepcopy
+from copy import copy, deepcopy
 
 try:
     from configparser import RawConfigParser
@@ -76,6 +76,8 @@ DEFAULT_SETTINGS = {
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': None,
     'ZERO_Y': False,
+    'BOUNDS_X': [],
+    'BOUNDS_Y': [],
     'INVERT_Y': False,
     'LOG_SCALE': True,
     'NORM_FACTORS': [],
@@ -162,14 +164,24 @@ def version(*args):
 
 
 
-def check_keyval(option, opt, value):
-    return {k:v}
+def check_float_pair(option, opt, value):
+    try:
+        if not "," in value:
+            return (None, float(value))
+        a,b = [s.strip() for s in value.split(",", 1)]
+        return (float(a) if a else None,
+                float(b) if b else None)
+    except ValueError:
+        raise optparse.OptionValueError("Invalid pair value: %s" % value)
 
 class ExtendedOption(optparse.Option):
     ACTIONS = optparse.Option.ACTIONS + ("update",)
     STORE_ACTIONS = optparse.Option.STORE_ACTIONS + ("update",)
     TYPED_ACTIONS = optparse.Option.TYPED_ACTIONS + ("update",)
     ALWAYS_TYPED_ACTIONS = optparse.Option.ALWAYS_TYPED_ACTIONS + ("update",)
+    TYPES = optparse.Option.TYPES + ("float_pair",)
+    TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
+    TYPE_CHECKER['float_pair'] = check_float_pair
 
     def take_action(self, action, dest, opt, value, values, parser):
         if action == 'update':
@@ -293,6 +305,16 @@ plot_group.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
                   help="Always start y axis of plot at zero, instead of auto-scaling the "
                   "axis (also disables log scales). Auto-scaling is still enabled for the "
                   "upper bound.")
+plot_group.add_option("--bounds-x", action="append", dest="BOUNDS_X", type='float_pair',
+                  help="Specify bounds of the plot X axis. If specifying one number, that will become "
+                  "the upper bound. Specify two numbers separated by a comma to specify both "
+                  "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
+                  "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--bounds-y", action="append", dest="BOUNDS_Y", type='float_pair',
+                  help="Specify bounds of the plot Y axis. If specifying one number, that will become "
+                  "the upper bound. Specify two numbers separated by a comma to specify both "
+                  "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
+                  "Can be specified twice, corresponding to figures with multiple axes.")
 plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INVERT_Y",
                   help="Invert the y-axis for latency data series (making plots show 'better values "
                   "upwards').")
