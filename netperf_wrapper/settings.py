@@ -75,7 +75,7 @@ DEFAULT_SETTINGS = {
     'FILTER_LEGEND': False,
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
-    'FILTER_REGEXP': None,
+    'FILTER_REGEXP': [],
     'ZERO_Y': False,
     'BOUNDS_X': [],
     'BOUNDS_Y': [],
@@ -359,8 +359,10 @@ plot_group.add_option("--horizontal-legend", action="store_true", dest="HORIZONT
                   "Doesn't work well if there are too many items in the legend, obviously.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
-plot_group.add_option("--filter-regexp", action="store", dest="FILTER_REGEXP", metavar="REGEXP",
-                  help="Filter out supplied regular expression from legend names.")
+plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",
+                  help="Filter out supplied regular expression from legend names. Can be specified "
+                  "multiple times, in which case the regular expressions will be filtered in the order "
+                  "specified.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
                   help="Figure width in inches. Used when saving plots to file and for default size of "
                   "the interactive plot window.")
