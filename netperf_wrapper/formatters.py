@@ -1233,7 +1233,7 @@ class PlotFormatter(Formatter):
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
-        if self.settings.PRINT_LEGEND and self.legends:
+        if self.settings.PRINT_LEGEND and not self.settings.HORIZONTAL_LEGEND and self.legends:
             self.figure.canvas.draw() # Legend width is not set before it's drawn
             legend_width = max([l.get_window_extent().width for l in self.legends])
             canvas_width = self.figure.canvas.get_width_height()[0]
@@ -1315,10 +1315,19 @@ class PlotFormatter(Formatter):
             offset_x = 1.02
 
         legends = []
+        if self.settings.HORIZONTAL_LEGEND:
+            bbox = (0.5, -0.12)
+            ncol = len(labels)
+            loc = 'center'
+        else:
+            bbox = (offset_x, 1.0)
+            ncol = 1
+            loc = 'upper left'
         l = axes[0].legend(handles, labels,
-                                bbox_to_anchor=(offset_x, 1.0),
-                                loc='upper left', borderaxespad=0.,
+                                bbox_to_anchor=bbox,
+                                loc=loc, borderaxespad=0.,
                                 prop={'size':'small'},
+                                ncol=ncol,
                                 **kwargs)
 
         # Work around a bug in older versions of matplotlib where the
