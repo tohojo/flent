@@ -1139,6 +1139,11 @@ class PlotFormatter(Formatter):
         if config['invert_y']:
             axis.invert_yaxis()
 
+        for a,b in zip(config['axes'], self.settings.BOUNDS_X):
+            a.set_xbound(b)
+        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+            a.set_ybound(b)
+
 
     def _equal_length(self, x, y):
         x_values = self.np.sort([r for r in x if r is not None])
