@@ -104,6 +104,7 @@ DEFAULT_SETTINGS = {
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
     'HTTP_GETTER_WORKERS': 4,
+    'DEBUG_ERROR': False
     }
 
 CONFIG_TYPES = {
@@ -416,6 +417,8 @@ misc_group.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
                   help="List available plots for selected test and exit.")
 misc_group.add_option("-V", "--version", action="callback", callback=version,
                   help="Show netperf-wrapper version information and exit.")
+misc_group.add_option("--debug-error", action="store_true", dest="DEBUG_ERROR",
+                  help="Debug errors: Don't catch unhandled exceptions.")
 parser.add_option_group(misc_group)
 
 

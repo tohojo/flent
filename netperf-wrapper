@@ -37,8 +37,15 @@ try:
                 b.run()
 
         except RuntimeError as e:
-            sys.stderr.write("Fatal error: %s\n"% str(e))
-            sys.exit(1)
+            try:
+                if not settings.DEBUG_ERROR:
+                    sys.stderr.write("Fatal error: %s\n"% str(e))
+                    sys.exit(1)
+                else:
+                    raise
+            except NameError:
+                sys.stderr.write("Fatal error: %s\n"% str(e))
+                sys.exit(1)
 except KeyboardInterrupt:
     try:
         b.kill()
