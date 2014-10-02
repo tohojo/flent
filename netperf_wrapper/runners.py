@@ -326,10 +326,8 @@ class RegexpRunner(ProcessRunner):
             for regexp in self.regexes:
                 match = regexp.match(line)
                 if match:
-                    time = float(match.group('time'))
-                    value = float(match.group('value'))
-                    result.append([time, value])
-                    raw_values.append({'t': time, 'val': value})
+                    result.append([float(match.group('t')), float(match.group('val'))])
+                    raw_values.append(match.groupdict())
                     break # only match one regexp per line
         if self.settings.SAVE_RAW:
             self.metadata['RAW_VALUES'] = raw_values
@@ -338,12 +336,12 @@ class RegexpRunner(ProcessRunner):
 class PingRunner(RegexpRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
 
-    regexes = [re.compile(r'^\[(?P<time>[0-9]+\.[0-9]+)\].*time=(?P<value>[0-9]+(?:\.[0-9]+)?) ms$'),
-               re.compile(r'^\[(?P<time>[0-9]+\.[0-9]+)\].*:.*, (?P<value>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
+    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*icmp_seq=(?P<seq>[0-9]+).*time=(?P<val>[0-9]+(?:\.[0-9]+)?) ms$'),
+               re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*:(?: \[(?P<seq>[0-9]+)\])?.*, (?P<val>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
 
 class HttpGetterRunner(RegexpRunner):
 
-    regexes = [re.compile(r'^\[(?P<time>[0-9]+\.[0-9]+)\].*in (?P<value>[0-9]+(?:\.[0-9]+)?) seconds.$')]
+    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*in (?P<val>[0-9]+(?:\.[0-9]+)?) seconds.$')]
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
