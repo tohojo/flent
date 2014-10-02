@@ -333,7 +333,8 @@ class BatchRunner(object):
                     for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
                         if k in b:
                             sys.stderr.write("   %s=%s\n" % (k, b[k]))
-                elif settings.BATCH_DRY:
+
+                if settings.BATCH_DRY:
                     self.tests_run += 1
                 else:
                     self.run_test(settings, output_path)
