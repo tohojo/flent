@@ -204,7 +204,7 @@ class DitgRunner(ProcessRunner):
             hm = hmac.new(self.ditg_secret.encode(), digestmod=hashlib.sha256)
             hm.update(str(self.duration).encode())
             hm.update(str(interval).encode())
-            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest())
+            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), self.settings.SAVE_RAW)
             if params['status'] != 'OK':
                 if 'message' in params:
                     raise RuntimeError("Unable to request D-ITG test. Control server reported error: %s" % params['message'])
@@ -254,6 +254,9 @@ class DitgRunner(ProcessRunner):
             self.err += "D-ITG output too much data (%d bytes).\n" % len(data)
             return results
 
+        if 'raw' in res:
+            self.parse_raw(res['raw'])
+
         for line in data.splitlines():
             if not line.strip():
                 continue
@@ -265,6 +268,34 @@ class DitgRunner(ProcessRunner):
                 results[n].append([timestamp, parts[i]])
 
         return results
+
+    def parse_raw(self, data):
+        raw_values = []
+
+        now = time.time()
+        tzoffset = (datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)).seconds
+
+        for line in data.splitlines():
+            parts = re.split(r">?\s*", line)
+            vals = dict(zip(parts[::2], parts[1::2]))
+            times = {}
+            for v in ('txTime', 'rxTime'):
+                t,microsec = vals[v].split(".")
+                h,m,s = t.split(":")
+                dt = datetime.utcnow().replace(hour=int(h),
+                                               minute=int(m),
+                                               second=int(s),
+                                               microsecond=int(microsec))
+                times[v] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
+
+            raw_values.append({
+                't': times['rxTime'] + tzoffset,
+                'val': 1000.0 * (times['rxTime'] - times['txTime']),
+                'seq': int(vals['Seq']),
+                'size': int(vals['Size'])
+            })
+
+        self.metadata['RAW_VALUES'] = raw_values
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""

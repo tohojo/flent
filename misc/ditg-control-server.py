@@ -122,7 +122,7 @@ class DITGManager(object):
             data = json.load(fp)
             return data
 
-    def request_new_test(self, duration, interval, hmac_hex):
+    def request_new_test(self, duration, interval, hmac_hex, raw_data = False):
         """Request a new test instance.
 
         This will allocate a new ITGRecv instance and parse the log file it produces.
@@ -139,6 +139,9 @@ class DITGManager(object):
         hmac_hex: A hexadecimal HMAC-SHA256 of the two other parameters computed by
                   concatenating their ASCII representations. The HMAC secret is configured
                   by the operator of the control server instance.
+
+        raw_data: Whether to store and return the raw text log from ITGDec (i.e. the output of
+                  ITGDec -l)
 
         The return value is a dictionary with the following keys:
 
@@ -173,7 +176,7 @@ class DITGManager(object):
         # Need one port for control, one for data (if the data stream is TCP).
         port = self.current_port
         self.current_port += 2
-        return self._spawn_receiver(test_id, duration, interval, port)
+        return self._spawn_receiver(test_id, duration, interval, port, raw_data)
 
 
     def _clean_fork(self, output=None):
@@ -216,14 +219,14 @@ class DITGManager(object):
         except:
             pass
 
-    def _spawn_receiver(self, test_id, duration, interval, port):
+    def _spawn_receiver(self, test_id, duration, interval, port, raw_data):
         stdout = "%s.recv.out" % test_id
         datafile = self.datafile_pattern % test_id
         error = False
         pipe, child = self._clean_fork(stdout)
         if child:
             try:
-                ret = self._run_receiver(test_id, duration, interval, port, pipe)
+                ret = self._run_receiver(test_id, duration, interval, port, pipe, raw_data)
             except Exception as e:
                 traceback.print_exc()
                 ret = {'status': 'Error', 'message': str(e)}
@@ -250,7 +253,7 @@ class DITGManager(object):
 
 
 
-    def _run_receiver(self, test_id, duration, interval, port, pipe):
+    def _run_receiver(self, test_id, duration, interval, port, pipe, raw_data):
         logfile = '%s.log' % test_id
         txtlog = '%s.log.txt' % test_id
         outfile = '%s.dat' % test_id
@@ -315,7 +318,11 @@ class DITGManager(object):
 
             # Read start of text log file to get timestamp of first received packet
             with open(txtlog, 'rt') as fp:
-                data = fp.read(1024)
+                if raw_data:
+                    ret['raw'] = fp.read()
+                    data = ret['raw'][:1024]
+                else:
+                    data = fp.read(1024)
                 try:
                     idx_s = data.index('rxTime>') + len('rxTime>')
                     idx_e = data.index('Size>')
