@@ -333,7 +333,9 @@ class BatchRunner(object):
                     for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
                         if k in b:
                             sys.stderr.write("   %s=%s\n" % (k, b[k]))
-                elif not settings.BATCH_DRY:
+                elif settings.BATCH_DRY:
+                    self.tests_run += 1
+                else:
                     self.run_test(settings, output_path)
             except KeyboardInterrupt:
                 self.run_commands(commands, 'post', essential_only=True)
@@ -432,7 +434,8 @@ class BatchRunner(object):
                 except Exception as e:
                     raise RuntimeError("Error while running batch '%s': %r." % (b, e))
             end_time = datetime.now()
-            sys.stderr.write("Ended batch sequence at %s. Ran %d tests in %s.\n" % (end_time.strftime("%Y-%m-%d %H:%M:%S"),
+            sys.stderr.write("Ended batch sequence at %s. %s %d tests in %s.\n" % (end_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                                                                   "Ran" if not self.settings.BATCH_DRY else 'Would have run',
                                                                                     self.tests_run, (end_time - start_time)))
             return True
         else:
