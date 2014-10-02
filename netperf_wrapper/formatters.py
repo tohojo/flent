@@ -844,7 +844,7 @@ class PlotFormatter(Formatter):
                     x += 1
                 new_results.append(res)
 
-        # groups_points means group by series, but do per-point combinations, to
+        # groups_points means group by groups, but do per-point combinations, to
         # e.g. create a data series that is the mean of several others
         elif group_by == 'groups_points':
             for k in groups.keys():
@@ -866,6 +866,21 @@ class PlotFormatter(Formatter):
                         if cutoff is None or (d[0] >= cutoff[0] and d[0] <= max(x_values)-cutoff[1]):
                             new_data.append(self._combine_data(res, s['data'], s.get('combine_mode', 'mean'), None, d=d[1:]))
                     res.add_result(s['data'], new_data)
+                new_results.append(res)
+
+        # groups_concat means group by groups, but do per-point combinations, to
+        # e.g. create a data series that is the mean of several others
+        elif group_by == 'groups_concat':
+            for k in groups.keys():
+                title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
+                res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
+                res.create_series([s['data'] for s in config['series']])
+                x = 0
+                for r in groups[k]:
+                    keys = [s['data'] for s in config['series']]
+                    for p in r.zipped(keys):
+                        res.append_datapoint(x, dict(zip(keys, p[1:])))
+                        x += 1
                 new_results.append(res)
 
         # group_by == 'series' means flip the group and series, so the groups
