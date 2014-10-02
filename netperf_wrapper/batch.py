@@ -275,11 +275,11 @@ class BatchRunner(object):
         for argset in itertools.product(*argsets):
             rep = argset[-1]
             argset = argset[:-1]
+            settings = self.settings.copy()
             sys.stderr.write(" args:%s rep:%02d" % (",".join(argset),rep))
             if settings.BATCH_DRY:
                 sys.stderr.write(" (dry run)")
             sys.stderr.write(".\n")
-            settings = self.settings.copy()
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
             settings.BATCH_TIME = self.settings.TIME
