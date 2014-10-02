@@ -367,7 +367,9 @@ class RegexpRunner(ProcessRunner):
 class PingRunner(RegexpRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
 
-    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*icmp_seq=(?P<seq>[0-9]+).*time=(?P<val>[0-9]+(?:\.[0-9]+)?) ms$'),
+    # For some reason some versions of ping output icmp_req and others icmp_seq
+    # for sequence numbers.
+    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\](?:.*icmp_.eq=(?P<seq>[0-9]+))?.*time=(?P<val>[0-9]+(?:\.[0-9]+)?) ms$'),
                re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*:(?: \[(?P<seq>[0-9]+)\])?.*, (?P<val>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
 
 class HttpGetterRunner(RegexpRunner):
