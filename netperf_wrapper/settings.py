@@ -100,6 +100,7 @@ DEFAULT_SETTINGS = {
     'BATCH_FILES': [],
     'BATCH_OVERRIDE': {},
     'BATCH_DRY': False,
+    'BATCH_VERBOSE': False,
     'BATCH_REPS': None,
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
@@ -257,6 +258,8 @@ parser.add_option("--batch-override", action="update", type="string", dest="BATC
                   "The key name will be case folded to lower case. Can be specified multiple times.")
 parser.add_option("--batch-dry-run", action="store_true", dest="BATCH_DRY",
                   help="Dry batch run. Prints what would be done, but doesn't actually run any tests.")
+parser.add_option("--batch-verbose", action="store_true", dest="BATCH_VERBOSE",
+                  help="Be verbose during batch run: Print all commands executed.")
 parser.add_option("--batch-repetitions", action="store", type='int', dest="BATCH_REPS", metavar="REPETITIONS",
                   help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")
 

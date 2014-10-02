@@ -187,12 +187,17 @@ class BatchRunner(object):
 
     def run_command(self, command):
         cmd = command['exec'].strip()
-        if self.settings.BATCH_DRY:
-            sys.stderr.write("  Would run '%s'" % cmd)
+        if self.settings.BATCH_VERBOSE:
+            if self.settings.BATCH_DRY:
+                sys.stderr.write("  Would run '%s'" % cmd)
+            else:
+                sys.stderr.write("  Running '%s'" % cmd)
             if command.get('essential', False):
                 sys.stderr.write(" (essential).\n")
             else:
                 sys.stderr.write(" (non-essential).\n")
+
+        if self.settings.BATCH_DRY:
             return
         if command['type'] in ('pre', 'post'):
             try:
@@ -270,7 +275,10 @@ class BatchRunner(object):
         for argset in itertools.product(*argsets):
             rep = argset[-1]
             argset = argset[:-1]
-            sys.stderr.write(" args:%s rep:%02d.\n" % (",".join(argset),rep))
+            sys.stderr.write(" args:%s rep:%02d" % (",".join(argset),rep))
+            if settings.BATCH_DRY:
+                sys.stderr.write(" (dry run)")
+            sys.stderr.write(".\n")
             settings = self.settings.copy()
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
@@ -299,9 +307,9 @@ class BatchRunner(object):
             else:
                 output_path = os.path.dirname(settings.OUTPUT) or "."
 
-            if settings.BATCH_DRY:
+            if settings.BATCH_DRY and settings.BATCH_VERBOSE:
                 sys.stderr.write("  Would output to: %s.\n" % output_path)
-            elif not os.path.exists(output_path):
+            elif not settings.BATCH_DRY and not os.path.exists(output_path):
                 try:
                     os.makedirs(output_path)
                 except OSError as e:
@@ -316,13 +324,16 @@ class BatchRunner(object):
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
             try:
-                if settings.BATCH_DRY:
-                    sys.stderr.write("  Would run test '%s'.\n" % settings.NAME)
+                if settings.BATCH_VERBOSE:
+                    if settings.BATCH_DRY:
+                        sys.stderr.write("  Would run test '%s'.\n" % settings.NAME)
+                    else:
+                        sys.stderr.write("  Running test '%s'.\n" % settings.NAME)
                     sys.stderr.write("   data_filename=%s\n" % settings.DATA_FILENAME)
                     for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
                         if k in b:
                             sys.stderr.write("   %s=%s\n" % (k, b[k]))
-                else:
+                elif not settings.BATCH_DRY:
                     self.run_test(settings, output_path)
             except KeyboardInterrupt:
                 self.run_commands(commands, 'post', essential_only=True)
@@ -342,9 +353,9 @@ class BatchRunner(object):
                     self.log_fd.close()
                 self.log_fd = None
 
-            if settings.BATCH_DRY:
+            if settings.BATCH_DRY and settings.BATCH_VERBOSE:
                 sys.stderr.write("  Would sleep for %d seconds.\n" % pause)
-            else:
+            elif not settings.BATCH_DRY:
                 time.sleep(pause)
 
 
