@@ -366,7 +366,7 @@ class PlotFormatter(Formatter):
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
             unit[a] = s_unit
 
-        axis.set_xlabel('Time')
+        axis.set_xlabel('Time (s)')
         for i,u in enumerate(unit):
             if 'axis_labels' in config and config['axis_labels'][i]:
                 l = config['axis_labels'][i]
