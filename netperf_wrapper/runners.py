@@ -525,7 +525,7 @@ class ComputingRunner(object):
             else:
                 new_res.append(self.compute(values))
 
-        meta = res.meta('SERIES_META')
+        meta = res.meta('SERIES_META') if 'SERIES_META' in res.meta() else {}
         meta[self.name] = {}
         for mk in self.supported_meta:
             vals = []
