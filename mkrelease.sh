@@ -45,3 +45,4 @@ echo ==== Staging changed files ====
 git add netperf_wrapper/build_info.py man/netperf-wrapper.1 packaging/debian/changelog packaging/archlinux/PKGBUILD || die error
 
 echo ==== Done. Review changes and commit and tag. ====
+echo ==== Upload with \`twine upload dist/netperf-wrapper-${VERSION}.tar.gz*\`. ====
