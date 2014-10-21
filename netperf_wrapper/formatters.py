@@ -317,7 +317,7 @@ class PlotFormatter(Formatter):
         # load our own values.
         if self.settings.LOAD_MATPLOTLIBRC \
           and not os.environ['HOME'] in self.mpl.matplotlib_fname() \
-          and not 'MATPLOTLIBRC' in os.environ:
+          and not 'MATPLOTLIBRC' in os.environ and hasattr(self.mpl, 'rc_file'):
             self.mpl.rc_file(os.path.join(DATA_DIR, 'matplotlibrc.dist'))
         self.colours = self.mpl.rcParams['axes.color_cycle']
 
