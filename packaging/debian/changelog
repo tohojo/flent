@@ -1,3 +1,9 @@
+netperf-wrapper (0.8.1-1) precise; urgency=low
+
+  * Bump to release 0.8.1.
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Thu, 23 Oct 2014 09:48:28 -0700
+
 netperf-wrapper (0.8.0-1) precise; urgency=low
 
   * Bump to release 0.8.0.
