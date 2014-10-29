@@ -116,7 +116,7 @@ class BatchRunner(object):
 
     def get_ivar(self, name, ivars, settings):
         if name in ivars:
-            return ivars[name]
+            return str(ivars[name])
         elif hasattr(settings, name.upper()):
             return str(getattr(settings, name.upper()))
         else:
