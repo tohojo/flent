@@ -433,6 +433,8 @@ class BatchRunner(object):
                 except RuntimeError:
                     raise
                 except Exception as e:
+                    if self.settings.DEBUG_ERROR:
+                        raise
                     raise RuntimeError("Error while running batch '%s': %r." % (b, e))
             end_time = datetime.now()
             sys.stderr.write("Ended batch sequence at %s. %s %d tests in %s.\n" % (end_time.strftime("%Y-%m-%d %H:%M:%S"),
