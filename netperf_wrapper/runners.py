@@ -83,7 +83,10 @@ class ProcessRunner(threading.Thread):
             self.stdout.close()
             self.stderr.close()
 
-            time.sleep(self.delay)
+            try:
+                time.sleep(self.delay)
+            except:
+                os._exit(0)
 
             prog = self.args[0]
             os.execvp(prog, self.args)
