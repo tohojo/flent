@@ -33,7 +33,7 @@ except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 
 from netperf_wrapper import aggregators, formatters, resultset
-from netperf_wrapper.metadata import record_extended_metadata
+from netperf_wrapper.metadata import record_extended_metadata, record_postrun_metadata
 from netperf_wrapper.util import clean_path
 from netperf_wrapper.settings import CONFIG_TYPES
 
@@ -380,6 +380,8 @@ class BatchRunner(object):
         res = self.agg.postprocess(self.agg.aggregate(res))
         if self.killed:
             return
+        if settings.EXTENDED_METADATA:
+            record_postrun_metadata(res, settings.REMOTE_METADATA)
         res.dump_dir(output_path)
 
         formatter = formatters.new(settings)

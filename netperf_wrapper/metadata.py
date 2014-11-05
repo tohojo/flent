@@ -104,8 +104,22 @@ def record_extended_metadata(results, hostnames):
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
         if m['EGRESS_INFO'] is not None and 'src' in m['EGRESS_INFO']:
             m['REMOTE_METADATA'][h]['INGRESS_INFO'] = get_egress_info(target=m['EGRESS_INFO']['src'], ip_version=m['IP_VERSION'])
+        else:
+            m['REMOTE_METADATA'][h]['INGRESS_INFO'] = None
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(target=m['HOST'], ip_version=m['IP_VERSION'])
 
+def record_postrun_metadata(results, hostnames):
+    m = results.meta()
+    get_command_output.set_hostname(None)
+    if m['EGRESS_INFO'] is not None:
+
+        m['EGRESS_INFO']['tc_stats_post'] = get_tc_stats(m['EGRESS_INFO']['iface'])
+
+    for h in hostnames:
+        get_command_output.set_hostname(h)
+        for i in 'EGRESS_INFO', 'INGRESS_INFO':
+            if m['REMOTE_METADATA'][h][i] is not None:
+                m['REMOTE_METADATA'][h][i]['tc_stats_post'] = get_tc_stats(m['REMOTE_METADATA'][h][i]['iface'])
 
 def get_ip_addrs(iface=None):
     """Try to get IP addresses associated to this machine. Uses iproute2 if available,
@@ -268,6 +282,7 @@ def get_egress_info(target, ip_version):
 
     if route:
         route['qdiscs'] = get_qdiscs(route['iface'])
+        route['tc_stats_pre'] = get_tc_stats(route['iface'])
         route['classes'] = get_classes(route['iface'])
         route['offloads'] = get_offloads(route['iface'])
         route['bql'] = get_bql(route['iface'])
@@ -286,6 +301,14 @@ def parse_tc(cmd, kind):
     if output is not None:
         lines = output.splitlines()
         for line in lines:
+            if line.startswith(" "):
+                itm = items[-1]
+                if 'stats' in itm:
+                    itm['stats'].append(line.strip())
+                else:
+                    itm['stats'] = [line.strip()]
+                continue
+
             parts = line.split()
             if not parts or parts[0] != kind:
                 continue
@@ -311,6 +334,25 @@ def parse_tc(cmd, kind):
 
 def get_qdiscs(iface):
     return parse_tc("tc qdisc show dev %s" % iface, "qdisc")
+
+def get_tc_stats(iface):
+    output = get_command_output("tc -s qdisc show dev %s" % iface)
+    items = []
+    if output is not None:
+        item = []
+        # Split out output so we get one list entry for each qdisc -- first line
+        # of a qdisc's stats output is non-indented, subsequent lines are
+        # indented by spaces.
+        for line in filter(None,output.splitlines()):
+            if line.startswith(" "):
+                item.append(line)
+            else:
+                if item:
+                    items.append("\n".join(item))
+                item = [line]
+        if item:
+            items.append("\n".join(item))
+    return items or None
 
 def get_classes(iface):
     return parse_tc("tc class show dev %s" % iface, "class")
