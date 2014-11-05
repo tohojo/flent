@@ -602,6 +602,30 @@ host running netperf-wrapper). If the host being queried for remote metadata is
 off the path, the contents of \fIINGRESS_INFO\fR will probably be the same as
 that of \fIEGRESS_INFO\fR.
 
+.SH SIGNALS
+Netperf-wrapper will abort what it is currently doing on receiving a
+\fBSIGINT\fR -- this includes killing all runners, cleaning up temporary files
+and shutting down as gracefully as possible. Runners are killed with
+\fBSIGTERM\fR in this mode, and their output is discarded. If a batch run is in
+progress, the current test will be interrupted in this way, and the rest of the
+batch run is aborted. Previously completed tests and their results are not
+aborted. Post-commands marked as 'essential' will be run after the test is
+interrupted. Additionally, netperf-wrapper converts \fBSIGTERM\fR into
+\fBSIGINT\fR internally and reacts accordingly.
+
+Upon receiving a \fBSIGUSR1\fR, netperf-wrapper will try to gracefully abort the
+test it is currently running, and parse the output of the runners to the extent
+that any such output exists. That is, each runner will be killed by a
+\fBSIGINT\fR, which will cause a graceful shutdown for at least ping and netperf
+(although netperf running in \fITCP_MAERTS\fR mode will bug out when interrupted
+like this, so end-of-tests statistics will be missing). Netperf-wrapper will
+only react once to a \fBSIGUSR1\fR, sending exactly one \fBSIGINT\fR to the
+active runners, then wait for them to exit. This may take several seconds in the
+case of netperf. If the runners for some reason fail to exit, netperf-wrapper
+will be stuck and will need to be killed with \fBSIGINT\fR. If running in batch
+mode, \fBSIGUSR1\fR will only affect the currently running test; subsequent
+tests will still be run.
+
 .SH BUGS
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
 done by netperf can experience packet loss to the extent that the test aborts

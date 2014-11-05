@@ -19,7 +19,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, pprint, signal
+import math, pprint, signal, sys
 from datetime import datetime
 
 from . import runners, transformers
@@ -40,6 +40,12 @@ def new(settings):
     except Exception as e:
         raise RuntimeError("Error loading %s: %s." % (cname, e))
 
+
+class GracefulShutdown(Exception):
+    pass
+
+def handle_usr1(signal, frame):
+    raise GracefulShutdown()
 
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
@@ -85,6 +91,7 @@ class Aggregator(object):
 
         if self.logfile:
             self.logfile.write("Start run at %s\n" % datetime.now())
+        signal.signal(signal.SIGUSR1, handle_usr1)
 
         result = {}
         metadata = {}
@@ -92,9 +99,19 @@ class Aggregator(object):
             for n,i in list(self.instances.items()):
                 self.threads[n] = i['runner'](n, self.settings, **i)
                 self.threads[n].start()
+            shutting_down = False
             for n,t in list(self.threads.items()):
                 while t.isAlive():
-                    t.join(1)
+                    try:
+                        t.join(1)
+                    except GracefulShutdown:
+                        if not shutting_down:
+                            sys.stderr.write("SIGUSR1 received; initiating graceful shutdown. "
+                                             "This may take a while...\n")
+                            self.kill_runners(graceful=True)
+                            shutting_down = True
+                        else:
+                            sys.stderr.write("Already initiated graceful shutdown. Patience, please...\n")
                 self._log(n,t)
                 if t.result is None:
                     continue
@@ -124,11 +141,12 @@ class Aggregator(object):
         if self.logfile is not None:
             self.logfile.write("Raw aggregated data:\n")
             pprint.pprint(result, self.logfile)
+        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
         return result,metadata
 
-    def kill_runners(self):
+    def kill_runners(self, graceful=False):
         for t in list(self.threads.values()):
-            t.kill()
+            t.kill(graceful)
 
     def postprocess(self, result):
         for p in self.postprocessors:

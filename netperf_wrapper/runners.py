@@ -68,6 +68,8 @@ class ProcessRunner(threading.Thread):
         self.metadata = {}
         self.out = ""
         self.err = ""
+        self.stdout = None
+        self.stderr = None
 
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
@@ -93,14 +95,33 @@ class ProcessRunner(threading.Thread):
         else:
             self.pid = pid
 
-    def kill(self):
-        with self.kill_lock:
-            self.killed = True
+    def kill(self, graceful=False):
+        if graceful:
+            # Graceful shutdown is done on a best-effort basis, and may results
+            # in some errors from the test tools. We don't print these, since
+            # they are expected.
+            self.silent = True
+        else:
+            with self.kill_lock:
+                self.killed = True
+            self.cleanup_tmpfiles()
         if self.pid is not None:
             try:
-                os.kill(self.pid, signal.SIGTERM)
+                os.kill(self.pid, signal.SIGINT if graceful else signal.SIGTERM)
             except OSError:
                 pass
+
+    def cleanup_tmpfiles(self):
+        for f in self.stdout, self.stderr:
+            if f is not None:
+                try:
+                    f.close()
+                except OSError:
+                    pass
+                try:
+                    os.unlink(f.name)
+                except OSError:
+                    pass
 
     def is_killed(self):
         with self.kill_lock:
@@ -132,6 +153,13 @@ class ProcessRunner(threading.Thread):
         pid, sts = os.waitpid(self.pid, 0)
         self._handle_exitstatus(sts)
 
+        # Even with locking, kill detection is not reliable; sleeping seems to
+        # help. *sigh* -- threading.
+        time.sleep(0.2)
+
+        if self.is_killed():
+            return
+
         self.stdout.seek(0)
         self.out += self.stdout.read().decode()
         try:
@@ -151,13 +179,6 @@ class ProcessRunner(threading.Thread):
             os.unlink(filename)
         except OSError:
             pass
-
-        # Even with locking, kill detection is not reliable; sleeping seems to
-        # help. *sigh* -- threading.
-        time.sleep(0.2)
-
-        if self.is_killed():
-            return
 
         if self.returncode and not self.silent:
             sys.stderr.write("Warning: Program exited non-zero (%d).\nCommand: %s\n" % (self.returncode, self.command))
@@ -485,7 +506,7 @@ class NullRunner(object):
         pass
     def isAlive(self):
         return False
-    def kill(self):
+    def kill(self, graceful=False):
         pass
 
 class ComputingRunner(object):
@@ -511,7 +532,7 @@ class ComputingRunner(object):
         pass
     def isAlive(self):
         return False
-    def kill(self):
+    def kill(self, graceful=False):
         pass
 
     def result(self, res):
