@@ -158,22 +158,22 @@ class ProcessRunner(threading.Thread):
 
         if self.is_killed():
             return
-        elif self.returncode:
+
+        if self.returncode and not self.silent:
             sys.stderr.write("Warning: Program exited non-zero (%d).\nCommand: %s\n" % (self.returncode, self.command))
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
             sys.stderr.write("  " + "\n  ".join(self.out.splitlines()) + "\n")
-            self.result = None
-        else:
-            self.result = self.parse(self.out)
-            if not self.result and not self.silent:
-                sys.stderr.write("Warning: Command produced no valid data.\n"
-                                 "Data series: %s\n"
-                                 "Runner: %s\n"
-                                 "Command: %s\n"
-                                 "Standard error output:\n" % (self.name, self.__class__.__name__, self.command)
-                                 )
-                sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
+
+        self.result = self.parse(self.out)
+        if not self.result and not self.silent:
+            sys.stderr.write("Warning: Command produced no valid data.\n"
+                             "Data series: %s\n"
+                             "Runner: %s\n"
+                             "Command: %s\n"
+                             "Standard error output:\n" % (self.name, self.__class__.__name__, self.command)
+            )
+            sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
 
     def parse(self, output):
         """Default parser returns the last (whitespace-separated) word of
