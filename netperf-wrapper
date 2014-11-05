@@ -22,12 +22,17 @@
 
 import sys, signal, os
 
+# Convert SIGTERM into SIGINT to apply the same shutdown logic.
+def handle_sigterm(sig, frame):
+        os.kill(os.getpid(), signal.SIGINT)
+
 try:
     from netperf_wrapper import batch
     from netperf_wrapper.settings import load
 
     if __name__ == "__main__":
         try:
+            signal.signal(signal.SIGTERM, handle_sigterm)
             settings = load()
             if settings.GUI:
                 from netperf_wrapper.gui import run_gui
