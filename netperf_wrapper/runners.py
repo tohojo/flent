@@ -338,7 +338,7 @@ class NetperfDemoRunner(ProcessRunner):
             self.metadata['RAW_VALUES'] = raw_values
         try:
             self.metadata['MEAN_VALUE'] = float(lines[-1])
-        except ValueError:
+        except (ValueError,IndexError):
             pass
 
         return result
