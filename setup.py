@@ -20,9 +20,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys, os
-from distutils.core import setup
-from distutils.command.build_py import build_py as _build_py
-from distutils.command.install import install as _install
+
+try:
+    from setuptools import setup
+    from setuptools.command.build_py import build_py as _build_py
+    from setuptools.command.install import install as _install
+except ImportError:
+    from distutils.core import setup
+    from distutils.command.build_py import build_py as _build_py
+    from distutils.command.install import install as _install
+
 from netperf_wrapper.build_info import VERSION
 from glob import glob
 
