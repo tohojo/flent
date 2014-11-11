@@ -598,6 +598,14 @@ class PlotFormatter(Formatter):
             if data[a]:
                 self._do_scaling(config['axes'][a], data[a], btm, top, config['units'][a])
 
+            # Handle cut-off data sets. If the x-axis difference between the
+            # largest data point and the TOTAL_LENGTH from settings, scale to
+            # the data values, but round to nearest 10 above that value.
+            max_xdata = max([l.get_xdata()[-1] for l in config['axes'][a].get_lines()])
+            if abs(self.settings.TOTAL_LENGTH - max_xdata) > 10:
+                config['axes'][a].set_xlim(right=(max_xdata+(10-max_xdata%10)))
+
+
         for a,b in zip(config['axes'], self.settings.BOUNDS_X):
             a.set_xbound(b)
         for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
