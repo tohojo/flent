@@ -17,15 +17,8 @@ sed -i -e "s/Netperf-wrapper v[0-9\\.]\\+\(-git\)\?/Netperf-wrapper v${VERSION}/
 
 if [[ ! "$VERSION" =~ -git$ ]]; then
 
-
-    echo ==== Creating and signing release tarball... ====
-    python setup.py sdist  || die error
-    gpg --detach-sign --armor dist/netperf-wrapper-${VERSION}.tar.gz  || die error
-
-    echo ==== Updating packaging files... ====
-    SHA1=$(sha1sum dist/netperf-wrapper-${VERSION}.tar.gz | awk '{print $1}')
-    sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" -e "s/sha1sums=([^)]\\+)/sha1sums=('${SHA1}')/" packaging/archlinux/PKGBUILD  || die error
-
+    echo ==== Updating Debian changelog and Arch PKGBUILD version... ====
+    sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" -e "s/sha1sums=([^)]\\+)/sha1sums=()/" packaging/archlinux/PKGBUILD  || die error
     tmpfile=$(mktemp)
     cat >$tmpfile <<EOF
 netperf-wrapper (${VERSION}-1) precise; urgency=low
@@ -38,6 +31,14 @@ EOF
 
     cat packaging/debian/changelog >> $tmpfile  || die error
     mv $tmpfile packaging/debian/changelog || die error
+
+    echo ==== Creating and signing release tarball... ====
+    python setup.py sdist  || die error
+    gpg --detach-sign --armor dist/netperf-wrapper-${VERSION}.tar.gz  || die error
+
+    echo ==== Updating Arch PKGBUILD sha1sum... ====
+    SHA1=$(sha1sum dist/netperf-wrapper-${VERSION}.tar.gz | awk '{print $1}')
+    sed -i -e "s/sha1sums=([^)]\\+)/sha1sums=('${SHA1}')/" packaging/archlinux/PKGBUILD  || die error
 
 fi
 
