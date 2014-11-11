@@ -38,7 +38,7 @@ EOF
 
     echo ==== Updating Arch PKGBUILD sha1sum... ====
     SHA1=$(sha1sum dist/netperf-wrapper-${VERSION}.tar.gz | awk '{print $1}')
-    sed -i -e "s/sha1sums=([^)]\\+)/sha1sums=('${SHA1}')/" packaging/archlinux/PKGBUILD  || die error
+    sed -i -e "s/sha1sums=([^)]*)/sha1sums=('${SHA1}')/" packaging/archlinux/PKGBUILD  || die error
 
 fi
 
