@@ -3,3 +3,4 @@ include misc/*
 include matplotlibrc.dist man/netperf-wrapper.1
 include BUGS README.rst *.example
 include netperf-wrapper-mime.xml netperf-wrapper.desktop
+recursive-include packaging *
