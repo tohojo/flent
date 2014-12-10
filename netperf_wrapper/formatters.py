@@ -279,8 +279,8 @@ class PlotFormatter(Formatter):
             self.mpl = matplotlib
             self.plt = plt
             self.np = numpy
-            self.figure = self.plt.figure()
             self.build_styles()
+            self.figure = self.plt.figure()
             self.init_plots()
         except ImportError:
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
@@ -312,7 +312,6 @@ class PlotFormatter(Formatter):
             for m in self.markers:
                 self.styles.append(dict(marker=m))
 
-    def init_plots(self):
         # Try to detect if a custom matplotlibrc is installed, and if so don't
         # load our own values.
         if self.settings.LOAD_MATPLOTLIBRC \
@@ -321,6 +320,8 @@ class PlotFormatter(Formatter):
             self.mpl.rc_file(os.path.join(DATA_DIR, 'matplotlibrc.dist'))
         self.colours = self.mpl.rcParams['axes.color_cycle']
 
+
+    def init_plots(self):
         self.figure.clear()
         if self.settings.FIG_WIDTH is not None:
             self.figure.set_figwidth(self.settings.FIG_WIDTH)
