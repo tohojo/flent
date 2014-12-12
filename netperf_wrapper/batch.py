@@ -22,6 +22,7 @@
 import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback
 
 from datetime import datetime
+from fnmatch import fnmatch
 
 try:
     from configparser import RawConfigParser
@@ -265,7 +266,14 @@ class BatchRunner(object):
 
         for k in batch.keys():
             if k.startswith("for_"):
-                argsets.append([i.strip() for i in batch[k].split(',')])
+                argset = []
+                for a in batch[k].split(','):
+                    a = a.strip()
+                    matches = [arg for arg in self.args if fnmatch(arg,a)]
+                    if not matches:
+                        raise RuntimeError("No matches for arg: '%s'." % a)
+                    argset.extend(matches)
+                argsets.append(argset)
 
         reps = range(1,int(batch.get('repetitions', 1))+1)
         argsets.append(reps)
