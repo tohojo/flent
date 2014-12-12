@@ -268,7 +268,7 @@ class BatchRunner(object):
             if k.startswith("for_"):
                 argset = []
                 for a in batch[k].split(','):
-                    a = a.strip()
+                    a = a.strip().lower()
                     matches = [arg for arg in self.args if fnmatch(arg,a)]
                     if not matches:
                         raise RuntimeError("No matches for arg: '%s'." % a)
