@@ -237,7 +237,7 @@ class DitgRunner(ProcessRunner):
             self.test_id = params['test_id']
             self.out += "Test ID: %s\n" % self.test_id
         except (xmlrpc.Fault, socket.error) as e:
-            raise RuntimeError("Error while requesting D-ITG test: %s" % e)
+            raise RuntimeError("Error while requesting D-ITG test: '%s'. Is the control server listening (see man page)?" % e)
         self.command = self.command.format(signal_port = params['port'], dest_port=params['port']+1)
         self.args = shlex.split(self.command)
         ProcessRunner.start(self)
