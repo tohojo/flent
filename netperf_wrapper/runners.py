@@ -23,6 +23,7 @@ import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
   signal, hmac, hashlib, calendar, socket
 
 from datetime import datetime
+from threading import Event
 
 from .util import classname
 
@@ -49,11 +50,35 @@ def get(name):
         raise RuntimeError("Runner not found: '%s'" % name)
     return globals()[cname]
 
+class TimerRunner(threading.Thread):
+
+    def __init__(self, name, settings, timeout, start_event, finish_event, kill_event, *args, **kwargs):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.timeout = timeout
+        self.start_event = start_event
+        self.kill_event = kill_event if kill_event is not None else Event()
+        self.finish_event = finish_event
+        self.result = None
+        self.command = 'Timeout after %f seconds' % self.timeout
+        self.returncode = 0
+        self.out = self.err = ''
+
+    def run(self):
+        if self.start_event is not None:
+            self.start_event.wait()
+
+        self.kill_event.wait(self.timeout)
+        self.finish_event.set()
+
+    def kill(self, graceful=False):
+        self.kill_event.set()
+
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
     silent = False
 
-    def __init__(self, name, settings, command, delay, start_event, finish_event, *args, **kwargs):
+    def __init__(self, name, settings, command, delay, start_event, finish_event, kill_event, *args, **kwargs):
         threading.Thread.__init__(self)
         self.name = name
         self.settings = settings
@@ -61,6 +86,7 @@ class ProcessRunner(threading.Thread):
         self.args = shlex.split(self.command)
         self.delay = delay
         self.start_event = start_event
+        self.kill_event = kill_event
         self.finish_event = finish_event
         self.result = None
         self.killed = False
@@ -163,9 +189,24 @@ class ProcessRunner(threading.Thread):
 
         if self.start_event is not None:
             self.start_event.wait()
-            os.kill(self.pid, signal.SIGUSR2)
+            try:
+                os.kill(self.pid, signal.SIGUSR2)
+            except OSError:
+                pass
 
-        pid, sts = os.waitpid(self.pid, 0)
+        if self.kill_event is None:
+            pid, sts = os.waitpid(self.pid, 0)
+        else:
+            pid, sts = os.waitpid(self.pid, os.WNOHANG)
+            while (pid,sts) == (0,0):
+                self.kill_event.wait(1)
+                if self.kill_event.is_set():
+                    try:
+                        os.kill(self.pid, signal.SIGTERM)
+                    except OSError:
+                        pass
+                pid,sts = os.waitpid(self.pid, os.WNOHANG)
+
         self.finish_event.set()
         self._handle_exitstatus(sts)
 

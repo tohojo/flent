@@ -71,6 +71,7 @@ class Aggregator(object):
 
         instance['runner'] = runners.get(instance['runner'])
         instance['start_event'] = None
+        instance['kill_event'] = None
         instance['finish_event'] = Event()
 
         if 'data_transform' in config:
@@ -102,6 +103,8 @@ class Aggregator(object):
             for n,i in list(self.instances.items()):
                 if 'run_after' in i:
                     i['start_event'] = self.instances[i['run_after']]['finish_event']
+                if 'kill_after' in i:
+                    i['kill_event'] = self.instances[i['kill_after']]['finish_event']
                 self.threads[n] = i['runner'](n, self.settings, **i)
                 self.threads[n].start()
             shutting_down = False
