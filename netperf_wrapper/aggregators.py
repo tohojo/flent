@@ -21,6 +21,7 @@
 
 import math, pprint, signal, sys
 from datetime import datetime
+from threading import Event
 
 from . import runners, transformers
 
@@ -69,6 +70,8 @@ class Aggregator(object):
 
 
         instance['runner'] = runners.get(instance['runner'])
+        instance['start_event'] = None
+        instance['finish_event'] = Event()
 
         if 'data_transform' in config:
             instance['transformers'] = []
@@ -97,6 +100,8 @@ class Aggregator(object):
         metadata = {}
         try:
             for n,i in list(self.instances.items()):
+                if 'run_after' in i:
+                    i['start_event'] = self.instances[i['run_after']]['finish_event']
                 self.threads[n] = i['runner'](n, self.settings, **i)
                 self.threads[n].start()
             shutting_down = False

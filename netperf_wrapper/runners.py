@@ -53,13 +53,15 @@ class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
     silent = False
 
-    def __init__(self, name, settings, command, delay, *args, **kwargs):
+    def __init__(self, name, settings, command, delay, start_event, finish_event, *args, **kwargs):
         threading.Thread.__init__(self)
         self.name = name
         self.settings = settings
         self.command = command
         self.args = shlex.split(self.command)
         self.delay = delay
+        self.start_event = start_event
+        self.finish_event = finish_event
         self.result = None
         self.killed = False
         self.pid = None
@@ -70,6 +72,10 @@ class ProcessRunner(threading.Thread):
         self.err = ""
         self.stdout = None
         self.stderr = None
+
+    def handle_usr2(self, signal, frame):
+        if self.start_event is not None:
+            self.start_event.set()
 
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
@@ -86,6 +92,11 @@ class ProcessRunner(threading.Thread):
             self.stderr.close()
 
             try:
+                if self.start_event is not None:
+                    signal.signal(signal.SIGUSR2, self.handle_usr2)
+                    self.start_event.wait()
+                    signal.signal(signal.SIGUSR2, signal.SIG_DFL)
+
                 time.sleep(self.delay)
             except:
                 os._exit(0)
@@ -150,7 +161,12 @@ class ProcessRunner(threading.Thread):
         seconds, then open the subprocess, wait for it to finish, and collect
         the last word of the output (whitespace-separated)."""
 
+        if self.start_event is not None:
+            self.start_event.wait()
+            os.kill(self.pid, signal.SIGUSR2)
+
         pid, sts = os.waitpid(self.pid, 0)
+        self.finish_event.set()
         self._handle_exitstatus(sts)
 
         # Even with locking, kill detection is not reliable; sleeping seems to
