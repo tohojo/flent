@@ -1,8 +1,9 @@
 netperf-wrapper
----------------
+===============
 
 Python wrapper to run multiple simultaneous netperf/iperf/ping instances
-and aggregate the results.
+and aggregate the results. The main documentation is in the man page,
+`available as HTML here <https://tohojo.github.io/netperf-wrapper.1.html>`.
 
 Tests are specified as config files (which are really Python), and
 various parsers for tool output are supplied. At the moment, parsers for
@@ -55,14 +56,16 @@ selected while a test is run, the test data will be used directly for
 this output, but will still be saved in the json file.
 
 Installing
-~~~~~~~~~~
+----------
 
 Install the package system-wide by running
 ``sudo python2 setup.py install`` or
 ``sudo pip install netperf-wrapper`` for the latest released version.
+Packages for Debian/Ubuntu and Arch Linux are available at OBS:
+https://build.opensuse.org/project/repositories/home:tohojo:netperf-wrapper.
 
 The json data format
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 The aggregated test data is saved in a file called
 ``<test_name>-<date>.json.gz``. This file contains the data points
@@ -88,11 +91,12 @@ Currently the metadata values are:
 -  ``NAME``: The test name.
 -  ``TITLE``: Any extra title specified by the -t parameter when the
    test was run.
--  ``HOST``: The server hostname connected to during the test.
+-  ``HOSTS``: List of the server hostnames connected to during the test.
 -  ``LOCAL_HOST``: The hostname of the machine that ran the test.
 -  ``LENGTH``: Test length in seconds, as specified by the -l parameter.
 -  ``TOTAL_LENGTH``: Actual data series length, after the test has added
    time to the LENGTH.
 -  ``STEP_SIZE``: Time step size granularity.
 -  ``TIME``: ISO timestamp of the time the test was initiated.
-
+-  ``NOTE``: Arbitrary text as entered with the ``--note`` switch when
+   the test was run.
