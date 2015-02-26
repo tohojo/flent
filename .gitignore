@@ -34,7 +34,6 @@ pip-log.txt
 *.csv
 *.pdf
 *.png
-*.html
 *.svg
 data/
 

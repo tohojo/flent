@@ -1,0 +1,353 @@
+<HTML>
+<BODY>
+<PRE>
+<!-- Manpage converted by man2html 3.0.1 -->
+SYNOPSIS
+       netperf-wrapper [options] &lt;host|test|input file ...&gt;
+
+INVOCATION
+       When run, netperf-wrapper must be supplied either (a) a test name and one or more host names to connect to, or (b) one or more input files containing data from previous runs to post-process.
+
+       Test  names,  hostnames  and  input file names can all be specified as unqualified arguments, and netperf-wrapper will do its best to guess which is which. For each argument, if it is an existing file, it is assumed to be an input file, if it is the name of an existing
+       test configuration it's assumed to be a test name, and if neither of those are true, it is assumed to be a host name. The -i and -H switches can be used to explicitly specify the interpretation of an argument.
+
+
+DESCRIPTION
+       Netperf-wrapper is a wrapper around  netperf  and similar tools to run predefined tests and aggregate and plot the results. It defines several tests that can be run against one or more hosts, primarily targeted at testing for the presence of bufferbloat  under  various
+       conditions.
+
+       The aggregated data is saved in (gzipped) JSON format for later processing and/or import into other tools. The JSON format is documented below.
+
+       Apart from the JSON format, the data can be output as csv values, emacs org mode tables or plots. Each test can specify several different plots, including time-series plots of the values against each other, as well as CDF plots of (e.g.) ping times.
+
+       Plots  can  be  output to the formats supported by matplotlib by specifying the output filename with -o output.{png,ps,pdf,svg}. If no output file is specified, the plot is diplayed using matplotlib's interactive plot browser, which also allows saving of the output (in
+       .png format).
+
+
+REQUIREMENTS
+       Netperf-wrapper runs on Python, versions 2.6 through 3.3. Plotting requires a functional matplotlib installation (but everything else can run without matplotlib). For the interactive plot viewer, a graphical display (and suitably configured matplotlib) is required.
+
+       Most tests employ the netperf benchmarking tool to run the tests. Version 2.6 or higher is required, and netperf must be compiled with the --enable-demo option passed to ./configure. Some tests use iperf in addition to, or instead of netperf. Both tools must be  avail‐
+       able in the PATH.
+
+       For  ICMP ping measurements, the version of ping employed must support output timestamping (the -D parameter to GNU ping). This is not supported by the BSD and OSX versions of ping. As an alternative to the regular ping command, the fping utility (see fping.org) can be
+       employed. In that case fping must be version 3.5 or greater. Netperf-wrapper will attempt to detect the presence of fping in the PATH and check for support for the -D parameter. If this check is successful, fping will be employed for ping  data,  otherwise  the  system
+       ping will be used.
+
+
+OPTIONS
+       -o OUTPUT, --output=OUTPUT
+              File to write processed output to (default standard out). The JSON data file is written to the same directory as this file, if provided. Otherwise, the data file is written to the current directory.
+
+       -i INPUT, --input=INPUT
+              File to read input from (instead of running tests).  Input files can also be specified as unqualified arguments without using the -i switch.
+
+       -f FORMAT, --format=FORMAT
+              Select output format (plot, csv, org_table, stats). Default is no processed output (just writes the JSON data file).
+
+       -p PLOT, --plot=PLOT
+              Select which plot to output for the given test (implies -f plot). Use the --list-plots option to see available plots.
+
+       -t TITLE, --title-extra=TITLE
+              Text to add to plot title and data file name.
+
+       -n NOTE, --note=NOTE
+              Add arbitrary text as a note to be stored in the JSON data file (under the NOTE key in the metadata object).
+
+              when multiple GUI instances are running, there is no guarantee as to which instance will get a subsequent open request (if run again without --new-gui-instance).
+
+       --gui-no-defer
+              Normally,  the GUI defers redrawing plots until they are needed to avoid redrawing all open plots every time an option changes. This switch turns off that optimisation in favour of always redrawing everything straight away. This is useful when loading a bunch of
+              plots from the command line and then wanting to flip through them without drawing delay.
+
+       -b BATCH_NAME, --batch-name=BATCH_NAME
+              Run test batch BATCH_NAME (must be specified in a batch file loaded by the --batch-file option). Can be supplied multiple times.
+
+       -B BATCH_FILE, --batch-file=BATCH_FILE
+              Load batch file BATCH_FILE. Can be specified multiple times, in which case the files will be combined (with identically-named sections being overridden by later files). See appropriate section below for an explanation of the batch file format.
+
+       --batch-override=key=value
+              Override parameter 'key' in the batch config and set it to 'value'. The key name will be case folded to lower case. Can be specified multiple times.
+
+       --batch-dry-run
+              Dry batch run. Prints what would be done, but doesn't actually run any tests.
+
+       --batch-repetitions=REPETITIONS
+              Shorthand for --batch-override 'repetitions=REPETITIONS'.
+
+       Test configuration:
+
+       These options affect the behaviour of the test being run and have no effect when parsing input files.
+
+       -H HOST, --host=HOST
+              Host to connect to for tests. For tests that support it, multiple hosts can be specified by supplying this option multiple times. Hosts can also be specified as unqualified arguments; this parameter guarantees that the argument be  interpreted  as  a  host  name
+              (rather than being subject to auto-detection between input files, hostnames and test names).
+
+       --local-bind=IP
+              Local hostname or IP address to bind to (for test tools that support this).
+
+       -l LENGTH, --length=LENGTH
+              Base test length (some tests may add some time to this).
+
+       -s STEP_SIZE, --step-size=STEP_SIZE
+              Measurement data point step size.
+
+       -d DELAY, --delay=DELAY
+              Number of seconds to delay parts of test (such as bandwidth loaders).
+
+       -4, --ipv4
+              Use IPv4 for tests (some tests may ignore this).
+
+       -6, --ipv6
+              Use IPv6 for tests (some tests may ignore this).
+
+       --socket-timeout=SOCKET_TIMEOUT
+              Socket timeout (in seconds) used for UDP delay measurement, to prevent stalls on packet loss. Only enabled if the installed netperf version is detected to support this (requires SVN version of netperf).
+
+              For the default value, see the output of netperf-wrapper -h. The value of this parameter is an implicit upper bound on how long a round-trip time that can be measured. As such you may need to adjust it if you are experiencing latency above the default value. Set
+              to 0 to disable.
+
+       --disable-log
+              Disable log scales on plots.
+
+       --norm-factor=FACTOR
+              Factor to normalise data by. I.e. divide all data points by this value. Can be specified multiple times, in which case each value corresponds to a data series.
+
+       --scale-data=SCALE_DATA
+              Additional  data  files  to consider when scaling the plot axes (for plotting several plots with identical axes). Note, this displays only the first data set, but with axis scaling taking into account the additional data sets. Can be supplied multiple times; see
+              also --scale-mode.
+
+       -S, --scale-mode
+              Treat file names (except for the first one) passed as unqualified arguments as if passed as --scale-data (default as if passed as --input).
+
+       --concatenate
+              Concatenate multiple result sets into one data series. This means that each data file will have its time axis shifted by the preceding series duration and appended to the first data set specified. Only works for data sets from the same test, obviously.
+
+       --absolute-time
+              Plot data points with absolute UNIX time on the x-axis. This requires the absolute starting time for the test run to be stored in the data file, and so it won't work with data files that predates this feature.
+
+       --subplot-combine
+              When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot. This mode is not supported for all plot types, and only works when --scale-mode is disabled.
+
+       --no-print-n
+              Do not print the number of data points on combined plots. When using plot types that combines results from several test runs, the number of data series in each combined data point is normally added after the series name, (n=X) for  X  data  series.  This  option
+              turns that off.
+
+       --no-annotation
+              Exclude annotation with hostnames, time and test length from plots.
+
+       --no-title
+              Exclude title from plots.
+
+       --override-title=TITLE
+              Override  plot  title  with  this  string. Completely discards the configured title (from the test configuration), as well as the title stored in the data set, and replaces it with the value supplied here. This is useful to override the plot title at the time of
+              plotting, for instance to add a title to an aggregate plot from several data series. When this parameter is specified, --no-title has no effect.
+
+       --no-markers
+              Don't use line markers to differentiate data series on plots.
+
+       --no-legend
+              Exclude legend from plots.
+
+       --filter-legend
+              Filter legend labels by removing the longest common substring from all entries.  This is not particularly smart, so should be used with care.
+
+       --filter-regexp=REGEXP
+              Filter the plot legend by the supplied regular expression. Note that for combining several plot results, the regular expression is also applied before the grouping logic, meaning that a too wide filter can mess up the grouping.
+
+       --figure-width=FIG_WIDTH
+              Figure width in inches. Used when saving plots to file and for default size of the interactive plot window.
+
+              When running tests that uses D-ITG as a test tool (such as the voip-* tests), this switch controls where netperf-wrapper will look for the D-ITG control server (see section below on running tests with D-ITG). For Netperf-based tests, this  option  is  passed  to
+              Netperf to control where to point the control connection. This is useful to, for instance, to run the control server communication over a separate control network so as to not interfere with test traffic.
+
+       --control-local-bind=IP
+              Local hostname or IP to bind control connection to (for test tools that support it; currently netperf). If not supplied, the value for --local-bind will be used. Note that if this value is passed but --local-bind is not, netperf will use the value specified here
+              to bind the data connections to as well.
+
+       --netperf-control-port=PORT
+              Port for Netperf control server. Default: 12865.
+
+       --ditg-control-port=PORT
+              Port for D-ITG control server. Default: 8000.
+
+       --ditg-control-secret=SECRET
+              Secret for D-ITG control server authentication. Default: ''.
+
+       --http-getter-urllist=FILENAME
+              When running HTTP tests, the http-getter tool is used to fetch URLs (see https://github.com/tohojo/http-getter). This option specifies the filename containing the list of HTTP URLs to get. Can also be a URL, which will then be downloaded as  part  of  each  test
+              iteration. If not specified, this is set to http://&lt;hostname&gt;/filelist.txt where &lt;hostname&gt; is the first test hostname.
+
+       --http-getter-dns-servers=DNS_SERVERS
+              DNS servers to use for http-getter lookups. Format is host[:port][,host[:port]]... This option will only work if libcurl supports it (needs to be built with the ares resolver). Default is none (use the system resolver).
+
+       --http-getter-timeout=MILLISECONDS
+              Timeout for HTTP connections. Default is to use the test length.
+
+       --http-getter-workers=NUMBER
+              Number of workers to use for getting HTTP urls. Default is 4.
+
+       Misc and debugging options:
+
+       -L LOG_FILE, --log-file=LOG_FILE
+              Write debug log (test program output) to log file.
+
+       --list-tests
+              List available tests and exit.
+
+       --list-plots
+              List available plots for selected test and exit.
+
+       -V, --version
+              Show netperf-wrapper version information and exit.
+
+       -h, --help
+              Show usage help message and exit.
+
+
+SUPPLIED TESTS
+       Test are supplied as Python files and can specify commands to run etc. For a full list of the tests supported by netperf-wrapper, see the --list-tests option.
+
+       The Realtime Response Under Load (RRUL) test
+
+
+       Plot output (-f plot)
+
+              Output test data as one of a series of graphical plots of timeseries data or summarised as a CDF plot. Each test supplies a number of different plots; the list of plots for a given test is output by the --list-plots switch (which must be supplied  along  with  a
+              test name).
+
+              The  plots  are drawn by matplotlib, and can be displayed on the screen interactively (requires a graphical display), or output to a file in svg, pdf, ps and png formats. Using the -o switch turns out file output (the file format is inferred from the file name),
+              while not supplying the switch turns on the interactive plot viewer.
+
+
+       Tabulated output (-f csv and -f org_table)
+
+              These formats output the numeric data in a tabulated format to be consumed by other applications. The csv output format is a comma-separated output that can be imported into e.g. spreadsheets, while org_table outputs a tabulated output in the table  format  sup‐
+              ported by Emacs org mode. The data is output in text format to standard output, or written to a file if invoked with the -o parameter.
+
+
+       Statistics output (-f stats)
+
+              This  output  format outputs various statistics about the test data, such as total bandwidth consumed, and various statistical measures (min/max/mean/median/std dev/variance) for each data source specified in the relevant test (this can include some data sources
+              not includes on plots). The data is output in text format to standard output, or written to a file if invoked with the -o parameter.
+
+
+       Metadata output (-f metadata)
+
+              This output format outputs the test metadata as pretty-printed json (also suitable for human consumption). It is output as a list of objects, where each object corresponds to the metadata of one test. Mostly useful for inspecting metadata of stored data files.
+
+
+THE NETPERF-WRAPPER GUI
+       Netperf-wrapper comes equipped with a GUI to browse and plot previously captured datasets. The GUI requires PyQt4; if this is installed, it can be launched with the --gui parameter. Additionally, if netperf-wrapper is launched without parameters and without a  control‐
+       ling terminal, the GUI will be launched automatically.
+
+       The GUI can be used for interactively plotting previously captured datasets, and makes it easy to compare results from several test runs. It presents a tabbed interface to graphs of data files, allows dynamic configuration of plots, and includes a metadata browser. For
+       each loaded data file, additional data files can be loaded and added to the plot, similar to what happens when specifying multiple input files for plotting on the command line. A checkbox controls whether the added data files are added as separate entries to the  plot,
+       or whether they are used for scaling the output (mirroring the --scale-mode) command line switch.
+
+       The GUI also incorporates matplotlib's interactive browsing toolbar, enabling panning and zooming of the plot area,  dynamic configuration of plot and axis parameters and labels and saving the plots to file. The exact dynamic features supported depends on the installed
+       version of matplotlib.
+
+
+RC FILE
+       Some of the command line options can be specified in an rc file. By default, netperf-wrapper looks for this in ~/.netperf-wrapperrc, but an alternative location can be specified with the --rcfile command line option.
+
+       The rc file allows options to be specified globally, an optionally overridden for specific tests. For an explanation of the options, refer to the annotated example rc file, by default installed to /usr/share/doc/netperf-wrapper/netperf-wrapperrc.example.
+
+
+BATCH FILES
+       Netperf-wrapper supports reading batch files to automate running several tests and do setup/teardown of test environment etc. This greatly aids reproducibility of tests.
+
+       The batch file format is based on the standard .ini file format, with sections being split into three namespaces: Commands, starting with Command::, batches, starting with Batch::, and arguments, starting with Arg::. Briefly, a batch is the entity  that  will  be  run,
+       commands can be run before or after each batch iteration, and arguments allows parameterising batches.
+
+       FIXME: Expand this section; for now, try looking at the batchfile.example file supplied with the source code, and try to work things out from there :).
+
+EXAMPLES
+       Run the rrul test against testserver.example.com:
+
+              netperf-wrapper rrul testserver.example.com
+
+       This produces no output, but saves the result in a datafile named after the current date and time (in gzipped JSON format).
+
+       Show an interactive plot of a previously run test, which stored the data in datafile.json.gz (requires a working matplotlib and a graphical display):
+
+              netperf-wrapper -f plot datafile.json.gz
+
+       Combine multiple data files into one CDF plot:
+
+              netperf-wrapper -p icmp_cdf *.json.gz
+
+
+THE JSON DATA FORMAT
+       The aggregated test data is saved in a file called &lt;test_name&gt;-&lt;date&gt;.&lt;title&gt;.json.gz (the title part is omitted if no title is specified by the -t parameter). This file contains the data points generated during the test, as well as some metadata.  The  top-level  json
+       object has three keys in it: x_values, results and metadata.
+
+       x_values is an array of the x values for the test data (typically the time values for timeseries data).
+
+       results  is  a json object containing the result data series. The keys are the data series names; the value for each key is an array of y values for that data series. The data array has the same length as the x_values array, but there may be missing data points (signi‐
+       fied by null values).
+
+       metadata is an object containing various data points about the test run. The metadata values are read in as configuration parameters when the data set is loaded in for further processing. Not all tests use all the parameters, but they are saved anyway.
+
+       Currently the metadata values are:
+
+              NAME: The test name.
+
+              TITLE: Any extra title specified by the -t parameter when the test was run.
+
+              HOSTS: List of the server hostnames connected to during the test.
+
+              LOCAL_HOST: The hostname of the machine that ran the test.
+
+              LENGTH: Test length in seconds, as specified by the -l parameter.
+
+              TOTAL_LENGTH: Actual data series length, after the test has added time to the LENGTH.
+
+              STEP_SIZE: Time step size granularity.
+
+              TIME: ISO timestamp of the time the test was initiated.
+
+              NOTE: Arbitrary text as entered with the --note switch when the test was run.
+
+              NETPERF_WRAPPER_VERSION: Version of netperf-wrapper that generated the data file.
+
+              IP_VERSION: IP version used to run test (as specified by command line parameters, or auto-detected from getaddrinfo() if unspecified).
+
+       DATA object will contain an object called INGRESS_INFO which is a duplicate of EGRESS_INFO, but with the destination IP exchanged for the source address of the host running netperf-wrapper. The assumption here is that --remote-metadata is used to capture metadata of  a
+       router known to be in the test path, in which case INGRESS_INFO will contain information about the reverse path from the router (which is ingress from the point of view of the host running netperf-wrapper). If the host being queried for remote metadata is off the path,
+       the contents of INGRESS_INFO will probably be the same as that of EGRESS_INFO.
+
+
+SIGNALS
+       Netperf-wrapper will abort what it is currently doing on receiving a SIGINT -- this includes killing all runners, cleaning up temporary files and shutting down as gracefully as possible. Runners are killed with SIGTERM in this mode, and their output is discarded. If  a
+       batch  run is in progress, the current test will be interrupted in this way, and the rest of the batch run is aborted. Previously completed tests and their results are not aborted. Post-commands marked as 'essential' will be run after the test is interrupted. Addition‐
+       ally, netperf-wrapper converts SIGTERM into SIGINT internally and reacts accordingly.
+
+       Upon receiving a SIGUSR1, netperf-wrapper will try to gracefully abort the test it is currently running, and parse the output of the runners to the extent that any such output exists. That is, each runner will be killed by a SIGINT, which will cause a graceful shutdown
+       for  at  least  ping and netperf (although netperf running in TCP_MAERTS mode will bug out when interrupted like this, so end-of-tests statistics will be missing). Netperf-wrapper will only react once to a SIGUSR1, sending exactly one SIGINT to the active runners, then
+       wait for them to exit. This may take several seconds in the case of netperf. If the runners for some reason fail to exit, netperf-wrapper will be stuck and will need to be killed with SIGINT. If running in batch mode, SIGUSR1 will  only  affect  the  currently  running
+       test; subsequent tests will still be run.
+
+
+BUGS
+       Under  some  conditions  (such  as severe bufferbloat), the UDP RTT measurements done by netperf can experience packet loss to the extent that the test aborts completely, which can cause missing data points for some measurement series.  The --socket-timeout feature can
+       alleviate this, but requires a recent SVN version of netperf to work. Netperf-wrapper tries to detect if netperf supports this option and enables it for the UDP measurements if it does.
+
+       Probably many other bugs. Please report any found to https://github.com/tohojo/netperf-wrapper/issues and include the output of netperf-wrapper --version in the report.
+
+
+AUTHORS
+       Netperf-wrapper is written and maintained by Toke Høiland-Jørgensen, with contributions from Dave Taht and others.
+
+
+
+Netperf-wrapper v0.9.1-git.                                                                                                         November 2014                                                                                                                 <B>NETPERF-WRAPPER(1)</B>
+</PRE>
+<HR>
+<ADDRESS>
+Man(1) output converted with
+<a href="http://www.oac.uci.edu/indiv/ehood/man2html.html">man2html</a>
+</ADDRESS>
+</BODY>
+</HTML>
