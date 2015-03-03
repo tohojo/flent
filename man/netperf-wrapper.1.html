@@ -3,7 +3,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html><head>
 <meta name="generator" content="groff -Thtml, see www.gnu.org">
-<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="Content-Style" content="text/css">
 <style type="text/css">
        p       { margin-top: 0; margin-bottom: 0; vertical-align: top }
@@ -74,7 +74,7 @@ hostnames and input file names can all be specified as
 unqualified arguments, and netperf-wrapper will do its best
 to guess which is which. For each argument, if it is an
 existing file, it is assumed to be an input file, if it is
-the name of an existing test configuration it’s
+the name of an existing test configuration itâ€™s
 assumed to be a test name, and if neither of those are true,
 it is assumed to be a host name. The <b>-i</b> and <b>-H</b>
 switches can be used to explicitly specify the
@@ -109,7 +109,7 @@ times.</p>
 output to the formats supported by matplotlib by specifying
 the output filename with <b>-o</b>
 <i>output.{png,ps,pdf,svg}</i>. If no output file is
-specified, the plot is diplayed using matplotlib’s
+specified, the plot is diplayed using matplotlibâ€™s
 interactive plot browser, which also allows saving of the
 output (in .png format).</p>
 
@@ -209,7 +209,7 @@ section below for information on the rc file format.</p>
 
 <p style="margin-left:22%;">Collect extended metadata and
 store it with the data file. May include details of your
-machine you don’t want to distribute; see the section
+machine you donâ€™t want to distribute; see the section
 on the data format below.</p>
 
 
@@ -282,21 +282,21 @@ explanation of the batch file format.</p>
 <p style="margin-left:11%;"><b>&#8722;&#8722;batch&#8722;override</b>=<i>key=value</i></p>
 
 <p style="margin-left:22%;">Override parameter
-’key’ in the batch config and set it to
-’value’. The key name will be case folded to
+â€™keyâ€™ in the batch config and set it to
+â€™valueâ€™. The key name will be case folded to
 lower case. Can be specified multiple times.</p>
 
 <p style="margin-left:11%;"><b>--batch-dry-run</b></p>
 
 <p style="margin-left:22%;">Dry batch run. Prints what
-would be done, but doesn’t actually run any tests.</p>
+would be done, but doesnâ€™t actually run any tests.</p>
 
 
 <p style="margin-left:11%;"><b>&#8722;&#8722;batch&#8722;repetitions</b>=<i>REPETITIONS</i></p>
 
 <p style="margin-left:22%;">Shorthand for
 <b>--batch-override</b>
-<i>’repetitions=REPETITIONS’</i>.</p>
+<i>â€™repetitions=REPETITIONSâ€™</i>.</p>
 
 <p style="margin-left:11%;"><b>Test configuration:</b></p>
 
@@ -381,7 +381,7 @@ multiple times.</p>
 
 <p style="margin-left:22%;">Switch upstream and downstream
 directions for data transfer. This means that
-’upload’ will become ’download’ and
+â€™uploadâ€™ will become â€™downloadâ€™ and
 vice versa. Works by exchanging netperf TCP_MAERTS and
 TCP_STREAM parameters, so only works for tests that employ
 these as their data transfer, and only for the TCP
@@ -404,8 +404,8 @@ bound.</p>
 <b>&#8722;&#8722;invert&#8722;latency&#8722;y</b></p>
 
 <p style="margin-left:22%;">Invert the y-axis for latency
-data series (making plots show ’better values
-upwards’).</p>
+data series (making plots show â€™better values
+upwardsâ€™).</p>
 
 
 <p style="margin-left:11%;"><b>&#8722;&#8722;disable&#8722;log</b></p>
@@ -454,7 +454,7 @@ works for data sets from the same test, obviously.</p>
 <p style="margin-left:22%;">Plot data points with absolute
 UNIX time on the x-axis. This requires the absolute starting
 time for the test run to be stored in the data file, and so
-it won’t work with data files that predates this
+it wonâ€™t work with data files that predates this
 feature.</p>
 
 
@@ -502,7 +502,7 @@ specified, <b>--no-title</b> has no effect.</p>
 
 <p style="margin-left:11%;"><b>&#8722;&#8722;no&#8722;markers</b></p>
 
-<p style="margin-left:22%;">Don’t use line markers to
+<p style="margin-left:22%;">Donâ€™t use line markers to
 differentiate data series on plots.</p>
 
 
@@ -549,7 +549,7 @@ plots to raster format files.</p>
 
 <p style="margin-left:11%;"><b>&#8722;&#8722;no&#8722;matplotlibrc</b></p>
 
-<p style="margin-left:22%;">Don’t load included
+<p style="margin-left:22%;">Donâ€™t load included
 matplotlibrc values. Use this if autodetection of custom
 matplotlibrc fails and netperf-wrapper is inadvertently
 overriding rc values.</p>
@@ -599,7 +599,7 @@ Default: 8000.</p>
 <p style="margin-left:11%;"><b>&#8722;&#8722;ditg&#8722;control&#8722;secret</b>=<i>SECRET</i></p>
 
 <p style="margin-left:22%;">Secret for D-ITG control server
-authentication. Default: ’’.</p>
+authentication. Default: â€™â€™.</p>
 
 
 <p style="margin-left:11%;"><b>&#8722;&#8722;http&#8722;getter&#8722;urllist</b>=<i>FILENAME</i></p>
@@ -695,7 +695,7 @@ tests</b></p>
 
 <p style="margin-left:22%; margin-top: 1em">These tests
 combine a TCP flow (either in one direction, or both) with
-an ICMP ping measurement. It’s a simpler test than
+an ICMP ping measurement. Itâ€™s a simpler test than
 RRUL, but in some cases the single TCP flow can be
 sufficient to saturate the link.</p>
 
@@ -795,7 +795,7 @@ they are used for scaling the output (mirroring the
 <b>--scale-mode</b>) command line switch.</p>
 
 <p style="margin-left:11%; margin-top: 1em">The GUI also
-incorporates matplotlib’s interactive browsing
+incorporates matplotlibâ€™s interactive browsing
 toolbar, enabling panning and zooming of the plot area,
 dynamic configuration of plot and axis parameters and labels
 and saving the plots to file. The exact dynamic features
@@ -883,7 +883,7 @@ ITGRecv instance (with or without the control server).
 Another security issue with the control server is that the
 Python XML-RPC library by default is vulnerable to XML
 entity expansion attacks. For this reason, it is highly
-recommended to install the ’defusedxml’ library
+recommended to install the â€™defusedxmlâ€™ library
 (available at
 <i>https://pypi.python.org/pypi/defusedxml/</i>) on the host
 running the control server. The server will try to find the
@@ -1076,7 +1076,7 @@ mode, and their output is discarded. If a batch run is in
 progress, the current test will be interrupted in this way,
 and the rest of the batch run is aborted. Previously
 completed tests and their results are not aborted.
-Post-commands marked as ’essential’ will be run
+Post-commands marked as â€™essentialâ€™ will be run
 after the test is interrupted. Additionally, netperf-wrapper
 converts <b>SIGTERM</b> into <b>SIGINT</b> internally and
 reacts accordingly.</p>
@@ -1127,7 +1127,7 @@ the report.</p>
 
 <p style="margin-left:11%; margin-top: 1em">Netperf-wrapper
 is written and maintained by Toke
-Høiland-Jørgensen, with contributions from
+HÃ¸iland-JÃ¸rgensen, with contributions from
 Dave Taht and others.</p>
 <hr>
 
