@@ -61,6 +61,7 @@ DEFAULT_SETTINGS = {
     'DELAY': 5,
     'SOCKET_TIMEOUT': 2,
     'TEST_PARAMETERS': {},
+    'SWAP_UPDOWN': False,
     'TIME': datetime.now(),
     'SCALE_DATA': [],
     'SCALE_MODE': False,
@@ -124,6 +125,7 @@ CONFIG_TYPES = {
     'DELAY': 'int',
     'SOCKET_TIMEOUT': 'int',
     'TEST_PARAMETERS': 'dict',
+    'SWAP_UPDOWN': 'bool',
     'SCALE_MODE': 'bool',
     'SUBPLOT_COMBINE': 'bool',
     'COMBINE_PRINT_N': 'bool',
@@ -300,6 +302,11 @@ test_group.add_option("--test-parameter", action="update", dest="TEST_PARAMETERS
                   "alter behaviour based on values passed as test parameters. Additionally, "
                   "the values are stored with the results metadata, and so can be used for "
                   "arbitrary resultset categorisation. Can be specified multiple times.")
+test_group.add_option("--swap-up-down", action="store_true", dest="SWAP_UPDOWN",
+                      help="Swap upstream and downstream directions for data transfer. This means "
+                      "that 'upload' will become 'download' and vice versa. Works by exchanging "
+                      "netperf TCP_MAERTS and TCP_STREAM parameters, so only works for tests "
+                      "that employ these as their data transfer, and only for the TCP streams.")
 parser.add_option_group(test_group)
 
 plot_group = optparse.OptionGroup(parser, "Plot configuration",

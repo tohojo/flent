@@ -193,6 +193,12 @@ test parameters. Additionally, the values are stored with the results metadata,
 and so can be used for arbitrary resultset categorisation. Can be specified
 multiple times.
 .TP
+\fB\-\-swap\-up\-down\fR
+Switch upstream and downstream directions for data transfer. This means
+that 'upload' will become 'download' and vice versa. Works by exchanging netperf
+TCP_MAERTS and TCP_STREAM parameters, so only works for tests that employ these
+as their data transfer, and only for the TCP streams.
+.TP
 \fBPlot configuration:\fR
 .PP
 These options are used to configure the appearance of plot output and

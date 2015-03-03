@@ -175,6 +175,12 @@ class TestEnvironment(object):
         args.setdefault('marking', "")
         args.setdefault('socket_timeout', "")
 
+        if self.env['SWAP_UPDOWN']:
+            if test == 'TCP_STREAM':
+                test = 'TCP_MAERTS'
+            elif test == 'TCP_MAERTS':
+                test = 'TCP_STREAM'
+
         args.update({'binary': self.netperf['executable'],
                        'host': host,
                        'test': test,
