@@ -130,11 +130,11 @@ def new(settings, *args):
 class Plotter(object):
     open_mode = "wb"
     inverted_units = ('ms')
+    can_subplot_combine = False
 
 
     def __init__(self, settings, figure=None):
 
-        self.subplot_combine_disabled = False
         self.disable_cleanup = False
         self.title = None
         self.settings = settings
@@ -177,15 +177,7 @@ class Plotter(object):
         else:
             self._plot(results[0], config=config, axis=axis)
 
-    def subplot_combine(self, results):
-        config = {'subplots': [self.settings.PLOT] * len(results),
-                  'subplot_params': [{'title': r.meta('TITLE')} for r in results],}
-        self.figure.clear()
-        self._init_meta_plot(config=config)
-        for c,r in zip(self.configs,results):
-            self._plot(r, config=c, extra_scale_data=results)
-
-    def dataseries_combine(self, results, always_colour, config=None, axis=None):
+    def combine(self, results, config=None, axis=None, always_colour=False):
         styles = cycle(self.styles)
         colours = cycle(self.colours)
         labels = self._filter_labels([r.label() for r in results])
@@ -195,12 +187,6 @@ class Plotter(object):
                 ('series' in self.config and len(self.config['series']) == 1) or always_colour:
                 style['color'] = next(colours)
             self._plot(r, config=config, axis=axis, postfix=" - "+l, extra_kwargs=style, extra_scale_data=results)
-
-    def combine(self, results, config=None, axis=None, always_colour = False):
-        if self.settings.SUBPLOT_COMBINE and not self.subplot_combine_disabled:
-            return self.subplot_combine(results)
-        else:
-            return self.dataseries_combine(results, always_colour, config, axis)
 
     def save(self, results):
 
@@ -415,6 +401,7 @@ class Plotter(object):
 
 
 class TimeseriesPlotter(Plotter):
+    can_subplot_combine = True
 
     def init(self, config=None, axis=None):
         Plotter.init(self, config, axis)
@@ -718,6 +705,8 @@ class BarPlotter(BoxPlotter):
 
 
 class CdfPlotter(Plotter):
+    can_subplot_combine = True
+
     def init(self, config=None, axis=None):
         Plotter.init(self, config, axis)
         if axis is None:
@@ -927,6 +916,8 @@ class QqPlotter(Plotter):
 
 
 class EllipsisPlotter(Plotter):
+    can_subplot_combine = True
+
     def init(self, config=None, axis=None):
         Plotter.init(self, config, axis)
         try:
@@ -1042,7 +1033,23 @@ class MetaPlotter(Plotter):
                 axis.set_xlabel("")
 
     def plot(self, results):
-        self.subplot_combine_disabled = True
         for s in self.subplots:
             s.plot(results)
+            self.legends.extend(s.do_legend())
+
+class SubplotCombinePlotter(MetaPlotter):
+    def init(self, config=None):
+        pass
+
+    def _init(self, number):
+        config = get_plotconfig(self.settings)
+        config['subplots'] = [self.settings.PLOT] * number
+        if not get_plotter(config['type']).can_subplot_combine:
+            raise RuntimeError("This plot type does not work with --subplot-combine.")
+        MetaPlotter.init(self, config)
+
+    def plot(self, results):
+        self._init(len(results))
+        for s,r in zip(self.subplots, results):
+            s.plot([r])
             self.legends.extend(s.do_legend())

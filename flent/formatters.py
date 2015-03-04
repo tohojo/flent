@@ -532,7 +532,11 @@ class PlotFormatter(Formatter):
         if not results[0]:
             return
 
-        self.plotter.subplot_combine_disabled = False
+        if self.settings.SUBPLOT_COMBINE:
+            self.plotter.disable_cleanup = True
+            self.figure.clear()
+            self.plotter = self.plotters.get_plotter("subplot_combine")(self.settings, self.figure)
+            self.plotter.init()
         self.plotter.plot(results)
         self.plotter.save(results)
 
