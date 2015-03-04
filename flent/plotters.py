@@ -104,22 +104,24 @@ def init_matplotlib(settings):
     COLOURS = matplotlib.rcParams['axes.color_cycle']
 
 
+def get_plotter(plot_type):
+    cname = classname(plot_type, "Plotter")
+    if not cname in globals():
+        raise RuntimeError("Plotter not found: '%s'" % plot_type)
+    return globals()[cname]
 
 def new(settings):
-    cname = classname(settings.PLOTS[settings.PLOT]['type'], "Plotter")
-    if not cname in globals():
-        raise RuntimeError("Plotter not found: '%s'" % settings.PLOT)
     try:
-        return globals()[cname](settings)
+        return get_plotter(settings.PLOTS[settings.PLOT]['type'])(settings)
     except Exception as e:
-        raise RuntimeError("Error loading %s: %s." % (cname, e))
+        raise RuntimeError("Error loading plotter: %s." % e)
 
 class Plotter(object):
     open_mode = "wb"
     inverted_units = ('ms')
 
 
-    def __init__(self, settings):
+    def __init__(self, settings, figure=None):
 
         self.subplot_combine_disabled = False
         self.disable_cleanup = False
@@ -129,10 +131,17 @@ class Plotter(object):
         self.mpl = matplotlib
         self.plt = pyplot
         self.np = numpy
-        self.figure = self.plt.figure()
-        self.init()
         self.colours = COLOURS
         self.styles = STYLES
+
+        if figure is None:
+            self.figure = self.plt.figure()
+            if self.settings.FIG_WIDTH is not None:
+                self.figure.set_figwidth(self.settings.FIG_WIDTH)
+            if self.settings.FIG_HEIGHT is not None:
+                self.figure.set_figheight(self.settings.FIG_HEIGHT)
+        else:
+            self.figure = figure
 
     def __del__(self):
         if not self.disable_cleanup:
@@ -151,15 +160,15 @@ class Plotter(object):
             return parent_config
         return config
 
-
-
-    def init(self):
+    def clear(self):
         self.figure.clear()
-        if self.settings.FIG_WIDTH is not None:
-            self.figure.set_figwidth(self.settings.FIG_WIDTH)
-        if self.settings.FIG_HEIGHT is not None:
-            self.figure.set_figheight(self.settings.FIG_HEIGHT)
-        self.config = self._load_plotconfig(self.settings.PLOT)
+        self.init()
+
+    def init(self, config=None, axis=None):
+        if config is None:
+            self.config = self._load_plotconfig(self.settings.PLOT)
+        else:
+            self.config = config
         self.configs = [self.config]
 
     def plot(self, results, config=None, axis=None):
@@ -402,7 +411,7 @@ class Plotter(object):
 class TimeseriesPlotter(Plotter):
 
     def init(self, config=None, axis=None):
-        Plotter.init(self)
+        Plotter.init(self, config, axis)
 
         if axis is None:
             axis = self.figure.gca()
@@ -706,7 +715,7 @@ class BarPlotter(BoxPlotter):
 
 class CdfPlotter(Plotter):
     def init(self, config=None, axis=None):
-        Plotter.init(self)
+        Plotter.init(self, config, axis)
         if axis is None:
             axis = self.figure.gca()
         if config is None:
@@ -840,7 +849,7 @@ class CdfPlotter(Plotter):
 class QqPlotter(Plotter):
 
     def init(self, config=None, axis=None):
-        Plotter.init(self)
+        Plotter.init(self, config, axis)
         if axis is None:
             axis = self.figure.gca()
         if config is None:
@@ -915,7 +924,7 @@ class QqPlotter(Plotter):
 
 class EllipsisPlotter(Plotter):
     def init(self, config=None, axis=None):
-        Plotter.init(self)
+        Plotter.init(self, config, axis)
         try:
             from netperf_wrapper.error_ellipse import plot_point_cov
             self.plot_point_cov = plot_point_cov
@@ -994,7 +1003,7 @@ class EllipsisPlotter(Plotter):
 class MetaPlotter(Plotter):
 
     def init(self, config=None):
-        Plotter.init(self)
+        Plotter.init(self, config)
         self.subplots = []
 
         if config is None:
@@ -1020,8 +1029,10 @@ class MetaPlotter(Plotter):
                 rows = 1
             axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
             cfg = self._load_plotconfig(subplot)
-            self.configs.append(cfg)
-            getattr(self, '_init_%s_plot' % cfg['type'])(config=cfg, axis=axis)
+            cfg['axes'] = [axis]
+            plotter = get_plotter(cfg['type'])(self.settings, self.figure)
+            plotter.init(cfg,axis)
+            self.subplots.append(plotter)
             if i < len(config['subplots'])-1:
                 axis.set_xlabel("")
 
