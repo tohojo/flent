@@ -133,6 +133,8 @@ class Plotter(object):
         self.np = numpy
         self.colours = COLOURS
         self.styles = STYLES
+        self.legends = []
+        self.artists = []
 
         if figure is None:
             self.figure = self.plt.figure()
@@ -175,7 +177,7 @@ class Plotter(object):
         if len(results) > 1:
             self.combine(results, config, axis)
         else:
-            self._plot(results[0], config=config, axis=axis)
+            self.artists.extend(self._plot(results[0], config=config, axis=axis))
 
     def subplot_combine(self, results):
         config = {'subplots': [self.settings.PLOT] * len(results),
@@ -202,12 +204,11 @@ class Plotter(object):
         else:
             return self.dataseries_combine(results, always_colour, config, axis)
 
+    def save(self, results):
 
-    def save(self, results, artists):
         skip_title = len(results) > 1
 
-        if not artists:
-            artists = []
+        artists = self.artists
         all_legends = []
         for c in self.configs:
             legends = self._do_legend(c)
@@ -215,7 +216,8 @@ class Plotter(object):
                 all_legends += legends
 
         artists += all_legends + self._annotate_plot(skip_title)
-        self.legends = all_legends
+        self.legends.extend(all_legends)
+
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
@@ -304,6 +306,12 @@ class Plotter(object):
             if prefix and len(prefix) < len(labels[0]):
                 labels = [l.replace(prefix, '') for l in labels]
         return labels
+
+    def do_legend(self):
+        legends = []
+        for c in self.configs:
+            legends.extend(self._do_legend(c))
+        return legends
 
     def _do_legend(self, config, postfix=""):
         if not self.settings.PRINT_LEGEND:
@@ -1030,6 +1038,7 @@ class MetaPlotter(Plotter):
             axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
             cfg = self._load_plotconfig(subplot)
             cfg['axes'] = [axis]
+            self.configs.append(cfg)
             plotter = get_plotter(cfg['type'])(self.settings, self.figure)
             plotter.init(cfg,axis)
             self.subplots.append(plotter)
@@ -1040,3 +1049,4 @@ class MetaPlotter(Plotter):
         self.subplot_combine_disabled = True
         for s in self.subplots:
             s.plot(results)
+            self.legends.extend(s.do_legend())
