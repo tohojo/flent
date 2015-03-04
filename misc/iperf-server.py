@@ -4,7 +4,7 @@
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
 ## Date:     26 november 2012
-## Copyright (c) 2012, Toke Høiland-Jørgensen
+## Copyright (c) 2012-2015, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
