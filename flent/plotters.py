@@ -103,6 +103,17 @@ def init_matplotlib(settings):
         matplotlib.rc_file(os.path.join(DATA_DIR, 'matplotlibrc.dist'))
     COLOURS = matplotlib.rcParams['axes.color_cycle']
 
+def get_plotconfig(settings, plot=None):
+    if plot is None:
+        plot = settings.PLOT
+    if not plot in settings.PLOTS:
+        raise RuntimeError("Unable to find plot configuration '%s'." % plot)
+    config = settings.PLOTS[plot].copy()
+    if 'parent' in config:
+        parent_config = settings.PLOTS[config['parent']].copy()
+        parent_config.update(config)
+        return parent_config
+    return config
 
 def get_plotter(plot_type):
     cname = classname(plot_type, "Plotter")
@@ -110,9 +121,9 @@ def get_plotter(plot_type):
         raise RuntimeError("Plotter not found: '%s'" % plot_type)
     return globals()[cname]
 
-def new(settings):
+def new(settings, *args):
     try:
-        return get_plotter(settings.PLOTS[settings.PLOT]['type'])(settings)
+        return get_plotter(get_plotconfig(settings)['type'])(settings, *args)
     except Exception as e:
         raise RuntimeError("Error loading plotter: %s." % e)
 
@@ -152,23 +163,10 @@ class Plotter(object):
             except Exception:
                 pass
 
-    def _load_plotconfig(self, plot):
-        if not plot in self.settings.PLOTS:
-            raise RuntimeError("Unable to find plot configuration '%s'." % plot)
-        config = self.settings.PLOTS[plot].copy()
-        if 'parent' in config:
-            parent_config = self.settings.PLOTS[config['parent']].copy()
-            parent_config.update(config)
-            return parent_config
-        return config
-
-    def clear(self):
-        self.figure.clear()
-        self.init()
 
     def init(self, config=None, axis=None):
         if config is None:
-            self.config = self._load_plotconfig(self.settings.PLOT)
+            self.config = get_plotconfig(self.settings)
         else:
             self.config = config
         self.configs = [self.config]
@@ -1034,7 +1032,7 @@ class MetaPlotter(Plotter):
                 cols = len(config['subplots'])
                 rows = 1
             axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
-            cfg = self._load_plotconfig(subplot)
+            cfg = get_plotconfig(self.settings, subplot)
             cfg['axes'] = [axis]
             self.configs.append(cfg)
             plotter = get_plotter(cfg['type'])(self.settings, self.figure)
