@@ -252,6 +252,7 @@ class PlotFormatter(Formatter):
             self.figure = self.plotter.figure
         else:
             self.figure.clear()
+            self.plotter.disable_cleanup = True
             self.plotter = self.plotters.new(self.settings, self.figure)
             self.plotter.init()
 
@@ -527,6 +528,15 @@ class PlotFormatter(Formatter):
                 return None
         else:
             raise RuntimeError("Unknown combine mode: %s" % combine_mode)
+
+
+    @property
+    def disable_cleanup(self):
+        return self.plotter.disable_cleanup
+
+    @disable_cleanup.setter
+    def disable_cleanup(self, val):
+        self.plotter.disable_cleanup = val
 
     def format(self, results):
         if not results[0]:
