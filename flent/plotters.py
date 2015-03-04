@@ -541,6 +541,8 @@ class TimeseriesPlotter(Plotter):
         for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
             a.set_ybound(b)
 
+        return []
+
 
 class BoxPlotter(TimeseriesPlotter):
 
