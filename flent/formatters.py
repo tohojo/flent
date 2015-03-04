@@ -237,15 +237,23 @@ class PlotFormatter(Formatter):
         try:
             from . import plotters
             plotters.init_matplotlib(settings)
+            self.plotters = plotters
         except ImportError:
             raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
 
-        self.plotter = plotters.new(settings)
-        self.plotter.init()
-        self.figure = self.plotter.figure
+        self.figure = None
+        self.init_plots()
+
 
     def init_plots(self):
-        self.plotter.clear()
+        if self.figure is None:
+            self.plotter = self.plotters.new(self.settings)
+            self.plotter.init()
+            self.figure = self.plotter.figure
+        else:
+            self.figure.clear()
+            self.plotter = self.plotters.new(self.settings, self.figure)
+            self.plotter.init()
 
     def _init_timeseries_combine_plot(self, config=None, axis=None):
         self._init_timeseries_plot(config, axis)
