@@ -22,16 +22,20 @@
 import os, inspect
 
 from .util import cum_prob, frange, classname, long_substr
+from .build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice
 try:
     from itertools import izip_longest as zip_longest
 except ImportError:
     from itertools import zip_longest
+
 try:
     from collections import OrderedDict
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
+
+import matplotlib, numpy
 
 PLOT_KWARGS = (
     'alpha',
@@ -59,6 +63,46 @@ PLOT_KWARGS = (
     'zorder'
     )
 
+LINESTYLES = ['-', '--', ':']
+MARKERS    = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
+COLOURS    = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666"]
+DASHES     = [[8,4,2,4],
+              ]
+STYLES     = []
+
+def init_matplotlib(settings):
+    global pyplot
+    output = settings.OUTPUT
+    if output != "-":
+        if output.endswith('.svg') or output.endswith('.svgz'):
+            matplotlib.use('svg')
+        elif output.endswith('.ps') or output.endswith('.eps'):
+            matplotlib.use('ps')
+        elif output.endswith('.pdf'):
+            matplotlib.use('pdf')
+        elif output.endswith('.png'):
+            matplotlib.use('agg')
+        else:
+            raise RuntimeError("Unrecognised file format for output '%s'" % output)
+
+    from matplotlib import pyplot
+
+    for ls in LINESTYLES:
+        STYLES.append(dict(linestyle=ls))
+    for d in DASHES:
+        STYLES.append(dict(dashes=d))
+    if settings.USE_MARKERS:
+        for m in MARKERS:
+            STYLES.append(dict(marker=m))
+
+    # Try to detect if a custom matplotlibrc is installed, and if so don't
+    # load our own values.
+    if settings.LOAD_MATPLOTLIBRC \
+      and not os.environ['HOME'] in matplotlib.matplotlib_fname() \
+      and not 'MATPLOTLIBRC' in os.environ and hasattr(matplotlib, 'rc_file'):
+        matplotlib.rc_file(os.path.join(DATA_DIR, 'matplotlibrc.dist'))
+    COLOURS = matplotlib.rcParams['axes.color_cycle']
+
 
 
 def new(settings):
@@ -74,11 +118,6 @@ class Plotter(object):
     open_mode = "wb"
     inverted_units = ('ms')
 
-    linestyles = ['-', '--', ':']
-    markers = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
-    colours = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666"]
-    dashes = [[8,4,2,4],
-              ]
 
     def __init__(self, settings):
 
@@ -86,33 +125,14 @@ class Plotter(object):
         self.disable_cleanup = False
         self.title = None
         self.settings = settings
-        try:
-            import matplotlib, numpy
-            # If saving to file, try our best to set a proper backend for
-            # matplotlib according to the output file name. This helps with
-            # running matplotlib without an X server.
-            output = self.settings.OUTPUT
-            self.output = output
-            if output != "-":
-                if output.endswith('.svg') or output.endswith('.svgz'):
-                    matplotlib.use('svg')
-                elif output.endswith('.ps') or output.endswith('.eps'):
-                    matplotlib.use('ps')
-                elif output.endswith('.pdf'):
-                    matplotlib.use('pdf')
-                elif output.endswith('.png'):
-                    matplotlib.use('agg')
-                else:
-                    raise RuntimeError("Unrecognised file format for output '%s'" % output)
-            import matplotlib.pyplot as plt
-            self.mpl = matplotlib
-            self.plt = plt
-            self.np = numpy
-            self.build_styles()
-            self.figure = self.plt.figure()
-            self.init()
-        except ImportError:
-            raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
+        self.output = settings.OUTPUT
+        self.mpl = matplotlib
+        self.plt = pyplot
+        self.np = numpy
+        self.figure = self.plt.figure()
+        self.init()
+        self.colours = COLOURS
+        self.styles = STYLES
 
     def __del__(self):
         if not self.disable_cleanup:
@@ -131,23 +151,6 @@ class Plotter(object):
             return parent_config
         return config
 
-    def build_styles(self):
-        self.styles = []
-        for ls in self.linestyles:
-            self.styles.append(dict(linestyle=ls))
-        for d in self.dashes:
-            self.styles.append(dict(dashes=d))
-        if self.settings.USE_MARKERS:
-            for m in self.markers:
-                self.styles.append(dict(marker=m))
-
-        # Try to detect if a custom matplotlibrc is installed, and if so don't
-        # load our own values.
-        if self.settings.LOAD_MATPLOTLIBRC \
-          and not os.environ['HOME'] in self.mpl.matplotlib_fname() \
-          and not 'MATPLOTLIBRC' in os.environ and hasattr(self.mpl, 'rc_file'):
-            self.mpl.rc_file(os.path.join(DATA_DIR, 'matplotlibrc.dist'))
-        self.colours = self.mpl.rcParams['axes.color_cycle']
 
 
     def init(self):
