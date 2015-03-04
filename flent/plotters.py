@@ -177,7 +177,7 @@ class Plotter(object):
         if len(results) > 1:
             self.combine(results, config, axis)
         else:
-            self.artists.extend(self._plot(results[0], config=config, axis=axis))
+            self._plot(results[0], config=config, axis=axis)
 
     def subplot_combine(self, results):
         config = {'subplots': [self.settings.PLOT] * len(results),
@@ -541,8 +541,6 @@ class TimeseriesPlotter(Plotter):
         for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
             a.set_ybound(b)
 
-        return []
-
 
 class BoxPlotter(TimeseriesPlotter):
 
@@ -718,9 +716,7 @@ class BarPlotter(BoxPlotter):
         axis.set_xticklabels(ticklabels, rotation=90, ha='center')
         axis.set_xlim(0,pos-1)
 
-        return texts
-
-
+        self.artists.extend(texts)
 
 
 class CdfPlotter(Plotter):
