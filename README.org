@@ -60,12 +60,12 @@ https://build.opensuse.org/project/repositories/home:tohojo:netperf-wrapper.
 ** Quick Start
 
 You need to have netperf installed on two computers. 
-It will be installed automatically when you install netperf-wrapper. 
-Netperf needs to be started in "server mode" on the other computer. To do this:
+Netperf needs to be started in "server mode" on one computer. To do this:
 
     =netserver &=
 
-Then start netperf-wrapper on the other computer. There are a few interesting commands:
+Netperf will be installed automatically when you install netperf-wrapper on the other computer. 
+There are several interesting netperf-wrapper commands:
 
 - RRUL: The standard chart used by the Bufferbloat project to show the down/upload speeds, with the latency in three separate charts. =netperf-wrapper rrul -p all_scaled -l 60 -H adrs-of-netserver -t text-to-be-included-in-plot=
 - TCP Upload: Displays TCP upload speed and latency in two charts. =netperf-wrapper tcp_upload -p totals -l 60 -H adrs-of-netserver -t text-to-be-included-in-plot=
