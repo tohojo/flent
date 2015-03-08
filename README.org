@@ -57,6 +57,18 @@ Install the package system-wide by running =sudo python2 setup.py install= or
 for Debian/Ubuntu and Arch Linux are available at OBS:
 https://build.opensuse.org/project/repositories/home:tohojo:netperf-wrapper.
 
+** Quick Start
+
+You need to have netperf installed on two computers. 
+It will be installed automatically when you install netperf-wrapper. 
+Netperf needs to be started in "server mode" on the other computer. To do this:
+    netserver &
+Then start netperf-wrapper on the other computer. There are a few interesting commands:
+
+- RRUL: The standard chart used by the Bufferbloat project to show the down/upload speeds, with the latency in three separate charts. =netperf-wrapper rrul -p all_scaled -l 60 -H atl.richb-hanover.com -t text-to-be-included-in-plot=
+- TCP Upload: Displays TCP upload speed and latency in two charts. =netperf-wrapper tcp_upload -p totals -l 60 -H atl.richb-hanover.com -t text-to-be-included-in-plot=
+- TCP Download: Displays TCP download speeds and latency in two charts. =netperf-wrapper tcp_download -p totals -l 60 -H atl.richb-hanover.com -t text-to-be-included-in-plot=
+
 ** The json data format
 The aggregated test data is saved in a file called
 =<test_name>-<date>.json.gz=. This file contains the data points generated
