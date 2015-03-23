@@ -22,8 +22,14 @@
 def transform_results(results, func):
     """Transform a list of (timestamp,value) pairs by applying a function to the
     value."""
-    for i in range(len(results)):
-        results[i][1] = func(results[i][1])
+    try:
+        for i in range(len(results)):
+            results[i][1] = func(results[i][1])
+    except TypeError:
+        # Transformers can also be applied to metadata items, in which case
+        # calling len() on results will result in a TypeError. So just try to
+        # call the function on the value itself.
+        return func(results)
     return results
 
 def rr_to_ms(results):
