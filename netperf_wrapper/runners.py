@@ -429,6 +429,7 @@ class RegexpRunner(ProcessRunner):
     The regular expressions must define symbolic groups 'time' and 'value'."""
 
     regexes = []
+    metadata_regexes = []
 
     def parse(self, output):
         result = []
@@ -441,6 +442,14 @@ class RegexpRunner(ProcessRunner):
                     result.append([float(match.group('t')), float(match.group('val'))])
                     raw_values.append(match.groupdict())
                     break # only match one regexp per line
+            for regexp in self.metadata_regexes:
+                match = regexp.match(line)
+                if match:
+                    for k,v in match.groupdict().items():
+                        try:
+                            self.metadata[k] = float(v)
+                        except ValueError:
+                            self.metadata[k] = v
         if self.settings.SAVE_RAW:
             self.metadata['RAW_VALUES'] = raw_values
         return result
