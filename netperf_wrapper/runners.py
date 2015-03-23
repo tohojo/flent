@@ -461,10 +461,18 @@ class PingRunner(RegexpRunner):
     # for sequence numbers.
     regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\](?:.*icmp_.eq=(?P<seq>[0-9]+))?.*time=(?P<val>[0-9]+(?:\.[0-9]+)?) ms$'),
                re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*:(?: \[(?P<seq>[0-9]+)\])?.*, (?P<val>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
+    metadata_regexes = [re.compile(r'^.*min/avg/max(?:/mdev)? = '
+                                   r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
+                                   r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
+                                   r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
 
 class HttpGetterRunner(RegexpRunner):
 
     regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*in (?P<val>[0-9]+(?:\.[0-9]+)?) seconds.$')]
+    metadata_regexes = [re.compile(r'^.*min/avg/max(?:/mdev)? = '
+                                   r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
+                                   r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
+                                   r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
