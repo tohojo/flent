@@ -202,6 +202,24 @@ class CsvFormatter(TableFormatter):
         for row in self.combine_results(results):
             writer.writerow(list(map(format_item, row)))
 
+
+class JsonFormatter(Formatter):
+    """Format the output as json."""
+
+    def format(self, results):
+        self.open_output()
+
+        data = []
+        for result in results:
+            d = result.serialise()
+            for s in sorted(result.series_names):
+                units = self.settings.DATA_SETS[s]['units']
+                d['metadata']['SERIES_META'][s]['UNITS'] = units
+            data.append(d)
+
+        self.output.write(json.dumps(data))
+
+
 class StatsFormatter(Formatter):
 
     def __init__(self, settings):
