@@ -119,6 +119,12 @@ class Formatter(object):
         if results[0].dump_file is not None:
             sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_file)
 
+    def write(self, string):
+        try:
+            self.output.write(string)
+        except BrokenPipeError:
+            pass
+
 class NullFormatter(Formatter):
     def check_output(self, output):
         pass
@@ -164,11 +170,11 @@ class OrgTableFormatter(TableFormatter):
         name = results[0].meta("NAME")
 
         if not results[0]:
-            self.output.write(str(name) + " -- empty\n")
+            self.write(str(name) + " -- empty\n")
             return
         header_row = self.get_header(results)
-        self.output.write("| " + " | ".join(header_row) + " |\n")
-        self.output.write("|-" + "-+-".join(["-"*len(i) for i in header_row]) + "-|\n")
+        self.write("| " + " | ".join(header_row) + " |\n")
+        self.write("|-" + "-+-".join(["-"*len(i) for i in header_row]) + "-|\n")
 
         def format_item(item):
             if isinstance(item, float):
@@ -176,9 +182,9 @@ class OrgTableFormatter(TableFormatter):
             return str(item)
 
         for row in self.combine_results(results):
-            self.output.write("| ")
-            self.output.write(" | ".join(map(format_item, row)))
-            self.output.write(" |\n")
+            self.write("| ")
+            self.write(" | ".join(map(format_item, row)))
+            self.write(" |\n")
 
 
 
@@ -192,15 +198,19 @@ class CsvFormatter(TableFormatter):
 
         writer = csv.writer(self.output)
         header_row = self.get_header(results)
-        writer.writerow(header_row)
+        try:
+            writer.writerow(header_row)
 
-        def format_item(item):
-            if item is None:
-                return ""
-            return str(item)
+            def format_item(item):
+                if item is None:
+                    return ""
+                return str(item)
 
-        for row in self.combine_results(results):
-            writer.writerow(list(map(format_item, row)))
+            for row in self.combine_results(results):
+                writer.writerow(list(map(format_item, row)))
+
+        except BrokenPipeError:
+            return
 
 class StatsFormatter(Formatter):
 
@@ -214,32 +224,32 @@ class StatsFormatter(Formatter):
 
     def format(self, results):
         self.open_output()
-        self.output.write("Warning: Totals are computed as cumulative sum * step size,\n"
+        self.write("Warning: Totals are computed as cumulative sum * step size,\n"
                           "so spurious values wreck havoc with the results.\n")
         for r in results:
-            self.output.write("Results %s" % r.meta('TIME'))
+            self.write("Results %s" % r.meta('TIME'))
             if r.meta('TITLE'):
-                self.output.write(" - %s" % r.meta('TITLE'))
-            self.output.write(":\n")
+                self.write(" - %s" % r.meta('TITLE'))
+            self.write(":\n")
 
             for s in sorted(r.series_names):
-                self.output.write(" %s:\n" % s)
+                self.write(" %s:\n" % s)
                 d = [i for i in r.series(s) if i]
                 if not d:
-                    self.output.write("  No data.\n")
+                    self.write("  No data.\n")
                     continue
                 cs = self.np.cumsum(d)
                 units = self.settings.DATA_SETS[s]['units']
-                self.output.write("  Data points: %d\n" % len(d))
+                self.write("  Data points: %d\n" % len(d))
                 if units != "ms":
-                    self.output.write("  Total:       %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
+                    self.write("  Total:       %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
                                                                units.replace("/s", "")))
-                self.output.write("  Mean:        %f %s\n" % (self.np.mean(d), units))
-                self.output.write("  Median:      %f %s\n" % (self.np.median(d), units))
-                self.output.write("  Min:         %f %s\n" % (self.np.min(d), units))
-                self.output.write("  Max:         %f %s\n" % (self.np.max(d), units))
-                self.output.write("  Std dev:     %f\n" % (self.np.std(d)))
-                self.output.write("  Variance:    %f\n" % (self.np.var(d)))
+                self.write("  Mean:        %f %s\n" % (self.np.mean(d), units))
+                self.write("  Median:      %f %s\n" % (self.np.median(d), units))
+                self.write("  Min:         %f %s\n" % (self.np.min(d), units))
+                self.write("  Max:         %f %s\n" % (self.np.max(d), units))
+                self.write("  Std dev:     %f\n" % (self.np.std(d)))
+                self.write("  Variance:    %f\n" % (self.np.var(d)))
 
 
 class PlotFormatter(Formatter):
@@ -1424,4 +1434,4 @@ class MetadataFormatter(Formatter):
 
     def format(self, results):
         self.open_output()
-        self.output.write(json.dumps([r.serialise_metadata() for r in results], indent=4) + "\n")
+        self.write(json.dumps([r.serialise_metadata() for r in results], indent=4) + "\n")
