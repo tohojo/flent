@@ -212,6 +212,24 @@ class CsvFormatter(TableFormatter):
         except BrokenPipeError:
             return
 
+
+class JsonFormatter(Formatter):
+    """Format the output as json."""
+
+    def format(self, results):
+        self.open_output()
+
+        data = []
+        for result in results:
+            d = result.serialise()
+            for s in sorted(result.series_names):
+                units = self.settings.DATA_SETS[s]['units']
+                d['metadata']['SERIES_META'][s]['UNITS'] = units
+            data.append(d)
+
+        self.output.write(json.dumps(data))
+
+
 class StatsFormatter(Formatter):
 
     def __init__(self, settings):
