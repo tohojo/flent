@@ -142,6 +142,13 @@ class Aggregator(object):
                             result[n] = tr(result[n])
                 if hasattr(t, 'metadata'):
                     metadata[n] = t.metadata
+                    if 'transformers' in self.instances[n]:
+                        for tr in self.instances[n]['transformers']:
+                            for k,v in metadata[n].items():
+                                try:
+                                    metadata[n][k] = tr(v)
+                                except:
+                                    pass
         except KeyboardInterrupt:
             self.kill_runners()
             raise
