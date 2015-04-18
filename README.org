@@ -59,31 +59,26 @@ https://build.opensuse.org/project/repositories/home:tohojo:netperf-wrapper.
 
 ** Quick Start
 
-You must install netperf on two computers. Netperf needs to be started in
-"server mode" on one computer so it can listen for commands from the other. To
-do this:
+You must run netperf on two computers - a *server* and a *client*. 
+
+1. *Server (Computer 1):* Netperf needs to be started in "server mode" to listen for commands from the Client. To do this, install netperf on the Server computer, then enter:
 
     =netserver &=
 
-Install netperf, then install netperf-wrapper on the other computer. When you
-invoke netperf-wrapper, it will connect to the netserver and carry out the
-measurements. Here are some useful commands:
+    /Note:/ Instead of installing netperf on a local server, you may substitute the netserver that is running on netperf.bufferbloat.net by using "-H netperf.bufferbloat.net" in the commands below. 
 
-- RRUL: The standard chart used by the Bufferbloat project to show the down/upload speeds plus latency in three separate charts. \\
-    =netperf-wrapper rrul         -p all_scaled -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
-- CDF: A Cumulative Distribution Function plot showing the probability that ping times will be below a bound.\\
-    =netperf-wrapper rrul         -p ping_cdf   -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
-- TCP Upload: Displays TCP upload speed and latency in two charts.\\
-    =netperf-wrapper tcp_upload   -p totals     -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
-- TCP Download: Displays TCP download speeds and latency in two charts. \\
-    =netperf-wrapper tcp_download -p totals     -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+2. *Client (Computer 2):* Install netperf, then install netperf-wrapper on your Client computer. When you invoke netperf-wrapper on the Client, it will connect to the specified netserver (-H) and carry out the measurements. Here are some useful commands:
 
-Note: You may also use the netserver that is running on
-netperf.bufferbloat.net - use "-H netperf.bufferbloat.net" in the commands
-above. Each run will produce a data file in the current working directory, which
-can subsequently be plotted, either from the command line (see the man page), or
-by loading them into the GUI. Run =netperf-wrapper --gui= to start the GUI.
+    - RRUL: Create the standard graphic image used by the Bufferbloat project to show the down/upload speeds plus latency in three separate charts. \\
+        =netperf-wrapper rrul         -p all_scaled -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+    - CDF: A Cumulative Distribution Function plot showing the probability that ping times will be below a bound.\\
+        =netperf-wrapper rrul         -p ping_cdf   -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+    - TCP Upload: Displays TCP upload speed and latency in two charts.\\
+        =netperf-wrapper tcp_upload   -p totals     -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+    - TCP Download: Displays TCP download speeds and latency in two charts. \\
+        =netperf-wrapper tcp_download -p totals     -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
 
+The output of each of these commands is a graphic (PNG) image along with a data file in the current working directory that can be used to re-create the plot, either from the command line (see the man page), or by loading them into the GUI. Run =netperf-wrapper --gui= to start the GUI.
 ** The json data format
 The aggregated test data is saved in a file called
 =<test_name>-<date>.json.gz=. This file contains the data points generated
