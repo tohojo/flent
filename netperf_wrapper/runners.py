@@ -25,7 +25,7 @@ import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
 from datetime import datetime
 from threading import Event
 
-from .util import classname
+from .util import classname, ENCODING
 
 try:
     from defusedxml.xmlrpc import monkey_patch
@@ -218,7 +218,7 @@ class ProcessRunner(threading.Thread):
             return
 
         self.stdout.seek(0)
-        self.out += self.stdout.read().decode()
+        self.out += self.stdout.read().decode(ENCODING)
         try:
             # Close and remove the temporary file. This might fail, but we're going
             # to assume that is okay.
@@ -229,7 +229,7 @@ class ProcessRunner(threading.Thread):
             pass
 
         self.stderr.seek(0)
-        self.err += self.stderr.read().decode()
+        self.err += self.stderr.read().decode(ENCODING)
         try:
             filename = self.stderr.name
             self.stderr.close()
@@ -282,9 +282,9 @@ class DitgRunner(ProcessRunner):
     def start(self):
         try:
             interval = int(self.interval*1000)
-            hm = hmac.new(self.ditg_secret.encode(), digestmod=hashlib.sha256)
-            hm.update(str(self.duration).encode())
-            hm.update(str(interval).encode())
+            hm = hmac.new(self.ditg_secret.encode('UTF-8'), digestmod=hashlib.sha256)
+            hm.update(str(self.duration).encode('UTF-8'))
+            hm.update(str(interval).encode('UTF-8'))
             params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), self.settings.SAVE_RAW)
             if params['status'] != 'OK':
                 if 'message' in params:

@@ -27,10 +27,21 @@ import os
 VERSION="0.9.1-git"
 DATA_DIR=os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 
+ENCODING = "UTF-8"
+try:
+    import locale
+    loc = locale.getdefaultlocale()
+    if loc[1]:
+        ENCODING = loc[1]
+    del loc
+except:
+    pass
+
+
 if VERSION.endswith("-git") and os.path.exists(os.path.join(DATA_DIR, '.git')):
     try:
         import subprocess
-        commit = subprocess.check_output(["git", "log", "--format=%h", "-1"], cwd=DATA_DIR).decode()
+        commit = subprocess.check_output(["git", "log", "--format=%h", "-1"], cwd=DATA_DIR).decode(ENCODING)
         VERSION+="-%s" % commit.strip()
     except:
         pass

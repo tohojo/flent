@@ -24,6 +24,17 @@ from bisect import bisect_left
 from datetime import datetime
 from fnmatch import fnmatch
 
+ENCODING = "UTF-8"
+try:
+    import locale
+    loc = locale.getdefaultlocale()
+    if loc[1]:
+        ENCODING = loc[1]
+    del loc
+except:
+    pass
+
+
 try:
     import configparser
 except ImportError:

@@ -35,7 +35,7 @@ try:
 except ImportError:
     from .ordereddict import OrderedDict
 
-from .util import gzip_open
+from .util import gzip_open, ENCODING
 
 # Controls pretty-printing of json dumps
 JSON_INDENT=2
