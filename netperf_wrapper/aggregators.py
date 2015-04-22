@@ -19,7 +19,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import math, pprint, signal, sys
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import math, pprint, signal, sys, io
 from datetime import datetime
 from threading import Event
 
@@ -58,7 +60,7 @@ class Aggregator(object):
         if self.settings.LOG_FILE is None:
             self.logfile = None
         else:
-            self.logfile = open(self.settings.LOG_FILE, "a")
+            self.logfile = io.open(self.settings.LOG_FILE, "at")
 
         self.postprocessors = []
 
@@ -155,7 +157,10 @@ class Aggregator(object):
 
         if self.logfile is not None:
             self.logfile.write("Raw aggregated data:\n")
-            pprint.pprint(result, self.logfile)
+            formatted = pprint.pformat(result)
+            if hasattr(formatted, 'decode'):
+                formatted = formatted.decode()
+            self.logfile.write(formatted)
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
         return result,metadata
 

@@ -20,6 +20,11 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import locale
+locale.setlocale(locale.LC_ALL, '')
+
 import sys, signal, os
 
 # Convert SIGTERM into SIGINT to apply the same shutdown logic.

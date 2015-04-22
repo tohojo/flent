@@ -19,6 +19,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import math, os, gzip, io, socket, re
 from bisect import bisect_left
 from datetime import datetime
@@ -27,10 +29,7 @@ from fnmatch import fnmatch
 ENCODING = "UTF-8"
 try:
     import locale
-    loc = locale.getdefaultlocale()
-    if loc[1]:
-        ENCODING = loc[1]
-    del loc
+    ENCODING = locale.getpreferredencoding(False)
 except:
     pass
 

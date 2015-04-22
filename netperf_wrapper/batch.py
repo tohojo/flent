@@ -19,7 +19,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback, io
 
 from datetime import datetime
 from fnmatch import fnmatch
@@ -325,7 +327,7 @@ class BatchRunner(object):
 
             commands = self.commands_for(b, settings)
             if not settings.BATCH_DRY:
-                self.log_fd = open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "a")
+                self.log_fd = io.open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "at")
             if b.get('debug_log', False):
                 settings.LOG_FILE = os.path.join(output_path,"%s.debug.log" % settings.DATA_FILENAME)
 

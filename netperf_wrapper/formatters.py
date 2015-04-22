@@ -19,7 +19,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, sys, csv, math, inspect, os, re
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import json, sys, csv, math, inspect, os, re, io
 
 from .util import cum_prob, frange, classname, long_substr
 from .resultset import ResultSet
@@ -73,7 +75,7 @@ def new(settings):
 
 class Formatter(object):
 
-    open_mode = "w"
+    open_mode = "wt"
 
     def __init__(self, settings):
         self.settings = settings
@@ -99,7 +101,7 @@ class Formatter(object):
                 # If the file doesn't exist, just try to open it immediately; that'll error out
                 # if access is denied.
                 try:
-                    self.output = open(output, self.open_mode)
+                    self.output = io.open(output, self.open_mode)
                 except IOError as e:
                     raise RuntimeError("Unable to open output file: '%s'" % e)
 
@@ -111,7 +113,7 @@ class Formatter(object):
             self.output = sys.stdout
         else:
             try:
-                self.output = open(output, self.open_mode)
+                self.output = io.open(output, self.open_mode)
             except IOError as e:
                 raise RuntimeError("Unable to output data: %s" % e)
 

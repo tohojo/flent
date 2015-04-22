@@ -1,5 +1,7 @@
 # Origin: https://github.com/joferkington/oost_paper_code/blob/master/error_ellipse.py
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 
 import matplotlib.pyplot as plt
