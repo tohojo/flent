@@ -66,6 +66,8 @@ RECORDED_SETTINGS = (
     "HTTP_GETTER_WORKERS",
     )
 
+FILEFORMAT_VERSION=1
+
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
 TIME_SETTINGS = ("TIME", "BATCH_TIME", "T0")
@@ -222,6 +224,7 @@ class ResultSet(object):
         metadata = self.serialise_metadata()
         return {
             'metadata': metadata,
+            'version': FILEFORMAT_VERSION,
             'x_values': self._x_values,
             'results': self._results,
             }
@@ -271,6 +274,15 @@ class ResultSet(object):
 
     @classmethod
     def unserialise(cls, obj, absolute=False):
+        try:
+            version = int(obj['version'])
+        except (KeyError,ValueError):
+            version = 1
+
+        if version > FILEFORMAT_VERSION:
+            raise RuntimeError("File format is version %d, but we only understand up to %d" % (version, FILEFORMAT_VERSION))
+        if version < FILEFORMAT_VERSION:
+            return cls.unserialise_compat(version, obj, absolute)
         metadata = dict(obj['metadata'])
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
@@ -286,6 +298,10 @@ class ResultSet(object):
         for k,v in list(obj['results'].items()):
             rset.add_result(k,v)
         return rset
+
+    @classmethod
+    def unserialise_compat(cls, version, obj, absolute=False):
+        raise RuntimeError("No previous file format version compatibility settings exist.")
 
     @classmethod
     def load(cls, fp, absolute=False):
