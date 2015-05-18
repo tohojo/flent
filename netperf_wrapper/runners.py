@@ -442,7 +442,13 @@ class RegexpRunner(ProcessRunner):
                 match = regexp.match(line)
                 if match:
                     result.append([float(match.group('t')), float(match.group('val'))])
-                    raw_values.append(match.groupdict())
+                    rw = match.groupdict()
+                    for k,v in rw.items():
+                        try:
+                            rw[k] = float(v)
+                        except ValueError:
+                            pass
+                    raw_values.append(rw)
                     break # only match one regexp per line
             for regexp in self.metadata_regexes:
                 match = regexp.match(line)
