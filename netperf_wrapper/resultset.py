@@ -66,7 +66,7 @@ RECORDED_SETTINGS = (
     "HTTP_GETTER_WORKERS",
     )
 
-FILEFORMAT_VERSION=1
+FILEFORMAT_VERSION=2
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
@@ -88,6 +88,7 @@ class ResultSet(object):
         self._results = OrderedDict()
         self._filename = None
         self._absolute = False
+        self._raw_values = {}
         self.metadata = kwargs
         if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.now()
@@ -119,6 +120,12 @@ class ResultSet(object):
     def add_result(self, name, data):
         assert len(data) == len(self._x_values)
         self._results[name] = data
+
+    def add_raw_values(self, name, data):
+        self._raw_values[name] = deepcopy(data)
+
+    def set_raw_values(self, raw_values):
+        self._raw_values = deepcopy(raw_values)
 
     def create_series(self, series_names):
         for n in series_names:
@@ -227,6 +234,7 @@ class ResultSet(object):
             'version': FILEFORMAT_VERSION,
             'x_values': self._x_values,
             'results': self._results,
+            'raw_values': self._raw_values,
             }
 
     @property
@@ -282,7 +290,7 @@ class ResultSet(object):
         if version > FILEFORMAT_VERSION:
             raise RuntimeError("File format is version %d, but we only understand up to %d" % (version, FILEFORMAT_VERSION))
         if version < FILEFORMAT_VERSION:
-            return cls.unserialise_compat(version, obj, absolute)
+            obj = cls.unserialise_compat(version, obj, absolute)
         metadata = dict(obj['metadata'])
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
@@ -297,11 +305,29 @@ class ResultSet(object):
             rset.x_values = obj['x_values']
         for k,v in list(obj['results'].items()):
             rset.add_result(k,v)
+        rset.set_raw_values(obj['raw_values'])
         return rset
 
     @classmethod
     def unserialise_compat(cls, version, obj, absolute=False):
-        raise RuntimeError("No previous file format version compatibility settings exist.")
+        if version == 1:
+            obj['raw_values'] = dict([(k,v['RAW_VALUES']) for k,v in
+                                      obj['metadata']['SERIES_META'].items()
+                                      if 'RAW_VALUES' in v])
+            if not obj['raw_values']:
+                # No raw values were stored in the old data set. Fake them by
+                # using the interpolated values as 'raw'. This ensures there's
+                # always some data available as raw values, to facilitate
+                # relying on their presence in future code.
+
+                t0 = parse_date(obj['metadata'].get('T0', obj['metadata'].get('TIME')))
+                x0 = timegm(t0.timetuple()) + t0.microsecond / 1000000.0
+                for name in obj['results'].keys():
+                    obj['raw_values'][name] = [{'t': x0+x, 'val': r} for x,r in
+                                               zip(obj['x_values'], obj['results'][name])]
+                obj['metadata']['FAKE_RAW_VALUES'] = True
+
+        return obj
 
     @classmethod
     def load(cls, fp, absolute=False):

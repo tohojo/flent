@@ -101,6 +101,7 @@ class Aggregator(object):
 
         result = {}
         metadata = {}
+        raw_values = {}
         try:
             for n,i in list(self.instances.items()):
                 if 'run_after' in i:
@@ -142,6 +143,7 @@ class Aggregator(object):
                     if 'transformers' in self.instances[n]:
                         for tr in self.instances[n]['transformers']:
                             result[n] = tr(result[n])
+
                 if hasattr(t, 'metadata'):
                     metadata[n] = t.metadata
                     if 'transformers' in self.instances[n]:
@@ -151,6 +153,8 @@ class Aggregator(object):
                                     metadata[n][k] = tr(v)
                                 except:
                                     pass
+                if hasattr(t, 'raw_values'):
+                    raw_values[n] = t.raw_values
         except KeyboardInterrupt:
             self.kill_runners()
             raise
@@ -162,7 +166,7 @@ class Aggregator(object):
                 formatted = formatted.decode()
             self.logfile.write(formatted)
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-        return result,metadata
+        return result,metadata,raw_values
 
     def kill_runners(self, graceful=False):
         for t in list(self.threads.values()):
@@ -193,8 +197,9 @@ class IterationAggregator(Aggregator):
 
     def aggregate(self, results):
         for i in range(self.iterations):
-            data,metadata = self.collect()
+            data,metadata,raw_values = self.collect()
             results.meta('SERIES_META', metadata)
+            results.set_raw_values(raw_values)
             if i == 0:
                 results.create_series(data.keys())
             results.append_datapoint(i, data)
@@ -213,10 +218,11 @@ class TimeseriesAggregator(Aggregator):
         self.max_distance = self.step * 5.0
 
     def aggregate(self, results):
-        measurements,metadata = self.collect()
+        measurements,metadata,raw_values = self.collect()
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
         results.meta('SERIES_META', metadata)
+        results.set_raw_values(raw_values)
         results.create_series(list(measurements.keys()))
 
         # We start steps at the minimum time value, and do as many steps as are

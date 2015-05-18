@@ -96,6 +96,7 @@ class ProcessRunner(threading.Thread):
         self.returncode = None
         self.kill_lock = threading.Lock()
         self.metadata = {}
+        self.raw_values = []
         self.out = ""
         self.err = ""
         self.stdout = None
@@ -378,7 +379,7 @@ class DitgRunner(ProcessRunner):
                 'size': int(vals['Size'])
             })
 
-        self.metadata['RAW_VALUES'] = raw_values
+        self.raw_values = raw_values
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
@@ -414,8 +415,7 @@ class NetperfDemoRunner(ProcessRunner):
                 if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
                     result.append([time, value])
                     avg_dur = alpha * avg_dur + (1.0-alpha) * dur
-        if self.settings.SAVE_RAW:
-            self.metadata['RAW_VALUES'] = raw_values
+        self.raw_values = raw_values
         try:
             self.metadata['MEAN_VALUE'] = float(lines[-1])
         except (ValueError,IndexError):
@@ -458,8 +458,7 @@ class RegexpRunner(ProcessRunner):
                             self.metadata[k] = float(v)
                         except ValueError:
                             self.metadata[k] = v
-        if self.settings.SAVE_RAW:
-            self.metadata['RAW_VALUES'] = raw_values
+        self.raw_values = raw_values
         return result
 
 class PingRunner(RegexpRunner):
