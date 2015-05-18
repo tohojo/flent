@@ -37,7 +37,7 @@ try:
 except ImportError:
     from .ordereddict import OrderedDict
 
-from .util import gzip_open, ENCODING
+from .util import gzip_open, bz2_open
 
 # Controls pretty-printing of json dumps
 JSON_INDENT=2
@@ -82,7 +82,7 @@ def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
 class ResultSet(object):
-    SUFFIX = '.json.gz'
+    SUFFIX = '.flnt'
     def __init__(self, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
@@ -96,8 +96,6 @@ class ResultSet(object):
             raise RuntimeError("Missing name for resultset")
         if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
             self.metadata['DATA_FILENAME'] = self.dump_file
-        if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
-            self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
     def meta(self, k=None, v=None):
@@ -271,7 +269,7 @@ class ResultSet(object):
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
         try:
-            fp = gzip_open(self._dump_file, "wt")
+            fp = bz2_open(self._dump_file, "wt")
             try:
                 self.dump(fp)
             finally:
@@ -341,6 +339,8 @@ class ResultSet(object):
         try:
             if filename.endswith(".gz"):
                 o = gzip_open
+            elif filename.endswith(cls.SUFFIX):
+                o = bz2_open
             else:
                 o = open
             fp = o(filename, 'rt')
