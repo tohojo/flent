@@ -102,6 +102,9 @@ class ProcessRunner(threading.Thread):
         self.stdout = None
         self.stderr = None
 
+        if 'units' in kwargs:
+            self.metadata['UNITS'] = kwargs['units']
+
     def handle_usr2(self, signal, frame):
         if self.start_event is not None:
             self.start_event.set()
@@ -593,6 +596,7 @@ class NullRunner(object):
 class ComputingRunner(object):
     command = "Computed"
     supported_meta = ['MEAN_VALUE']
+    copied_meta = ['UNITS']
     def __init__(self, name, settings, apply_to=None, *args, **kwargs):
         self.name = name
         self.settings = settings
@@ -639,6 +643,16 @@ class ComputingRunner(object):
                     vals.append(meta[k][mk])
             if vals:
                 meta[self.name][mk] = self.compute(vals)
+
+        for mk in self.copied_meta:
+            vals = []
+            for k in keys:
+                if k in meta and mk in meta[k]:
+                    vals.append(meta[k][mk])
+            if vals:
+                # If all the source values of the copied metadata are the same,
+                # just use that value, otherwise include all of them.
+                meta[self.name][mk] = vals if len(set(vals)) > 1 else vals[0]
 
         res.add_result(self.name, new_res)
         return res
