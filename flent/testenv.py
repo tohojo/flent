@@ -24,13 +24,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, subprocess, time
 from copy import deepcopy
 
-from netperf_wrapper import util
-from netperf_wrapper.util import Glob
-from netperf_wrapper.build_info import DATA_DIR
+from flent import util
+from flent.util import Glob
+from flent.build_info import DATA_DIR
 try:
     from collections import OrderedDict
 except ImportError:
-    from netperf_wrapper.ordereddict import OrderedDict
+    from flent.ordereddict import OrderedDict
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
 

@@ -1,6 +1,6 @@
 include tests/*.conf tests/*.inc ui/*.ui
 include misc/*
-include matplotlibrc.dist man/netperf-wrapper.1
-include BUGS README.rst *.example
-include netperf-wrapper-mime.xml netperf-wrapper.desktop
+include matplotlibrc.dist man/flent.1
+include BUGS README.org *.example
+include flent-mime.xml flent.desktop
 recursive-include packaging *

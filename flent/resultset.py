@@ -56,7 +56,7 @@ RECORDED_SETTINGS = (
     "TOTAL_LENGTH",
     "STEP_SIZE",
     "TEST_PARAMETERS",
-    "NETPERF_WRAPPER_VERSION",
+    "FLENT_VERSION",
     "IP_VERSION",
     "BATCH_NAME",
     "BATCH_TIME",
@@ -324,6 +324,10 @@ class ResultSet(object):
                     obj['raw_values'][name] = [{'t': x0+x, 'val': r} for x,r in
                                                zip(obj['x_values'], obj['results'][name])]
                 obj['metadata']['FAKE_RAW_VALUES'] = True
+
+            if 'NETPERF_WRAPPER_VERSION' in obj['metadata']:
+                obj['metadata']['FLENT_VERSION'] = obj['metadata']['NETPERF_WRAPPER_VERSION']
+                del obj['metadata']['NETPERF_WRAPPER_VERSION']
 
         return obj
 

@@ -2,14 +2,14 @@
 # background with a white grid (as the Seaborn package does; see
 # http://stanford.edu/~mwaskom/software/seaborn/tutorial/aesthetics.html). Copy
 # this file to $XDG_CONFIG_HOME/matplotlib/matplotlibrc to customise.
-# Netperf-wrapper will try to detect if matplotlib loads a file from inside
+# Flent will try to detect if matplotlib loads a file from inside
 # $HOME, and, if not, autoload this file.
 #
 # See http://matplotlib.org/users/customizing.html for more information on
 # matplotlib rc files.
 
 # Using an rc-file can break matplotlib auto-loading of backends. If running
-# `netperf-wrapper -f plot` does not pop up a plot, set this to a suitable
+# `flent -f plot` does not pop up a plot, set this to a suitable
 # value:
 #backend: Qt4Agg
 

@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys, os, socket, subprocess, time, re
 
-from netperf_wrapper import util
+from flent import util
 
 INTERESTING_OFFLOADS = ['tcp-segmentation-offload',
                         'udp-fragmentation-offload',

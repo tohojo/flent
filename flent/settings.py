@@ -34,11 +34,13 @@ except ImportError:
 try:
     from collections import OrderedDict
 except ImportError:
-    from netperf_wrapper.ordereddict import OrderedDict
-from netperf_wrapper.build_info import VERSION
-from netperf_wrapper.testenv import TestEnvironment, TEST_PATH
-from netperf_wrapper import util, resultset, runners
-from netperf_wrapper.util import Glob
+    from flent.ordereddict import OrderedDict
+from flent.build_info import VERSION
+from flent.testenv import TestEnvironment, TEST_PATH
+from flent import util, resultset, runners
+from flent.util import Glob
+
+OLD_RCFILE = os.path.expanduser("~/.netperf-wrapperrc")
 
 DEFAULT_SETTINGS = {
     'NAME': None,
@@ -53,7 +55,7 @@ DEFAULT_SETTINGS = {
     'TITLE': '',
     'OVERRIDE_TITLE': '',
     'NOTE': '',
-    'RCFILE': os.path.expanduser("~/.netperf-wrapperrc"),
+    'RCFILE': os.path.expanduser("~/.flentrc"),
     'LOG_FILE': None,
     'INPUT': [],
     'DESCRIPTION': 'No description',
@@ -154,7 +156,7 @@ CONFIG_TYPES = {
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 def version(*args):
-    print("Netperf-wrapper v%s.\nRunning on Python %s." %(VERSION, sys.version.replace("\n", " ")))
+    print("Flent v%s.\nRunning on Python %s." %(VERSION, sys.version.replace("\n", " ")))
     try:
         import matplotlib, numpy
         print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, numpy.__version__))
@@ -222,7 +224,7 @@ parser.add_option("-n", "--note", action="store", type="string", dest="NOTE",
                   help="Add arbitrary text as a note to be stored in the JSON data file "
                   "(under the NOTE key in the metadata object).")
 parser.add_option("-r", "--rcfile", action="store", type="string", dest="RCFILE",
-                  help="Load configuration data from RCFILE (default ~/.netperf-wrapperrc).")
+                  help="Load configuration data from RCFILE (default ~/.flentrc).")
 parser.add_option("-x", "--extended-metadata", action="store_true", dest="EXTENDED_METADATA",
                   help="Collect extended metadata and store it with the data file. "
                   "May include details of your machine you don't want to distribute; see man page.")
@@ -234,10 +236,10 @@ parser.add_option("--remote-metadata", action="append", type="string", dest="REM
                   "take some time, since it involves executing several remote commands. This option "
                   "implies --extended-metadata.")
 parser.add_option("--gui", action="store_true", dest="GUI",
-                  help="Run the netperf-wrapper GUI. All other options are used as defaults "
+                  help="Run the flent GUI. All other options are used as defaults "
                   "in the GUI, but can be changed once it is running.")
 parser.add_option("--new-gui-instance", action="store_true", dest="NEW_GUI_INSTANCE",
-                  help="Start a new GUI instance. Otherwise, netperf-wrapper will try to "
+                  help="Start a new GUI instance. Otherwise, flent will try to "
                   "connect to an already running GUI instance and have that load any new "
                   "data files specified as arguments. Implies --gui.")
 parser.add_option("--gui-no-defer", action="store_true", dest="GUI_NO_DEFER",
@@ -380,7 +382,7 @@ plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DP
                   help="Figure DPI. Used when saving plots to raster format files.")
 plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATPLOTLIBRC",
                   help="Don't load included matplotlibrc values. Use this if autodetection of custom "
-                  "matplotlibrc fails and netperf-wrapper is inadvertently overriding rc values.")
+                  "matplotlibrc fails and flent is inadvertently overriding rc values.")
 parser.add_option_group(plot_group)
 
 
@@ -429,7 +431,7 @@ misc_group.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
 misc_group.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
                   help="List available plots for selected test and exit.")
 misc_group.add_option("-V", "--version", action="callback", callback=version,
-                  help="Show netperf-wrapper version information and exit.")
+                  help="Show flent version information and exit.")
 misc_group.add_option("--debug-error", action="store_true", dest="DEBUG_ERROR",
                   help="Debug errors: Don't catch unhandled exceptions.")
 parser.add_option_group(misc_group)
@@ -438,7 +440,7 @@ parser.add_option_group(misc_group)
 
 class Settings(optparse.Values, object):
 
-    NETPERF_WRAPPER_VERSION = VERSION
+    FLENT_VERSION = VERSION
 
     def __init__(self, defs):
 
@@ -460,6 +462,11 @@ class Settings(optparse.Values, object):
             self.NAME = test_name
 
     def load_rcfile(self):
+        if self.RCFILE == DEFAULT_SETTINGS['RCFILE'] and \
+           not os.path.exists(self.RCFILE) and os.path.exists(OLD_RCFILE):
+            sys.stderr.write("Warning: Old rcfile found at %s, please rename to %s.\n" \
+                             % (OLD_RCFILE, self.RCFILE))
+            self.RCFILE = OLD_RCFILE
         if os.path.exists(self.RCFILE):
 
             config = RawConfigParser()
@@ -604,7 +611,7 @@ class Settings(optparse.Values, object):
 settings = Settings(DEFAULT_SETTINGS)
 
 def load_gui(settings):
-    from netperf_wrapper import gui
+    from flent import gui
     gui.run_gui(settings) # does not return
 
 def load():

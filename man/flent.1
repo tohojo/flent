@@ -1,16 +1,16 @@
-.TH NETPERF-WRAPPER "1" "November 2014" "Netperf-wrapper v0.9.1-git." "User Commands"
+.TH FLENT "1" "November 2014" "Flent v0.9.1-git." "User Commands"
 .SH NAME
-Netperf-wrapper \- manual page for Netperf-wrapper v0.9.1-git
+Flent \- the FLExible Network Tester. Manual page for Flent v0.9.1-git
 .SH SYNOPSIS
-.B netperf-wrapper
+.B flent
 [\fIoptions\fR] \fI<host|test|input file \fR...\fI>\fR
 .SH INVOCATION
-When run, netperf-wrapper must be supplied either (a) a test name and one or
+When run, flent must be supplied either (a) a test name and one or
 more host names to connect to, or (b) one or more input files containing data
 from previous runs to post-process.
 .PP
 Test names, hostnames and input file names can all be specified as unqualified
-arguments, and netperf-wrapper will do its best to guess which is which. For
+arguments, and flent will do its best to guess which is which. For
 each argument, if it is an existing file, it is assumed to be an input file, if
 it is the name of an existing test configuration it's assumed to be a test name,
 and if neither of those are true, it is assumed to be a host name. The \fB-i\fR
@@ -18,7 +18,7 @@ and \fB-H\fR switches can be used to explicitly specify the interpretation of an
 argument.
 
 .SH DESCRIPTION
-Netperf-wrapper is a wrapper around \fI netperf \fR and similar tools to
+Flent is a wrapper around \fI netperf \fR and similar tools to
 run predefined tests and aggregate and plot the results. It defines several
 tests that can be run against one or more hosts, primarily targeted at testing
 for the presence of bufferbloat under various conditions.
@@ -37,7 +37,7 @@ is specified, the plot is diplayed using matplotlib's interactive plot browser,
 which also allows saving of the output (in .png format).
 
 .SH REQUIREMENTS
-Netperf-wrapper runs on Python, versions 2.6 through 3.3. Plotting requires a
+Flent runs on Python, versions 2.7+ and 3.3+. Plotting requires a
 functional matplotlib installation (but everything else can run without
 matplotlib). For the interactive plot viewer, a graphical display (and suitably
 configured matplotlib) is required.
@@ -52,7 +52,7 @@ For ICMP ping measurements, the version of \fIping\fR employed must support
 output timestamping (the \fB\-D\fR parameter to GNU ping). This is \fBnot\fR
 supported by the BSD and OSX versions of ping. As an alternative to the regular
 ping command, the \fIfping\fR utility (see \fIfping.org\fR) can be employed. In
-that case fping must be version 3.5 or greater. Netperf-wrapper will attempt to
+that case fping must be version 3.5 or greater. Flent will attempt to
 detect the presence of fping in the \fIPATH\fR and check for support for the
 \fB\-D\fR parameter. If this check is successful, fping will be employed for
 ping data, otherwise the system ping will be used.
@@ -88,7 +88,7 @@ Add arbitrary text as a note to be stored in the JSON data file
 (under the \fINOTE\fR key in the metadata object).
 .TP
 \fB\-r\fR RCFILE, \fB\-\-rcfile\fR=\fIRCFILE\fR
-Load configuration data from \fIRCFILE\fR (default \fI~/.netperf-wrapperrc\fR). See
+Load configuration data from \fIRCFILE\fR (default \fI~/.flentrc\fR). See
 section below for information on the rc file format.
 .TP
 \fB\-x\fR, \fB\-\-extended\-metadata\fR
@@ -103,12 +103,12 @@ data can take some time, since it involves executing several remote commands.
 This option can be specified multiple times and implies \fB--extended-metadata\fR.
 .TP
 \fB--gui\fR
-Run the netperf-wrapper GUI. All other options are used as defaults in the GUI,
+Run the flent GUI. All other options are used as defaults in the GUI,
 but can be changed once it is running. See section below for a description of
 the GUI.
 .TP
 \fB--new-gui-instance\fR
-Start a new GUI instance. Otherwise, netperf-wrapper will try to connect to an
+Start a new GUI instance. Otherwise, flent will try to connect to an
 already running GUI instance and have that load any new data files specified as
 arguments. Implies \fB--gui\fR when passed on the command line, but not when set in
 the rc file. Note that when multiple GUI instances are running, there is no
@@ -181,7 +181,7 @@ Socket timeout (in seconds) used for UDP delay measurement, to prevent
 stalls on packet loss. Only enabled if the installed netperf version is
 detected to support this (requires SVN version of netperf).
 .IP
-For the default value, see the output of netperf-wrapper -h. The value of this
+For the default value, see the output of flent -h. The value of this
 parameter is an implicit upper bound on how long a round-trip time that can be
 measured. As such you may need to adjust it if you are experiencing latency
 above the default value. Set to 0 to disable.
@@ -294,7 +294,7 @@ Figure DPI. Used when saving plots to raster format files.
 .TP
 \fB\-\-no\-matplotlibrc\fR
 Don't load included matplotlibrc values. Use this if autodetection of custom
-matplotlibrc fails and netperf-wrapper is inadvertently overriding rc values.
+matplotlibrc fails and flent is inadvertently overriding rc values.
 .IP
 .TP
 \fBTest tool-related options:\fR
@@ -304,7 +304,7 @@ Hostname for the test control connection (for test tools that support this).
 Default: First hostname of test target.
 
 When running tests that uses D-ITG as a test tool (such as the voip-* tests),
-this switch controls where netperf-wrapper will look for the D-ITG control
+this switch controls where flent will look for the D-ITG control
 server (see section below on running tests with D-ITG). For Netperf-based tests,
 this option is passed to Netperf to control where to point the control
 connection. This is useful to, for instance, to run the control server
@@ -359,14 +359,14 @@ List available tests and exit.
 List available plots for selected test and exit.
 .TP
 \fB\-V\fR, \fB\-\-version\fR
-Show netperf\-wrapper version information and exit.
+Show Flent version information and exit.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Show usage help message and exit.
 
 .SH SUPPLIED TESTS
 Test are supplied as Python files and can specify commands to run etc. For a
-full list of the tests supported by netperf-wrapper, see the
+full list of the tests supported by flent, see the
 \fB\-\-list\-tests\fR option.
 .TP
 \fBThe Realtime Response Under Load (RRUL) test\fR
@@ -392,7 +392,7 @@ the test host, while measuring RTT using ICMP ping. It is useful for observing
 latency in the face of a completely unresponsive packet stream.
 
 .SH OUTPUT FORMATS
-The following output formats are currently supported by netperf-wrapper:
+The following output formats are currently supported by flent:
 .TP
 \fBPlot output\fR (\fB\-f\fR \fIplot\fR)
 .IP
@@ -435,10 +435,10 @@ suitable for human consumption). It is output as a list of objects, where each
 object corresponds to the metadata of one test. Mostly useful for inspecting
 metadata of stored data files.
 
-.SH THE NETPERF-WRAPPER GUI
-Netperf-wrapper comes equipped with a GUI to browse and plot previously captured
+.SH THE FLENT GUI
+Flent comes equipped with a GUI to browse and plot previously captured
 datasets. The GUI requires PyQt4; if this is installed, it can be launched with
-the \fB--gui\fR parameter. Additionally, if netperf-wrapper is launched without
+the \fB--gui\fR parameter. Additionally, if flent is launched without
 parameters and without a controlling terminal, the GUI will be launched
 automatically.
 
@@ -459,16 +459,16 @@ supported depends on the installed version of matplotlib.
 
 .SH RC FILE
 Some of the command line options can be specified in an rc file. By default,
-netperf-wrapper looks for this in \fI~/.netperf-wrapperrc\fR, but an alternative
+flent looks for this in \fI~/.flentrc\fR, but an alternative
 location can be specified with the \fB--rcfile\fR command line option.
 
 The rc file allows options to be specified globally, an optionally overridden
 for specific tests. For an explanation of the options, refer to the annotated
 example rc file, by default installed to
-\fI/usr/share/doc/netperf-wrapper/netperf-wrapperrc.example\fR.
+\fI/usr/share/doc/flent/flentrc.example\fR.
 
 .SH BATCH FILES
-Netperf-wrapper supports reading batch files to automate running several tests
+Flent supports reading batch files to automate running several tests
 and do setup/teardown of test environment etc. This greatly aids reproducibility
 of tests.
 
@@ -483,18 +483,18 @@ iteration, and arguments allows parameterising batches.
 things out from there :).
 
 .SH RUNNING TESTS WITH THE D-ITG TOOL
-This version of netperf-wrapper has experimental support for running and parsing
+This version of flent has experimental support for running and parsing
 the output of the D-ITG test tool (see
-\fIhttp://traffic.comics.unina.it/software/ITG/\fR). Netperf-wrapper supports
+\fIhttp://traffic.comics.unina.it/software/ITG/\fR). Flent supports
 parsing the one-way delay as measured by D-ITG. However, in order to do so, the
 data needs to be collected at the receiver end, statistics extracted, and the
-result passed back to netperf-wrapper on the sending side.
+result passed back to flent on the sending side.
 
-To perform this function, netperf-wrapper supports a control server which will
+To perform this function, flent supports a control server which will
 listen to XML-RPC requests, spawn an appropriate ITGRecv instance and, after the
-test is done, parse its output and make it available for netperf-wrapper to
+test is done, parse its output and make it available for flent to
 retrieve. This control server is available as a Python file that by default is
-installed in \fI/usr/share/doc/netperf-wrapper/misc\fR. It currently requires a
+installed in \fI/usr/share/doc/flent/misc\fR. It currently requires a
 patched version of D-ITG v2.8.1. The patch is also included in the same
 directory.
 
@@ -513,7 +513,7 @@ and refuse to run if it is not available, unless explicitly told otherwise.
 .SH EXAMPLES
 Run the \fIrrul\fR test against \fItestserver.example.com\fI:
 .IP
-netperf-wrapper rrul testserver.example.com
+flent rrul testserver.example.com
 .PP
 This produces no output, but saves the result in a datafile named after the
 current date and time (in gzipped JSON format).
@@ -521,11 +521,11 @@ current date and time (in gzipped JSON format).
 Show an interactive plot of a previously run test, which stored the data in
 \fIdatafile.json.gz\fR (requires a working matplotlib and a graphical display):
 .IP
-netperf-wrapper -f plot datafile.json.gz
+flent -f plot datafile.json.gz
 .PP
 Combine multiple data files into one CDF plot:
 .IP
-netperf-wrapper -p icmp_cdf *.json.gz
+flent -p icmp_cdf *.json.gz
 
 .SH THE JSON DATA FORMAT
 The aggregated test data is saved in a file called
@@ -567,7 +567,7 @@ Currently the metadata values are:
 .IP
 \fINOTE\fR: Arbitrary text as entered with the \fB--note\fR switch when the test was run.
 .IP
-\fINETPERF_WRAPPER_VERSION\fR: Version of netperf-wrapper that generated the
+\fIFLENT_VERSION\fR: Version of flent that generated the
 data file.
 .IP
 \fIIP_VERSION\fR: IP version used to run test (as specified by command line
@@ -581,7 +581,7 @@ from the platform):
 .IP
 \fIKERNEL_RELEASE\fR: The kernel release as reported by \fIuname -r\fR.
 .IP
-\fIIP_ADDRS\fR: IP addresses assigned to the machine running netperf-wrapper.
+\fIIP_ADDRS\fR: IP addresses assigned to the machine running flent.
 .IP
 \fIGATEWAYS\fR: IP addresses of all detected default gateways on the system,
 and the interfaces they are reachable through. Only available if the
@@ -600,34 +600,34 @@ for each of the hostnames specified. This is gathered under the
 passed to \fB--remote-metadata\fR. Additionally, the \fIREMOTE_METADATA\fR
 object will contain an object called \fIINGRESS_INFO\fR which is a duplicate of
 \fIEGRESS_INFO\fR, but with the destination IP exchanged for the source address
-of the host running netperf-wrapper. The assumption here is that
+of the host running flent. The assumption here is that
 \fB--remote-metadata\fR is used to capture metadata of a router known to be in
 the test path, in which case \fIINGRESS_INFO\fR will contain information about
 the reverse path from the router (which is ingress from the point of view of the
-host running netperf-wrapper). If the host being queried for remote metadata is
+host running flent). If the host being queried for remote metadata is
 off the path, the contents of \fIINGRESS_INFO\fR will probably be the same as
 that of \fIEGRESS_INFO\fR.
 
 .SH SIGNALS
-Netperf-wrapper will abort what it is currently doing on receiving a
+Flent will abort what it is currently doing on receiving a
 \fBSIGINT\fR -- this includes killing all runners, cleaning up temporary files
 and shutting down as gracefully as possible. Runners are killed with
 \fBSIGTERM\fR in this mode, and their output is discarded. If a batch run is in
 progress, the current test will be interrupted in this way, and the rest of the
 batch run is aborted. Previously completed tests and their results are not
 aborted. Post-commands marked as 'essential' will be run after the test is
-interrupted. Additionally, netperf-wrapper converts \fBSIGTERM\fR into
+interrupted. Additionally, flent converts \fBSIGTERM\fR into
 \fBSIGINT\fR internally and reacts accordingly.
 
-Upon receiving a \fBSIGUSR1\fR, netperf-wrapper will try to gracefully abort the
+Upon receiving a \fBSIGUSR1\fR, flent will try to gracefully abort the
 test it is currently running, and parse the output of the runners to the extent
 that any such output exists. That is, each runner will be killed by a
 \fBSIGINT\fR, which will cause a graceful shutdown for at least ping and netperf
 (although netperf running in \fITCP_MAERTS\fR mode will bug out when interrupted
-like this, so end-of-tests statistics will be missing). Netperf-wrapper will
+like this, so end-of-tests statistics will be missing). Flent will
 only react once to a \fBSIGUSR1\fR, sending exactly one \fBSIGINT\fR to the
 active runners, then wait for them to exit. This may take several seconds in the
-case of netperf. If the runners for some reason fail to exit, netperf-wrapper
+case of netperf. If the runners for some reason fail to exit, flent
 will be stuck and will need to be killed with \fBSIGINT\fR. If running in batch
 mode, \fBSIGUSR1\fR will only affect the currently running test; subsequent
 tests will still be run.
@@ -637,13 +637,13 @@ Under some conditions (such as severe bufferbloat), the UDP RTT measurements
 done by netperf can experience packet loss to the extent that the test aborts
 completely, which can cause missing data points for some measurement series.
 The --socket-timeout feature can alleviate this, but requires a recent SVN
-version of netperf to work. Netperf-wrapper tries to detect if netperf supports
+version of netperf to work. Flent tries to detect if netperf supports
 this option and enables it for the UDP measurements if it does.
 .PP
 Probably many other bugs. Please report any found to
-\fIhttps://github.com/tohojo/netperf-wrapper/issues\fR and include the output of
-\fBnetperf-wrapper --version\fR in the report.
+\fIhttps://github.com/tohojo/flent/issues\fR and include the output of
+\fBflent --version\fR in the report.
 
 .SH AUTHORS
-Netperf-wrapper is written and maintained by Toke Høiland-Jørgensen, with
+Flent is written and maintained by Toke Høiland-Jørgensen, with
 contributions from Dave Taht and others.

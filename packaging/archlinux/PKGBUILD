@@ -1,18 +1,18 @@
 # Maintainer: Toke Høiland-Jørgensen <toke at toke dot dk>
 
-pkgname=netperf-wrapper
+pkgname=flent
 pkgver=0.9.1
 pkgrel=2
-pkgdesc='A wrapper for the `netperf` benchmark utility, used for testing for bufferbloat.'
+pkgdesc='The FLExible Network Tester.'
 arch=('any')
-url='https://github.com/tohojo/netperf-wrapper'
+url='https://github.com/tohojo/flent'
 license=('GPL')
 depends=('python' 'netperf')
 optdepends=(
     'python-matplotlib: for outputting graphs'
     'python-pyqt4: for the GUI'
 )
-source=("https://pypi.python.org/packages/source/n/netperf-wrapper/netperf-wrapper-${pkgver}.tar.gz")
+source=("https://pypi.python.org/packages/source/f/flent/flent-${pkgver}.tar.gz")
 sha1sums=('edb4f565d2e4dd2f9011140d38d409c3f5a13acf')
 
 package() {

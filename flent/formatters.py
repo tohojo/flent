@@ -35,7 +35,7 @@ except ImportError:
 try:
     from collections import OrderedDict
 except ImportError:
-    from netperf_wrapper.ordereddict import OrderedDict
+    from flent.ordereddict import OrderedDict
 
 PLOT_KWARGS = (
     'alpha',
@@ -465,7 +465,7 @@ class PlotFormatter(Formatter):
 
     def _init_ellipsis_plot(self, config=None, axis=None):
         try:
-            from netperf_wrapper.error_ellipse import plot_point_cov
+            from flent.error_ellipse import plot_point_cov
             self.plot_point_cov = plot_point_cov
         except ImportError:
             raise RuntimeError("Unable to load error_ellipse plotting functions.")
@@ -817,12 +817,12 @@ class PlotFormatter(Formatter):
         # end, followed by a number signifying test iteration. So for instance
         # given the filenames:
         #
-        # rrul-fq_codel-01.json.gz
-        # rrul-fq_codel-02.json.gz
-        # rrul-fq_codel-03.json.gz
-        # rrul-pfifo_fast-01.json.gz
-        # rrul-pfifo_fast-02.json.gz
-        # rrul-pfifo_fast-03.json.gz
+        # rrul-fq_codel-01.flnt
+        # rrul-fq_codel-02.flnt
+        # rrul-fq_codel-03.flnt
+        # rrul-pfifo_fast-01.flnt
+        # rrul-pfifo_fast-02.flnt
+        # rrul-pfifo_fast-03.flnt
         #
         # two new data sets will be created ('fq_codel' and 'pfifo_fast'), each
         # with three data points created from each of the data files. The
@@ -1266,7 +1266,7 @@ class PlotFormatter(Formatter):
 
     def save_pdf(self, filename, data_filename, artists):
         with self.mpl.backends.backend_pdf.PdfPages(filename) as pdf:
-            pdf.infodict()['Producer'] = 'netperf-wrapper v%s' % VERSION
+            pdf.infodict()['Producer'] = 'flent v%s' % VERSION
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")

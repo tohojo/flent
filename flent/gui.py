@@ -44,13 +44,13 @@ try:
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
-from netperf_wrapper.build_info import DATA_DIR
-from netperf_wrapper.resultset import ResultSet
-from netperf_wrapper.formatters import PlotFormatter
-from netperf_wrapper import util
+from flent.build_info import DATA_DIR
+from flent.resultset import ResultSet
+from flent.formatters import PlotFormatter
+from flent import util
 
 # IPC socket parameters
-SOCKET_NAME_PREFIX = "netperf-wrapper-socket-"
+SOCKET_NAME_PREFIX = "flent-socket-"
 SOCKET_DIR = "/tmp"
 
 __all__ = ['run_gui']
@@ -237,7 +237,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         filenames = QFileDialog.getOpenFileNames(self,
                                                  "Select data file(s)",
                                                  self.last_dir,
-                                                 "Data files (*.json.gz)")
+                                                 "Data files (*.flnt)")
         if filenames:
             self.last_dir = os.path.dirname(unicode(filenames[0]))
 

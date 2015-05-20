@@ -1,7 +1,7 @@
-* netperf-wrapper
+* Flent: The FLExible Network Tester
 
 Python wrapper to run multiple simultaneous netperf/iperf/ping instances and
-aggregate the results. The main documentation is in the man page, [[https://tohojo.github.io/netperf-wrapper.1.html][available as
+aggregate the results. The main documentation is in the man page, [[https://tohojo.github.io/flent.1.html][available as
 HTML here]].
 
 Tests are specified as config files (which are really Python), and various
@@ -20,8 +20,8 @@ An alternative run mode is running several iterated tests (which each output one
 data point, e.g. netperf tests not in -D mode), and outputting the results of
 these several runs.
 
-The aggregated data is saved in (gzipped) json format for later processing
-and/or import into other tools. The json format is documented below.
+The aggregated data is saved in (bzipped) json format for later processing
+and/or import into other tools.
 
 Apart from the json format, the data can be output as csv values, emacs org
 mode tables or plots. Each test can specify several different plots, including
@@ -35,15 +35,15 @@ If no output file is specified, the plot is diplayed using matplotlib's
 interactive plot browser, which also allows saving of the output (in .png
 format).
 
-The basic invocation is =./netperf-wrapper -H <host> <test_name>=. Various
+The basic invocation is =./flent -H <host> <test_name>=. Various
 options to control test parameters are available; try running
-=./netperf-wrapper -h=. Tests can be displayed with
-=./netperf-wrapper --list-tests= and the available plots can be displayed with
-=./netperf-wrapper --list-plots <test_name>=.
+=./flent -h=. Tests can be displayed with
+=./flent --list-tests= and the available plots can be displayed with
+=./flent --list-plots <test_name>=.
 
 Running tests and plotting/displaying the output is logically split up in two
 separate processes, but can be combined into one. When a test is run, its data
-output is always saved in a file called =<test_name>-<date>.json.gz= in the
+output is always saved in a file called =<test_name>-<date>.flnt= in the
 same directory as the output file selected with -o (or the current directory if
 no output file is selected). This file can be read back in with the -i switch,
 in which case the test will not be run again, but the saved test data will be
@@ -53,9 +53,9 @@ still be saved in the json file.
 
 ** Installing
 Install the package system-wide by running =sudo python2 setup.py install= or
-=sudo pip install netperf-wrapper= for the latest released version. Packages
+=sudo pip install flent= for the latest released version. Packages
 for Debian/Ubuntu and Arch Linux are available at OBS:
-https://build.opensuse.org/project/repositories/home:tohojo:netperf-wrapper.
+https://build.opensuse.org/project/repositories/home:tohojo:flent.
 
 ** Quick Start
 
@@ -71,35 +71,37 @@ You must run netperf on two computers - a *server* and a *client*.
    the netserver that is running on netperf.bufferbloat.net by using "-H
    netperf.bufferbloat.net" in the commands below.
 
-2. *Client (Computer 2):* Install netperf, then install netperf-wrapper on your
-   Client computer. When you invoke netperf-wrapper on the Client, it will
+2. *Client (Computer 2):* Install netperf, then install flent on your
+   Client computer. When you invoke flent on the Client, it will
    connect to the specified netserver (-H) and carry out the measurements. Here
    are some useful commands:
 
     - RRUL: Create the standard graphic image used by the Bufferbloat project to
       show the down/upload speeds plus latency in three separate charts. \\
-        =netperf-wrapper rrul -p all_scaled -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+        =flent rrul -p all_scaled -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
 
     - CDF: A Cumulative Distribution Function plot showing the probability that
       ping times will be below a bound.\\
-        =netperf-wrapper rrul -p ping_cdf -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+        =flent rrul -p ping_cdf -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
 
     - TCP Upload: Displays TCP upload speed and latency in two charts.\\
-        =netperf-wrapper tcp_upload -p totals -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+        =flent tcp_upload -p totals -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
 
     - TCP Download: Displays TCP download speeds and latency in two charts. \\
-        =netperf-wrapper tcp_download -p totals -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
+        =flent tcp_download -p totals -l 60 -H address-of-netserver -t text-to-be-included-in-plot=
 
 The output of each of these commands is a graphic (PNG) image along with a data
 file in the current working directory that can be used to re-create the plot,
 either from the command line (see the man page), or by loading them into the
-GUI. Run =netperf-wrapper --gui= to start the GUI.
+GUI. Run =flent --gui= to start the GUI.
 
 ** The json data format
-The aggregated test data is saved in a file called
-=<test_name>-<date>.json.gz=. This file contains the data points generated
-during the test, as well as some metadata. The top-level json object has three
-keys in it: =x_values=, =results= and =metadata=.
+The aggregated test data is saved in a file called =<test_name>-<date>.flnt=.
+This file contains the data points generated during the test, as well as some
+metadata. The top-level json object has five keys in it: =version=, =x_values=,
+=results=, =metadata= and =raw_values=.
+
+=version= is the file format version as an integer.
 
 =x_values= is an array of the x values for the test data (typically the time
 values for timeseries data).
@@ -114,14 +116,6 @@ metadata values are read in as configuration parameters when the data set is
 loaded in for further processing. Not all tests use all the parameters, but
 they are saved anyway.
 
-Currently the metadata values are:
-- =NAME=: The test name.
-- =TITLE=: Any extra title specified by the -t parameter when the test was run.
-- =HOSTS=: List of the server hostnames connected to during the test.
-- =LOCAL_HOST=: The hostname of the machine that ran the test.
-- =LENGTH=: Test length in seconds, as specified by the -l parameter.
-- =TOTAL_LENGTH=: Actual data series length, after the test has added time to
-  the LENGTH.
-- =STEP_SIZE=: Time step size granularity.
-- =TIME=: ISO timestamp of the time the test was initiated.
-- =NOTE=: Arbitrary text as entered with the =--note= switch when the test was run.
+=raw_values= holds an array of objects for each data series. Each element of the
+array contains the raw values as parsed from the test tool corresponding to that
+data series.

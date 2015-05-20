@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ## -*- mode: python; coding: utf-8 -*-
 ##
-## netperf-wrapper.py
+## flent.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
 ## Date:     October 8th, 2012
@@ -32,15 +32,15 @@ def handle_sigterm(sig, frame):
         os.kill(os.getpid(), signal.SIGINT)
 
 try:
-    from netperf_wrapper import batch
-    from netperf_wrapper.settings import load
+    from flent import batch
+    from flent.settings import load
 
     if __name__ == "__main__":
         try:
             signal.signal(signal.SIGTERM, handle_sigterm)
             settings = load()
             if settings.GUI:
-                from netperf_wrapper.gui import run_gui
+                from flent.gui import run_gui
                 run_gui(settings) # does not return
             else:
                 b = batch.new(settings)

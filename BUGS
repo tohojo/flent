@@ -8,10 +8,10 @@ KNOWN ISSUES:
 
 REPORTING BUGS:
 
-Please report bugs at https://github.com/tohojo/netperf-wrapper/issues
+Please report bugs at https://github.com/tohojo/flent/issues
 and include as much as possible of the following information with all
 reports:
 
 - Output on the console for the error.
-- The data file for the test (<testname>-<date>.json.gz).
+- The data file for the test (<testname>-<date>.flnt).
 - Log file output (rerun the test with -l logfile.txt).

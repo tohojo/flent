@@ -1,21 +1,21 @@
-Source: netperf-wrapper
+Source: flent
 Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
 Section: python
 Priority: optional
 Build-Depends: python (>= 2.6), debhelper (>= 7.4.3)
 Standards-Version: 3.9.3
-Homepage: https://pypi.python.org/pypi/netperf-wrapper/
-Vcs-Git: git://github.com/tohojo/netperf-wrapper.git
-Vcs-Browser: https://github.com/tohojo/netperf-wrapper
+Homepage: https://pypi.python.org/pypi/flent/
+Vcs-Git: git://github.com/tohojo/flent.git
+Vcs-Browser: https://github.com/tohojo/flent
 X-Python-Version: >=2.6
 
-Package: netperf-wrapper
+Package: flent
 Architecture: all
 Depends: ${misc:Depends}, python (>= 2.6), netperf (>= 2.6.0)
 Recommends: python-matplotlib
-Description: Wrapper for running network tests such as netperf concurrent
- netperf-wrapper
- ---------------
+Description: The FLExible Network Tester
+ flent
+ -----
  .
  Python wrapper to run multiple simultaneous netperf/iperf/ping instances
  and aggregate the results.

@@ -21,22 +21,17 @@
 
 import sys, os
 
-try:
-    from setuptools import setup
-    from setuptools.command.build_py import build_py as _build_py
-    from setuptools.command.install import install as _install
-except ImportError:
-    from distutils.core import setup
-    from distutils.command.build_py import build_py as _build_py
-    from distutils.command.install import install as _install
+from distutils.core import setup
+from distutils.command.build_py import build_py as _build_py
+from distutils.command.install import install as _install
 
-from netperf_wrapper.build_info import VERSION
+from flent.build_info import VERSION
 from glob import glob
 
 version_string = VERSION
 
 if sys.version_info[:2] < (2,6):
-    sys.stderr.write("Sorry, netperf-wrapper requires v2.6 or later of Python\n")
+    sys.stderr.write("Sorry, flent requires v2.6 or later of Python\n")
     sys.exit(1)
 
 class install(_install):
@@ -53,13 +48,13 @@ class build_py(_build_py):
     """build_py command
 
     This specific build_py command will modify module
-    'netperf_wrapper.build_config' so that it contains information on
+    'flent.build_config' so that it contains information on
     installation prefixes afterwards.
     """
 
     def build_module (self, module, module_file, package):
         orig_content = None
-        if ( module == 'build_info' and package == 'netperf_wrapper'
+        if ( module == 'build_info' and package == 'flent'
              and 'install' in self.distribution.command_obj):
             iobj = self.distribution.command_obj['install']
             with open(module_file, 'rb') as module_fp:
@@ -74,7 +69,7 @@ class build_py(_build_py):
                 module_fp.write('# -*- coding: UTF-8 -*-\n\n')
                 module_fp.write("VERSION='%s'\n"%(version_string))
                 module_fp.write("DATA_DIR='%s'\n"%(
-                    os.path.join(prefix, 'share', 'netperf-wrapper')))
+                    os.path.join(prefix, 'share', 'flent')))
 
         _build_py.build_module(self, module, module_file, package)
 
@@ -82,38 +77,38 @@ class build_py(_build_py):
             with open(module_file, 'wb') as module_fp:
                 module_fp.write(orig_content)
 
-data_files = [('share/netperf-wrapper', ['matplotlibrc.dist']),
-              ('share/netperf-wrapper/tests',
+data_files = [('share/flent', ['matplotlibrc.dist']),
+              ('share/flent/tests',
                glob("tests/*.conf") + \
                    glob("tests/*.inc")),
-              ('share/netperf-wrapper/ui',
+              ('share/flent/ui',
                glob("ui/*.ui")),
-              ('share/doc/netperf-wrapper',
+              ('share/doc/flent',
                ['BUGS',
                 'README.rst']+glob("*.example")),
               ('share/man/man1',
-               ['man/netperf-wrapper.1']),
-              ('share/doc/netperf-wrapper/misc',
+               ['man/flent.1']),
+              ('share/doc/flent/misc',
                glob("misc/*")),
               ('share/mime/packages',
-               ['netperf-wrapper-mime.xml']),
+               ['flent-mime.xml']),
               ('share/applications',
-               ['netperf-wrapper.desktop'])]
+               ['flent.desktop'])]
 
 with open("README.rst") as fp:
     long_description = "\n"+fp.read()
 
-setup(name="netperf-wrapper",
+setup(name="flent",
       version=version_string,
       description="Wrapper for running network tests such as netperf concurrently",
       long_description=long_description,
       author="Toke Høiland-Jørgensen <toke@toke.dk>",
       author_email="toke@toke.dk",
-      url="https://github.com/tohojo/netperf-wrapper",
+      url="https://github.com/tohojo/flent",
       license = "GNU GPLv3",
       platforms = ['Linux'],
-      packages = ["netperf_wrapper"],
-      scripts = ["netperf-wrapper"],
+      packages = ["flent"],
+      scripts = ["bin/flent"],
       data_files = data_files,
       cmdclass = {'build_py': build_py, 'install': install},
     )
