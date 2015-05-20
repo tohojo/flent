@@ -7,4 +7,4 @@ Exec=netperf-wrapper --gui %F
 Icon=applications-internet
 Categories=Qt;Network;
 Terminal=false
-MimeType=application/x-compressed-json;
+MimeType=application/vnd.flent.data;application/x-compressed-json;
