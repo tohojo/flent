@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import math, os, gzip, io, socket, re
+import math, os, gzip, bz2, io, socket, re
 from bisect import bisect_left
 from datetime import datetime
 from fnmatch import fnmatch
@@ -185,6 +185,17 @@ def gzip_open(filename, mode="rb"):
         return io.TextIOWrapper(binary_file)
     else:
         return binary_file
+
+if hasattr(bz2, 'open'):
+    bz2_open = bz2.open
+else:
+    def bz2_open(filename, mode='rb', compresslevel=9):
+        bz_mode = mode.replace("t", "")
+        binary_file = bz2.BZ2File(filename, bz_mode, compresslevel=compresslevel)
+        if "t" in mode:
+            return io.TextIOWrapper(binary_file)
+        else:
+            return binary_file
 
 
 class DefaultConfigParser(configparser.ConfigParser):

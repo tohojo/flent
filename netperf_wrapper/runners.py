@@ -96,10 +96,14 @@ class ProcessRunner(threading.Thread):
         self.returncode = None
         self.kill_lock = threading.Lock()
         self.metadata = {}
+        self.raw_values = []
         self.out = ""
         self.err = ""
         self.stdout = None
         self.stderr = None
+
+        if 'units' in kwargs:
+            self.metadata['UNITS'] = kwargs['units']
 
     def handle_usr2(self, signal, frame):
         if self.start_event is not None:
@@ -378,7 +382,7 @@ class DitgRunner(ProcessRunner):
                 'size': int(vals['Size'])
             })
 
-        self.metadata['RAW_VALUES'] = raw_values
+        self.raw_values = raw_values
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
@@ -414,8 +418,7 @@ class NetperfDemoRunner(ProcessRunner):
                 if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
                     result.append([time, value])
                     avg_dur = alpha * avg_dur + (1.0-alpha) * dur
-        if self.settings.SAVE_RAW:
-            self.metadata['RAW_VALUES'] = raw_values
+        self.raw_values = raw_values
         try:
             self.metadata['MEAN_VALUE'] = float(lines[-1])
         except (ValueError,IndexError):
@@ -442,7 +445,13 @@ class RegexpRunner(ProcessRunner):
                 match = regexp.match(line)
                 if match:
                     result.append([float(match.group('t')), float(match.group('val'))])
-                    raw_values.append(match.groupdict())
+                    rw = match.groupdict()
+                    for k,v in rw.items():
+                        try:
+                            rw[k] = float(v)
+                        except ValueError:
+                            pass
+                    raw_values.append(rw)
                     break # only match one regexp per line
             for regexp in self.metadata_regexes:
                 match = regexp.match(line)
@@ -452,8 +461,7 @@ class RegexpRunner(ProcessRunner):
                             self.metadata[k] = float(v)
                         except ValueError:
                             self.metadata[k] = v
-        if self.settings.SAVE_RAW:
-            self.metadata['RAW_VALUES'] = raw_values
+        self.raw_values = raw_values
         return result
 
 class PingRunner(RegexpRunner):
@@ -588,6 +596,7 @@ class NullRunner(object):
 class ComputingRunner(object):
     command = "Computed"
     supported_meta = ['MEAN_VALUE']
+    copied_meta = ['UNITS']
     def __init__(self, name, settings, apply_to=None, *args, **kwargs):
         self.name = name
         self.settings = settings
@@ -634,6 +643,16 @@ class ComputingRunner(object):
                     vals.append(meta[k][mk])
             if vals:
                 meta[self.name][mk] = self.compute(vals)
+
+        for mk in self.copied_meta:
+            vals = []
+            for k in keys:
+                if k in meta and mk in meta[k]:
+                    vals.append(meta[k][mk])
+            if vals:
+                # If all the source values of the copied metadata are the same,
+                # just use that value, otherwise include all of them.
+                meta[self.name][mk] = vals if len(set(vals)) > 1 else vals[0]
 
         res.add_result(self.name, new_res)
         return res

@@ -5,4 +5,10 @@
      <sub-class-of type="application/gzip"/>
      <glob pattern="*.json.gz"/>
    </mime-type>
+   <mime-type type="application/vnd.flent.data">
+     <comment>Flent data file.</comment>
+     <sub-class-of type="application/x-bzip2"/>
+     <sub-class-of type="application/json"/>
+     <glob pattern="*.flnt"/>
+   </mime-type>
 </mime-info>
