@@ -189,9 +189,20 @@ def gzip_open(filename, mode="rb"):
 if hasattr(bz2, 'open'):
     bz2_open = bz2.open
 else:
+    # compatibility with io.TextIOWrapper for Python 2
+    class bz2file(bz2.BZ2File):
+        def readable(self):
+            return 'r' in self.mode
+        def writable(self):
+            return 'w' in self.mode
+        def seekable(self):
+            return True
+        def flush(self):
+            pass
+
     def bz2_open(filename, mode='rb', compresslevel=9):
         bz_mode = mode.replace("t", "")
-        binary_file = bz2.BZ2File(filename, bz_mode, compresslevel=compresslevel)
+        binary_file = bz2file(filename, bz_mode, compresslevel=compresslevel)
         if "t" in mode:
             return io.TextIOWrapper(binary_file)
         else:
