@@ -2,4 +2,4 @@
 
 OURDIR=$(realpath $(dirname $0))
 
-PYTHONPATH="$OURDIR:$PYTHONPATH" "$OURDIR/bin/flent" "$@"
+PYTHONPATH="$OURDIR:$PYTHONPATH" python -m flent "$@"

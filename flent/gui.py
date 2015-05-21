@@ -57,7 +57,7 @@ __all__ = ['run_gui']
 
 def run_gui(settings):
     if check_running(settings):
-        sys.exit(0)
+        return 0
 
     # Python does not get a chance to process SIGINT while in the Qt event loop,
     # so reset to the default signal handler which just kills the application.
@@ -67,7 +67,7 @@ def run_gui(settings):
     app = QApplication(sys.argv[:1])
     mainwindow = MainWindow(settings)
     mainwindow.show()
-    sys.exit(app.exec_())
+    return app.exec_()
 
 def check_running(settings):
     """Check for a valid socket of an already running instance, and if so,

@@ -614,8 +614,8 @@ def load_gui(settings):
     from flent import gui
     gui.run_gui(settings) # does not return
 
-def load():
-    (dummy,args) = parser.parse_args(values=settings)
+def load(argv):
+    (dummy,args) = parser.parse_args(argv, values=settings)
 
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
         list_tests()

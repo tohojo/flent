@@ -19,4 +19,66 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['aggregators', 'build_info', 'formatters', 'gui', 'orderreddict', 'resultset', 'runners', 'settings', 'transformers', 'util']
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import locale
+import os
+import signal
+import sys
+
+# Convert SIGTERM into SIGINT to apply the same shutdown logic.
+def handle_sigterm(sig, frame):
+        os.kill(os.getpid(), signal.SIGINT)
+
+def run_flent(gui=False):
+    try:
+        locale.setlocale(locale.LC_ALL, '')
+        from flent import batch
+        from flent.settings import load
+
+        try:
+            signal.signal(signal.SIGTERM, handle_sigterm)
+            settings = load(sys.argv[1:])
+            if gui or settings.GUI:
+                from flent.gui import run_gui
+                return run_gui(settings)
+            else:
+                b = batch.new(settings)
+                b.run()
+
+        except RuntimeError as e:
+            try:
+                if not settings.DEBUG_ERROR:
+                    sys.stderr.write("Fatal error: %s\n"% str(e))
+                    return 1
+                else:
+                    raise
+            except NameError:
+                sys.stderr.write("Fatal error: %s\n"% str(e))
+                return 1
+    except KeyboardInterrupt:
+        try:
+            b.kill()
+        except NameError:
+            pass
+
+        # Proper behaviour on SIGINT is re-killing self with SIGINT to properly
+        # signal to surrounding shell what happened.
+        # Ref: http://mywiki.wooledge.org/SignalTrap
+        try:
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+            os.kill(os.getpid(), signal.SIGINT)
+        except:
+            return 1 # Just in case...
+    finally:
+        try:
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        except:
+            pass
+    return 0
+
+def run_flent_gui():
+    return run_flent(gui=True)
+
+
+__all__ = ['aggregators', 'build_info', 'formatters', 'gui', 'resultset', 'runners', 'settings', 'transformers', 'util', 'run_flent', 'run_flent_gui']

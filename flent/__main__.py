@@ -1,11 +1,10 @@
-#!/usr/bin/env python
-## -*- mode: python; coding: utf-8 -*-
+## -*- coding: utf-8 -*-
 ##
-## flent.py
+## __main__.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     October 8th, 2012
-## Copyright (c) 2012-2015, Toke Høiland-Jørgensen
+## Date:     21 May 2015
+## Copyright (c) 2015, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by

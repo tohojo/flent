@@ -4,8 +4,8 @@
 ## flent.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     October 8th, 2012
-## Copyright (c) 2012-2015, Toke Høiland-Jørgensen
+## Date:     21 May, 2015
+## Copyright (c) 2015, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-from flent import run_flent
+from flent import run_flent_gui
 
 if __name__ == "__main__":
-    sys.exit(run_flent())
+    sys.exit(run_flent_gui())

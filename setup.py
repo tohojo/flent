@@ -108,7 +108,7 @@ setup(name="flent",
       license = "GNU GPLv3",
       platforms = ['Linux'],
       packages = ["flent"],
-      scripts = ["bin/flent"],
+      scripts = ["bin/flent", "bin/flent-gui"],
       data_files = data_files,
       cmdclass = {'build_py': build_py, 'install': install},
     )
