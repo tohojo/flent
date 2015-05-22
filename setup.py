@@ -37,12 +37,16 @@ if sys.version_info[:2] < (2,6):
 class install(_install):
     user_options = _install.user_options + [('fake-root', None,
                                               'indicates that --root is fake'
-                                              ' (e.g. when creating packages.)')]
-    boolean_options = _install.boolean_options + ['fake-root']
+                                              ' (e.g. when creating packages.)'),
+                                            ('single-version-externally-managed', None,
+                                             'No-op; for compatibility with setuptools')]
+    boolean_options = _install.boolean_options + ['fake-root',
+                                                  'single-version-externally-managed']
 
     def initialize_options(self):
         _install.initialize_options(self)
         self.fake_root = False
+        self.single_version_externally_managed = False
 
 class build_py(_build_py):
     """build_py command
