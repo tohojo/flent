@@ -104,11 +104,11 @@ with open("README.rst") as fp:
 
 setup(name="flent",
       version=version_string,
-      description="Wrapper for running network tests such as netperf concurrently",
+      description="The FLExible Network Tester",
       long_description=long_description,
       author="Toke Høiland-Jørgensen <toke@toke.dk>",
       author_email="toke@toke.dk",
-      url="https://github.com/tohojo/flent",
+      url="http://flent.org",
       license = "GNU GPLv3",
       platforms = ['Linux'],
       packages = ["flent"],
