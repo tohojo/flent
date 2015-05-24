@@ -99,6 +99,32 @@ data_files = [('share/flent', ['matplotlibrc.dist']),
               ('share/applications',
                ['flent.desktop'])]
 
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Environment :: MacOS X',
+    'Environment :: X11 Applications',
+    'Environment :: X11 Applications :: KDE',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Education',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: System Administrators',
+    'Intended Audience :: Telecommunications Industry',
+    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: POSIX',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 2',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3.4',
+    'Topic :: Internet',
+    'Topic :: System :: Benchmark',
+    'Topic :: System :: Networking',
+    'Topic :: Utilities',
+]
+
 with open("README.rst") as fp:
     long_description = "\n"+fp.read()
 
@@ -110,6 +136,7 @@ setup(name="flent",
       author_email="toke@toke.dk",
       url="http://flent.org",
       license = "GNU GPLv3",
+      classifiers = classifiers,
       platforms = ['Linux'],
       packages = ["flent"],
       scripts = ["bin/flent", "bin/flent-gui"],
