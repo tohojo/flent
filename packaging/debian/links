@@ -1,1 +1,2 @@
-/usr/share/netperf-wrapper/netperf-wrapper /usr/bin/netperf-wrapper
+/usr/share/flent/flent /usr/bin/flent
+/usr/share/flent/flent-gui /usr/bin/flent-gui

@@ -4,12 +4,9 @@
 	dh $@ --with python2
 
 override_dh_auto_install:
-	python setup.py install --fake-root --root=debian/netperf-wrapper --install-layout=deb --install-lib=/usr/share/netperf-wrapper --install-scripts=/usr/share/netperf-wrapper
+	python setup.py install --fake-root --root=debian/flent --install-layout=deb --install-lib=/usr/share/flent --install-scripts=/usr/share/flent
 
 override_dh_auto_build:
-
-override_dh_installchangelogs:
-	dh_installchangelogs -k CHANGES
 
 override_dh_auto_clean:
 	dh_auto_clean
