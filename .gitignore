@@ -30,7 +30,9 @@ pip-log.txt
 
 # data files
 *.json.gz
-*.flnt
+*.flent
+*.flent.gz
+*.flent.bz2
 *.csv
 *.pdf
 *.png
