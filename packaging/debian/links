@@ -1,2 +1,2 @@
-/usr/share/flent/flent /usr/bin/flent
-/usr/share/flent/flent-gui /usr/bin/flent-gui
+/usr/share/flent/run /usr/bin/flent
+/usr/share/flent/run-gui /usr/bin/flent-gui

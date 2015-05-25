@@ -4,6 +4,9 @@
 	dh $@ --with python2
 
 override_dh_auto_install:
+	ln bin/flent bin/run
+	ln bin/flent-gui bin/run-gui
+	sed -i 's|bin/flent|bin/run|g' setup.py
 	python setup.py install --fake-root --root=debian/flent --install-layout=deb --install-lib=/usr/share/flent --install-scripts=/usr/share/flent
 
 override_dh_auto_build:
