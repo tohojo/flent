@@ -315,7 +315,7 @@ class BatchRunner(object):
             if 'output_path' in b:
                 output_path = clean_path(b['output_path'], allow_dirs=True)
             else:
-                output_path = os.path.dirname(settings.OUTPUT) or "."
+                output_path = settings.DATA_DIR
 
             if settings.BATCH_DRY and settings.BATCH_VERBOSE:
                 sys.stderr.write("  Would output to: %s.\n" % output_path)
@@ -376,7 +376,7 @@ class BatchRunner(object):
         if self.log_fd is not None:
             self.log_fd.write(text + "\n")
 
-    def run_test(self, settings, output_path):
+    def run_test(self, settings, output_path, print_datafile_loc=False):
         settings = settings.copy()
         settings.load_test()
         res = resultset.new(settings)
@@ -393,6 +393,8 @@ class BatchRunner(object):
         if settings.EXTENDED_METADATA:
             record_postrun_metadata(res, settings.REMOTE_METADATA)
         res.dump_dir(output_path)
+        if print_datafile_loc:
+            sys.stderr.write("Data file written to %s.\n" % res.dump_file)
 
         formatter = formatters.new(settings)
         formatter.format([res])
@@ -454,7 +456,7 @@ class BatchRunner(object):
                                                                                     self.tests_run, (end_time - start_time)))
             return True
         else:
-            return self.run_test(self.settings, os.path.dirname(self.settings.OUTPUT) or ".")
+            return self.run_test(self.settings, self.settings.DATA_DIR, True)
 
     def kill(self):
         self.killed = True

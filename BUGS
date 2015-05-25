@@ -13,5 +13,5 @@ and include as much as possible of the following information with all
 reports:
 
 - Output on the console for the error.
-- The data file for the test (<testname>-<date>.flnt).
+- The data file for the test (<testname>-<date>.flent.gz).
 - Log file output (rerun the test with -l logfile.txt).

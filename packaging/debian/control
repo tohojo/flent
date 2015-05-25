@@ -4,7 +4,7 @@ Section: python
 Priority: optional
 Build-Depends: python (>= 2.6), debhelper (>= 7.4.3)
 Standards-Version: 3.9.3
-Homepage: https://pypi.python.org/pypi/flent/
+Homepage: http://flent.org
 Vcs-Git: git://github.com/tohojo/flent.git
 Vcs-Browser: https://github.com/tohojo/flent
 X-Python-Version: >=2.6
@@ -14,13 +14,13 @@ Architecture: all
 Depends: ${misc:Depends}, python (>= 2.6), netperf (>= 2.6.0)
 Replaces: netperf-wrapper
 Conflicts: netperf-wrapper
-Recommends: python-matplotlib
+Suggests: python-matplotlib, python-qt4
 Description: The FLExible Network Tester
- flent
+ Flent
  -----
  .
- Python wrapper to run multiple simultaneous netperf/iperf/ping instances
- and aggregate the results.
+ The FLExible Network Tester: Python wrapper to run multiple simultaneous
+ netperf/iperf/ping instances and aggregate the results.
  .
  Tests are specified as config files (which are really Python), and
  various parsers for tool output are supplied. At the moment, parsers for

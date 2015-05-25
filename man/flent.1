@@ -1,6 +1,6 @@
-.TH FLENT "1" "May 2015" "Flent v0.10.0-git." "User Commands"
+.TH FLENT "1" "May 2015" "Flent v0.11.0-git." "User Commands"
 .SH NAME
-Flent \- the FLExible Network Tester. Manual page for Flent v0.10.0-git
+Flent \- the FLExible Network Tester. Manual page for Flent v0.11.0-git
 .SH SYNOPSIS
 .B flent
 [\fIoptions\fR] \fI<host|test|input file \fR...\fI>\fR
@@ -60,10 +60,10 @@ ping data, otherwise the system ping will be used.
 .SH OPTIONS
 .TP
 \fB\-o\fR OUTPUT, \fB\-\-output\fR=\fIOUTPUT\fR
-File to write processed output to (default standard
-out). The JSON data file is written to the same
-directory as this file, if provided. Otherwise, the
-data file is written to the current directory.
+File to write processed output to (default standard out).
+.TP
+\fB\-D\fR DATA_DIR, \fB\-\-data\-dir\fR=\fIDATA_DIR\fR
+Directory to store data files in. Defaults to the system tmpdir.
 .TP
 \fB\-i\fR INPUT, \fB\-\-input\fR=\fIINPUT\fR
 File to read input from (instead of running tests).

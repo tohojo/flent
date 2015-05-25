@@ -817,12 +817,12 @@ class PlotFormatter(Formatter):
         # end, followed by a number signifying test iteration. So for instance
         # given the filenames:
         #
-        # rrul-fq_codel-01.flnt
-        # rrul-fq_codel-02.flnt
-        # rrul-fq_codel-03.flnt
-        # rrul-pfifo_fast-01.flnt
-        # rrul-pfifo_fast-02.flnt
-        # rrul-pfifo_fast-03.flnt
+        # rrul-fq_codel-01.flent.gz
+        # rrul-fq_codel-02.flent.gz
+        # rrul-fq_codel-03.flent.gz
+        # rrul-pfifo_fast-01.flent.gz
+        # rrul-pfifo_fast-02.flent.gz
+        # rrul-pfifo_fast-03.flent.gz
         #
         # two new data sets will be created ('fq_codel' and 'pfifo_fast'), each
         # with three data points created from each of the data files. The

@@ -46,7 +46,7 @@ the available plots can be displayed with
 Running tests and plotting/displaying the output is logically split up
 in two separate processes, but can be combined into one. When a test is
 run, its data output is always saved in a file called
-``<test_name>-<date>.flnt`` in the same directory as the output file
+``<test_name>-<date>.flent.gz`` in the same directory as the output file
 selected with -o (or the current directory if no output file is
 selected). This file can be read back in with the -i switch, in which
 case the test will not be run again, but the saved test data will be
@@ -112,7 +112,7 @@ The json data format
 --------------------
 
 The aggregated test data is saved in a file called
-``<test_name>-<date>.flnt``. This file contains the data points
+``<test_name>-<date>.flent.gz``. This file contains the data points
 generated during the test, as well as some metadata. The top-level json
 object has five keys in it: ``version``, ``x_values``, ``results``,
 ``metadata`` and ``raw_values``.

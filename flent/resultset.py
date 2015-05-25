@@ -82,7 +82,7 @@ def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
 class ResultSet(object):
-    SUFFIX = '.flnt'
+    SUFFIX = '.flent.gz'
     def __init__(self, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
@@ -269,11 +269,14 @@ class ResultSet(object):
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
         try:
-            fp = bz2_open(self._dump_file, "wt")
-            try:
+            if self._dump_file.endswith(".gz"):
+                o = gzip_open
+            elif self._dump_file.endswith(".bz2"):
+                o = bz2_open
+            else:
+                o = open
+            with o(self._dump_file, "wt") as fp:
                 self.dump(fp)
-            finally:
-                fp.close()
         except IOError as e:
             sys.stderr.write("Unable to write results data file: %s\n" % e)
             self._dump_file = None
@@ -343,7 +346,7 @@ class ResultSet(object):
         try:
             if filename.endswith(".gz"):
                 o = gzip_open
-            elif filename.endswith(cls.SUFFIX):
+            elif filename.endswith(".bz2") or filename.endswith(".flnt"):
                 o = bz2_open
             else:
                 o = open

@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, optparse, socket, subprocess, time, collections
+import sys, os, optparse, socket, subprocess, time, collections, tempfile
 
 from datetime import datetime
 from copy import copy, deepcopy
@@ -51,6 +51,7 @@ DEFAULT_SETTINGS = {
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
     'OUTPUT': '-',
+    'DATA_DIR': tempfile.gettempdir(),
     'FORMAT': 'default',
     'TITLE': '',
     'OVERRIDE_TITLE': '',
@@ -119,6 +120,7 @@ CONFIG_TYPES = {
     'STEP_SIZE': 'float',
     'LENGTH': 'int',
     'OUTPUT': 'str',
+    'DATA_DIR': 'str',
     'FORMAT': 'str',
     'TITLE': 'str',
     'NOTE': 'str',
@@ -206,9 +208,9 @@ parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-st
                                option_class=ExtendedOption)
 
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
-                  help="File to write processed output to (default standard out). The JSON "
-                  "data file is written to the same directory as this file, if provided. "
-                  "Otherwise, the data file is written to the current directory.")
+                  help="File to write processed output to (default standard out).")
+parser.add_option("-D", "--data-dir", action="store", type="string", dest="DATA_DIR",
+                  help="Directory to store data files in. Defaults to the system tmpdir.")
 parser.add_option("-i", "--input", action="append", type="string", dest="INPUT",
                   help="File to read input from (instead of running tests). Input files "
                   "can also be specified as unqualified arguments without using the -i switch.")

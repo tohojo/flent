@@ -237,7 +237,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         filenames = QFileDialog.getOpenFileNames(self,
                                                  "Select data file(s)",
                                                  self.last_dir,
-                                                 "Data files (*.flnt)")
+                                                 "Flent data files (*.flent *.flent.gz *.flent.bz2);; "
+                                                 "Flent data files - deprecated extensions (*.flnt *.json.gz)")
         if filenames:
             self.last_dir = os.path.dirname(unicode(filenames[0]))
 
