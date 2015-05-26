@@ -47,5 +47,5 @@ fi
 echo ==== Staging changed files ====
 git add flent/build_info.py man/flent.1{,.html} packaging/debian/changelog packaging/archlinux/PKGBUILD || die error
 
-echo ==== Done. Review changes and commit and tag. ====
-echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
+echo ==== Done. Review changes and commit \(and tag\). ====
+[[ ! "$VERSION" =~ -git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
