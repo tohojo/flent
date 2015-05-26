@@ -1,8 +1,9 @@
 Flent: The FLExible Network Tester
 ==================================
 
-Python wrapper to run multiple simultaneous netperf/iperf/ping instances
-and aggregate the results. The main documentation is in the man page,
+Flent is a Python wrapper to run multiple simultaneous netperf/iperf/ping
+instances and aggregate the results. It was previously known as
+'netperf-wrapper'. The main documentation is in the man page,
 `available as HTML here <https://tohojo.github.io/flent.1.html>`__.
 
 Tests are specified as config files (which are really Python), and
