@@ -2,7 +2,7 @@ Source: flent
 Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
 Section: python
 Priority: optional
-Build-Depends: python (>= 2.6), debhelper (>= 7.4.3)
+Build-Depends: python (>= 2.6), debhelper (>= 7.4.3), python-setuptools
 Standards-Version: 3.9.3
 Homepage: http://flent.org
 Vcs-Git: git://github.com/tohojo/flent.git
