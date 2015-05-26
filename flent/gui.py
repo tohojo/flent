@@ -36,11 +36,15 @@ try:
 except ImportError:
     raise RuntimeError("PyQt4 must be installed to use the GUI.")
 
+OVERRIDE_SAVEFIG_DIR = False
 try:
     import matplotlib
     matplotlib.use("Agg")
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+    if matplotlib.rcParams['savefig.directory'] == matplotlib.rcParamsDefault['savefig.directory']:
+        matplotlib.rcParams['savefig.directory'] = os.getcwd()
+        OVERRIDE_SAVEFIG_DIR = True
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
@@ -135,6 +139,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         super(MainWindow, self).__init__()
         self.settings = settings
         self.last_dir = os.getcwd()
+        self.savefig_dir_overridden = False
         self.defer_load = self.settings.INPUT
 
         self.actionOpen.activated.connect(self.on_open)
@@ -447,6 +452,13 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.change_plot(current_plot)
             self.viewArea.addTab(widget, widget.title)
             self.last_dir = os.path.dirname(unicode(f))
+
+        # Only override the savefig directory on the first load; after that,
+        # matplotlib will save the last directory that a file was saved to.
+        if OVERRIDE_SAVEFIG_DIR and not self.savefig_dir_overridden:
+            matplotlib.rcParams['savefig.directory'] = self.last_dir
+            self.savefig_dir_overridden = True
+
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
         self.shorten_tabs()
