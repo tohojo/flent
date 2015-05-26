@@ -112,7 +112,7 @@ class Monitor(threading.Thread):
 
     def collect_garbage(self):
         self._lock.acquire()
-        for k,v in self._test_data.items():
+        for k,v in list(self._test_data.items()):
             if v.expired():
                 del self._test_data[k]
         self._lock.release()
@@ -129,7 +129,7 @@ monitor.start()
 
 while True:
     try:
-        request_id = raw_input().strip()
-        print json.dumps(monitor.get_records(request_id))
+        request_id = input().strip()
+        print(json.dumps(monitor.get_records(request_id)))
     except KeyError:
-        print "No records for id %s." % request_id
+        print("No records for id %s." % request_id)
