@@ -21,9 +21,9 @@
 
 import sys, os
 
-from distutils.core import setup
-from distutils.command.build_py import build_py as _build_py
-from distutils.command.install import install as _install
+from setuptools import setup
+from setuptools.command.build_py import build_py as _build_py
+from setuptools.command.sdist import sdist as _sdist
 
 from flent.build_info import VERSION
 from glob import glob
@@ -34,19 +34,12 @@ if sys.version_info[:2] < (2,6):
     sys.stderr.write("Sorry, flent requires v2.6 or later of Python\n")
     sys.exit(1)
 
-class install(_install):
-    user_options = _install.user_options + [('fake-root', None,
-                                              'indicates that --root is fake'
-                                              ' (e.g. when creating packages.)'),
-                                            ('single-version-externally-managed', None,
-                                             'No-op; for compatibility with setuptools')]
-    boolean_options = _install.boolean_options + ['fake-root',
-                                                  'single-version-externally-managed']
-
-    def initialize_options(self):
-        _install.initialize_options(self)
-        self.fake_root = False
-        self.single_version_externally_managed = False
+def rewrite_build_info(module_file):
+    with open(module_file, 'w') as module_fp:
+        module_fp.write('# -*- coding: UTF-8 -*-\n\n')
+        module_fp.write("import os\n")
+        module_fp.write("VERSION='%s'\n"%(version_string))
+        module_fp.write("DATA_DIR=os.path.dirname(__file__)\n")
 
 class build_py(_build_py):
     """build_py command
@@ -58,22 +51,11 @@ class build_py(_build_py):
 
     def build_module (self, module, module_file, package):
         orig_content = None
-        if ( module == 'build_info' and package == 'flent'
-             and 'install' in self.distribution.command_obj):
-            iobj = self.distribution.command_obj['install']
+        if module == 'build_info' and package == 'flent':
             with open(module_file, 'rb') as module_fp:
                 orig_content = module_fp.read()
 
-            if iobj.fake_root:
-                prefix = iobj.prefix
-            else:
-                prefix = iobj.install_data
-
-            with open(module_file, 'w') as module_fp:
-                module_fp.write('# -*- coding: UTF-8 -*-\n\n')
-                module_fp.write("VERSION='%s'\n"%(version_string))
-                module_fp.write("DATA_DIR='%s'\n"%(
-                    os.path.join(prefix, 'share', 'flent')))
+            rewrite_build_info(module_file)
 
         _build_py.build_module(self, module, module_file, package)
 
@@ -81,13 +63,16 @@ class build_py(_build_py):
             with open(module_file, 'wb') as module_fp:
                 module_fp.write(orig_content)
 
-data_files = [('share/flent', ['matplotlibrc.dist']),
-              ('share/flent/tests',
-               glob("tests/*.conf") + \
-                   glob("tests/*.inc")),
-              ('share/flent/ui',
-               glob("ui/*.ui")),
-              ('share/doc/flent',
+class sdist(_sdist):
+    def make_release_tree(self, base_dir, files):
+        if 'flent/build_info.py' in files and not self.dry_run:
+            files = [f for f in files if f != 'flent/build_info.py']
+            _sdist.make_release_tree(self,base_dir,files)
+            rewrite_build_info(os.path.join(base_dir, 'flent/build_info.py'))
+        else:
+            _sdist.make_release_tree(self,base_dir,files)
+
+data_files = [('share/doc/flent',
                ['BUGS',
                 'README.rst']+glob("*.example")),
               ('share/man/man1',
@@ -132,6 +117,7 @@ setup(name="flent",
       version=version_string,
       description="The FLExible Network Tester",
       long_description=long_description,
+      include_package_data=True,
       author="Toke Høiland-Jørgensen <toke@toke.dk>",
       author_email="toke@toke.dk",
       url="http://flent.org",
@@ -139,7 +125,13 @@ setup(name="flent",
       classifiers = classifiers,
       platforms = ['Linux'],
       packages = ["flent"],
-      scripts = ["bin/flent", "bin/flent-gui"],
+      entry_points = {'console_scripts': ['flent = flent:run_flent'],
+                      'gui_scripts': ['flent-gui = flent:run_flent_gui']},
+      zip_safe=False,
       data_files = data_files,
-      cmdclass = {'build_py': build_py, 'install': install},
+      cmdclass = {'build_py': build_py, 'sdist': sdist},
+      extras_require = {
+          'GUI': ['PyQT4'],
+          'Plots': ['matplotlib'],
+      },
     )
