@@ -51,7 +51,7 @@ DEFAULT_SETTINGS = {
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
     'OUTPUT': '-',
-    'DATA_DIR': tempfile.gettempdir(),
+    'DATA_DIR': None,
     'FORMAT': 'default',
     'TITLE': '',
     'OVERRIDE_TITLE': '',
@@ -608,6 +608,8 @@ class Settings(optparse.Values, object):
         if self.HOST is None and self.HOSTS:
             self.HOST = self.HOSTS[0]
 
+        if self.DATA_DIR is None:
+            self.DATA_DIR = os.path.dirname(self.OUTPUT) or '.'
 
 
 settings = Settings(DEFAULT_SETTINGS)
