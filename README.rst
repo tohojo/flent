@@ -57,11 +57,10 @@ this output, but will still be saved in the json file.
 Installing
 ----------
 
-Install the package system-wide by running
-``sudo python2 setup.py install`` or ``sudo pip install flent`` for the
-latest released version. Packages for Debian/Ubuntu and Arch Linux are
-available at OBS:
-https://build.opensuse.org/project/repositories/home:tohojo:flent.
+Install the package system-wide by running ``sudo make install`` or ``sudo pip
+install flent`` for the latest released version. Arch Linux users can install
+from the AUR. Packages for Debian/Ubuntu are available at:
+https://software.opensuse.org/download.html?project=home:tohojo:flent&package=flent
 
 Quick Start
 -----------
