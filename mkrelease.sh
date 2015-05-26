@@ -34,8 +34,9 @@ EOF
     mv $tmpfile packaging/debian/changelog || die error
 
     echo ==== Creating and signing release tarball... ====
-    python setup.py sdist  || die error
+    python setup.py sdist bdist_wheel  || die error
     gpg --detach-sign --armor dist/flent-${VERSION}.tar.gz  || die error
+    gpg --detach-sign --armor dist/flent-${VERSION}-py2.py3-none-any.whl  || die error
 
     echo ==== Updating Arch PKGBUILD sha1sum... ====
     SHA1=$(sha1sum dist/flent-${VERSION}.tar.gz | awk '{print $1}')
@@ -47,4 +48,4 @@ echo ==== Staging changed files ====
 git add flent/build_info.py man/flent.1{,.html} packaging/debian/changelog packaging/archlinux/PKGBUILD || die error
 
 echo ==== Done. Review changes and commit and tag. ====
-echo ==== Upload with \`twine upload dist/flent-${VERSION}.tar.gz*\`. ====
+echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
