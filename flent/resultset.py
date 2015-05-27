@@ -312,9 +312,11 @@ class ResultSet(object):
     @classmethod
     def unserialise_compat(cls, version, obj, absolute=False):
         if version == 1:
-            obj['raw_values'] = dict([(k,v['RAW_VALUES']) for k,v in
-                                      obj['metadata']['SERIES_META'].items()
-                                      if 'RAW_VALUES' in v])
+            obj['raw_values'] = {}
+            if 'SERIES_META' in obj['metadata']:
+                obj['raw_values'] = dict([(k,v['RAW_VALUES']) for k,v in
+                                          obj['metadata']['SERIES_META'].items()
+                                          if 'RAW_VALUES' in v])
             if not obj['raw_values']:
                 # No raw values were stored in the old data set. Fake them by
                 # using the interpolated values as 'raw'. This ensures there's
