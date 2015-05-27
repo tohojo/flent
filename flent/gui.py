@@ -36,15 +36,11 @@ try:
 except ImportError:
     raise RuntimeError("PyQt4 must be installed to use the GUI.")
 
-OVERRIDE_SAVEFIG_DIR = False
 try:
     import matplotlib
     matplotlib.use("Agg")
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-    if matplotlib.rcParams['savefig.directory'] == matplotlib.rcParamsDefault['savefig.directory']:
-        matplotlib.rcParams['savefig.directory'] = os.getcwd()
-        OVERRIDE_SAVEFIG_DIR = True
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
@@ -139,7 +135,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         super(MainWindow, self).__init__()
         self.settings = settings
         self.last_dir = os.getcwd()
-        self.savefig_dir_overridden = False
         self.defer_load = self.settings.INPUT
 
         self.actionOpen.activated.connect(self.on_open)
@@ -188,6 +183,17 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.sockets = []
         self.server.newConnection.connect(self.new_connection)
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
+
+    def get_last_dir(self):
+        if 'savefig.directory' in matplotlib.rcParams:
+            return matplotlib.rcParams['savefig.directory']
+        return self._last_dir
+    def set_last_dir(self, value):
+        if 'savefig.directory' in matplotlib.rcParams:
+            matplotlib.rcParams['savefig.directory'] = value
+        else:
+            self._last_dir = value
+    last_dir = property(get_last_dir, set_last_dir)
 
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
@@ -452,12 +458,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.change_plot(current_plot)
             self.viewArea.addTab(widget, widget.title)
             self.last_dir = os.path.dirname(unicode(f))
-
-        # Only override the savefig directory on the first load; after that,
-        # matplotlib will save the last directory that a file was saved to.
-        if OVERRIDE_SAVEFIG_DIR and not self.savefig_dir_overridden:
-            matplotlib.rcParams['savefig.directory'] = self.last_dir
-            self.savefig_dir_overridden = True
 
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
