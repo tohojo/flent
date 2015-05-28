@@ -34,7 +34,7 @@ try:
 except:
     pass
 
-if VERSION.endswith("-git") and os.path.exists(os.path.join(DATA_DIR, '.git')):
+if VERSION.endswith("-git") and os.path.exists(os.path.realpath(os.path.join(DATA_DIR, '..', '.git'))):
     try:
         import subprocess
         commit = subprocess.check_output(["git", "log", "--format=%h", "-1"], cwd=DATA_DIR).decode(ENCODING)
