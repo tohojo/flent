@@ -96,6 +96,8 @@ class ResultSet(object):
             raise RuntimeError("Missing name for resultset")
         if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
             self.metadata['DATA_FILENAME'] = self.dump_file
+        if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
+            self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
     def meta(self, k=None, v=None):
