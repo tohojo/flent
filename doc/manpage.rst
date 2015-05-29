@@ -6,7 +6,7 @@ Flent: The FLExible Network Tester
 .. toctree::
    :maxdepth: 1
 
-   intro
+   short-intro
    options
    tests
    output-formats
