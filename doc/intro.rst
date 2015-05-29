@@ -20,6 +20,19 @@ the output filename with :option:`-o` *output.{png,ps,pdf,svg}*. If no output
 file is specified, the plot is diplayed using matplotlib’s interactive
 plot browser, which also allows saving of the output (in .png format).
 
+Installing Flent
+----------------
+Installing Flent can be done in several ways, depending on your operating system:
+
+- **Debian and Ubuntu users:** Use the `packages from the Open Build Service
+  <https://software.opensuse.org/download.html?project=home:tohojo:flent&package=flent>`_
+
+- **Arch Linux users:** Install 'flent' from the AUR.
+
+- **Other Linux and OSX with Macbrew:** Install from the Python cheese shop:
+  ``pip install flent``.
+
+
 
 Quick start
 -----------

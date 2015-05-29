@@ -6,8 +6,6 @@
 Flent Documentation Contents
 ============================
 
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
