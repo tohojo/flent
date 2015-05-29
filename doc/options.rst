@@ -77,8 +77,8 @@ General options
 .. option:: --gui
 
    Run the flent GUI. All other options are used as defaults in the GUI, but can
-   be changed once it is running. See section below for a description of the
-   GUI.
+   be changed once it is running. The GUI can also be started by running the
+   :command:`flent-gui` binary. For more information on the GUI, see :doc:`gui`.
 
 .. option:: --new-gui-instance
 

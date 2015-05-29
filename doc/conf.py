@@ -51,7 +51,7 @@ master_doc = 'contents'
 
 # General information about the project.
 project = 'Flent: The FLExible Network Tester'
-copyright = '2015, Toke Høiland-Jørgensen'
+copyright = '2012-2015, Toke Høiland-Jørgensen'
 author = 'Toke Høiland-Jørgensen'
 
 # The version info for the project you're documenting, acts as replacement for
