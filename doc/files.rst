@@ -5,13 +5,13 @@ The RC file
 -----------
 
 Some of the command line options can be specified in an rc file. By default,
-flent looks for this in *~/.flentrc*, but an alternative location can be
+flent looks for this in :file:`~/.flentrc`, but an alternative location can be
 specified with the :option:`--rcfile` command line option.
 
-The rc file allows options to be specified globally, an optionally
-overridden for specific tests. For an explanation of the options, refer
-to the annotated example rc file, by default installed to
-*/usr/share/doc/flent/flentrc.example*.
+The rc file allows options to be specified globally, an optionally overridden
+for specific tests. For an explanation of the options, refer to the annotated
+example rc file, by default installed to
+:file:`/usr/share/doc/flent/flentrc.example`.
 
 Batch Files
 -----------
@@ -27,7 +27,8 @@ Arg::. Briefly, a batch is the entity that will be run, commands can be
 run before or after each batch iteration, and arguments allows
 parameterising batches.
 
-**FIXME**: Expand this section; for now, try looking at the
-*batchfile.example* file supplied with the source code, and try to work
-things out from there :).
+.. todo::
+
+   Expand this section; for now, try looking at the :file:`batchfile.example`
+   file supplied with the source code, and try to work things out from there :).
 

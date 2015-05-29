@@ -1,87 +1,149 @@
 The Data File Format
 ====================
+.. todo::
+   - Update metadata keys from source code.
 
 The aggregated test data is saved in a file called
-*<test\_name>-<date>.<title>.json.gz* (the title part is omitted if no
-title is specified by the **-t** parameter). This file contains the data
-points generated during the test, as well as some metadata. The
-top-level json object has three keys in it: *x\_values*, *results* and
-*metadata*.
+:file:`<test_name>-<date>.<title>.flent.gz` (the title part is omitted if no title is
+specified by the :option:`-t` parameter). This file contains the data points
+generated during the test, as well as some metadata.
 
-*x\_values* is an array of the x values for the test data (typically the
-time values for timeseries data).
 
-*results* is a json object containing the result data series. The keys
-are the data series names; the value for each key is an array of y
-values for that data series. The data array has the same length as the
-*x\_values* array, but there may be missing data points (signified by
-null values).
+The top-level object keys
+-------------------------
 
-*metadata* is an object containing various data points about the test
-run. The metadata values are read in as configuration parameters when
-the data set is loaded in for further processing. Not all tests use all
-the parameters, but they are saved anyway.
+.. envvar:: version
 
-Currently the metadata values are:
+            The file format version as an integer.
 
-*NAME*: The test name.
+.. envvar:: x_values
 
-*TITLE*: Any extra title specified by the **-t** parameter when the test
-was run.
+            An array of the x values for the test data (typically the time
+            values for timeseries data).
 
-*HOSTS*: List of the server hostnames connected to during the test.
+.. envvar:: results
 
-*LOCAL\_HOST*: The hostname of the machine that ran the test.
+            A JSON object containing the result data series. The keys are the
+            data series names; the value for each key is an array of y values
+            for that data series. The data array has the same length as the
+            :envvar:`x_values` array, but there may be missing data points
+            (signified by null values).
 
-*LENGTH*: Test length in seconds, as specified by the **-l** parameter.
+.. envvar:: metadata
 
-*TOTAL\_LENGTH*: Actual data series length, after the test has added
-time to the *LENGTH*.
+            An object containing various data points about the test run. The
+            metadata values are read in as configuration parameters when the
+            data set is loaded in for further processing. Not all tests use all
+            the parameters, but they are saved anyway.
 
-*STEP\_SIZE*: Time step size granularity.
+.. envvar:: raw_values
 
-*TIME*: ISO timestamp of the time the test was initiated.
+            An array of objects for each data series. Each element of the array
+            contains the raw values as parsed from the test tool corresponding
+            to that data series.
 
-*NOTE*: Arbitrary text as entered with the **--note** switch when the
-test was run.
 
-*FLENT\_VERSION*: Version of flent that generated the data file.
+Metadata keys
+-------------
 
-*IP\_VERSION*: IP version used to run test (as specified by command line
-parameters, or auto-detected from *getaddrinfo()* if unspecified).
+.. envvar:: NAME
 
-If the **−−extended−metadata** switch is turned on, the following
-additional values are collected and stored (to the extent they are
-available from the platform):
+	    The test name.
 
-*KERNEL\_NAME*: The kernel name as reported by *uname -s*.
+.. envvar:: TITLE
 
-*KERNEL\_RELEASE*: The kernel release as reported by *uname -r*.
+	    Any extra title specified by the :option:`--title-extra` parameter
+            when the test was run.
 
-*IP\_ADDRS*: IP addresses assigned to the machine running flent.
+.. envvar:: HOSTS
 
-*GATEWAYS*: IP addresses of all detected default gateways on the system,
-and the interfaces they are reachable through. Only available if the
-*netstat* binary is present on the system.
+	    List of the server hostnames connected to during the test.
 
-*EGRESS\_INFO*: Egress interface, its qdisc, offload, driver and BQL
-configuration, and (if applicable) the IP address of the next-hop router
-used to reach the test target. The egress interface and next-hop router
-requires that the *ip* binary is present on Linux, but can be extracted
-from *route* on BSD. Qdisc information requires the *tc* binary to be
-present, and offload information requires *ethtool*.
+.. envvar:: LOCAL_HOST
 
-If the **--remote-metadata** is used, the extended metadata info is
-gathered for each of the hostnames specified. This is gathered under the
-*REMOTE\_METADATA* key in the metadata object, keyed by the hostname
-values passed to **--remote-metadata**. Additionally, the
-*REMOTE\_METADATA* object will contain an object called *INGRESS\_INFO*
-which is a duplicate of *EGRESS\_INFO*, but with the destination IP
-exchanged for the source address of the host running flent. The
-assumption here is that **--remote-metadata** is used to capture
-metadata of a router known to be in the test path, in which case
-*INGRESS\_INFO* will contain information about the reverse path from the
-router (which is ingress from the point of view of the host running
-flent). If the host being queried for remote metadata is off the path,
-the contents of *INGRESS\_INFO* will probably be the same as that of
-*EGRESS\_INFO*.
+	    The hostname of the machine that ran the test.
+
+.. envvar:: LENGTH
+
+	    Test length in seconds, as specified by the :option:`--length` parameter.
+
+.. envvar:: TOTAL_LENGTH
+
+            Actual data series length, after the test has added time to the
+            :envvar:`LENGTH`.
+
+.. envvar:: STEP_SIZE
+
+	    Time step size granularity.
+
+.. envvar:: TIME
+
+            ISO timestamp of the time the test was initiated.
+
+.. envvar:: NOTE
+
+	    Arbitrary text as entered with the :option:`--note` switch when the
+            test was run.
+
+.. envvar:: FLENT_VERSION
+
+            Version of Flent that generated the data file.
+
+.. envvar:: IP_VERSION
+
+            IP version used to run test (as specified by command line
+	    parameters, or auto-detected from :c:func:`getaddrinfo()` if unspecified).
+
+Extended metadata
+-----------------
+
+If the :option:`--extended-metadata` switch is turned on, the following
+additional values are collected and stored (to the extent they are available
+from the platform):
+
+.. envvar:: KERNEL_NAME
+
+	    The kernel name as reported by :command:`uname -s`.
+
+.. envvar:: KERNEL_RELEASE
+
+            The kernel release as reported by :command:`uname -r`.
+
+.. envvar:: IP_ADDRS
+
+	    IP addresses assigned to the machine running flent.
+
+.. envvar:: GATEWAYS
+
+	    IP addresses of all detected default gateways on the system, and the
+            interfaces they are reachable through. Only available if the
+            :command:`netstat` binary is present on the system.
+
+.. envvar:: EGRESS_INFO
+
+	    Egress interface, its qdisc, offload, driver and BQL configuration,
+            and (if applicable) the IP address of the next-hop router used to
+            reach the test target. The egress interface and next-hop router
+            requires that the :command:`ip` binary is present on Linux, but can
+            be extracted from :command:`route` on BSD. Qdisc information
+            requires the :command:`tc` binary to be present, and offload
+            information requires :command:`ethtool`.
+
+            If the :option:`--remote-metadata` is used, the extended metadata
+            info is gathered for each of the hostnames specified. This is
+            gathered under the :envvar:`REMOTE_METADATA` key in the metadata
+            object, keyed by the hostname values passed to
+            :option:`--remote-metadata`. Additionally, the
+            :envvar:`REMOTE_METADATA` object will contain an object called
+            :envvar:`INGRESS_INFO` which is a duplicate of
+            :envvar:`EGRESS_INFO`, but with the destination IP exchanged for the
+            source address of the host running flent. The assumption here is
+            that :option:`--remote-metadata` is used to capture metadata of a
+            router known to be in the test path, in which case
+            :envvar:`INGRESS_INFO` will contain information about the reverse
+            path from the router (which is ingress from the point of view of the
+            host running flent). If the host being queried for remote metadata
+            is off the path, the contents of :envvar:`INGRESS_INFO` will
+            probably be the same as that of :envvar:`EGRESS_INFO` .
+
+

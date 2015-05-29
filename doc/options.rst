@@ -1,12 +1,27 @@
 Running Flent
 =============
 
+When run, flent must be supplied either (a) a test name and one or more host
+names to connect to, or (b) one or more input files containing data from
+previous runs to post-process.
+
+Test names, hostnames and input file names can all be specified as unqualified
+arguments, and flent will do its best to guess which is which. For each
+argument, if it is an existing file, it is assumed to be an input file, if it is
+the name of an existing test configuration it’s assumed to be a test name, and
+if neither of those are true, it is assumed to be a host name. The :option:`-i`
+and :option:`-H` switches can be used to explicitly specify the interpretation
+of an argument.
+
+Invocation
+----------
+
 **flent** [*options*\ ] *<host\|test\|input file* ...\ *>*
 
 
 
-Options
--------
+General options
+---------------
 
 .. option:: -o OUTPUT, --output=OUTPUT
 
@@ -107,8 +122,8 @@ Options
 
    Shorthand for :option:`--batch-override` ``'repetitions=REPETITIONS’``.
 
-Test configuration
-------------------
+Test configuration options
+--------------------------
 
 These options affect the behaviour of the test being run and have no effect when
 parsing input files.
@@ -171,8 +186,8 @@ parsing input files.
    ``TCP_MAERTS`` and ``TCP_STREAM`` parameters, so only works for tests that employ
    these as their data transfer, and only for the TCP streams.
 
-Plot configuration
-------------------
+Plot configuration options
+--------------------------
 
 These options are used to configure the appearance of plot output and only make
 sense combined with :option:`-f` *plot*.
@@ -372,3 +387,28 @@ Misc and debugging options:
 .. option:: -h, --help
 
    Show usage help message and exit.
+
+
+Signals
+-------
+
+Flent will abort what it is currently doing on receiving a **SIGINT** -- this
+includes killing all runners, cleaning up temporary files and shutting down as
+gracefully as possible. Runners are killed with **SIGTERM** in this mode, and
+their output is discarded. If a batch run is in progress, the current test will
+be interrupted in this way, and the rest of the batch run is aborted. Previously
+completed tests and their results are not aborted. Post-commands marked as
+’essential’ will be run after the test is interrupted. Additionally, flent
+converts **SIGTERM** into **SIGINT** internally and reacts accordingly.
+
+Upon receiving a **SIGUSR1**, flent will try to gracefully abort the test it is
+currently running, and parse the output of the runners to the extent that any
+such output exists. That is, each runner will be killed by a **SIGINT**, which
+will cause a graceful shutdown for at least ping and netperf (although netperf
+running in *TCP_MAERTS* mode will bug out when interrupted like this, so
+end-of-tests statistics will be missing). Flent will only react once to a
+**SIGUSR1**, sending exactly one **SIGINT** to the active runners, then wait for
+them to exit. This may take several seconds in the case of netperf. If the
+runners for some reason fail to exit, flent will be stuck and will need to be
+killed with **SIGINT**. If running in batch mode, **SIGUSR1** will only affect
+the currently running test; subsequent tests will still be run.
