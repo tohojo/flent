@@ -1,447 +1,584 @@
-.TH FLENT "1" "May 2015" "Flent v0.11.1-git." "User Commands"
+.\" Man page generated from reStructuredText.
+.
+.TH "FLENT" "1" "May 30, 2015" "0.11" "Flent: The FLExible Network Tester"
 .SH NAME
-Flent \- the FLExible Network Tester. Manual page for Flent v0.11.1-git
-.SH SYNOPSIS
-.B flent
-[\fIoptions\fR] \fI<host|test|input file \fR...\fI>\fR
-.SH INVOCATION
-When run, flent must be supplied either (a) a test name and one or
-more host names to connect to, or (b) one or more input files containing data
-from previous runs to post-process.
-.PP
+flent \- Flent: The FLExible Network Tester
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH INTRODUCTION
+.sp
+Flent is a wrapper around \fInetperf\fP and similar tools to run predefined
+tests and aggregate and plot the results. It defines several tests that
+can be run against one or more hosts, primarily targeted at testing for
+the presence of bufferbloat under various conditions.
+.sp
+The aggregated data is saved in (gzipped) JSON format for later
+processing and/or import into other tools. The JSON format is documented
+below.
+.sp
+Apart from the JSON format, the data can be output as csv values, emacs
+org mode tables or plots. Each test can specify several different plots,
+including time\-series plots of the values against each other, as well as
+CDF plots of (e.g.) ping times.
+.sp
+Plots can be output to the formats supported by matplotlib by specifying
+the output filename with \fB\-o\fP \fIoutput.{png,ps,pdf,svg}\fP\&. If no output
+file is specified, the plot is diplayed using matplotlib’s interactive
+plot browser, which also allows saving of the output (in .png format).
+.SH RUNNING FLENT
+.sp
+When run, flent must be supplied either (a) a test name and one or more host
+names to connect to, or (b) one or more input files containing data from
+previous runs to post\-process.
+.sp
 Test names, hostnames and input file names can all be specified as unqualified
-arguments, and flent will do its best to guess which is which. For
-each argument, if it is an existing file, it is assumed to be an input file, if
-it is the name of an existing test configuration it's assumed to be a test name,
-and if neither of those are true, it is assumed to be a host name. The \fB-i\fR
-and \fB-H\fR switches can be used to explicitly specify the interpretation of an
-argument.
-
-.SH DESCRIPTION
-Flent is a wrapper around \fI netperf \fR and similar tools to
-run predefined tests and aggregate and plot the results. It defines several
-tests that can be run against one or more hosts, primarily targeted at testing
-for the presence of bufferbloat under various conditions.
-.PP
-The aggregated data is saved in (gzipped) JSON format for later processing
-and/or import into other tools. The JSON format is documented below.
-.PP
-Apart from the JSON format, the data can be output as csv values, emacs org
-mode tables or plots. Each test can specify several different plots, including
-time-series plots of the values against each other, as well as CDF plots of
-(e.g.) ping times.
-.PP
-Plots can be output to the formats supported by matplotlib by specifying the
-output filename with \fB-o\fR \fIoutput.{png,ps,pdf,svg}\fR. If no output file
-is specified, the plot is diplayed using matplotlib's interactive plot browser,
-which also allows saving of the output (in .png format).
-
-.SH REQUIREMENTS
-Flent runs on Python, versions 2.7+ and 3.3+. Plotting requires a
-functional matplotlib installation (but everything else can run without
-matplotlib). For the interactive plot viewer, a graphical display (and suitably
-configured matplotlib) is required.
-.PP
-Most tests employ the \fInetperf\fR benchmarking tool to run the tests. Version
-2.6 or higher is required, and netperf must be compiled with the
-\fB\-\-enable\-demo\fR option passed to ./configure. Some tests use \fIiperf\fR
-in addition to, or instead of netperf. Both tools must be available in the
-\fIPATH\fR.
-.PP
-For ICMP ping measurements, the version of \fIping\fR employed must support
-output timestamping (the \fB\-D\fR parameter to GNU ping). This is \fBnot\fR
-supported by the BSD and OSX versions of ping. As an alternative to the regular
-ping command, the \fIfping\fR utility (see \fIfping.org\fR) can be employed. In
-that case fping must be version 3.5 or greater. Flent will attempt to
-detect the presence of fping in the \fIPATH\fR and check for support for the
-\fB\-D\fR parameter. If this check is successful, fping will be employed for
-ping data, otherwise the system ping will be used.
-
-.SH OPTIONS
+arguments, and flent will do its best to guess which is which. For each
+argument, if it is an existing file, it is assumed to be an input file, if it is
+the name of an existing test configuration it’s assumed to be a test name, and
+if neither of those are true, it is assumed to be a host name. The \fI\%\-i\fP
+and \fI\%\-H\fP switches can be used to explicitly specify the interpretation
+of an argument.
+.SS Invocation
+.sp
+\fBflent\fP [\fIoptions\fP] \fI<host|test|input file\fP ...\fI>\fP
+.SS General options
+.INDENT 0.0
 .TP
-\fB\-o\fR OUTPUT, \fB\-\-output\fR=\fIOUTPUT\fR
+.B \-o OUTPUT, \-\-output=OUTPUT
 File to write processed output to (default standard out).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-D\fR DATA_DIR, \fB\-\-data\-dir\fR=\fIDATA_DIR\fR
+.B \-D DATA_DIR, \-\-data\-dir=DATA_DIR
 Directory to store data files in. Defaults to the system tmpdir.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-i\fR INPUT, \fB\-\-input\fR=\fIINPUT\fR
-File to read input from (instead of running tests).
-Input files can also be specified as unqualified
-arguments without using the \fB\-i\fR switch.
+.B \-i INPUT, \-\-input=INPUT
+File to read input from (instead of running tests). Input files can also be
+specified as unqualified arguments without using the \fI\%\-i\fP switch.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-f\fR FORMAT, \fB\-\-format\fR=\fIFORMAT\fR
-Select output format (plot, csv, org_table, stats). Default
-is no processed output (just writes the JSON data
-file).
+.B \-f FORMAT, \-\-format=FORMAT
+Select output format (plot, csv, org_table, stats). Default is no processed
+output (just writes the JSON data file).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-p\fR PLOT, \fB\-\-plot\fR=\fIPLOT\fR
-Select which plot to output for the given test
-(implies \fB\-f\fR plot). Use the \fB\-\-list\-plots\fR option to see
-available plots.
+.B \-p PLOT, \-\-plot=PLOT
+Select which plot to output for the given test (implies \fI\%\-f\fP plot). Use the
+\fI\%\-\-list\-plots\fP option to see available plots.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-t\fR TITLE, \fB\-\-title\-extra\fR=\fITITLE\fR
+.B \-t TITLE, \-\-title\-extra=TITLE
 Text to add to plot title and data file name.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-n\fR NOTE, \fB\-\-note\fR=\fINOTE\fR
-Add arbitrary text as a note to be stored in the JSON data file
-(under the \fINOTE\fR key in the metadata object).
+.B \-n NOTE, \-\-note=NOTE
+Add arbitrary text as a note to be stored in the JSON data file (under the
+\fINOTE\fP key in the metadata object).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-r\fR RCFILE, \fB\-\-rcfile\fR=\fIRCFILE\fR
-Load configuration data from \fIRCFILE\fR (default \fI~/.flentrc\fR). See
-section below for information on the rc file format.
+.B \-r RCFILE, \-\-rcfile=RCFILE
+Load configuration data from \fIRCFILE\fP (default \fI~/.flentrc\fP). See section
+below for information on the rc file format.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-x\fR, \fB\-\-extended\-metadata\fR
-Collect extended metadata and store it with the data file.
-May include details of your machine you don't want to distribute; see the
-section on the data format below.
+.B \-x, \-\-extended\-metadata
+Collect extended metadata and store it with the data file. May include
+details of your machine you don’t want to distribute; see the section on the
+data format below.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-remote\-metadata\fR=\fIHOSTNAME\fR
-Collect extended metadata from a remote host. \fIHOSTNAME\fR is passed verbatim
-to ssh, so can include hosts specified in ~/.ssh/config. Note that gathering the
-data can take some time, since it involves executing several remote commands.
-This option can be specified multiple times and implies \fB--extended-metadata\fR.
+.B \-\-remote\-metadata=HOSTNAME
+Collect extended metadata from a remote host. \fIHOSTNAME\fP is passed verbatim
+to ssh, so can include hosts specified in ~/.ssh/config. Note that gathering
+the data can take some time, since it involves executing several remote
+commands. This option can be specified multiple times and implies
+\fI\%\-\-extended\-metadata\fP\&.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB--gui\fR
-Run the flent GUI. All other options are used as defaults in the GUI,
-but can be changed once it is running. See section below for a description of
-the GUI.
+.B \-\-gui
+Run the flent GUI. All other options are used as defaults in the GUI, but can
+be changed once it is running. The GUI can also be started by running the
+\fBflent\-gui\fP binary. For more information on the GUI, see \fBgui\fP\&.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB--new-gui-instance\fR
-Start a new GUI instance. Otherwise, flent will try to connect to an
-already running GUI instance and have that load any new data files specified as
-arguments. Implies \fB--gui\fR when passed on the command line, but not when set in
-the rc file. Note that when multiple GUI instances are running, there is no
-guarantee as to which instance will get a subsequent open request (if run again
-without \fB--new-gui-instance\fR).
+.B \-\-new\-gui\-instance
+Start a new GUI instance. Otherwise, flent will try to connect to an already
+running GUI instance and have that load any new data files specified as
+arguments. Implies \fI\%\-\-gui\fP when passed on the command line, but not when
+set in the rc file. Note that when multiple GUI instances are running, there
+is no guarantee as to which instance will get a subsequent open request (if
+run again without \fI\%\-\-new\-gui\-instance\fP).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB--gui-no-defer\fR 
+.B \-\-gui\-no\-defer
 Normally, the GUI defers redrawing plots until they are needed to avoid
 redrawing all open plots every time an option changes. This switch turns off
-that optimisation in favour of always redrawing everything straight away. This
-is useful when loading a bunch of plots from the command line and then wanting
-to flip through them without drawing delay.
+that optimisation in favour of always redrawing everything straight away.
+This is useful when loading a bunch of plots from the command line and then
+wanting to flip through them without drawing delay.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-b\fR BATCH_NAME, \fB\-\-batch\-name\fR=\fIBATCH_NAME\fR
+.B \-b BATCH_NAME, \-\-batch\-name=BATCH_NAME
 Run test batch BATCH_NAME (must be specified in a batch file loaded by the
-\fB--batch-file\fR option). Can be supplied multiple times.
+\fI\%\-\-batch\-file\fP option). Can be supplied multiple times.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-B\fR BATCH_FILE, \fB\-\-batch\-file\fR=\fIBATCH_FILE\fR
-Load batch file BATCH_FILE. Can be specified multiple times, in which case the
-files will be combined (with identically-named sections being overridden by
-later files). See appropriate section below for an explanation of the batch file
-format.
+.B \-B BATCH_FILE, \-\-batch\-file=BATCH_FILE
+Load batch file BATCH_FILE. Can be specified multiple times, in which case
+the files will be combined (with identically\-named sections being overridden
+by later files). See appropriate section below for an explanation of the
+batch file format.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-batch\-override\fR=\fIkey=value\fR
-Override parameter 'key' in the batch config and set it to 'value'. The key name
-will be case folded to lower case. Can be specified multiple times.
+.B \-\-batch\-override=key=value
+Override parameter ’key’ in the batch config and set it to ’value’. The key
+name will be case folded to lower case. Can be specified multiple times.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB--batch-dry-run\fR 
-Dry batch run. Prints what would be done, but doesn't actually run any tests.
+.B \-\-batch\-dry\-run
+Dry batch run. Prints what would be done, but doesn’t actually run any tests.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-batch\-repetitions\fR=\fIREPETITIONS\fR
-Shorthand for \fB--batch-override\fR \fI'repetitions=REPETITIONS'\fR.
+.B \-\-batch\-repetitions=REPETITIONS
+Shorthand for \fI\%\-\-batch\-override\fP \fB\(aqrepetitions=REPETITIONS’\fP\&.
+.UNINDENT
+.SS Test configuration options
+.sp
+These options affect the behaviour of the test being run and have no effect when
+parsing input files.
+.INDENT 0.0
 .TP
-\fBTest configuration:\fR
-.PP
-These options affect the behaviour of the test being run and have no
-effect when parsing input files.
+.B \-H HOST, \-\-host=HOST
+Host to connect to for tests. For tests that support it, multiple hosts can
+be specified by supplying this option multiple times. Hosts can also be
+specified as unqualified arguments; this parameter guarantees that the
+argument be interpreted as a host name (rather than being subject to
+auto\-detection between input files, hostnames and test names).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-H\fR HOST, \fB\-\-host\fR=\fIHOST\fR
-Host to connect to for tests. For tests that support
-it, multiple hosts can be specified by supplying this
-option multiple times. Hosts can also be specified as
-unqualified arguments; this parameter guarantees that
-the argument be interpreted as a host name (rather
-than being subject to auto\-detection between input
-files, hostnames and test names).
-.TP
-\fB\-\-local-bind\fR=\fIIP\fR
+.B \-\-local\-bind=IP
 Local hostname or IP address to bind to (for test tools that support this).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-l\fR LENGTH, \fB\-\-length\fR=\fILENGTH\fR
-Base test length (some tests may add some time to
-this).
+.B \-l LENGTH, \-\-length=LENGTH
+Base test length (some tests may add some time to this).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-s\fR STEP_SIZE, \fB\-\-step\-size\fR=\fISTEP_SIZE\fR
+.B \-s STEP_SIZE, \-\-step\-size=STEP_SIZE
 Measurement data point step size.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-d\fR DELAY, \fB\-\-delay\fR=\fIDELAY\fR
-Number of seconds to delay parts of test (such as
-bandwidth loaders).
+.B \-d DELAY, \-\-delay=DELAY
+Number of seconds to delay parts of test (such as bandwidth loaders).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-4\fR, \fB\-\-ipv4\fR
+.B \-4, \-\-ipv4
 Use IPv4 for tests (some tests may ignore this).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-6\fR, \fB\-\-ipv6\fR
+.B \-6, \-\-ipv6
 Use IPv6 for tests (some tests may ignore this).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-socket\-timeout\fR=\fISOCKET_TIMEOUT\fR
-Socket timeout (in seconds) used for UDP delay measurement, to prevent
-stalls on packet loss. Only enabled if the installed netperf version is
-detected to support this (requires SVN version of netperf).
-.IP
-For the default value, see the output of flent -h. The value of this
-parameter is an implicit upper bound on how long a round-trip time that can be
-measured. As such you may need to adjust it if you are experiencing latency
-above the default value. Set to 0 to disable.
+.B \-\-socket\-timeout=SOCKET_TIMEOUT
+Socket timeout (in seconds) used for UDP delay measurement, to prevent stalls
+on packet loss. Only enabled if the installed netperf version is detected to
+support this (requires SVN version of netperf).
+.sp
+For the default value, see the output of flent \fI\%\-h\fP\&. The value of
+this parameter is an implicit upper bound on how long a round\-trip time that
+can be measured. As such you may need to adjust it if you are experiencing
+latency above the default value. Set to 0 to disable.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-test\-parameter\fR=\fIkey=value\fR
-Arbitrary test parameter in key=value format. Key will be case folded to lower
-case. Some test configurations may alter behaviour based on values passed as
-test parameters. Additionally, the values are stored with the results metadata,
-and so can be used for arbitrary resultset categorisation. Can be specified
-multiple times.
+.B \-\-test\-parameter=key=value
+Arbitrary test parameter in key=value format. Key will be case folded to
+lower case. Some test configurations may alter behaviour based on values
+passed as test parameters. Additionally, the values are stored with the
+results metadata, and so can be used for arbitrary resultset categorisation.
+Can be specified multiple times.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-swap\-up\-down\fR
-Switch upstream and downstream directions for data transfer. This means
-that 'upload' will become 'download' and vice versa. Works by exchanging netperf
-TCP_MAERTS and TCP_STREAM parameters, so only works for tests that employ these
-as their data transfer, and only for the TCP streams.
+.B \-\-swap\-up\-down
+Switch upstream and downstream directions for data transfer. This means that
+’upload’ will become ’download’ and vice versa. Works by exchanging netperf
+\fBTCP_MAERTS\fP and \fBTCP_STREAM\fP parameters, so only works for tests that employ
+these as their data transfer, and only for the TCP streams.
+.UNINDENT
+.SS Plot configuration options
+.sp
+These options are used to configure the appearance of plot output and only make
+sense combined with \fI\%\-f\fP \fIplot\fP\&.
+.INDENT 0.0
 .TP
-\fBPlot configuration:\fR
-.PP
-These options are used to configure the appearance of plot output and
-only make sense combined with \fB\-f\fI plot\fR.
+.B \-z, \-\-zero\-y
+Always start y axis of plot at zero, instead of autoscaling the axis (also
+disables log scales). Autoscaling is still enabled for the upper bound.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-z\fR, \fB\-\-zero\-y\fR
-Always start y axis of plot at zero, instead of autoscaling the axis (also disables log scales). Autoscaling is still enabled for the upper bound.
+.B \-I, \-\-invert\-latency\-y
+Invert the y\-axis for latency data series (making plots show ’better values
+upwards’).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-I\fR, \fB\-\-invert\-latency\-y\fR
-Invert the y-axis for latency data series (making plots show 'better values upwards').
-.TP
-\fB\-\-disable\-log\fR
+.B \-\-disable\-log
 Disable log scales on plots.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-norm\-factor\fR=\fIFACTOR\fR
-Factor to normalise data by. I.e. divide all data points by this value. Can be
-specified multiple times, in which case each value corresponds to a data series.
+.B \-\-norm\-factor=FACTOR
+Factor to normalise data by. I.e. divide all data points by this value. Can
+be specified multiple times, in which case each value corresponds to a data
+series.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-scale\-data\fR=\fISCALE_DATA\fR
-Additional data files to consider when scaling the
-plot axes (for plotting several plots with identical
-axes). Note, this displays only the first data set, but with axis
-scaling taking into account the additional data sets. Can be supplied
-multiple times; see also \fB\-\-scale\-mode\fR.
+.B \-\-scale\-data=SCALE_DATA
+Additional data files to consider when scaling the plot axes (for plotting
+several plots with identical axes). Note, this displays only the first data
+set, but with axis scaling taking into account the additional data sets. Can
+be supplied multiple times; see also \fI\%\-\-scale\-mode\fP\&.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-S\fR, \fB\-\-scale\-mode\fR
-Treat file names (except for the first one) passed as
-unqualified arguments as if passed as \fB\-\-scale\-data\fR
-(default as if passed as \fB\-\-input\fR).
+.B \-S, \-\-scale\-mode
+Treat file names (except for the first one) passed as unqualified arguments
+as if passed as \fI\%\-\-scale\-data\fP (default as if passed as
+\fI\%\-\-input\fP).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-concatenate\fR
-Concatenate multiple result sets into one data series. This means that each data
-file will have its time axis shifted by the preceding series duration and
-appended to the first data set specified. Only works for data sets from the same
-test, obviously.
+.B \-\-concatenate
+Concatenate multiple result sets into one data series. This means that each
+data file will have its time axis shifted by the preceding series duration
+and appended to the first data set specified. Only works for data sets from
+the same test, obviously.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-absolute\-time\fR
-Plot data points with absolute UNIX time on the x-axis. This requires the
-absolute starting time for the test run to be stored in the data file, and so it
-won't work with data files that predates this feature.
+.B \-\-absolute\-time
+Plot data points with absolute UNIX time on the x\-axis. This requires the
+absolute starting time for the test run to be stored in the data file, and so
+it won’t work with data files that predates this feature.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-subplot\-combine\fR
-When plotting multiple data series, plot each one on a separate subplot instead
-of combining them into one plot. This mode is not supported for all plot types,
-and only works when \fB--scale-mode\fR is disabled.
+.B \-\-subplot\-combine
+When plotting multiple data series, plot each one on a separate subplot
+instead of combining them into one plot. This mode is not supported for all
+plot types, and only works when \fI\%\-\-scale\-mode\fP is disabled.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-no\-print\-n\fR
-Do not print the number of data points on combined plots. When using plot types
-that combines results from several test runs, the number of data series in each
-combined data point is normally added after the series name, (n=X) for X data
-series. This option turns that off.
+.B \-\-no\-print\-n
+Do not print the number of data points on combined plots. When using plot
+types that combines results from several test runs, the number of data series
+in each combined data point is normally added after the series name, (n=X)
+for X data series. This option turns that off.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-no\-annotation\fR
-Exclude annotation with hostnames, time and test
-length from plots.
+.B \-\-no\-annotation
+Exclude annotation with hostnames, time and test length from plots.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-no\-title\fR
+.B \-\-no\-title
 Exclude title from plots.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-override\-title\fR=\fITITLE\fR 
-Override plot title with this string. Completely discards the configured title
-(from the test configuration), as well as the title stored in the data set, and
-replaces it with the value supplied here. This is useful to override the plot
-title \fIat the time of plotting\fR, for instance to add a title to an aggregate
-plot from several data series. When this parameter is specified,
-\fB--no-title\fR has no effect.
+.B \-\-override\-title=TITLE
+Override plot title with this string. Completely discards the configured
+title (from the test configuration), as well as the title stored in the data
+set, and replaces it with the value supplied here. This is useful to override
+the plot title \fIat the time of plotting\fP, for instance to add a title to an
+aggregate plot from several data series. When this parameter is specified,
+\fI\%\-\-no\-title\fP has no effect.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-no\-markers\fR
-Don't use line markers to differentiate data series on plots.
+.B \-\-no\-markers
+Don’t use line markers to differentiate data series on plots.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-no\-legend\fR
+.B \-\-no\-legend
 Exclude legend from plots.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-filter\-legend\fR
-Filter legend labels by removing the longest common substring from all entries.
-This is not particularly smart, so should be used with care.
+.B \-\-filter\-legend
+Filter legend labels by removing the longest common substring from all
+entries. This is not particularly smart, so should be used with care.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-filter\-regexp\fR=\fIREGEXP\fR
+.B \-\-filter\-regexp=REGEXP
 Filter the plot legend by the supplied regular expression. Note that for
 combining several plot results, the regular expression is also applied before
 the grouping logic, meaning that a too wide filter can mess up the grouping.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-figure\-width\fR=\fIFIG_WIDTH\fR 
-Figure width in inches. Used when saving plots to file and for default size of
-the interactive plot window.
+.B \-\-figure\-width=FIG_WIDTH
+Figure width in inches. Used when saving plots to file and for default size
+of the interactive plot window.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-figure\-height\fR=\fIFIG_HEIGHT\fR 
-Figure height in inches. Used when saving plots to file and for default size of
-the interactive plot window.
+.B \-\-figure\-height=FIG_HEIGHT
+Figure height in inches. Used when saving plots to file and for default size
+of the interactive plot window.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-figure\-dpi\fR=\fIFIG_DPI\fR 
+.B \-\-figure\-dpi=FIG_DPI
 Figure DPI. Used when saving plots to raster format files.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-no\-matplotlibrc\fR
-Don't load included matplotlibrc values. Use this if autodetection of custom
+.B \-\-no\-matplotlibrc
+Don’t load included matplotlibrc values. Use this if autodetection of custom
 matplotlibrc fails and flent is inadvertently overriding rc values.
-.IP
+.UNINDENT
+.SS Test tool\-related options
+.INDENT 0.0
 .TP
-\fBTest tool-related options:\fR
-.TP
-\fB\-\-control\-host\fR=\fIHOST\fR
+.B \-\-control\-host=HOST
 Hostname for the test control connection (for test tools that support this).
 Default: First hostname of test target.
-
-When running tests that uses D-ITG as a test tool (such as the voip-* tests),
-this switch controls where flent will look for the D-ITG control
-server (see section below on running tests with D-ITG). For Netperf-based tests,
-this option is passed to Netperf to control where to point the control
+.sp
+When running tests that uses D\-ITG as a test tool (such as the voip\-*
+tests), this switch controls where flent will look for the D\-ITG control
+server (see section below on running tests with D\-ITG). For Netperf\-based
+tests, this option is passed to Netperf to control where to point the control
 connection. This is useful to, for instance, to run the control server
-communication over a separate control network so as to not interfere with test
-traffic.
+communication over a separate control network so as to not interfere with
+test traffic.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-control\-local-bind\fR=\fIIP\fR
-Local hostname or IP to bind control connection to (for test tools that support
-it; currently netperf). If not supplied, the value for --local-bind will be
-used. Note that if this value is passed but \fB--local-bind\fR is \fBnot\fR,
-netperf will use the value specified here to bind the data connections to as
-well.
+.B \-\-control\-local\-bind=IP
+Local hostname or IP to bind control connection to (for test tools that
+support it; currently netperf). If not supplied, the value for
+\fI\%\-\-local\-bind\fP will be used. Note that if this value is passed but
+\fI\%\-\-local\-bind\fP is \fInot\fP, netperf will use the value specified here to
+bind the data connections to as well.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-netperf\-control\-port\fR=\fIPORT\fR 
+.B \-\-netperf\-control\-port=PORT
 Port for Netperf control server. Default: 12865.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-ditg\-control\-port\fR=\fIPORT\fR 
-Port for D-ITG control server. Default: 8000.
+.B \-\-ditg\-control\-port=PORT
+Port for D\-ITG control server. Default: 8000.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-ditg\-control\-secret\fR=\fISECRET\fR 
-Secret for D-ITG control server authentication. Default: ''.
+.B \-\-ditg\-control\-secret=SECRET
+Secret for D\-ITG control server authentication. Default: ’’.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-http\-getter\-urllist\fR=\fIFILENAME\fR
-When running HTTP tests, the http-getter tool is used to fetch URLs (see
-https://github.com/tohojo/http-getter). This option specifies the filename
-containing the list of HTTP URLs to get. Can also be a URL, which will then be
-downloaded as part of each test iteration. If not specified, this is set to
-http://<hostname>/filelist.txt where <hostname> is the first test hostname.
+.B \-\-http\-getter\-urllist=FILENAME
+When running HTTP tests, the http\-getter tool is used to fetch URLs (see
+\fI\%https://github.com/tohojo/http\-getter\fP). This option specifies the filename
+containing the list of HTTP URLs to get. Can also be a URL, which will then
+be downloaded as part of each test iteration. If not specified, this is set
+to \fI\%http:/\fP/<hostname>/filelist.txt where <hostname> is the first test
+hostname.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-http\-getter\-dns\-servers\fR=\fIDNS_SERVERS\fR
-DNS servers to use for http-getter lookups. Format is
-host[:port][,host[:port]]... This option will only work if libcurl supports it
-(needs to be built with the ares resolver). Default is none (use the system
-resolver).
+.B \-\-http\-getter\-dns\-servers=DNS_SERVERS
+DNS servers to use for http\-getter lookups. Format is
+host[:port][,host[:port]]... This option will only work if libcurl supports
+it (needs to be built with the ares resolver). Default is none (use the
+system resolver).
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-http\-getter\-timeout\fR=\fIMILLISECONDS\fR
+.B \-\-http\-getter\-timeout=MILLISECONDS
 Timeout for HTTP connections. Default is to use the test length.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-http\-getter\-workers\fR=\fINUMBER\fR
+.B \-\-http\-getter\-workers=NUMBER
 Number of workers to use for getting HTTP urls. Default is 4.
-.IP
+.UNINDENT
+.SS Misc and debugging options:
+.INDENT 0.0
 .TP
-\fBMisc and debugging options:\fR
-.TP
-\fB\-L\fR LOG_FILE, \fB\-\-log\-file\fR=\fILOG_FILE\fR
+.B \-L LOG_FILE, \-\-log\-file=LOG_FILE
 Write debug log (test program output) to log file.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-list\-tests\fR
+.B \-\-list\-tests
 List available tests and exit.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-\-list\-plots\fR
+.B \-\-list\-plots
 List available plots for selected test and exit.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-V\fR, \fB\-\-version\fR
+.B \-V, \-\-version
 Show Flent version information and exit.
+.UNINDENT
+.INDENT 0.0
 .TP
-\fB\-h\fR, \fB\-\-help\fR
+.B \-h, \-\-help
 Show usage help message and exit.
-
+.UNINDENT
+.SS Signals
+.sp
+Flent will abort what it is currently doing on receiving a \fBSIGINT\fP \-\- this
+includes killing all runners, cleaning up temporary files and shutting down as
+gracefully as possible. Runners are killed with \fBSIGTERM\fP in this mode, and
+their output is discarded. If a batch run is in progress, the current test will
+be interrupted in this way, and the rest of the batch run is aborted. Previously
+completed tests and their results are not aborted. Post\-commands marked as
+’essential’ will be run after the test is interrupted. Additionally, flent
+converts \fBSIGTERM\fP into \fBSIGINT\fP internally and reacts accordingly.
+.sp
+Upon receiving a \fBSIGUSR1\fP, flent will try to gracefully abort the test it is
+currently running, and parse the output of the runners to the extent that any
+such output exists. That is, each runner will be killed by a \fBSIGINT\fP, which
+will cause a graceful shutdown for at least ping and netperf (although netperf
+running in \fITCP_MAERTS\fP mode will bug out when interrupted like this, so
+end\-of\-tests statistics will be missing). Flent will only react once to a
+\fBSIGUSR1\fP, sending exactly one \fBSIGINT\fP to the active runners, then wait for
+them to exit. This may take several seconds in the case of netperf. If the
+runners for some reason fail to exit, flent will be stuck and will need to be
+killed with \fBSIGINT\fP\&. If running in batch mode, \fBSIGUSR1\fP will only affect
+the currently running test; subsequent tests will still be run.
 .SH SUPPLIED TESTS
-Test are supplied as Python files and can specify commands to run etc. For a
-full list of the tests supported by flent, see the
-\fB\-\-list\-tests\fR option.
-.TP
-\fBThe Realtime Response Under Load (RRUL) test\fR
-.IP
+.sp
+Test are supplied as Python files and can specify commands to run etc.
+For a full list of the tests supported by flent, see the
+\fB\-\-list\-tests\fP option.
+.SS The Realtime Response Under Load (RRUL) test
+.sp
 This test exists in a couple of variants and is a partial implementation of the
 RRUL specification as written by Dave Taht (see
-\fIhttps://github.com/dtaht/deBloat/blob/master/spec/rrule.doc?raw=true\fR). It
-works by running RTT measurement using ICMP ping and UDP roundtrip time
-measurement, while loading up the link with eight TCP streams (four downloads,
-four uploads). This quite reliably saturates the measured link (wherever the
-bottleneck might be), and thus exposes bufferbloat when it is present.
-.TP
-\fBSimple TCP flow tests\fR
-.IP
+\fI\%https://github.com/dtaht/deBloat/blob/master/spec/rrule.doc?raw=true\fP). It works
+by running RTT measurement using ICMP ping and UDP roundtrip time measurement,
+while loading up the link with eight TCP streams (four downloads, four uploads).
+This quite reliably saturates the measured link (wherever the bottleneck might
+be), and thus exposes bufferbloat when it is present.
+.SS Simple TCP flow tests
+.sp
 These tests combine a TCP flow (either in one direction, or both) with an ICMP
-ping measurement. It's a simpler test than RRUL, but in some cases the single
+ping measurement. It’s a simpler test than RRUL, but in some cases the single
 TCP flow can be sufficient to saturate the link.
-.TP
-\fBUDP flood test\fR
-.IP
-This test runs \fIiperf\fR configured to emit 100Mbps of UDP packets targeted at
-the test host, while measuring RTT using ICMP ping. It is useful for observing
+.SS UDP flood test
+.sp
+This test runs \fIiperf\fP configured to emit 100Mbps of UDP packets targeted at the
+test host, while measuring RTT using ICMP ping. It is useful for observing
 latency in the face of a completely unresponsive packet stream.
-
 .SH OUTPUT FORMATS
-The following output formats are currently supported by flent:
-.TP
-\fBPlot output\fR (\fB\-f\fR \fIplot\fR)
-.IP
+.sp
+The following output formats are currently supported by Flent:
+.SS Plot output (\fB\-f plot\fP)
+.sp
 Output test data as one of a series of graphical plots of timeseries data or
 summarised as a CDF plot. Each test supplies a number of different plots; the
-list of plots for a given test is output by the \fB\-\-list\-plots\fR switch
+list of plots for a given test is output by the \fB\-\-list\-plots\fP switch
 (which must be supplied along with a test name).
-.IP
+.sp
 The plots are drawn by matplotlib, and can be displayed on the screen
 interactively (requires a graphical display), or output to a file in svg, pdf,
-ps and png formats. Using the \fB\-o\fR switch turns out file output (the file
-format is inferred from the file name), while not supplying the switch turns on
-the interactive plot viewer.
-
-.TP
-\fBTabulated output\fR (\fB\-f\fR \fIcsv\fR and \fB\-f\fR \fIorg_table\fR)
-.IP
+ps and png formats. Using the \fB\-o\fP switch turns out file output (the
+file format is inferred from the file name), while not supplying the switch
+turns on the interactive plot viewer.
+.SS Tabulated output (\fB\-f csv\fP and \fB\-f org_table\fP)
+.sp
 These formats output the numeric data in a tabulated format to be consumed by
-other applications. The \fIcsv\fR output format is a comma-separated output that
-can be imported into e.g. spreadsheets, while \fIorg_table\fR outputs a
-tabulated output in the table format supported by Emacs org mode. The data is
-output in text format to standard output, or written to a file if invoked with
-the \fB\-o\fR parameter.
-
-.TP
-\fBStatistics output\fR (\fB\-f\fR \fIstats\fR)
-.IP
+other applications. The \fIcsv\fP output format is a comma\-separated output that can
+be imported into e.g. spreadsheets, while \fIorg_table\fP outputs a tabulated output
+in the table format supported by Emacs org mode. The data is output in text
+format to standard output, or written to a file if invoked with the \fB\-o\fP
+parameter.
+.SS Statistics output (\fB\-f stats\fP)
+.sp
 This output format outputs various statistics about the test data, such as total
 bandwidth consumed, and various statistical measures (min/max/mean/median/std
 dev/variance) for each data source specified in the relevant test (this can
 include some data sources not includes on plots). The data is output in text
-format to standard output, or written to a file if invoked with the \fB\-o\fR
+format to standard output, or written to a file if invoked with the \fB\-o\fP
 parameter.
-
-.TP
-\fBMetadata output\fR (\fB\-f\fR \fImetadata\fR)
-.IP
-This output format outputs the test metadata as pretty-printed json (also
+.SS Metadata output (\fB\-f metadata\fP)
+.sp
+This output format outputs the test metadata as pretty\-printed JSON (also
 suitable for human consumption). It is output as a list of objects, where each
 object corresponds to the metadata of one test. Mostly useful for inspecting
 metadata of stored data files.
-
 .SH THE FLENT GUI
-Flent comes equipped with a GUI to browse and plot previously captured
-datasets. The GUI requires PyQt4; if this is installed, it can be launched with
-the \fB--gui\fR parameter. Additionally, if flent is launched without
-parameters and without a controlling terminal, the GUI will be launched
-automatically.
-
+.sp
+Flent comes equipped with a GUI to browse and plot previously captured datasets.
+The GUI requires PyQt4; if this is installed, it can be launched with the
+\fB\-\-gui\fP parameter, or by launching the \fBflent\-gui\fP binary.
+Additionally, if Flent is launched without parameters and without a controlling
+terminal, the GUI will be launched automatically.
+.sp
 The GUI can be used for interactively plotting previously captured datasets, and
 makes it easy to compare results from several test runs. It presents a tabbed
 interface to graphs of data files, allows dynamic configuration of plots, and
@@ -449,201 +586,257 @@ includes a metadata browser. For each loaded data file, additional data files
 can be loaded and added to the plot, similar to what happens when specifying
 multiple input files for plotting on the command line. A checkbox controls
 whether the added data files are added as separate entries to the plot, or
-whether they are used for scaling the output (mirroring the \fB--scale-mode\fR)
-command line switch.
-
-The GUI also incorporates matplotlib's interactive browsing toolbar, enabling
-panning and zooming of the plot area,  dynamic configuration of plot and axis
+whether they are used for scaling the output (mirroring the
+\fB\-\-scale\-mode\fP) command line switch.
+.sp
+The GUI also incorporates matplotlib’s interactive browsing toolbar, enabling
+panning and zooming of the plot area, dynamic configuration of plot and axis
 parameters and labels and saving the plots to file. The exact dynamic features
 supported depends on the installed version of matplotlib.
-
-.SH RC FILE
+.SH THE DATA FILE FORMAT
+.INDENT 0.0
+.INDENT 3.5
+.SH TODO
+.INDENT 0.0
+.IP \(bu 2
+Update metadata keys from source code.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+The aggregated test data is saved in a file called
+\fB<test_name>\-<date>.<title>.flent.gz\fP (the title part is omitted if no title is
+specified by the \fB\-t\fP parameter). This file contains the data points
+generated during the test, as well as some metadata.
+.SS The top\-level object keys
+.INDENT 0.0
+.TP
+.B version
+The file format version as an integer.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B x_values
+An array of the x values for the test data (typically the time
+values for timeseries data).
+.UNINDENT
+.INDENT 0.0
+.TP
+.B results
+A JSON object containing the result data series. The keys are the
+data series names; the value for each key is an array of y values
+for that data series. The data array has the same length as the
+\fI\%x_values\fP array, but there may be missing data points
+(signified by null values).
+.UNINDENT
+.INDENT 0.0
+.TP
+.B metadata
+An object containing various data points about the test run. The
+metadata values are read in as configuration parameters when the
+data set is loaded in for further processing. Not all tests use all
+the parameters, but they are saved anyway.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B raw_values
+An array of objects for each data series. Each element of the array
+contains the raw values as parsed from the test tool corresponding
+to that data series.
+.UNINDENT
+.SS Metadata keys
+.INDENT 0.0
+.TP
+.B NAME
+The test name.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TITLE
+Any extra title specified by the \fB\-\-title\-extra\fP parameter
+when the test was run.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B HOSTS
+List of the server hostnames connected to during the test.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B LOCAL_HOST
+The hostname of the machine that ran the test.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B LENGTH
+Test length in seconds, as specified by the \fB\-\-length\fP parameter.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TOTAL_LENGTH
+Actual data series length, after the test has added time to the
+\fI\%LENGTH\fP\&.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B STEP_SIZE
+Time step size granularity.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TIME
+ISO timestamp of the time the test was initiated.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B NOTE
+Arbitrary text as entered with the \fB\-\-note\fP switch when the
+test was run.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B FLENT_VERSION
+Version of Flent that generated the data file.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B IP_VERSION
+IP version used to run test (as specified by command line
+parameters, or auto\-detected from \fBgetaddrinfo()\fP if unspecified).
+.UNINDENT
+.SS Extended metadata
+.sp
+If the \fB\-\-extended\-metadata\fP switch is turned on, the following
+additional values are collected and stored (to the extent they are available
+from the platform):
+.INDENT 0.0
+.TP
+.B KERNEL_NAME
+The kernel name as reported by \fBuname \-s\fP\&.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B KERNEL_RELEASE
+The kernel release as reported by \fBuname \-r\fP\&.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B IP_ADDRS
+IP addresses assigned to the machine running flent.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B GATEWAYS
+IP addresses of all detected default gateways on the system, and the
+interfaces they are reachable through. Only available if the
+\fBnetstat\fP binary is present on the system.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B EGRESS_INFO
+Egress interface, its qdisc, offload, driver and BQL configuration,
+and (if applicable) the IP address of the next\-hop router used to
+reach the test target. The egress interface and next\-hop router
+requires that the \fBip\fP binary is present on Linux, but can
+be extracted from \fBroute\fP on BSD. Qdisc information
+requires the \fBtc\fP binary to be present, and offload
+information requires \fBethtool\fP\&.
+.sp
+If the \fB\-\-remote\-metadata\fP is used, the extended metadata
+info is gathered for each of the hostnames specified. This is
+gathered under the \fBREMOTE_METADATA\fP key in the metadata
+object, keyed by the hostname values passed to
+\fB\-\-remote\-metadata\fP\&. Additionally, the
+\fBREMOTE_METADATA\fP object will contain an object called
+\fBINGRESS_INFO\fP which is a duplicate of
+\fI\%EGRESS_INFO\fP, but with the destination IP exchanged for the
+source address of the host running flent. The assumption here is
+that \fB\-\-remote\-metadata\fP is used to capture metadata of a
+router known to be in the test path, in which case
+\fBINGRESS_INFO\fP will contain information about the reverse
+path from the router (which is ingress from the point of view of the
+host running flent). If the host being queried for remote metadata
+is off the path, the contents of \fBINGRESS_INFO\fP will
+probably be the same as that of \fI\%EGRESS_INFO\fP .
+.UNINDENT
+.SH CONFIGURATION FILES
+.SS The RC file
+.sp
 Some of the command line options can be specified in an rc file. By default,
-flent looks for this in \fI~/.flentrc\fR, but an alternative
-location can be specified with the \fB--rcfile\fR command line option.
-
+flent looks for this in \fB~/.flentrc\fP, but an alternative location can be
+specified with the \fB\-\-rcfile\fP command line option.
+.sp
 The rc file allows options to be specified globally, an optionally overridden
 for specific tests. For an explanation of the options, refer to the annotated
 example rc file, by default installed to
-\fI/usr/share/doc/flent/flentrc.example\fR.
-
-.SH BATCH FILES
-Flent supports reading batch files to automate running several tests
-and do setup/teardown of test environment etc. This greatly aids reproducibility
-of tests.
-
-The batch file format is based on the standard .ini file format, with sections
-being split into three namespaces: Commands, starting with Command::, batches,
-starting with Batch::, and arguments, starting with Arg::. Briefly, a batch is
-the entity that will be run, commands can be run before or after each batch
-iteration, and arguments allows parameterising batches.
-
-\fBFIXME\fR: Expand this section; for now, try looking at the
-\fIbatchfile.example\fR file supplied with the source code, and try to work
-things out from there :).
-
-.SH RUNNING TESTS WITH THE D-ITG TOOL
-This version of flent has experimental support for running and parsing
-the output of the D-ITG test tool (see
-\fIhttp://traffic.comics.unina.it/software/ITG/\fR). Flent supports
-parsing the one-way delay as measured by D-ITG. However, in order to do so, the
-data needs to be collected at the receiver end, statistics extracted, and the
-result passed back to flent on the sending side.
-
-To perform this function, flent supports a control server which will
-listen to XML-RPC requests, spawn an appropriate ITGRecv instance and, after the
-test is done, parse its output and make it available for flent to
-retrieve. This control server is available as a Python file that by default is
-installed in \fI/usr/share/doc/flent/misc\fR. It currently requires a
-patched version of D-ITG v2.8.1. The patch is also included in the same
-directory.
-
-Note that the D-ITG server is finicky and not designed with security in mind.
+\fB/usr/share/doc/flent/flentrc.example\fP\&.
+.SS Batch Files
+.sp
+Flent supports reading batch files to automate running several tests and
+do setup/teardown of test environment etc. This greatly aids
+reproducibility of tests.
+.sp
+The batch file format is based on the standard .ini file format, with
+sections being split into three namespaces: Commands, starting with
+Command::, batches, starting with Batch::, and arguments, starting with
+Arg::. Briefly, a batch is the entity that will be run, commands can be
+run before or after each batch iteration, and arguments allows
+parameterising batches.
+.INDENT 0.0
+.INDENT 3.5
+.SS Todo
+.sp
+Expand this section; for now, try looking at the \fBbatchfile.example\fP
+file supplied with the source code, and try to work things out from there :).
+.UNINDENT
+.UNINDENT
+.SH MISC INFO
+.SS Running Tests With The D\-ITG Tool
+.sp
+This version of flent has experimental support for running and parsing the
+output of the D\-ITG test tool (see
+\fI\%http://traffic.comics.unina.it/software/ITG/\fP). Flent supports parsing the
+one\-way delay as measured by D\-ITG. However, in order to do so, the data needs
+to be collected at the receiver end, statistics extracted, and the result passed
+back to flent on the sending side.
+.sp
+To perform this function, flent supports a control server which will listen to
+XML\-RPC requests, spawn an appropriate ITGRecv instance and, after the test is
+done, parse its output and make it available for flent to retrieve. This control
+server is available as a Python file that by default is installed in
+\fB/usr/share/doc/flent/misc\fP\&. It currently requires a patched version of
+D\-ITG v2.8.1. The patch is also included in the same directory.
+.sp
+Note that the D\-ITG server is finicky and not designed with security in mind.
 For this reason, the control server includes HMAC authentication to only allow
 authenticated clients to run a test against the server; however there is
 currently no support for enforcement of this in e.g. firewall rules. Please bear
 this in mind when running a publicly reachable ITGRecv instance (with or without
 the control server). Another security issue with the control server is that the
-Python XML-RPC library by default is vulnerable to XML entity expansion attacks.
-For this reason, it is highly recommended to install the 'defusedxml' library
-(available at \fIhttps://pypi.python.org/pypi/defusedxml/\fR) on the host
+Python XML\-RPC library by default is vulnerable to XML entity expansion attacks.
+For this reason, it is highly recommended to install the \fBdefusedxml\fP
+library (available at \fI\%https://pypi.python.org/pypi/defusedxml/\fP) on the host
 running the control server. The server will try to find the library on startup
 and refuse to run if it is not available, unless explicitly told otherwise.
-
-.SH EXAMPLES
-Run the \fIrrul\fR test against \fItestserver.example.com\fI:
-.IP
-flent rrul testserver.example.com
-.PP
-This produces no output, but saves the result in a datafile named after the
-current date and time (in gzipped JSON format).
-.PP
-Show an interactive plot of a previously run test, which stored the data in
-\fIdatafile.json.gz\fR (requires a working matplotlib and a graphical display):
-.IP
-flent -f plot datafile.json.gz
-.PP
-Combine multiple data files into one CDF plot:
-.IP
-flent -p icmp_cdf *.json.gz
-
-.SH THE JSON DATA FORMAT
-The aggregated test data is saved in a file called
-\fI<test_name>-<date>.<title>.json.gz\fR (the title part is omitted if no title
-is specified by the \fB-t\fR parameter). This file contains the data points generated
-during the test, as well as some metadata. The top-level json object has three
-keys in it: \fIx_values\fR, \fIresults\fR and \fImetadata\fR.
-.PP
-\fIx_values\fR is an array of the x values for the test data (typically the time
-values for timeseries data).
-.PP
-\fIresults\fR is a json object containing the result data series. The keys are the
-data series names; the value for each key is an array of y values for that data
-series. The data array has the same length as the \fIx_values\fR array, but there
-may be missing data points (signified by null values).
-.PP
-\fImetadata\fR is an object containing various data points about the test run. The
-metadata values are read in as configuration parameters when the data set is
-loaded in for further processing. Not all tests use all the parameters, but
-they are saved anyway.
-.PP
-Currently the metadata values are:
-.IP
-\fINAME\fR: The test name.
-.IP
-\fITITLE\fR: Any extra title specified by the \fB-t\fR parameter when the test was run.
-.IP
-\fIHOSTS\fR: List of the server hostnames connected to during the test.
-.IP
-\fILOCAL_HOST\fR: The hostname of the machine that ran the test.
-.IP
-\fILENGTH\fR: Test length in seconds, as specified by the \fB-l\fR parameter.
-.IP
-\fITOTAL_LENGTH\fR: Actual data series length, after the test has added time to the \fILENGTH\fR.
-.IP
-\fISTEP_SIZE\fR: Time step size granularity.
-.IP
-\fITIME\fR: ISO timestamp of the time the test was initiated.
-.IP
-\fINOTE\fR: Arbitrary text as entered with the \fB--note\fR switch when the test was run.
-.IP
-\fIFLENT_VERSION\fR: Version of flent that generated the
-data file.
-.IP
-\fIIP_VERSION\fR: IP version used to run test (as specified by command line
-parameters, or auto-detected from \fIgetaddrinfo()\fR if unspecified).
-.PP
-If the \fB\-\-extended\-metadata\fR switch is turned on, the following
-additional values are collected and stored (to the extent they are available
-from the platform):
-.IP
-\fIKERNEL_NAME\fR: The kernel name as reported by \fIuname -s\fR.
-.IP
-\fIKERNEL_RELEASE\fR: The kernel release as reported by \fIuname -r\fR.
-.IP
-\fIIP_ADDRS\fR: IP addresses assigned to the machine running flent.
-.IP
-\fIGATEWAYS\fR: IP addresses of all detected default gateways on the system,
-and the interfaces they are reachable through. Only available if the
-\fInetstat\fR binary is present on the system.
-.IP
-\fIEGRESS_INFO\fR: Egress interface, its qdisc, offload, driver and BQL configuration,
-and (if applicable) the IP address of the next-hop router used to reach the test target.
-The egress interface and next-hop router requires that the \fIip\fR binary is
-present on Linux, but can be extracted from \fIroute\fR on BSD. Qdisc
-information requires the \fItc\fR binary to be present, and offload information
-requires \fIethtool\fR.
-.PP
-If the \fB--remote-metadata\fR is used, the extended metadata info is gathered
-for each of the hostnames specified. This is gathered under the
-\fIREMOTE_METADATA\fR key in the metadata object, keyed by the hostname values
-passed to \fB--remote-metadata\fR. Additionally, the \fIREMOTE_METADATA\fR
-object will contain an object called \fIINGRESS_INFO\fR which is a duplicate of
-\fIEGRESS_INFO\fR, but with the destination IP exchanged for the source address
-of the host running flent. The assumption here is that
-\fB--remote-metadata\fR is used to capture metadata of a router known to be in
-the test path, in which case \fIINGRESS_INFO\fR will contain information about
-the reverse path from the router (which is ingress from the point of view of the
-host running flent). If the host being queried for remote metadata is
-off the path, the contents of \fIINGRESS_INFO\fR will probably be the same as
-that of \fIEGRESS_INFO\fR.
-
-.SH SIGNALS
-Flent will abort what it is currently doing on receiving a
-\fBSIGINT\fR -- this includes killing all runners, cleaning up temporary files
-and shutting down as gracefully as possible. Runners are killed with
-\fBSIGTERM\fR in this mode, and their output is discarded. If a batch run is in
-progress, the current test will be interrupted in this way, and the rest of the
-batch run is aborted. Previously completed tests and their results are not
-aborted. Post-commands marked as 'essential' will be run after the test is
-interrupted. Additionally, flent converts \fBSIGTERM\fR into
-\fBSIGINT\fR internally and reacts accordingly.
-
-Upon receiving a \fBSIGUSR1\fR, flent will try to gracefully abort the
-test it is currently running, and parse the output of the runners to the extent
-that any such output exists. That is, each runner will be killed by a
-\fBSIGINT\fR, which will cause a graceful shutdown for at least ping and netperf
-(although netperf running in \fITCP_MAERTS\fR mode will bug out when interrupted
-like this, so end-of-tests statistics will be missing). Flent will
-only react once to a \fBSIGUSR1\fR, sending exactly one \fBSIGINT\fR to the
-active runners, then wait for them to exit. This may take several seconds in the
-case of netperf. If the runners for some reason fail to exit, flent
-will be stuck and will need to be killed with \fBSIGINT\fR. If running in batch
-mode, \fBSIGUSR1\fR will only affect the currently running test; subsequent
-tests will still be run.
-
-.SH BUGS
+.SS Bugs
+.sp
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
 done by netperf can experience packet loss to the extent that the test aborts
 completely, which can cause missing data points for some measurement series.
-The --socket-timeout feature can alleviate this, but requires a recent SVN
-version of netperf to work. Flent tries to detect if netperf supports
-this option and enables it for the UDP measurements if it does.
-.PP
+The \-\-socket\-timeout feature can alleviate this, but requires a recent SVN
+version of netperf to work. Flent tries to detect if netperf supports this
+option and enables it for the UDP measurements if it does.
+.sp
 Probably many other bugs. Please report any found to
-\fIhttps://github.com/tohojo/flent/issues\fR and include the output of
-\fBflent --version\fR in the report.
-
-.SH AUTHORS
-Flent is written and maintained by Toke Høiland-Jørgensen, with
-contributions from Dave Taht and others.
+\fI\%https://github.com/tohojo/flent/issues\fP and include the output of
+\fBflent \-\-version\fP in the report.
+.SS Authors
+.sp
+Flent is written and maintained by Toke Høiland\-Jørgensen, with contributions
+from Dave Taht and others.
+.SH AUTHOR
+Toke Høiland-Jørgensen
+.SH COPYRIGHT
+2012-2015, Toke Høiland-Jørgensen
+.\" Generated by docutils manpage writer.
+.
