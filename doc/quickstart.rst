@@ -1,5 +1,3 @@
-:orphan:
-
 Installing Flent
 ----------------
 Installing Flent can be done in several ways, depending on your operating system:
