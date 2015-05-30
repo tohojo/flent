@@ -50,6 +50,27 @@ Plots can be output to the formats supported by matplotlib by specifying
 the output filename with \fB\-o\fP \fIoutput.{png,ps,pdf,svg}\fP\&. If no output
 file is specified, the plot is diplayed using matplotlib’s interactive
 plot browser, which also allows saving of the output (in .png format).
+.SS Requirements
+.sp
+Flent runs on Python, versions 2.7+ and 3.3+. Plotting requires a functional
+\fBmatplotlib\fP installation (but everything else can run without
+\fBmatplotlib\fP). For the interactive plot viewer, a graphical display (and
+suitably configured \fBmatplotlib\fP) is required.
+.sp
+Most tests employ the netperf benchmarking tool to run the tests. Version 2.6 or
+higher is required, and netperf must be compiled with the
+\fB\-\-enable\-demo\fP option passed to \fB\&./configure\fP\&. Some tests use
+iperf in addition to, or instead of netperf. Both tools must be available in the
+\fBPATH\fP\&.
+.sp
+For ICMP ping measurements, the version of ping employed must support output
+timestamping (the \-D parameter to GNU ping). This is not supported by the BSD
+and OSX versions of ping. As an alternative to the regular ping command, the
+\fBfping\fP utility (see \fI\%http://fping.org\fP) can be employed. In that case
+fping must be version 3.5 or greater. Flent will attempt to detect the presence
+of fping in the \fBPATH\fP and check for support for the \-D parameter. If
+this check is successful, \fBfping\fP will be employed for ping data,
+otherwise the system ping will be used.
 .SH RUNNING FLENT
 .sp
 When run, flent must be supplied either (a) a test name and one or more host
@@ -534,43 +555,6 @@ TCP flow can be sufficient to saturate the link.
 This test runs \fIiperf\fP configured to emit 100Mbps of UDP packets targeted at the
 test host, while measuring RTT using ICMP ping. It is useful for observing
 latency in the face of a completely unresponsive packet stream.
-.SH OUTPUT FORMATS
-.sp
-The following output formats are currently supported by Flent:
-.SS Plot output (\fB\-f plot\fP)
-.sp
-Output test data as one of a series of graphical plots of timeseries data or
-summarised as a CDF plot. Each test supplies a number of different plots; the
-list of plots for a given test is output by the \fB\-\-list\-plots\fP switch
-(which must be supplied along with a test name).
-.sp
-The plots are drawn by matplotlib, and can be displayed on the screen
-interactively (requires a graphical display), or output to a file in svg, pdf,
-ps and png formats. Using the \fB\-o\fP switch turns out file output (the
-file format is inferred from the file name), while not supplying the switch
-turns on the interactive plot viewer.
-.SS Tabulated output (\fB\-f csv\fP and \fB\-f org_table\fP)
-.sp
-These formats output the numeric data in a tabulated format to be consumed by
-other applications. The \fIcsv\fP output format is a comma\-separated output that can
-be imported into e.g. spreadsheets, while \fIorg_table\fP outputs a tabulated output
-in the table format supported by Emacs org mode. The data is output in text
-format to standard output, or written to a file if invoked with the \fB\-o\fP
-parameter.
-.SS Statistics output (\fB\-f stats\fP)
-.sp
-This output format outputs various statistics about the test data, such as total
-bandwidth consumed, and various statistical measures (min/max/mean/median/std
-dev/variance) for each data source specified in the relevant test (this can
-include some data sources not includes on plots). The data is output in text
-format to standard output, or written to a file if invoked with the \fB\-o\fP
-parameter.
-.SS Metadata output (\fB\-f metadata\fP)
-.sp
-This output format outputs the test metadata as pretty\-printed JSON (also
-suitable for human consumption). It is output as a list of objects, where each
-object corresponds to the metadata of one test. Mostly useful for inspecting
-metadata of stored data files.
 .SH THE FLENT GUI
 .sp
 Flent comes equipped with a GUI to browse and plot previously captured datasets.
@@ -593,6 +577,37 @@ The GUI also incorporates matplotlib’s interactive browsing toolbar, enabling
 panning and zooming of the plot area, dynamic configuration of plot and axis
 parameters and labels and saving the plots to file. The exact dynamic features
 supported depends on the installed version of matplotlib.
+.SH CONFIGURATION FILES
+.SS The RC file
+.sp
+Some of the command line options can be specified in an rc file. By default,
+flent looks for this in \fB~/.flentrc\fP, but an alternative location can be
+specified with the \fB\-\-rcfile\fP command line option.
+.sp
+The rc file allows options to be specified globally, an optionally overridden
+for specific tests. For an explanation of the options, refer to the annotated
+example rc file, by default installed to
+\fB/usr/share/doc/flent/flentrc.example\fP\&.
+.SS Batch Files
+.sp
+Flent supports reading batch files to automate running several tests and
+do setup/teardown of test environment etc. This greatly aids
+reproducibility of tests.
+.sp
+The batch file format is based on the standard .ini file format, with
+sections being split into three namespaces: Commands, starting with
+Command::, batches, starting with Batch::, and arguments, starting with
+Arg::. Briefly, a batch is the entity that will be run, commands can be
+run before or after each batch iteration, and arguments allows
+parameterising batches.
+.INDENT 0.0
+.INDENT 3.5
+.SS Todo
+.sp
+Expand this section; for now, try looking at the \fBbatchfile.example\fP
+file supplied with the source code, and try to work things out from there :).
+.UNINDENT
+.UNINDENT
 .SH THE DATA FILE FORMAT
 .INDENT 0.0
 .INDENT 3.5
@@ -759,37 +774,43 @@ host running flent). If the host being queried for remote metadata
 is off the path, the contents of \fBINGRESS_INFO\fP will
 probably be the same as that of \fI\%EGRESS_INFO\fP .
 .UNINDENT
-.SH CONFIGURATION FILES
-.SS The RC file
+.SH OUTPUT FORMATS
 .sp
-Some of the command line options can be specified in an rc file. By default,
-flent looks for this in \fB~/.flentrc\fP, but an alternative location can be
-specified with the \fB\-\-rcfile\fP command line option.
+The following output formats are currently supported by Flent:
+.SS Plot output (\fB\-f plot\fP)
 .sp
-The rc file allows options to be specified globally, an optionally overridden
-for specific tests. For an explanation of the options, refer to the annotated
-example rc file, by default installed to
-\fB/usr/share/doc/flent/flentrc.example\fP\&.
-.SS Batch Files
+Output test data as one of a series of graphical plots of timeseries data or
+summarised as a CDF plot. Each test supplies a number of different plots; the
+list of plots for a given test is output by the \fB\-\-list\-plots\fP switch
+(which must be supplied along with a test name).
 .sp
-Flent supports reading batch files to automate running several tests and
-do setup/teardown of test environment etc. This greatly aids
-reproducibility of tests.
+The plots are drawn by matplotlib, and can be displayed on the screen
+interactively (requires a graphical display), or output to a file in svg, pdf,
+ps and png formats. Using the \fB\-o\fP switch turns out file output (the
+file format is inferred from the file name), while not supplying the switch
+turns on the interactive plot viewer.
+.SS Tabulated output (\fB\-f csv\fP and \fB\-f org_table\fP)
 .sp
-The batch file format is based on the standard .ini file format, with
-sections being split into three namespaces: Commands, starting with
-Command::, batches, starting with Batch::, and arguments, starting with
-Arg::. Briefly, a batch is the entity that will be run, commands can be
-run before or after each batch iteration, and arguments allows
-parameterising batches.
-.INDENT 0.0
-.INDENT 3.5
-.SS Todo
+These formats output the numeric data in a tabulated format to be consumed by
+other applications. The \fIcsv\fP output format is a comma\-separated output that can
+be imported into e.g. spreadsheets, while \fIorg_table\fP outputs a tabulated output
+in the table format supported by Emacs org mode. The data is output in text
+format to standard output, or written to a file if invoked with the \fB\-o\fP
+parameter.
+.SS Statistics output (\fB\-f stats\fP)
 .sp
-Expand this section; for now, try looking at the \fBbatchfile.example\fP
-file supplied with the source code, and try to work things out from there :).
-.UNINDENT
-.UNINDENT
+This output format outputs various statistics about the test data, such as total
+bandwidth consumed, and various statistical measures (min/max/mean/median/std
+dev/variance) for each data source specified in the relevant test (this can
+include some data sources not includes on plots). The data is output in text
+format to standard output, or written to a file if invoked with the \fB\-o\fP
+parameter.
+.SS Metadata output (\fB\-f metadata\fP)
+.sp
+This output format outputs the test metadata as pretty\-printed JSON (also
+suitable for human consumption). It is output as a list of objects, where each
+object corresponds to the metadata of one test. Mostly useful for inspecting
+metadata of stored data files.
 .SH MISC INFO
 .SS Running Tests With The D\-ITG Tool
 .sp
@@ -830,10 +851,6 @@ option and enables it for the UDP measurements if it does.
 Probably many other bugs. Please report any found to
 \fI\%https://github.com/tohojo/flent/issues\fP and include the output of
 \fBflent \-\-version\fP in the report.
-.SS Authors
-.sp
-Flent is written and maintained by Toke Høiland\-Jørgensen, with contributions
-from Dave Taht and others.
 .SH AUTHOR
 Toke Høiland-Jørgensen
 .SH COPYRIGHT
