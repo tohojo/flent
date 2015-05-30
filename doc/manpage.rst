@@ -9,8 +9,8 @@ Flent: The FLExible Network Tester
    short-intro
    options
    tests
-   output-formats
    gui
-   data-format
    files
+   data-format
+   output-formats
    misc

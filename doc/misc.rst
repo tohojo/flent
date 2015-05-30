@@ -43,9 +43,3 @@ option and enables it for the UDP measurements if it does.
 Probably many other bugs. Please report any found to
 https://github.com/tohojo/flent/issues and include the output of
 :option:`flent --version<-V>` in the report.
-
-Authors
--------
-
-Flent is written and maintained by Toke Høiland-Jørgensen, with contributions
-from Dave Taht and others.
