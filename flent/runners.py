@@ -27,6 +27,7 @@ import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
 from datetime import datetime
 from threading import Event
 
+from flent import util
 from .util import classname, ENCODING
 
 try:
@@ -436,12 +437,22 @@ class RegexpRunner(ProcessRunner):
     regexes = []
     metadata_regexes = []
 
+    # Parse is split into a stateless class method in _parse to be able to call
+    # it from find_binary.
     def parse(self, output):
+        result, raw_values, metadata = self._parse(output)
+        self.raw_values = raw_values
+        self.metadata.update(metadata)
+        return result
+
+    @classmethod
+    def _parse(cls, output):
         result = []
         raw_values = []
+        metadata = {}
         lines = output.split("\n")
         for line in lines:
-            for regexp in self.regexes:
+            for regexp in cls.regexes:
                 match = regexp.match(line)
                 if match:
                     result.append([float(match.group('t')), float(match.group('val'))])
@@ -453,16 +464,15 @@ class RegexpRunner(ProcessRunner):
                             pass
                     raw_values.append(rw)
                     break # only match one regexp per line
-            for regexp in self.metadata_regexes:
+            for regexp in cls.metadata_regexes:
                 match = regexp.match(line)
                 if match:
                     for k,v in match.groupdict().items():
                         try:
-                            self.metadata[k] = float(v)
+                            metadata[k] = float(v)
                         except ValueError:
-                            self.metadata[k] = v
-        self.raw_values = raw_values
-        return result
+                            metadata[k] = v
+        return result, raw_values, metadata
 
 class PingRunner(RegexpRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
@@ -475,6 +485,68 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
+
+    @classmethod
+    def find_binary(cls, ip_version, interval, length, host, marking=None, local_bind=None):
+        """Find a suitable ping executable, looking first for a compatible
+        `fping`, then falling back to the `ping` binary. Binaries are checked
+        for the required capabilities."""
+
+        if ip_version == 6:
+            suffix = "6"
+        else:
+            suffix = ""
+
+
+        fping = None
+        ping = util.which('ping'+suffix)
+
+        if fping is not None:
+            proc = subprocess.Popen([fping, '-h'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out,err = proc.communicate()
+            # check for presence of timestamp option
+            if "print timestamp before each output line" in str(out):
+                return "{binary} -D -p {interval:.0f} -c {count:.0f} {marking} {local_bind} {host}".format(
+                    binary=fping,
+                    interval=interval * 1000, # fping expects interval in milliseconds
+                    # since there's no timeout parameter for fping, calculate a total number
+                    # of pings to send
+                    count=length // interval + 1,
+                    marking="-O {0}".format(marking) if marking else "",
+                    local_bind="-I {0}".format(local_bind) if local_bind else "",
+                    host=host)
+            elif "must run as root?" in str(err):
+                sys.stderr.write("Found fping but it seems to be missing permissions (no SUID?). Not using.\n")
+
+        if ping is not None:
+            # Ping can't handle hostnames for the -I parameter, so do a lookup first.
+            if local_bind:
+                local_bind=util.lookup_host(local_bind, ip_version)[4][0]
+
+            # Try parsing the output of 'ping' and complain if no data is
+            # returned from the parser. This should pick up e.g. the ping on OSX
+            # not having a -D option and allow us to supply a better error message.
+            proc = subprocess.Popen([ping, '-D', '-n', '-c', '1', 'localhost'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out,err = proc.communicate()
+            if hasattr(out, 'decode'):
+                out = out.decode(ENCODING)
+            if not cls._parse(out)[0]:
+                raise RuntimeError("Cannot parse output of the system ping binary ({ping}). "
+                                   "Please install fping v3.5+.".format(ping=ping))
+
+            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} {local_bind} {host}".format(
+                binary=ping,
+                interval=max(0.2, interval),
+                length=length,
+                marking="-Q {0}".format(marking) if marking else "",
+                local_bind="-I {0}".format(local_bind) if local_bind else "",
+                host=host)
+
+        raise RuntimeError("No suitable ping tool found.")
 
 class HttpGetterRunner(RegexpRunner):
 
