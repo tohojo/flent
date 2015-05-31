@@ -153,7 +153,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.viewArea.currentChanged.connect(self.activate_tab)
 
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
-        self.settingsDock.visibilityChanged.connect(self.settings_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.metadataView.entered.connect(self.update_statusbar)
 
@@ -207,8 +206,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
-    def settings_visibility(self):
-        self.actionSettings.setChecked(not self.settingsDock.isHidden())
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
 
