@@ -292,7 +292,7 @@ class DitgRunner(ProcessRunner):
             hm = hmac.new(self.ditg_secret.encode('UTF-8'), digestmod=hashlib.sha256)
             hm.update(str(self.duration).encode('UTF-8'))
             hm.update(str(interval).encode('UTF-8'))
-            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), raw_data=True)
+            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), True)
             if params['status'] != 'OK':
                 if 'message' in params:
                     raise RuntimeError("Unable to request D-ITG test. Control server reported error: %s" % params['message'])
