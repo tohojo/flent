@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ## -*- mode: python; coding: utf-8 -*-
 ##
-## flent.py
+## run-flent
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
 ## Date:     October 8th, 2012
@@ -20,8 +20,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-from flent import run_flent
+import os, sys
+sys.path.insert(1, os.path.dirname(__file__))
 
-if __name__ == "__main__":
-    sys.exit(run_flent())
+from flent import run_flent
+sys.exit(run_flent())
