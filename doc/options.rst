@@ -122,6 +122,22 @@ General options
 
    Shorthand for :option:`--batch-override` ``'repetitions=REPETITIONS’``.
 
+.. option:: --batch-resume=DIR
+
+   Try to resume a previously interrupted batch run. The argument is the
+   top-level output directory from the previous run.
+
+   This will attempt to find a data file in the resume directory and load the
+   BATCH_TIME from the previous run from that and continue. The assumption is
+   that the output directory and filenames are generated from the batch time, so
+   that they will match with the previous run when the same time is used. Then,
+   tests for which data files already exist will be skipped on this run. If the
+   rest of the batch invocation is different from the one being resumed, results
+   may not be what you want.
+
+   There's a check to ensure that the generated output path is a subdirectory of
+   the resume directory, and the whole run will be aborted if it isn't.
+
 Test configuration options
 --------------------------
 

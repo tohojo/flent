@@ -67,6 +67,7 @@ RECORDED_SETTINGS = (
     )
 
 FILEFORMAT_VERSION=2
+SUFFIX = '.flent.gz'
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
@@ -82,7 +83,7 @@ def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
 class ResultSet(object):
-    SUFFIX = '.flent.gz'
+    SUFFIX = SUFFIX
     def __init__(self, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
