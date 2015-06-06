@@ -199,7 +199,7 @@ class IterationAggregator(Aggregator):
         for i in range(self.iterations):
             data,metadata,raw_values = self.collect()
             results.meta('SERIES_META', metadata)
-            results.set_raw_values(raw_values)
+            results.raw_values = raw_values
             if i == 0:
                 results.create_series(data.keys())
             results.append_datapoint(i, data)
@@ -222,7 +222,7 @@ class TimeseriesAggregator(Aggregator):
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
         results.meta('SERIES_META', metadata)
-        results.set_raw_values(raw_values)
+        results.raw_values = raw_values
         results.create_series(list(measurements.keys()))
 
         # We start steps at the minimum time value, and do as many steps as are

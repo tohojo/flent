@@ -128,6 +128,11 @@ class ResultSet(object):
     def set_raw_values(self, raw_values):
         self._raw_values = deepcopy(raw_values)
 
+    def get_raw_values(self):
+        return self._raw_values
+
+    raw_values = property(get_raw_values, set_raw_values)
+
     def create_series(self, series_names):
         for n in series_names:
             self._results[n] = []
@@ -309,7 +314,7 @@ class ResultSet(object):
             rset.x_values = obj['x_values']
         for k,v in list(obj['results'].items()):
             rset.add_result(k,v)
-        rset.set_raw_values(obj['raw_values'])
+        rset.raw_values = obj['raw_values']
         return rset
 
     @classmethod
