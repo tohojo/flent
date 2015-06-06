@@ -28,6 +28,7 @@ from datetime import datetime
 from threading import Event
 
 from flent import util
+from .build_info import DATA_DIR
 from .util import classname, ENCODING
 
 try:
@@ -589,10 +590,6 @@ class TcRunner(ProcessRunner):
     '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
     the output of `date '+Time: %s.%N'`)."""
 
-    def __init__(tc_parameter, *args, **kwargs):
-        ProcessRunner.__init__(self, *args, **kwargs)
-        self.tc_parameter = tc_parameter
-
     time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     split_re  = re.compile(r"^qdisc ", re.MULTILINE)
     qdisc_res = [
@@ -603,6 +600,17 @@ class TcRunner(ProcessRunner):
         re.compile(r"backlog (?P<backlog_bytes>\d+)b "
                    r"(?P<backlog_pkts>\d+)p "
                    r"requeues (?P<backlog_requeues>\d+)"),
+
+        # codel
+        re.compile(r"count (?P<count>\d+) "
+                   r"lastcount (?P<lastcount>\d+) "
+                   r"ldelay (?P<ldelay>[0-9\.]+[mu]s) "
+                   r"(?P<dropping>dropping)? ?"
+                   r"drop_next (?P<drop_next>[0-9\.]+[mu]s)"),
+        re.compile(r"maxpacket (?P<maxpacket>\d+) "
+                   r"ecn_mark (?P<ecn_mark>\d+) "
+                   r"drop_overlimit (?P<drop_overlimit>\d+)"),
+        # fq_codel
         re.compile(r"maxpacket (?P<maxpacket>\d+) "
                    r"drop_overlimit (?P<drop_overlimit>\d+) "
                    r"new_flow_count (?P<new_flow_count>\d+) "
@@ -613,7 +621,7 @@ class TcRunner(ProcessRunner):
 
 
     def parse(self, output):
-        result = []
+        results = {}
         parts = output.split("\n---\n")
         for part in parts:
             # Split out individual qdisc entries (in case there are more than
@@ -637,17 +645,54 @@ class TcRunner(ProcessRunner):
                 # what should be the root qdisc as per above).
                 while m is not None:
                     for k,v in list(m.groupdict().items()):
-                        if not k in matches:
-                            matches[k] = float(v)
+                        if v is None:
+                            pass
+                        elif v.endswith("us"):
+                            v = float(v[:-2])/1000
+                        elif v.endswith("ms"):
+                            v = float(v[:-2])
                         else:
-                            matches[k] += float(v)
+                            try:
+                                v = float(v)
+                            except ValueError:
+                                pass
+                        if not k in matches or not isinstance(v,float):
+                            matches[k] = v
+                        else:
+                            matches[k] += v
                     m = r.search(part, m.end(0))
-            key = self.tc_parameter
-            if key in matches:
-                result.append([timestamp, matches[key]])
-            else:
-                sys.stderr.write("Warning: Missing value for %s" % key)
-        return result
+            for k,v in matches.items():
+                if not isinstance(v,float):
+                    continue
+                if not k in results:
+                    results[k] = [[timestamp,v]]
+                else:
+                    results[k].append([timestamp,v])
+            matches['t'] = timestamp
+            self.raw_values.append(matches)
+        return results
+
+    @classmethod
+    def find_binary(cls, interface, interval, length):
+        script = os.path.join(DATA_DIR, 'scripts', 'tc_iterate.sh')
+        if not os.path.exists(script):
+            raise RuntimeError("Cannot find tc_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RuntimeError("TC stats requires a Bash shell.")
+
+        if interface is None:
+            sys.stderr.write("Warning: No interface given for tc runner. Defaulting to 'eth0'.\n")
+            interface='eth0'
+
+        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f}".format(
+            bash=bash,
+            script=script,
+            interface=interface,
+            interval=interval,
+            count=length // interval + 1)
+
 
 class NullRunner(object):
     def __init__(self, *args, **kwargs):

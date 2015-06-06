@@ -59,6 +59,7 @@ class TestEnvironment(object):
             'find_netperf': self.find_netperf,
             'find_itgsend': self.find_itgsend,
             'find_http_getter': self.find_http_getter,
+            'find_tc_iterate': self.find_tc_iterate,
             })
         self.informational = informational
         self.netperf = None
@@ -224,6 +225,12 @@ class TestEnvironment(object):
             self.http_getter = util.which('http-getter', fail=True)
 
         return "%s %s" % (self.http_getter, args)
+
+    @finder
+    def find_tc_iterate(self, interface, interval, length):
+        """Find a suitable tc_iterate script."""
+
+        return runners.TcRunner.find_binary(interface, interval, length)
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
