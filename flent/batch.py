@@ -37,7 +37,7 @@ except ImportError:
 
 from flent import aggregators, formatters, resultset
 from flent.metadata import record_extended_metadata, record_postrun_metadata
-from flent.util import clean_path
+from flent.util import clean_path, path_components
 from flent.settings import CONFIG_TYPES
 
 # Python2/3 compatibility
@@ -282,6 +282,25 @@ class BatchRunner(object):
 
         pause = int(batch.get('pause', 0))
 
+        batch_time = None
+        if self.settings.BATCH_RESUME is not None and os.path.isdir(self.settings.BATCH_RESUME):
+            # We're resuming a batch run. Try to find a data file we can get the
+            # original batch run time from.
+            for dirpath, dirnames, filenames in os.walk(self.settings.BATCH_RESUME):
+                datafiles = [f for f in filenames if f.endswith(resultset.SUFFIX)]
+                if datafiles:
+                    f = datafiles[0]
+                    r = resultset.load(os.path.join(dirpath, f))
+                    batch_time = r.meta("BATCH_TIME")
+                    break
+            if batch_time is None:
+                raise RuntimeError("No data files found in resume directory %s." % self.settings.BATCH_RESUME)
+        elif self.settings.BATCH_RESUME:
+            raise RuntimeError("Batch resume directory %s doesn't exist!\n" % self.settings.BATCH_RESUME)
+        else:
+            batch_time = self.settings.TIME
+
+
         for argset in itertools.product(*argsets):
             rep = argset[-1]
             argset = argset[:-1]
@@ -292,7 +311,7 @@ class BatchRunner(object):
             sys.stderr.write(".\n")
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
-            settings.BATCH_TIME = self.settings.TIME
+            settings.BATCH_TIME = batch_time
             settings.TIME = datetime.now()
 
             expand_vars = {'repetition': "%02d" % rep,
@@ -316,6 +335,14 @@ class BatchRunner(object):
                 output_path = clean_path(b['output_path'], allow_dirs=True)
             else:
                 output_path = settings.DATA_DIR
+
+            if settings.BATCH_RESUME is not None:
+                if os.path.commonprefix([os.path.abspath(output_path),
+                                         os.path.abspath(settings.BATCH_RESUME)]) != os.path.abspath(settings.BATCH_RESUME):
+                    raise RuntimeError("Batch-specified output path is not a subdirectory of resume path. Bailing.")
+                if os.path.exists(os.path.join(output_path, "%s%s" % (settings.DATA_FILENAME, resultset.SUFFIX))):
+                    sys.stderr.write("  Previous result exists, skipping.\n")
+                    continue
 
             if settings.BATCH_DRY and settings.BATCH_VERBOSE:
                 sys.stderr.write("  Would output to: %s.\n" % output_path)

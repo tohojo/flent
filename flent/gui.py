@@ -153,7 +153,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.viewArea.currentChanged.connect(self.activate_tab)
 
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
-        self.settingsDock.visibilityChanged.connect(self.settings_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.metadataView.entered.connect(self.update_statusbar)
 
@@ -184,6 +183,17 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.server.newConnection.connect(self.new_connection)
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
 
+    def get_last_dir(self):
+        if 'savefig.directory' in matplotlib.rcParams:
+            return matplotlib.rcParams['savefig.directory']
+        return self._last_dir
+    def set_last_dir(self, value):
+        if 'savefig.directory' in matplotlib.rcParams:
+            matplotlib.rcParams['savefig.directory'] = value
+        else:
+            self._last_dir = value
+    last_dir = property(get_last_dir, set_last_dir)
+
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
         # the application is exiting.
@@ -196,8 +206,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
-    def settings_visibility(self):
-        self.actionSettings.setChecked(not self.settingsDock.isHidden())
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
 
@@ -447,6 +455,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.change_plot(current_plot)
             self.viewArea.addTab(widget, widget.title)
             self.last_dir = os.path.dirname(unicode(f))
+
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
         self.shorten_tabs()

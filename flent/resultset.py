@@ -67,6 +67,7 @@ RECORDED_SETTINGS = (
     )
 
 FILEFORMAT_VERSION=2
+SUFFIX = '.flent.gz'
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
@@ -82,7 +83,7 @@ def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
 class ResultSet(object):
-    SUFFIX = '.flent.gz'
+    SUFFIX = SUFFIX
     def __init__(self, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
@@ -96,6 +97,8 @@ class ResultSet(object):
             raise RuntimeError("Missing name for resultset")
         if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
             self.metadata['DATA_FILENAME'] = self.dump_file
+        if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
+            self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
     def meta(self, k=None, v=None):
@@ -124,6 +127,11 @@ class ResultSet(object):
 
     def set_raw_values(self, raw_values):
         self._raw_values = deepcopy(raw_values)
+
+    def get_raw_values(self):
+        return self._raw_values
+
+    raw_values = property(get_raw_values, set_raw_values)
 
     def create_series(self, series_names):
         for n in series_names:
@@ -306,15 +314,17 @@ class ResultSet(object):
             rset.x_values = obj['x_values']
         for k,v in list(obj['results'].items()):
             rset.add_result(k,v)
-        rset.set_raw_values(obj['raw_values'])
+        rset.raw_values = obj['raw_values']
         return rset
 
     @classmethod
     def unserialise_compat(cls, version, obj, absolute=False):
         if version == 1:
-            obj['raw_values'] = dict([(k,v['RAW_VALUES']) for k,v in
-                                      obj['metadata']['SERIES_META'].items()
-                                      if 'RAW_VALUES' in v])
+            obj['raw_values'] = {}
+            if 'SERIES_META' in obj['metadata']:
+                obj['raw_values'] = dict([(k,v['RAW_VALUES']) for k,v in
+                                          obj['metadata']['SERIES_META'].items()
+                                          if 'RAW_VALUES' in v])
             if not obj['raw_values']:
                 # No raw values were stored in the old data set. Fake them by
                 # using the interpolated values as 'raw'. This ensures there's

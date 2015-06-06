@@ -51,7 +51,7 @@ DEFAULT_SETTINGS = {
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
     'OUTPUT': '-',
-    'DATA_DIR': tempfile.gettempdir(),
+    'DATA_DIR': None,
     'FORMAT': 'default',
     'TITLE': '',
     'OVERRIDE_TITLE': '',
@@ -107,6 +107,7 @@ DEFAULT_SETTINGS = {
     'BATCH_DRY': False,
     'BATCH_VERBOSE': False,
     'BATCH_REPS': None,
+    'BATCH_RESUME': None,
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
@@ -268,6 +269,10 @@ parser.add_option("--batch-verbose", action="store_true", dest="BATCH_VERBOSE",
                   help="Be verbose during batch run: Print all commands executed.")
 parser.add_option("--batch-repetitions", action="store", type='int', dest="BATCH_REPS", metavar="REPETITIONS",
                   help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")
+parser.add_option("--batch-resume", action="store", type='str', dest="BATCH_RESUME", metavar="DIR",
+                  help="Try to resume a previously interrupted batch run. The argument is the top-level "
+                  "output directory from the previous run. Tests for which data files already exist will "
+                  "be skipped.")
 
 
 test_group = optparse.OptionGroup(parser, "Test configuration",
@@ -608,6 +613,8 @@ class Settings(optparse.Values, object):
         if self.HOST is None and self.HOSTS:
             self.HOST = self.HOSTS[0]
 
+        if self.DATA_DIR is None:
+            self.DATA_DIR = os.path.dirname(self.OUTPUT) or '.'
 
 
 settings = Settings(DEFAULT_SETTINGS)

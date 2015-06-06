@@ -27,6 +27,8 @@ import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
 from datetime import datetime
 from threading import Event
 
+from flent import util
+from .build_info import DATA_DIR
 from .util import classname, ENCODING
 
 try:
@@ -291,7 +293,7 @@ class DitgRunner(ProcessRunner):
             hm = hmac.new(self.ditg_secret.encode('UTF-8'), digestmod=hashlib.sha256)
             hm.update(str(self.duration).encode('UTF-8'))
             hm.update(str(interval).encode('UTF-8'))
-            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), self.settings.SAVE_RAW)
+            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), True)
             if params['status'] != 'OK':
                 if 'message' in params:
                     raise RuntimeError("Unable to request D-ITG test. Control server reported error: %s" % params['message'])
@@ -436,12 +438,22 @@ class RegexpRunner(ProcessRunner):
     regexes = []
     metadata_regexes = []
 
+    # Parse is split into a stateless class method in _parse to be able to call
+    # it from find_binary.
     def parse(self, output):
+        result, raw_values, metadata = self._parse(output)
+        self.raw_values = raw_values
+        self.metadata.update(metadata)
+        return result
+
+    @classmethod
+    def _parse(cls, output):
         result = []
         raw_values = []
+        metadata = {}
         lines = output.split("\n")
         for line in lines:
-            for regexp in self.regexes:
+            for regexp in cls.regexes:
                 match = regexp.match(line)
                 if match:
                     result.append([float(match.group('t')), float(match.group('val'))])
@@ -453,16 +465,15 @@ class RegexpRunner(ProcessRunner):
                             pass
                     raw_values.append(rw)
                     break # only match one regexp per line
-            for regexp in self.metadata_regexes:
+            for regexp in cls.metadata_regexes:
                 match = regexp.match(line)
                 if match:
                     for k,v in match.groupdict().items():
                         try:
-                            self.metadata[k] = float(v)
+                            metadata[k] = float(v)
                         except ValueError:
-                            self.metadata[k] = v
-        self.raw_values = raw_values
-        return result
+                            metadata[k] = v
+        return result, raw_values, metadata
 
 class PingRunner(RegexpRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
@@ -475,6 +486,68 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
+
+    @classmethod
+    def find_binary(cls, ip_version, interval, length, host, marking=None, local_bind=None):
+        """Find a suitable ping executable, looking first for a compatible
+        `fping`, then falling back to the `ping` binary. Binaries are checked
+        for the required capabilities."""
+
+        if ip_version == 6:
+            suffix = "6"
+        else:
+            suffix = ""
+
+
+        fping = None
+        ping = util.which('ping'+suffix)
+
+        if fping is not None:
+            proc = subprocess.Popen([fping, '-h'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out,err = proc.communicate()
+            # check for presence of timestamp option
+            if "print timestamp before each output line" in str(out):
+                return "{binary} -D -p {interval:.0f} -c {count:.0f} {marking} {local_bind} {host}".format(
+                    binary=fping,
+                    interval=interval * 1000, # fping expects interval in milliseconds
+                    # since there's no timeout parameter for fping, calculate a total number
+                    # of pings to send
+                    count=length // interval + 1,
+                    marking="-O {0}".format(marking) if marking else "",
+                    local_bind="-I {0}".format(local_bind) if local_bind else "",
+                    host=host)
+            elif "must run as root?" in str(err):
+                sys.stderr.write("Found fping but it seems to be missing permissions (no SUID?). Not using.\n")
+
+        if ping is not None:
+            # Ping can't handle hostnames for the -I parameter, so do a lookup first.
+            if local_bind:
+                local_bind=util.lookup_host(local_bind, ip_version)[4][0]
+
+            # Try parsing the output of 'ping' and complain if no data is
+            # returned from the parser. This should pick up e.g. the ping on OSX
+            # not having a -D option and allow us to supply a better error message.
+            proc = subprocess.Popen([ping, '-D', '-n', '-c', '1', 'localhost'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out,err = proc.communicate()
+            if hasattr(out, 'decode'):
+                out = out.decode(ENCODING)
+            if not cls._parse(out)[0]:
+                raise RuntimeError("Cannot parse output of the system ping binary ({ping}). "
+                                   "Please install fping v3.5+.".format(ping=ping))
+
+            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} {local_bind} {host}".format(
+                binary=ping,
+                interval=max(0.2, interval),
+                length=length,
+                marking="-Q {0}".format(marking) if marking else "",
+                local_bind="-I {0}".format(local_bind) if local_bind else "",
+                host=host)
+
+        raise RuntimeError("No suitable ping tool found.")
 
 class HttpGetterRunner(RegexpRunner):
 
@@ -517,10 +590,6 @@ class TcRunner(ProcessRunner):
     '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
     the output of `date '+Time: %s.%N'`)."""
 
-    def __init__(tc_parameter, *args, **kwargs):
-        ProcessRunner.__init__(self, *args, **kwargs)
-        self.tc_parameter = tc_parameter
-
     time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     split_re  = re.compile(r"^qdisc ", re.MULTILINE)
     qdisc_res = [
@@ -531,17 +600,38 @@ class TcRunner(ProcessRunner):
         re.compile(r"backlog (?P<backlog_bytes>\d+)b "
                    r"(?P<backlog_pkts>\d+)p "
                    r"requeues (?P<backlog_requeues>\d+)"),
+
+        # codel
+        re.compile(r"count (?P<count>\d+) "
+                   r"lastcount (?P<lastcount>\d+) "
+                   r"ldelay (?P<delay>[0-9\.]+[mu]s) "
+                   r"(?P<dropping>dropping)? ?"
+                   r"drop_next (?P<drop_next>-?[0-9\.]+[mu]s)"),
+        re.compile(r"maxpacket (?P<maxpacket>\d+) "
+                   r"ecn_mark (?P<ecn_mark>\d+) "
+                   r"drop_overlimit (?P<drop_overlimit>\d+)"),
+        # fq_codel
         re.compile(r"maxpacket (?P<maxpacket>\d+) "
                    r"drop_overlimit (?P<drop_overlimit>\d+) "
                    r"new_flow_count (?P<new_flow_count>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+)"),
         re.compile(r"new_flows_len (?P<new_flows_len>\d+) "
-                   r"old_flows_len (?P<old_flows_len>\d+)")
+                   r"old_flows_len (?P<old_flows_len>\d+)"),
+
+        # pie
+        re.compile(r"prob (?P<prob>[0-9\.]+) "
+                   r"delay (?P<delay>[0-9\.]+[mu]s) "
+                   r"avg_dq_rate (?P<avg_dq_rate>\d+)"),
+        re.compile(r"pkts_in (?P<pkts_in>\d+) "
+                   r"overlimit (?P<overlimit_pie>\d+) "
+                   r"dropped (?P<dropped_pie>\d+) "
+                   r"maxq (?P<maxq>\d+) "
+                   r"ecn_mark (?P<ecn_mark>\d+)"),
         ]
 
 
     def parse(self, output):
-        result = []
+        results = {}
         parts = output.split("\n---\n")
         for part in parts:
             # Split out individual qdisc entries (in case there are more than
@@ -565,17 +655,54 @@ class TcRunner(ProcessRunner):
                 # what should be the root qdisc as per above).
                 while m is not None:
                     for k,v in list(m.groupdict().items()):
-                        if not k in matches:
-                            matches[k] = float(v)
+                        if v is None:
+                            pass
+                        elif v.endswith("us"):
+                            v = float(v[:-2])/1000
+                        elif v.endswith("ms"):
+                            v = float(v[:-2])
                         else:
-                            matches[k] += float(v)
+                            try:
+                                v = float(v)
+                            except ValueError:
+                                pass
+                        if not k in matches or not isinstance(v,float):
+                            matches[k] = v
+                        else:
+                            matches[k] += v
                     m = r.search(part, m.end(0))
-            key = self.tc_parameter
-            if key in matches:
-                result.append([timestamp, matches[key]])
-            else:
-                sys.stderr.write("Warning: Missing value for %s" % key)
-        return result
+            for k,v in matches.items():
+                if not isinstance(v,float):
+                    continue
+                if not k in results:
+                    results[k] = [[timestamp,v]]
+                else:
+                    results[k].append([timestamp,v])
+            matches['t'] = timestamp
+            self.raw_values.append(matches)
+        return results
+
+    @classmethod
+    def find_binary(cls, interface, interval, length):
+        script = os.path.join(DATA_DIR, 'scripts', 'tc_iterate.sh')
+        if not os.path.exists(script):
+            raise RuntimeError("Cannot find tc_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RuntimeError("TC stats requires a Bash shell.")
+
+        if interface is None:
+            sys.stderr.write("Warning: No interface given for tc runner. Defaulting to 'eth0'.\n")
+            interface='eth0'
+
+        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f}".format(
+            bash=bash,
+            script=script,
+            interface=interface,
+            interval=interval,
+            count=length // interval + 1)
+
 
 class NullRunner(object):
     def __init__(self, *args, **kwargs):

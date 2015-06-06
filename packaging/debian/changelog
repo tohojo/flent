@@ -1,3 +1,9 @@
+flent (0.11.1-1) precise; urgency=low
+
+  * Bump to release 0.11.1.
+
+ -- Toke Høiland-Jørgensen <toke@toke.dk>  Tue, 26 May 2015 22:31:53 +0200
+
 flent (0.11.0-1) precise; urgency=low
 
   * Bump to release 0.11.0.

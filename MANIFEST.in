@@ -1,6 +1,7 @@
-include tests/*.conf tests/*.inc ui/*.ui
+include flent/tests/*.conf flent/tests/*.inc flent/ui/*.ui
+include flent/matplotlibrc.dist
 include misc/*
-include matplotlibrc.dist man/flent.1
-include BUGS README.org *.example
+include doc/*.rst doc/_static/* doc/_templates/*.html doc/conf.py doc/Makefile
+include Makefile BUGS README.rst *.example man/flent.1
 include flent-mime.xml flent.desktop
 recursive-include packaging *

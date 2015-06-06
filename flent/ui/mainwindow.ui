@@ -58,7 +58,6 @@
      <string>&amp;View</string>
     </property>
     <addaction name="actionPlotSelector"/>
-    <addaction name="actionSettings"/>
     <addaction name="actionMetadata"/>
     <addaction name="separator"/>
     <addaction name="actionNextTab"/>
@@ -76,9 +75,27 @@
     <addaction name="separator"/>
     <addaction name="actionScaleOpen"/>
    </widget>
+   <widget class="QMenu" name="menu_Settings">
+    <property name="title">
+     <string>&amp;Settings</string>
+    </property>
+    <addaction name="checkZeroY"/>
+    <addaction name="checkInvertY"/>
+    <addaction name="checkDisableLog"/>
+    <addaction name="separator"/>
+    <addaction name="checkScaleMode"/>
+    <addaction name="checkSubplotCombine"/>
+    <addaction name="separator"/>
+    <addaction name="checkAnnotation"/>
+    <addaction name="checkTitle"/>
+    <addaction name="checkLegend"/>
+    <addaction name="separator"/>
+    <addaction name="checkFilterLegend"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Data"/>
+   <addaction name="menu_Settings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="plotDock">
@@ -97,135 +114,6 @@
       <widget class="QListView" name="plotView">
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
-  <widget class="QDockWidget" name="settingsDock">
-   <property name="windowTitle">
-    <string>Plot settings</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="checkSubplotCombine">
-       <property name="toolTip">
-        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
-       </property>
-       <property name="statusTip">
-        <string>When plotting multiple data series, plot each one on a separate subplot instead of combining them into one plot (not supported for all plot types).</string>
-       </property>
-       <property name="text">
-        <string>Subplot combine</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QCheckBox" name="checkDisableLog">
-       <property name="toolTip">
-        <string>Disable automatic log scaling of axes?</string>
-       </property>
-       <property name="statusTip">
-        <string>Disable automatic log scaling of axes?</string>
-       </property>
-       <property name="text">
-        <string>Disable log scale</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QCheckBox" name="checkZeroY">
-       <property name="toolTip">
-        <string>Always start Y-axis at 0?</string>
-       </property>
-       <property name="statusTip">
-        <string>Always start Y-axis at 0?</string>
-       </property>
-       <property name="text">
-        <string>Zero Y-axis</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QCheckBox" name="checkInvertY">
-       <property name="toolTip">
-        <string>Invert the y-axis for latency data series (making plots show 'better values upwards').</string>
-       </property>
-       <property name="statusTip">
-        <string>Invert the y-axis for latency data series (making plots show 'better values upwards').</string>
-       </property>
-       <property name="text">
-        <string>Invert latency Y-axis</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QCheckBox" name="checkScaleMode">
-       <property name="toolTip">
-        <string>Use extra data files for axis scaling instaed of plotting them?</string>
-       </property>
-       <property name="statusTip">
-        <string>Use extra data files for axis scaling instaed of plotting them?</string>
-       </property>
-       <property name="text">
-        <string>Scale mode</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QCheckBox" name="checkAnnotation">
-       <property name="toolTip">
-        <string>Annotate plot (at the bottom)?</string>
-       </property>
-       <property name="statusTip">
-        <string>Annotate plot (at the bottom)?</string>
-       </property>
-       <property name="text">
-        <string>Annotation</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QCheckBox" name="checkLegend">
-       <property name="toolTip">
-        <string>Draw plot legend?</string>
-       </property>
-       <property name="statusTip">
-        <string>Draw plot legend?</string>
-       </property>
-       <property name="text">
-        <string>Legend</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QCheckBox" name="checkTitle">
-       <property name="toolTip">
-        <string>Draw plot title?</string>
-       </property>
-       <property name="statusTip">
-        <string>Draw plot title?</string>
-       </property>
-       <property name="text">
-        <string>Title</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QCheckBox" name="checkFilterLegend">
-       <property name="toolTip">
-        <string>Filter legend labels by removing the longest common substring from all entries.</string>
-       </property>
-       <property name="statusTip">
-        <string>Filter legend labels by removing the longest common substring from all entries.</string>
-       </property>
-       <property name="text">
-        <string>Filter legend</string>
        </property>
       </widget>
      </item>
@@ -374,6 +262,78 @@
     <string>Ctrl+Shift+W</string>
    </property>
   </action>
+  <action name="checkZeroY">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Zero Y-axis</string>
+   </property>
+  </action>
+  <action name="checkInvertY">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Invert latency Y-axis</string>
+   </property>
+  </action>
+  <action name="checkDisableLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Disable log scale</string>
+   </property>
+  </action>
+  <action name="checkScaleMode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Scale mode</string>
+   </property>
+  </action>
+  <action name="checkSubplotCombine">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Subplot &amp;combine</string>
+   </property>
+  </action>
+  <action name="checkAnnotation">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Annotation</string>
+   </property>
+  </action>
+  <action name="checkTitle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Title</string>
+   </property>
+  </action>
+  <action name="checkLegend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Legend</string>
+   </property>
+  </action>
+  <action name="checkFilterLegend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Filter legend</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>
@@ -406,22 +366,6 @@
     <hint type="destinationlabel">
      <x>1007</x>
      <y>671</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>actionSettings</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>settingsDock</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1007</x>
-     <y>561</y>
     </hint>
    </hints>
   </connection>

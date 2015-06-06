@@ -127,6 +127,17 @@ def which(executable, fail=False):
         raise RuntimeError("No %s binary found in PATH." % executable)
     return None
 
+def path_components(path):
+    folders = []
+    while path and path != "/":
+        path, folder = os.path.split(path)
+
+        if folder:
+            folders.insert(0,folder)
+    if path == "/":
+        folders.insert(0,path)
+    return folders
+
 def lookup_host(hostname, version=None):
     if version == 4:
         version = socket.AF_INET
