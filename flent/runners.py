@@ -604,9 +604,9 @@ class TcRunner(ProcessRunner):
         # codel
         re.compile(r"count (?P<count>\d+) "
                    r"lastcount (?P<lastcount>\d+) "
-                   r"ldelay (?P<ldelay>[0-9\.]+[mu]s) "
+                   r"ldelay (?P<delay>[0-9\.]+[mu]s) "
                    r"(?P<dropping>dropping)? ?"
-                   r"drop_next (?P<drop_next>[0-9\.]+[mu]s)"),
+                   r"drop_next (?P<drop_next>-?[0-9\.]+[mu]s)"),
         re.compile(r"maxpacket (?P<maxpacket>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+) "
                    r"drop_overlimit (?P<drop_overlimit>\d+)"),
@@ -616,7 +616,17 @@ class TcRunner(ProcessRunner):
                    r"new_flow_count (?P<new_flow_count>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+)"),
         re.compile(r"new_flows_len (?P<new_flows_len>\d+) "
-                   r"old_flows_len (?P<old_flows_len>\d+)")
+                   r"old_flows_len (?P<old_flows_len>\d+)"),
+
+        # pie
+        re.compile(r"prob (?P<prob>[0-9\.]+) "
+                   r"delay (?P<delay>[0-9\.]+[mu]s) "
+                   r"avg_dq_rate (?P<avg_dq_rate>\d+)"),
+        re.compile(r"pkts_in (?P<pkts_in>\d+) "
+                   r"overlimit (?P<overlimit_pie>\d+) "
+                   r"dropped (?P<dropped_pie>\d+) "
+                   r"maxq (?P<maxq>\d+) "
+                   r"ecn_mark (?P<ecn_mark>\d+)"),
         ]
 
 
