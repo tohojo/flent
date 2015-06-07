@@ -604,9 +604,9 @@ class TcRunner(ProcessRunner):
         # codel
         re.compile(r"count (?P<count>\d+) "
                    r"lastcount (?P<lastcount>\d+) "
-                   r"ldelay (?P<delay>[0-9\.]+[mu]s) "
+                   r"ldelay (?P<delay>[0-9\.]+[mu]?s) "
                    r"(?P<dropping>dropping)? ?"
-                   r"drop_next (?P<drop_next>-?[0-9\.]+[mu]s)"),
+                   r"drop_next (?P<drop_next>-?[0-9\.]+[mu]?s)"),
         re.compile(r"maxpacket (?P<maxpacket>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+) "
                    r"drop_overlimit (?P<drop_overlimit>\d+)"),
@@ -620,7 +620,7 @@ class TcRunner(ProcessRunner):
 
         # pie
         re.compile(r"prob (?P<prob>[0-9\.]+) "
-                   r"delay (?P<delay>[0-9\.]+[mu]s) "
+                   r"delay (?P<delay>[0-9\.]+[mu]?s) "
                    r"avg_dq_rate (?P<avg_dq_rate>\d+)"),
         re.compile(r"pkts_in (?P<pkts_in>\d+) "
                    r"overlimit (?P<overlimit_pie>\d+) "
@@ -661,6 +661,8 @@ class TcRunner(ProcessRunner):
                             v = float(v[:-2])/1000
                         elif v.endswith("ms"):
                             v = float(v[:-2])
+                        elif v.endswith("s"):
+                            v = float(v[:-1])*1000
                         else:
                             try:
                                 v = float(v)
