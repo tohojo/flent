@@ -83,14 +83,14 @@ def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
 class ResultSet(object):
-    SUFFIX = SUFFIX
-    def __init__(self, **kwargs):
+    def __init__(self, SUFFIX=SUFFIX, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
         self._filename = None
         self._absolute = False
         self._raw_values = {}
         self.metadata = kwargs
+        self.SUFFIX = SUFFIX
         if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.now()
         if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
@@ -290,7 +290,7 @@ class ResultSet(object):
             self._dump_file = None
 
     @classmethod
-    def unserialise(cls, obj, absolute=False):
+    def unserialise(cls, obj, absolute=False, SUFFIX=SUFFIX):
         try:
             version = int(obj['version'])
         except (KeyError,ValueError):
@@ -301,10 +301,11 @@ class ResultSet(object):
         if version < FILEFORMAT_VERSION:
             obj = cls.unserialise_compat(version, obj, absolute)
         metadata = dict(obj['metadata'])
+
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
                 metadata[t] = parse_date(metadata[t])
-        rset = cls(**metadata)
+        rset = cls(SUFFIX=SUFFIX, **metadata)
         if absolute:
             t0 = metadata.get('T0', metadata.get('TIME'))
             x0 = timegm(t0.timetuple()) + t0.microsecond / 1000000.0
@@ -346,9 +347,13 @@ class ResultSet(object):
 
     @classmethod
     def load(cls, fp, absolute=False):
-        obj = cls.unserialise(json.load(fp), absolute)
         if hasattr(fp, 'name'):
-            obj._dump_file = fp.name
+            name,ext = os.path.splitext(fp.name)
+            if ext in ('.gz', '.bz2'):
+                ext = os.path.splitext(name)[1]+ext
+        else:
+            ext = SUFFIX
+        obj = cls.unserialise(json.load(fp), absolute, SUFFIX=ext)
         return obj
 
     @classmethod
