@@ -69,6 +69,8 @@ def new(settings):
         raise RuntimeError("Formatter not found: '%s'." % settings.FORMAT)
     try:
         return globals()[formatter_name](settings)
+    except RuntimeError:
+        raise
     except Exception as e:
         raise RuntimeError("Error loading %s: %r." % (formatter_name, e))
 
