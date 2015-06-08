@@ -94,8 +94,8 @@
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
-   <addaction name="menu_Data"/>
    <addaction name="menu_Settings"/>
+   <addaction name="menu_Data"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="plotDock">

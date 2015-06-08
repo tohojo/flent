@@ -81,6 +81,7 @@ DEFAULT_SETTINGS = {
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
+    'REPLACE_LEGEND': OrderedDict(),
     'ZERO_Y': False,
     'BOUNDS_X': [],
     'BOUNDS_Y': [],
@@ -198,7 +199,7 @@ class ExtendedOption(optparse.Option):
             if not '=' in value:
                 raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
             k,v = value.split('=', 1)
-            values.ensure_value(dest, {})[k.lower()] = v
+            values.ensure_value(dest, {})[k] = v
         else:
             optparse.Option.take_action(self, action, dest, opt, value, values, parser)
 
@@ -379,6 +380,8 @@ plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", 
                   help="Filter out supplied regular expression from legend names. Can be specified "
                   "multiple times, in which case the regular expressions will be filtered in the order "
                   "specified.")
+plot_group.add_option("--replace-legend", action="update", dest="REPLACE_LEGEND", metavar="src=dest",
+                  help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
                   help="Figure width in inches. Used when saving plots to file and for default size of "
                   "the interactive plot window.")

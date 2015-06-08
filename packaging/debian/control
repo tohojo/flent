@@ -4,7 +4,7 @@ Section: python
 Priority: optional
 Build-Depends: python (>= 2.6), debhelper (>= 7.4.3), python-setuptools
 Standards-Version: 3.9.3
-Homepage: http://flent.org
+Homepage: https://flent.org
 Vcs-Git: git://github.com/tohojo/flent.git
 Vcs-Browser: https://github.com/tohojo/flent
 X-Python-Version: >=2.6
