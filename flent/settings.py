@@ -198,7 +198,7 @@ class ExtendedOption(optparse.Option):
             if not '=' in value:
                 raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
             k,v = value.split('=', 1)
-            values.ensure_value(dest, {})[k.lower()] = v
+            values.ensure_value(dest, {})[k] = v
         else:
             optparse.Option.take_action(self, action, dest, opt, value, values, parser)
 
