@@ -499,7 +499,7 @@ class PingRunner(RegexpRunner):
             suffix = ""
 
 
-        fping = None
+        fping = util.which('fping'+suffix)
         ping = util.which('ping'+suffix)
 
         if fping is not None:

@@ -123,10 +123,10 @@ class ResultSet(object):
         self._results[name] = data
 
     def add_raw_values(self, name, data):
-        self._raw_values[name] = deepcopy(data)
+        self._raw_values[name] = data
 
     def set_raw_values(self, raw_values):
-        self._raw_values = deepcopy(raw_values)
+        self._raw_values = raw_values
 
     def get_raw_values(self):
         return self._raw_values
