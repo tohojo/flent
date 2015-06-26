@@ -155,6 +155,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.metadataView.entered.connect(self.update_statusbar)
+        self.expandButton.clicked.connect(self.metadata_column_resize)
 
         # Set initial value of checkboxes from settings
         self.checkZeroY.setChecked(self.settings.ZERO_Y)
@@ -222,6 +223,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
+    def metadata_column_resize(self):
+        self.metadataView.resizeColumnToContents(0)
 
     def update_checkboxes(self):
         widget = self.viewArea.currentWidget()
@@ -473,6 +476,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
         self.shorten_tabs()
+        self.metadata_column_resize()
         self.busy_end()
 
 class PlotModel(QStringListModel):
