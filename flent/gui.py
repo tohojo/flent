@@ -183,6 +183,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.server.newConnection.connect(self.new_connection)
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
 
+        self.read_settings()
+
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
             return matplotlib.rcParams['savefig.directory']
@@ -194,6 +196,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self._last_dir = value
     last_dir = property(get_last_dir, set_last_dir)
 
+    def read_settings(self):
+        settings = QSettings("Flent", "GUI")
+        if settings.contains("mainwindow/geometry"):
+            self.restoreGeometry(settings.value("mainwindow/geometry"))
+        if settings.contains("mainwindow/windowState"):
+            self.restoreState(settings.value("mainwindow/windowState"))
+            self.metadata_visibility()
+            self.plot_visibility()
+
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
         # the application is exiting.
@@ -201,6 +212,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget = self.viewArea.widget(i)
             widget.setUpdatesEnabled(False)
             widget.disable_cleanup()
+        settings = QSettings("Flent", "GUI")
+        settings.setValue("mainwindow/geometry", self.saveGeometry())
+        settings.setValue("mainwindow/windowState", self.saveState())
         event.accept()
 
     # Helper functions to update menubar actions when dock widgets are closed
