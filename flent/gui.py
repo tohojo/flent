@@ -155,6 +155,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.metadataView.entered.connect(self.update_statusbar)
+        self.expandButton.clicked.connect(self.metadata_column_resize)
 
         # Set initial value of checkboxes from settings
         self.checkZeroY.setChecked(self.settings.ZERO_Y)
@@ -183,6 +184,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.server.newConnection.connect(self.new_connection)
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
 
+        self.read_settings()
+
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
             return matplotlib.rcParams['savefig.directory']
@@ -194,6 +197,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self._last_dir = value
     last_dir = property(get_last_dir, set_last_dir)
 
+    def read_settings(self):
+        settings = QSettings("Flent", "GUI")
+        if settings.contains("mainwindow/geometry"):
+            self.restoreGeometry(settings.value("mainwindow/geometry"))
+        if settings.contains("mainwindow/windowState"):
+            self.restoreState(settings.value("mainwindow/windowState"))
+            self.metadata_visibility()
+            self.plot_visibility()
+
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
         # the application is exiting.
@@ -201,6 +213,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget = self.viewArea.widget(i)
             widget.setUpdatesEnabled(False)
             widget.disable_cleanup()
+        settings = QSettings("Flent", "GUI")
+        settings.setValue("mainwindow/geometry", self.saveGeometry())
+        settings.setValue("mainwindow/windowState", self.saveState())
         event.accept()
 
     # Helper functions to update menubar actions when dock widgets are closed
@@ -208,6 +223,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
+    def metadata_column_resize(self):
+        self.metadataView.resizeColumnToContents(0)
 
     def update_checkboxes(self):
         widget = self.viewArea.currentWidget()
@@ -459,6 +476,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
         self.shorten_tabs()
+        self.metadata_column_resize()
         self.busy_end()
 
 class PlotModel(QStringListModel):

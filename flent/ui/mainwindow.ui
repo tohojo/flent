@@ -125,7 +125,7 @@
     <string>Metadata</string>
    </property>
    <attribute name="dockWidgetArea">
-    <number>2</number>
+    <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -139,6 +139,13 @@
        </property>
        <property name="alternatingRowColors">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="expandButton">
+       <property name="text">
+        <string>Expand all items</string>
        </property>
       </widget>
      </item>
@@ -382,6 +389,22 @@
     <hint type="destinationlabel">
      <x>1007</x>
      <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>expandButton</sender>
+   <signal>clicked()</signal>
+   <receiver>metadataView</receiver>
+   <slot>expandAll()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1007</x>
+     <y>738</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1007</x>
+     <y>570</y>
     </hint>
    </hints>
   </connection>

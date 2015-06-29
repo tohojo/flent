@@ -78,6 +78,67 @@ class TimerRunner(threading.Thread):
     def kill(self, graceful=False):
         self.kill_event.set()
 
+class FileMonitorRunner(threading.Thread):
+
+    def __init__(self, name, settings, filename, length, interval, delay, start_event, finish_event, kill_event, *args, **kwargs):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.filename = filename
+        self.length = length
+        self.interval = interval
+        self.delay = delay
+        self.start_event = start_event
+        self.kill_event = kill_event if kill_event is not None else Event()
+        self.finish_event = finish_event
+        self.result = None
+        self.raw_values = []
+        self.metadata = {'filename': self.filename}
+        self.command = 'File monitor for %s' % self.filename
+        self.returncode = 0
+        self.out = self.err = ''
+
+    def run(self):
+        if self.start_event is not None:
+            self.start_event.wait()
+
+        if self.delay:
+            self.kill_event.wait(self.delay)
+
+        if not self.kill_event.is_set():
+            start_time = current_time = time.time()
+
+            result = []
+
+            # Add an extra interval to comparison to avoid getting one too few
+            # samples due to small time differences.
+            while current_time < start_time + self.length + self.interval and not self.kill_event.is_set():
+                try:
+                    with open(self.filename, 'r') as fp:
+                        val = fp.read()
+                    self.out += val
+                    try:
+                        val = float(val)
+                        result.append((current_time, val))
+                    except ValueError:
+                        val = val.strip()
+                    self.raw_values.append({'t': current_time, 'val': val})
+                except IOError as e:
+                    self.err += "Error opening file {}: {}\n".format(self.filename, e)
+                finally:
+                    self.kill_event.wait(self.interval)
+                    current_time = time.time()
+            if result:
+                self.result = result
+            else:
+                self.returncode = 1
+                sys.stderr.write("Unable to produce any valid data from file '%s'. Errors:\n" % self.filename)
+                sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
+
+        self.finish_event.set()
+
+    def kill(self, graceful=False):
+        self.kill_event.set()
+
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
     silent = False
