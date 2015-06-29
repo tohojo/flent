@@ -200,9 +200,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def read_settings(self):
         settings = QSettings("Flent", "GUI")
         if settings.contains("mainwindow/geometry"):
-            self.restoreGeometry(settings.value("mainwindow/geometry"))
+            geom = settings.value("mainwindow/geometry")
+            if hasattr(geom, 'toByteArray'):
+                geom = geom.toByteArray()
+            self.restoreGeometry(geom)
         if settings.contains("mainwindow/windowState"):
-            self.restoreState(settings.value("mainwindow/windowState"))
+            winstate = settings.value("mainwindow/windowState")
+            if hasattr(winstate, 'toByteArray'):
+                winstate = winstate.toByteArray()
+            self.restoreState(winstate)
             self.metadata_visibility()
             self.plot_visibility()
 
