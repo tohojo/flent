@@ -45,3 +45,15 @@ def rr_to_ms(results):
 
 def s_to_ms(results):
     return transform_results(results, lambda x: x*1000.0)
+
+def cumulative_to_events(results):
+    """Transform cumulative counter values into the increasing events."""
+    try:
+        current = results[0][1]
+        res = []
+        for t,v in results:
+            res.append((t,v-current))
+            current = v
+        return res
+    except (TypeError, IndexError):
+        return results
