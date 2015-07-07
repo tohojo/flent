@@ -619,6 +619,14 @@ class Settings(optparse.Values, object):
         if self.DATA_DIR is None:
             self.DATA_DIR = os.path.dirname(self.OUTPUT) or '.'
 
+        for k,v in self.BATCH_OVERRIDE.items():
+            if not hasattr(v, 'lower'):
+                continue
+            if v.lower() in ('no', 'false', '0'):
+                self.BATCH_OVERRIDE[k] = False
+            elif v.lower() in ('yes', 'true', '0'):
+                self.BATCH_OVERRIDE[k] = True
+
 
 settings = Settings(DEFAULT_SETTINGS)
 
