@@ -9,6 +9,7 @@ build: flent/*.py
 .PHONY: install
 install:
 	$(PYTHON) setup.py install
+	install -m 0755 -D -d $(PREFIX)/share/doc/flent/misc
 	install -m 0644 -D -t $(PREFIX)/share/doc/flent BUGS README.rst *.example
 	install -m 0644 -D -t $(PREFIX)/share/doc/flent/misc misc/*
 	install -m 0644 -t $(PREFIX)/share/man/man1 man/flent.1
