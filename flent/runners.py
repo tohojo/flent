@@ -829,10 +829,13 @@ class ComputingRunner(object):
         for mk in self.supported_meta:
             vals = []
             for k in keys:
-                if k in meta and mk in meta[k]:
+                if k in meta and mk in meta[k] and meta[k][mk] is not None:
                     vals.append(meta[k][mk])
             if vals:
-                meta[self.name][mk] = self.compute(vals)
+                try:
+                    meta[self.name][mk] = self.compute(vals)
+                except TypeError:
+                    meta[self.name][mk] = None
 
         for mk in self.copied_meta:
             vals = []
