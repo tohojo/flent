@@ -216,11 +216,11 @@ class Plotter(object):
                 self.plt.show()
         else:
             try:
+                self.build_tight_layout()
                 if self.plt.get_backend() == 'pdf':
                     self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), artists)
                 else:
-                    self.figure.savefig(self.output, bbox_extra_artists=artists, bbox_inches='tight',
-                                    dpi=self.settings.FIG_DPI)
+                    self.figure.savefig(self.output, dpi=self.settings.FIG_DPI)
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
@@ -232,8 +232,30 @@ class Plotter(object):
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
-            self.figure.savefig(pdf, bbox_extra_artists=artists, bbox_inches='tight',
-                                dpi=self.settings.FIG_DPI)
+            self.figure.savefig(pdf, dpi=self.settings.FIG_DPI)
+
+    def build_tight_layout(self):
+        rect = [0,0,1,1]
+        try:
+            self.figure.savefig(io.BytesIO())
+            renderer = self.figure._cachedRenderer
+            fig_bbox = self.figure.get_tightbbox(renderer)
+            if self.legends:
+                legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
+                rect[2] = 1-legend_width/fig_bbox.width
+
+            if self.annotation_obj:
+                annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
+                rect[1] = annotation_height/fig_bbox.height
+
+            if self.title_obj:
+                title_height = self.title_obj.get_window_extent(renderer).height/self.figure.dpi
+                rect[3] = 1-title_height/fig_bbox.height
+
+            self.figure.tight_layout(pad=0.5, rect=rect)
+            return True
+        except AttributeError:
+            return False
 
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
@@ -255,9 +277,11 @@ class Plotter(object):
 
     def _annotate_plot(self, skip_title=False):
         titles = []
-        title_y=0.98
+        title_y=1
         if self.settings.OVERRIDE_TITLE:
-            titles.append(self.figure.suptitle(self.settings.OVERRIDE_TITLE, fontsize=14, y=title_y))
+            self.title_obj = self.figure.suptitle(self.settings.OVERRIDE_TITLE,
+                                                  fontsize=14, y=title_y)
+            titles.append(self.title_obj)
             self.title = self.settings.OVERRIDE_TITLE
         elif self.settings.PRINT_TITLE:
             plot_title = self.settings.DESCRIPTION
@@ -266,19 +290,24 @@ class Plotter(object):
             if self.settings.TITLE and not skip_title:
                 plot_title += "\n" + self.settings.TITLE
             if 'description' in self.config and self.settings.TITLE and not skip_title:
-                y=1.00
-            titles.append(self.figure.suptitle(plot_title, fontsize=14, y=title_y))
+                title_y=1.00
+            self.title_obj = self.figure.suptitle(plot_title, fontsize=14, y=title_y)
+            titles.append(self.title_obj)
             self.title = plot_title
+        else:
+                self.title_obj = None
 
         if self.settings.ANNOTATE:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
                 self.settings.LOCAL_HOST, self.settings.HOST,
                 self.settings.TIME,
                 self.settings.LENGTH, self.settings.STEP_SIZE)
-            titles.append(self.figure.text(0.5, 0.0, annotation_string,
-                                            horizontalalignment='center',
-                                            verticalalignment='bottom',
-                                            fontsize=8))
+            self.annotation_obj = self.figure.text(0.5, 0.0, annotation_string,
+                             horizontalalignment='center',
+                             verticalalignment='bottom',
+                             fontsize=8)
+        else:
+            self.annotation_obj = None
         return titles
 
     def _filter_labels(self, labels):
