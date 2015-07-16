@@ -317,8 +317,14 @@ class MeanZeroReducer(Reducer):
             if '::' in key:
                key = key.split("::")[0]
             try:
-                seqs = [r['seq'] for r in resultset.raw_values[key]]
-                return 1-len(seqs)/max(seqs)
+                if cutoff is not None:
+                    start,end = cutoff
+                    start_t = min([r['t'] for r in resultset.raw_values[key]])+start
+                    end_t = max([r['t'] for r in resultset.raw_values[key]])-end
+                    seqs = [r['seq'] for r in resultset.raw_values[key] if r['t'] > start_t and r['t'] < end_t]
+                else:
+                    seqs = [r['seq'] for r in resultset.raw_values[key]]
+                return 1-len(seqs)/(max(seqs)-min(seqs)+1)
             except KeyError:
                 return None
         elif combine_mode.startswith('meta:'):
