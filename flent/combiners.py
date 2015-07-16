@@ -159,20 +159,45 @@ def GroupsPointsCombiner(Combiner):
         return new_results
 
 def GroupsConcatCombiner(Combiner):
-        # groups_concat means group by groups, but do per-point combinations, to
-        # e.g. create a data series that is the mean of several others
+        # groups_concat means group by groups, but concatenate the points of all
+        # the groups, e.g. to create a combined CDF of all data points
 
     def group(groups):
         for k in groups.keys():
             title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
             res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
             res.create_series([s['data'] for s in config['series']])
+            cutoff = config.get('cutoff', None)
+            if cutoff is not None:
+                # cut off values from the beginning and end before doing the
+                # plot; for e.g. pings that run long than the streams, we don't
+                # want the unloaded ping values
+                start,end = cutoff
+                end = int(end/self.settings.STEP_SIZE)
             x = 0
             for r in groups[k]:
-                keys = [s['data'] for s in config['series']]
+                keys , minvals = [], {}
+                for s in config['series']:
+                    k = s['data']
+                    keys.append(k)
+                    if s.get('combine_mode', None) == 'span' and k in r:
+                        minvals[k] = min([d for d in r.series(k) if d is not None])
+                    else:
+                        minvals[k] = None
+                n = 0
                 for p in r.zipped(keys):
-                    res.append_datapoint(x, dict(zip(keys, p[1:])))
-                    x += 1
+                    if n > start and n < len(r)-end:
+                        dp = {}
+                        for k,v in zip(keys, p[1:]):
+                            if minvals[k] is None:
+                                dp[k] = v
+                            elif v is not None:
+                                dp[k] = v-minvals[k]
+                            else:
+                                pass # skip None-values when a minval exists
+                        res.append_datapoint(x, dp)
+                        x += 1
+                        n += 1
             new_results.append(res)
         return new_results
 
