@@ -641,6 +641,7 @@ class BarPlotter(BoxPlotter):
         colours = list(islice(cycle([c for c in self.colours if c != errcol]), len(config['series'])))
 
         labels = self._filter_labels([r.label() for r in results])
+        series_labels = self._filter_labels([s['label'] for s in config['series']])
         texts = []
 
         if self.settings.NORM_FACTORS:
@@ -683,7 +684,7 @@ class BarPlotter(BoxPlotter):
             bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colour,
                                        alpha=0.75, width=width, align='edge')
             if len(config['series']) > 1 or self.settings.PRINT_TITLE:
-                texts.append(config['axes'][0].text(pos+group_size/2.0-0.5, 14, s['label'], ha='center'))
+                texts.append(config['axes'][0].text(pos+group_size/2.0-0.5, 14, series_labels[i], ha='center'))
 
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
