@@ -313,9 +313,19 @@ class MeanZeroReducer(Reducer):
         elif combine_mode == 'mean_zero':
             d = [p if p is not None else 0 for p in d]
             return self.np.mean(d) if d else None
+        elif combine_mode == 'raw_seq_loss':
+            if '::' in key:
+               key = key.split("::")[0]
+            try:
+                seqs = [r['seq'] for r in resultset.raw_values[key]]
+                return 1-len(seqs)/max(seqs)
+            except KeyError:
+                return None
         elif combine_mode.startswith('meta:'):
             metakey = combine_mode.split(":", 1)[1]
             try:
                 return resultset.meta('SERIES_META')[key][metakey]
             except KeyError:
                 return None
+        else:
+            raise RuntimeError("Unknown combine mode: %s" % combine_mode)
