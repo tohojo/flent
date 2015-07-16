@@ -70,12 +70,12 @@ class Combiner(object):
         # end, followed by a number signifying test iteration. So for instance
         # given the filenames:
         #
-        # rrul-fq_codel-01.json.gz
-        # rrul-fq_codel-02.json.gz
-        # rrul-fq_codel-03.json.gz
-        # rrul-pfifo_fast-01.json.gz
-        # rrul-pfifo_fast-02.json.gz
-        # rrul-pfifo_fast-03.json.gz
+        # rrul-fq_codel-01.flent.gz
+        # rrul-fq_codel-02.flent.gz
+        # rrul-fq_codel-03.flent.gz
+        # rrul-pfifo_fast-01.flent.gz
+        # rrul-pfifo_fast-02.flent.gz
+        # rrul-pfifo_fast-03.flent.gz
         #
         # two new data sets will be created ('fq_codel' and 'pfifo_fast'), each
         # with three data points created from each of the data files. The
