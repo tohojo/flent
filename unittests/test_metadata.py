@@ -1,6 +1,6 @@
 ## -*- coding: utf-8 -*-
 ##
-## __init__.py
+## test_metadata.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
 ## Date:     16 July 2015
@@ -22,9 +22,25 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
-from . import test_util
-from . import test_metadata
+import os
 
-test_suite = unittest.TestSuite([test_util.test_suite,
-                                 test_metadata.test_suite
-])
+from flent import metadata
+
+class TestMetadataFunctions(unittest.TestCase):
+
+    def test_get_sysctls(self):
+        sysctls = metadata.get_sysctls()
+
+        for sysctl in metadata.INTERESTING_SYSCTLS:
+            sysctl_path = os.path.join('/proc/sys', *sysctl.split('.'))
+            if os.path.exists(sysctl_path):
+                self.assertIn(sysctl, sysctls)
+                with open(sysctl_path, 'r') as fp:
+                    sysctl_value = fp.read().strip()
+                    try:
+                        sysctl_value = int(sysctl_value)
+                    except ValueError:
+                        pass
+                self.assertEqual(sysctl_value, sysctls[sysctl])
+
+test_suite = unittest.TestLoader().loadTestsFromTestCase(TestMetadataFunctions)
