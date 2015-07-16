@@ -216,46 +216,55 @@ class Plotter(object):
                 self.plt.show()
         else:
             try:
-                self.build_tight_layout()
+                save_args = self.build_tight_layout(artists)
                 if self.plt.get_backend() == 'pdf':
-                    self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), artists)
+                    self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), save_args)
                 else:
-                    self.figure.savefig(self.output, dpi=self.settings.FIG_DPI)
+                    self.figure.savefig(self.output, dpi=self.settings.FIG_DPI, **save_args)
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
 
 
-    def save_pdf(self, filename, data_filename, artists):
+    def save_pdf(self, filename, data_filename, save_args):
         with self.mpl.backends.backend_pdf.PdfPages(filename) as pdf:
             pdf.infodict()['Producer'] = 'netperf-wrapper v%s' % VERSION
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
-            self.figure.savefig(pdf, dpi=self.settings.FIG_DPI)
+            self.figure.savefig(pdf, dpi=self.settings.FIG_DPI, **save_args)
 
-    def build_tight_layout(self):
+    def build_tight_layout(self, artists):
         rect = [0,0,1,1]
+        args = None
         try:
-            self.figure.savefig(io.BytesIO())
-            renderer = self.figure._cachedRenderer
-            fig_bbox = self.figure.get_tightbbox(renderer)
-            if self.legends:
-                legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
-                rect[2] = 1-legend_width/fig_bbox.width
+            # Some plot configurations are incompatible with tight_layout; this
+            # test is from matplotlib's tight_layout() in figure.py
+            from matplotlib.tight_layout import get_subplotspec_list
+            if not None in get_subplotspec_list(self.figure.axes):
+                self.figure.savefig(io.BytesIO())
+                renderer = self.figure._cachedRenderer
+                fig_bbox = self.figure.get_tightbbox(renderer)
+                if self.legends:
+                    legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
+                    rect[2] = 1-legend_width/fig_bbox.width
 
-            if self.annotation_obj:
-                annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
-                rect[1] = annotation_height/fig_bbox.height
+                if self.annotation_obj:
+                    annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
+                    rect[1] = annotation_height/fig_bbox.height
 
-            if self.title_obj:
-                title_height = self.title_obj.get_window_extent(renderer).height/self.figure.dpi
-                rect[3] = 1-title_height/fig_bbox.height
+                if self.title_obj:
+                    title_height = self.title_obj.get_window_extent(renderer).height/self.figure.dpi
+                    rect[3] = 1-title_height/fig_bbox.height
 
-            self.figure.tight_layout(pad=0.5, rect=rect)
-            return True
-        except AttributeError:
-            return False
+                self.figure.tight_layout(pad=0.5, rect=rect)
+                args = {}
+        except (AttributeError, ImportError):
+            pass
+        # Fall back to the regular bbox_extra_artists output feature
+        if args is None:
+            args = {'bbox_extra_artists': artists, 'bbox_inches': 'tight'}
+        return args
 
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
