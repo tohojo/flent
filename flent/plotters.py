@@ -282,6 +282,8 @@ class Plotter(object):
         return titles
 
     def _filter_labels(self, labels):
+        for s,d in self.settings.REPLACE_LEGEND.items():
+            labels = [l.replace(s,d) for l in labels]
         for r in self.settings.FILTER_REGEXP:
             labels = [re.sub(r, "", l) for l in labels]
         if self.settings.FILTER_LEGEND and labels:
