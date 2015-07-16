@@ -6,6 +6,11 @@ all: build
 build: flent/*.py
 	$(PYTHON) setup.py build
 
+.PHONY: test
+test:
+	$(PYTHON) setup.py test
+
+
 .PHONY: install
 install:
 	$(PYTHON) setup.py install
