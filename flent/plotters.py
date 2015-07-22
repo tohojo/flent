@@ -19,8 +19,9 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, inspect
+import os, inspect, io
 
+from flent import combiners
 from .util import cum_prob, frange, classname, long_substr
 from .build_info import DATA_DIR, VERSION
 from functools import reduce
@@ -441,6 +442,15 @@ class Plotter(object):
         idx = int(len(lst) * (q/100.0))
         return self.np.sort(lst)[idx]
 
+class CombineManyPlotter(Plotter):
+
+    def plot(self, results, config=None, axis=None):
+        if config is None:
+            config = self.config
+
+        combine_mode = config.get('group_by', 'groups')
+        combiner = combiners.new(combine_mode, self.settings)
+        self._plot(combiner(results, config), config, axis)
 
 class TimeseriesPlotter(Plotter):
     can_subplot_combine = True
@@ -568,14 +578,17 @@ class TimeseriesPlotter(Plotter):
         for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
             a.set_ybound(b)
 
+class TimeseriesCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
+    pass
 
 class BoxPlotter(TimeseriesPlotter):
 
     def init(self, config=None, axis=None):
-        TimeseriesPlotter.init(self, config, axis)
-
         if axis is None:
             axis = self.figure.gca()
+
+        TimeseriesPlotter.init(self, config, axis)
+
         if config is None:
             config = self.config
 
@@ -587,6 +600,9 @@ class BoxPlotter(TimeseriesPlotter):
         self.start_position = 1
 
     def plot(self, results, config=None, axis=None):
+        return self._plot(results,config,axis)
+
+    def _plot(self, results, config=None, axis=None):
         if config is None:
             config = self.config
         axis = config['axes'][0]
@@ -655,13 +671,15 @@ class BoxPlotter(TimeseriesPlotter):
         axis.set_xticklabels(ticklabels)
         axis.set_xlim(0,pos-1)
 
+class BoxCombinePlotter(CombineManyPlotter, BoxPlotter):
+    pass
 
 
 class BarPlotter(BoxPlotter):
     def init(self, config=None, axis=None):
         BoxPlotter.init(self,config,axis)
 
-    def plot(self, results, config=None, axis=None):
+    def _plot(self, results, config=None, axis=None):
         if config is None:
             config = self.config
         axis = config['axes'][0]
@@ -745,6 +763,9 @@ class BarPlotter(BoxPlotter):
         axis.set_xlim(0,pos-1)
 
         self.artists.extend(texts)
+
+class BarCombinePlotter(CombineManyPlotter, BarPlotter):
+    pass
 
 
 class CdfPlotter(Plotter):
@@ -880,6 +901,8 @@ class CdfPlotter(Plotter):
         return x_vals,y_vals
 
 
+class CdfCombinePlotter(CombineManyPlotter, CdfPlotter):
+    pass
 
 
 class QqPlotter(Plotter):
