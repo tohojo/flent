@@ -92,7 +92,7 @@ def init_matplotlib(settings):
         STYLES.append(dict(dashes=d))
     if settings.USE_MARKERS:
         for m in MARKERS:
-            STYLES.append(dict(marker=m))
+            STYLES.append(dict(marker=m, markevery=10))
 
     # Try to detect if a custom matplotlibrc is installed, and if so don't
     # load our own values.
