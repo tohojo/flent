@@ -113,7 +113,7 @@ DEFAULT_SETTINGS = {
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
     'HTTP_GETTER_WORKERS': 4,
-    'DEBUG_ERROR': False
+    'DEBUG_ERROR': False,
     }
 
 CONFIG_TYPES = {
@@ -394,6 +394,13 @@ plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATP
                   help="Don't load included matplotlibrc values. Use this if autodetection of custom "
                   "matplotlibrc fails and flent is inadvertently overriding rc values.")
 parser.add_option_group(plot_group)
+
+combine_group = optparse.OptionGroup(parser, "Data combination configuration",
+                                     "These options are used to combine several datasets, "
+                                     "for instance to make aggregate plots.")
+
+parser.add_option_group(combine_group)
+
 
 
 tool_group = optparse.OptionGroup(parser, "Test tool-related options")
