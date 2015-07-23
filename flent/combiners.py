@@ -275,7 +275,7 @@ class BothCombiner(Combiner):
     # delimiter (currently '-') and the first part specifies the group, the
     # second the series. Currently only works if there's just one series
     # name configured in the plot config.
-    def group(groups, config):
+    def group(self, groups, config):
         assert len(config['series']) == 1
         series_names = []
         group_names = []
@@ -289,13 +289,15 @@ class BothCombiner(Combiner):
         new_series = [{'data': s, 'label': s} for s in series_names]
         new_results = []
         for s in group_names:
-            res = ResultSet(TITLE=s,NAME=results[0].meta('NAME'))
+            res = ResultSet(TITLE=s,NAME=self.orig_name)
             res.create_series(series_names)
             x = 0
             for d in zip_longest(*[g[1] for g in groups.items() if g[0].endswith("-%s" % s)]):
                 data = {}
                 for k,v in zip([k.rsplit("-",1)[0] for k in groups.keys() if k.endswith("-%s" % s)], d):
-                    data[k] = self._combine_data(v, old_s['data'], old_s.get('combine_mode', 'mean'), config.get('cutoff', None)) if v is not None else None
+                    reducer = self.get_reducer(old_s)
+                    data[k] = reducer(v, old_s['data']) if v is not None else Non
+
                 res.append_datapoint(x, data)
                 x += 1
             new_results.append(res)
