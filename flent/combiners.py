@@ -200,31 +200,28 @@ class GroupsConcatCombiner(Combiner):
         # groups_concat means group by groups, but concatenate the points of all
         # the groups, e.g. to create a combined CDF of all data points
 
-    def group(groups, config):
+    def group(self, groups, config):
+        new_results = []
         for k in groups.keys():
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
             res = ResultSet(TITLE=title, NAME=self.orig_name)
-            res.create_series([s['data'] for s in config['series']])
+            res.create_series([s['data'] for s in self.orig_series])
             cutoff = config.get('cutoff', None)
-            if cutoff is not None:
-                # cut off values from the beginning and end before doing the
-                # plot; for e.g. pings that run long than the streams, we don't
-                # want the unloaded ping values
-                start,end = cutoff
-                end = int(end/self.settings.STEP_SIZE)
             x = 0
             for r in groups[k]:
+                if cutoff:
+                    start =  min(r.x_values) + cutoff[0]
+                    end   =  max(r.x_values) - cutoff[1]
                 keys , minvals = [], {}
-                for s in config['series']:
+                for s in self.orig_series:
                     k = s['data']
                     keys.append(k)
                     if s.get('combine_mode', None) == 'span' and k in r:
                         minvals[k] = min([d for d in r.series(k) if d is not None])
                     else:
                         minvals[k] = None
-                n = 0
                 for p in r.zipped(keys):
-                    if n > start and n < len(r)-end:
+                    if cutoff is None or (p[0] > start and p[0] < end):
                         dp = {}
                         for k,v in zip(keys, p[1:]):
                             if minvals[k] is None:
@@ -235,7 +232,6 @@ class GroupsConcatCombiner(Combiner):
                                 pass # skip None-values when a minval exists
                         res.append_datapoint(x, dp)
                         x += 1
-                        n += 1
             new_results.append(res)
         return new_results
 
@@ -309,7 +305,6 @@ def get_reducer(reducer_type, cutoff):
     if not cname in globals():
         raise RuntimeError("Reducer not found: '%s'" % reducer_type)
     return globals()[cname](reducer_arg, cutoff)
-
 
 class Reducer(object):
     filter_none = True
