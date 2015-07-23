@@ -134,7 +134,14 @@ class Combiner(object):
         self.orig_series = config['series']
         self.orig_name = results[0].meta('NAME')
 
-        return self.group(groups, config)
+        # Do the main combine - group() is defined by subclasses.
+        new_results = self.group(groups, config)
+
+        # We've already been applying the cutoff value on combine, make sure the
+        # plotting functions don't do that also.
+        config['cutoff'] = None
+
+        return new_results
 
     def get_reducer(self, s_config):
         reducer_name = s_config.get('combine_mode', 'mean')
