@@ -19,6 +19,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import os, inspect, io
 
 from flent import combiners
@@ -26,10 +28,6 @@ from .util import cum_prob, frange, classname, long_substr
 from .build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice
-try:
-    from itertools import izip_longest as zip_longest
-except ImportError:
-    from itertools import zip_longest
 
 try:
     from collections import OrderedDict

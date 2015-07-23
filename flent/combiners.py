@@ -19,13 +19,20 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import re
+
 from .util import classname, long_substr
 from .resultset import ResultSet
 
 from itertools import cycle
 from bisect import bisect_left, bisect_right
 
-import re
+try:
+    from itertools import izip_longest as zip_longest
+except ImportError:
+    from itertools import zip_longest
 
 try:
     from collections import OrderedDict
@@ -125,8 +132,9 @@ class Combiner(object):
                 groups[n] = [results[i]]
 
         self.orig_series = config['series']
+        self.orig_name = results[0].meta('NAME')
 
-        return self.group(groups)
+        return self.group(groups, config)
 
     def get_reducer(self, s_config):
         reducer_name = s_config.get('combine_mode', 'mean')
@@ -138,13 +146,13 @@ class GroupsCombiner(Combiner):
     # group_by == 'groups' means preserve the data series and group the data
     # by the data groups identified above -- i.e. they become the items in
     # the legend.
-    def group(self, groups):
+    def group(self, groups, config):
 
         new_results = []
 
         for k in groups.keys():
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
-            res = ResultSet(TITLE=title, NAME=groups[k][0].meta('NAME'))
+            res = ResultSet(TITLE=title, NAME=self.orig_name)
             res.create_series([s['data'] for s in self.orig_series])
             x = 0
             for r in groups[k]:
@@ -152,8 +160,6 @@ class GroupsCombiner(Combiner):
                 for s in self.orig_series:
                     reducer = self.get_reducer(s)
                     data[s['data']] = reducer(r, s['data'])
-                    #self._combine_data(r, s['data'], s.get('combine_mode', 'mean'), config.get('cutoff', None))
-
 
                 res.append_datapoint(x, data)
                 x += 1
@@ -164,10 +170,10 @@ class GroupsPointsCombiner(Combiner):
     # groups_points means group by groups, but do per-point combinations, to
     # e.g. create a data series that is the mean of several others
 
-    def group(self, groups):
+    def group(self, groups, config):
         for k in groups.keys():
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
-            res = ResultSet(TITLE=title, NAME=groups[k][0].meta('NAME'))
+            res = ResultSet(TITLE=title, NAME=self.orig_name)
             x_values = []
             for r in groups[k]:
                 if len(r.x_values) > len(x_values):
@@ -191,10 +197,10 @@ class GroupsConcatCombiner(Combiner):
         # groups_concat means group by groups, but concatenate the points of all
         # the groups, e.g. to create a combined CDF of all data points
 
-    def group(groups):
+    def group(groups, config):
         for k in groups.keys():
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
-            res = ResultSet(TITLE=title, NAME=groups[k][0].meta('NAME'))
+            res = ResultSet(TITLE=title, NAME=self.orig_name)
             res.create_series([s['data'] for s in config['series']])
             cutoff = config.get('cutoff', None)
             if cutoff is not None:
@@ -234,16 +240,19 @@ class SeriesCombiner(Combiner):
     # group_by == 'series' means flip the group and series, so the groups
     # become the entries on the x axis, while the series become the new
     # groups (in the legend)
-    def group(groups):
+    def group(self, groups, config):
 
-        for s in config['series']:
-            res = ResultSet(TITLE=s['label'], NAME=results[0].meta('NAME'))
+        new_results = []
+
+        for s in self.orig_series:
+            res = ResultSet(TITLE=s['label'], NAME=self.orig_name)
             res.create_series(groups.keys())
             x = 0
             for d in zip_longest(*groups.values()):
                 data = {}
                 for k,v in zip(groups.keys(), d):
-                    data[k] = self._combine_data(v, s['data'], s.get('combine_mode', 'mean'), config.get('cutoff', None)) if v is not None else None
+                    reducer = self.get_reducer(s)
+                    data[k] = reducer(v, s['data']) if v is not None else Non
                 res.append_datapoint(x, data)
                 x += 1
             new_results.append(res)
@@ -260,7 +269,7 @@ class BothCombiner(Combiner):
     # delimiter (currently '-') and the first part specifies the group, the
     # second the series. Currently only works if there's just one series
     # name configured in the plot config.
-    def group(groups):
+    def group(groups, config):
         assert len(config['series']) == 1
         series_names = []
         group_names = []
