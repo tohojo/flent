@@ -246,7 +246,7 @@ class Plotter(object):
                 fig_bbox = self.figure.get_tightbbox(renderer)
                 if self.legends:
                     legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
-                    rect[2] = 1-legend_width/fig_bbox.width
+                    rect[2] = max(0.5,1-legend_width/fig_bbox.width)
 
                 if self.annotation_obj:
                     annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
