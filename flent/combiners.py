@@ -171,6 +171,7 @@ class GroupsPointsCombiner(Combiner):
     # e.g. create a data series that is the mean of several others
 
     def group(self, groups, config):
+        new_results = []
         for k in groups.keys():
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
             res = ResultSet(TITLE=title, NAME=self.orig_name)
@@ -186,9 +187,11 @@ class GroupsPointsCombiner(Combiner):
             for s in config['series']:
                 data = zip_longest(x_values, *[r[s['data']] for r in groups[k]])
                 new_data = []
+                reducer = self.get_reducer(s)
+                reducer.cutoff = None
                 for d in data:
                     if cutoff is None or (d[0] >= cutoff[0] and d[0] <= max(x_values)-cutoff[1]):
-                        new_data.append(self._combine_data(res, s['data'], s.get('combine_mode', 'mean'), None, d=d[1:]))
+                        new_data.append(reducer(res, s['data'], data=d[1:]))
                 res.add_result(s['data'], new_data)
             new_results.append(res)
         return new_results
@@ -315,11 +318,12 @@ class Reducer(object):
         self.arg = arg
         self.cutoff = cutoff
 
-    def __call__(self, resultset, key):
-        return self.reduce(resultset,key)
+    def __call__(self, resultset, key, data=None):
+        return self.reduce(resultset,key, data)
 
-    def reduce(self, resultset, key):
-        data = resultset[key]
+    def reduce(self, resultset, key, data=None):
+        if data is None:
+            data = resultset[key]
         if self.cutoff:
             start = min(resultset.x_values)+self.cutoff[0]
             end = max(resultset.x_values)-self.cutoff[1]
@@ -368,7 +372,7 @@ class MeanZeroReducer(Reducer):
 class RawSeqLossReducer(Reducer):
     filter_none = False
 
-    def reduce(self, resultset, key):
+    def reduce(self, resultset, key, data=None):
         if '::' in key:
            key = key.split("::")[0]
         try:
@@ -386,7 +390,7 @@ class RawSeqLossReducer(Reducer):
 class MetaReducer(Reducer):
     filter_none = False
 
-    def reduce(self, resultset, key):
+    def reduce(self, resultset, key, data=None):
         metakey = self.arg
         try:
             return resultset.meta('SERIES_META')[key][metakey]

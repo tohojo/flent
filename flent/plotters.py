@@ -440,7 +440,7 @@ class Plotter(object):
         idx = int(len(lst) * (q/100.0))
         return self.np.sort(lst)[idx]
 
-class CombineManyPlotter(Plotter):
+class CombineManyPlotter(object):
 
     def plot(self, results, config=None, axis=None):
         if config is None:
@@ -448,7 +448,7 @@ class CombineManyPlotter(Plotter):
 
         combine_mode = config.get('group_by', 'groups')
         combiner = combiners.new(combine_mode, self.settings)
-        self._plot(combiner(results, config), config, axis)
+        super(CombineManyPlotter,self).plot(combiner(results, config), config, axis)
 
 class TimeseriesPlotter(Plotter):
     can_subplot_combine = True
