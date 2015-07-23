@@ -19,9 +19,19 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .util import classname
+from .util import classname, long_substr
+from .resultset import ResultSet
 
-from itertool import cycle
+from itertools import cycle
+from bisect import bisect_left, bisect_right
+
+import re
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from netperf_wrapper.ordereddict import OrderedDict
+
 
 try:
     import numpy
@@ -34,9 +44,9 @@ def get_combiner(combiner_type):
         raise RuntimeError("Combiner not found: '%s'" % plot_type)
     return globals()[cname]
 
-def new(combiner_type):
+def new(combiner_type, settings):
     try:
-        return get_combiner(combiner_type)()
+        return get_combiner(combiner_type)(settings)
     except Exception as e:
         raise RuntimeError("Error loading combiner: %s." % e)
 
@@ -49,15 +59,21 @@ class Combiner(object):
 
     def __init__(self, settings):
         self.settings = settings
+        self.filter_regexps = []
+        self.filter_serial = True
+        self.filter_prefix = True
+        self.print_n = settings.COMBINE_PRINT_N
 
-    def combine(self, results):
+    def __call__(self, results, config):
+        return self.combine(results, config)
+
+    def combine(self, results, config):
 
         """Combines several result sets into one box plot by grouping them on
         unique data file name parts and then combining each group into a single
         data set."""
 
-        if config is None:
-            config = self.config
+        self.config = config
 
         # Group the result sets into the groups that will appear as new data
         # sets. This is done on the file name, by first removing the file
@@ -90,25 +106,33 @@ class Combiner(object):
         groups = OrderedDict()
         new_results, regexps, names = [], [], []
         filenames = [r.meta('DATA_FILENAME').replace(r.SUFFIX, '') for r in results]
-        for r in self.settings.COMBINE_FILTER_REGEXP:
+        for r in self.filter_regexps:
             regexps.append(re.compile(r))
-        if self.settings.COMBINE_FILTER_SERIAL:
+        if self.filter_serial:
             regexps.append(self.serial_regex)
-        for f in filename:
-            for r in regexps:
-                f = r.sub("", f, count=1)
-            names.append(f)
-        if self.settings.COMBINE_FILTER_PREFIX:
-            prefix = long_substr(names, prefix_only=True)
-            names = [n.replace(prefix, "") for n in names]
+        if self.filter_prefix:
+            prefix = long_substr(filenames, prefix_only=True)
+            names = [n.replace(prefix, "", 1) for n in filenames]
+        else:
+            names = filenames
 
         for i,n in enumerate(names):
+            for r in regexps:
+                n = r.sub("", n, count=1)
             if n in groups:
                 groups[n].append(results[i])
             else:
                 groups[n] = [results[i]]
 
+        self.orig_series = config['series']
+
         return self.group(groups)
+
+    def get_reducer(self, s_config):
+        reducer_name = s_config.get('combine_mode', 'mean')
+        cutoff = self.config.get('cutoff', None)
+        return  get_reducer(reducer_name, cutoff)
+
 
 class GroupsCombiner(Combiner):
     # group_by == 'groups' means preserve the data series and group the data
@@ -116,29 +140,34 @@ class GroupsCombiner(Combiner):
     # the legend.
     def group(self, groups):
 
+        new_results = []
+
         for k in groups.keys():
-            title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
-            res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
-            res.create_series([s['data'] for s in config['series']])
+            title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
+            res = ResultSet(TITLE=title, NAME=groups[k][0].meta('NAME'))
+            res.create_series([s['data'] for s in self.orig_series])
             x = 0
             for r in groups[k]:
                 data = {}
-                for s in config['series']:
-                    data[s['data']] = self._combine_data(r, s['data'], s.get('combine_mode', 'mean'), config.get('cutoff', None))
+                for s in self.orig_series:
+                    reducer = self.get_reducer(s)
+                    data[s['data']] = reducer(r, s['data'])
+                    #self._combine_data(r, s['data'], s.get('combine_mode', 'mean'), config.get('cutoff', None))
+
 
                 res.append_datapoint(x, data)
                 x += 1
             new_results.append(res)
         return new_results
 
-def GroupsPointsCombiner(Combiner):
+class GroupsPointsCombiner(Combiner):
     # groups_points means group by groups, but do per-point combinations, to
     # e.g. create a data series that is the mean of several others
 
     def group(self, groups):
         for k in groups.keys():
-            title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
-            res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
+            title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
+            res = ResultSet(TITLE=title, NAME=groups[k][0].meta('NAME'))
             x_values = []
             for r in groups[k]:
                 if len(r.x_values) > len(x_values):
@@ -158,14 +187,14 @@ def GroupsPointsCombiner(Combiner):
             new_results.append(res)
         return new_results
 
-def GroupsConcatCombiner(Combiner):
+class GroupsConcatCombiner(Combiner):
         # groups_concat means group by groups, but concatenate the points of all
         # the groups, e.g. to create a combined CDF of all data points
 
     def group(groups):
         for k in groups.keys():
-            title = "%s (n=%d)" % (k, len(groups[k])) if self.settings.COMBINE_PRINT_N else k
-            res = ResultSet(TITLE=title, NAME=results[0].meta('NAME'))
+            title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
+            res = ResultSet(TITLE=title, NAME=groups[k][0].meta('NAME'))
             res.create_series([s['data'] for s in config['series']])
             cutoff = config.get('cutoff', None)
             if cutoff is not None:
@@ -201,7 +230,7 @@ def GroupsConcatCombiner(Combiner):
             new_results.append(res)
         return new_results
 
-def SeriesCombiner(Combiner):
+class SeriesCombiner(Combiner):
     # group_by == 'series' means flip the group and series, so the groups
     # become the entries on the x axis, while the series become the new
     # groups (in the legend)
@@ -225,7 +254,7 @@ def SeriesCombiner(Combiner):
 
         return new_results
 
-def BothCombiner(Combiner):
+class BothCombiner(Combiner):
 
     # group_by == 'both' means that the group names should be split by a
     # delimiter (currently '-') and the first part specifies the group, the
@@ -259,18 +288,35 @@ def BothCombiner(Combiner):
 
         return new_results
 
-def Reducer(object):
-    filter_none = True
-    def __init__(self, settings):
-        self.settings = settings
+def get_reducer(reducer_type, cutoff):
+    if ":" in reducer_type:
+        reducer_type,reducer_arg = reducer_type.split(":", 1)
+    else:
+        reducer_arg = None
+    cname = classname(reducer_type, "Reducer")
+    if not cname in globals():
+        raise RuntimeError("Reducer not found: '%s'" % reducer_type)
+    return globals()[cname](reducer_arg, cutoff)
 
-    def reduce(self, data):
-        if self.settings.COMBINE_CUTOFF:
-            start,end = cycle(self.settings.COMBINE_CUTOFF)[:2]
-            end = -int(end/self.settings.STEP_SIZE)
-            if end == 0:
-                end = None
-            data = data[int(start/self.settings.STEP_SIZE):end]
+
+class Reducer(object):
+    filter_none = True
+
+    def __init__(self, arg, cutoff):
+        self.arg = arg
+        self.cutoff = cutoff
+
+    def __call__(self, resultset, key):
+        return self.reduce(resultset,key)
+
+    def reduce(self, resultset, key):
+        data = resultset[key]
+        if self.cutoff:
+            start = min(resultset.x_values)+self.cutoff[0]
+            end = max(resultset.x_values)-self.cutoff[1]
+            start_idx = bisect_left(resultset.x_values,start)
+            end_idx = bisect_right(resultset.x_values,end)
+            data = data[start_idx:end_idx]
         if self.filter_none:
             data = [p for p in data if p is not None]
         if not data:
@@ -302,61 +348,38 @@ class MeanSpanReducer(Reducer):
     def _reduce(self, data):
         min_val = min(data)
         d = [i-min_val for i in data]
-        return self.np.mean(d)
+        return numpy.mean(d)
 
 class MeanZeroReducer(Reducer):
     filter_none = False
     def _reduce(self, data):
         d = [p if p is not None else 0 for p in data]
-        return self.np.mean(d) if d else None
+        return numpy.mean(d) if d else None
 
-    def _combine_data(self, resultset, key, combine_mode, cutoff=None, d=None):
-        if d is None:
-            d = resultset[key]
-        if cutoff is not None:
-            # cut off values from the beginning and end before doing the
-            # plot; for e.g. pings that run long than the streams, we don't
-            # want the unloaded ping values
-            start,end = cutoff
-            end = -int(end/self.settings.STEP_SIZE)
-            if end == 0:
-                end = None
-            d = d[int(start/self.settings.STEP_SIZE):end]
-        if combine_mode in ('mean', 'median', 'min', 'max'):
-            d = [p for p in d if p is not None]
-            return getattr(self.np, combine_mode)(d) if d else None
-        elif combine_mode == 'span':
-            d = [p for p in d if p is not None]
-            return self.np.max(d)-self.np.min(d) if d else None
-        elif combine_mode == 'mean_span':
-            d = [p for p in d if p is not None]
-            if not d:
-                return None
-            min_val = min(d)
-            d = [i-min_val for i in d]
-            return self.np.mean(d)
-        elif combine_mode == 'mean_zero':
-            d = [p if p is not None else 0 for p in d]
-            return self.np.mean(d) if d else None
-        elif combine_mode == 'raw_seq_loss':
-            if '::' in key:
-               key = key.split("::")[0]
-            try:
-                if cutoff is not None:
-                    start,end = cutoff
-                    start_t = min([r['t'] for r in resultset.raw_values[key]])+start
-                    end_t = max([r['t'] for r in resultset.raw_values[key]])-end
-                    seqs = [r['seq'] for r in resultset.raw_values[key] if r['t'] > start_t and r['t'] < end_t]
-                else:
-                    seqs = [r['seq'] for r in resultset.raw_values[key]]
-                return 1-len(seqs)/(max(seqs)-min(seqs)+1)
-            except KeyError:
-                return None
-        elif combine_mode.startswith('meta:'):
-            metakey = combine_mode.split(":", 1)[1]
-            try:
-                return resultset.meta('SERIES_META')[key][metakey]
-            except KeyError:
-                return None
-        else:
-            raise RuntimeError("Unknown combine mode: %s" % combine_mode)
+class RawSeqLossReducer(Reducer):
+    filter_none = False
+
+    def reduce(self, resultset, key):
+        if '::' in key:
+           key = key.split("::")[0]
+        try:
+            if self.cutoff is not None:
+                start,end = self.cutoff
+                start_t = min([r['t'] for r in resultset.raw_values[key]])+start
+                end_t = max([r['t'] for r in resultset.raw_values[key]])-end
+                seqs = [r['seq'] for r in resultset.raw_values[key] if r['t'] > start_t and r['t'] < end_t]
+            else:
+                seqs = [r['seq'] for r in resultset.raw_values[key]]
+            return 1-len(seqs)/(max(seqs)-min(seqs)+1)
+        except KeyError:
+            return None
+
+class MetaReducer(Reducer):
+    filter_none = False
+
+    def reduce(self, resultset, key):
+        metakey = self.arg
+        try:
+            return resultset.meta('SERIES_META')[key][metakey]
+        except KeyError:
+            return None
