@@ -25,7 +25,10 @@ import unittest
 import os
 import sys
 
-import subprocess
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 try:
     from unittest import mock
@@ -37,42 +40,68 @@ except ImportError:
 
 from flent import plotters
 
+def prefork(method):
+    def new_method(*args, **kwargs):
+        pipe_r, pipe_w = os.pipe()
+        pid = os.fork()
+        if pid:
+            os.close(pipe_w)
+            os.waitpid(pid, 0)
+            res = pickle.loads(os.read(pipe_r, 65535))
+            if isinstance(res, Exception):
+                raise res
+            return res
+        else:
+            os.close(pipe_r)
+            try:
+                res = method(*args, **kwargs)
+                os.write(pipe_w, pickle.dumps(res))
+            except Exception as e:
+                os.write(pipe_w, pickle.dumps(e))
+            finally:
+                os._exit(0)
+    return new_method
+
+
+
 class TestPlotters(unittest.TestCase):
+
+    def init_test_backend(self, filename):
+        plotters.init_matplotlib(filename, False, False)
+        return plotters.matplotlib.get_backend()
+
+    def setUp(self):
+        if not plotters.HAS_MATPLOTLIB:
+            self.skipTest('no matplotlib available')
+
 
     @mock.patch.object(plotters, 'HAS_MATPLOTLIB', False)
     def test_init_fail(self):
         self.assertRaises(RuntimeError, plotters.init_matplotlib, None, None, None)
 
-    def init_test_backend(self, filename):
-        # Hack to test init; can't select backend multiple times in matplotlib, so
-        # do the init in a separate Python process.
-        return subprocess.check_output([sys.executable, '-c',
-                                        'from flent import plotters; '
-                                        'plotters.init_matplotlib("{filename}", False, False); '
-                                        'print(plotters.matplotlib.get_backend())'.format(filename=filename)]).decode().strip()
-
-    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    @prefork
     def test_init_svg(self):
         self.assertEqual(self.init_test_backend('test.svg'), 'svg')
 
-    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    @prefork
     def test_init_svgz(self):
         self.assertEqual(self.init_test_backend('test.svgz'), 'svg')
 
-    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    @prefork
     def test_init_ps(self):
         self.assertEqual(self.init_test_backend('test.ps'), 'ps')
 
-    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    @prefork
     def test_init_eps(self):
         self.assertEqual(self.init_test_backend('test.eps'), 'ps')
 
-    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    @prefork
     def test_init_pdf(self):
         self.assertEqual(self.init_test_backend('test.pdf'), 'pdf')
 
-    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    @prefork
     def test_init_png(self):
         self.assertEqual(self.init_test_backend('test.png'), 'agg')
+
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestPlotters)
