@@ -40,6 +40,37 @@ except ImportError:
 
 from flent import plotters
 
+MATPLOTLIB_RC_VALUES = {
+    'axes.axisbelow': True,
+    'axes.color_cycle': ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
+    'axes.edgecolor': 'white',
+    'axes.facecolor': '#EAEAF2',
+    'axes.grid': True,
+    'axes.labelcolor': '.15',
+    'axes.linewidth': 0,
+    'figure.edgecolor': 'white',
+    'figure.facecolor': 'white',
+    'figure.frameon': False,
+    'grid.color': 'white',
+    'grid.linestyle': '-',
+    'image.cmap': 'Greys',
+    'legend.frameon': False,
+    'legend.numpoints': 1,
+    'legend.scatterpoints': 1,
+    'lines.color': '.15',
+    'lines.solid_capstyle': 'round',
+    'pdf.fonttype': 42,
+    'text.color': '.15',
+    'xtick.color': '.15',
+    'xtick.direction': 'out',
+    'xtick.major.size': 0,
+    'xtick.minor.size': 0,
+    'ytick.color': '.15',
+    'ytick.direction': 'out',
+    'ytick.major.size': 0,
+    'ytick.minor.size': 0,
+}
+
 def prefork(method):
     def new_method(*args, **kwargs):
         pipe_r, pipe_w = os.pipe()
@@ -102,6 +133,45 @@ class TestPlotters(unittest.TestCase):
     @prefork
     def test_init_png(self):
         self.assertEqual(self.init_test_backend('test.png'), 'agg')
+
+    @prefork
+    def test_init_styles(self):
+        plotters.init_matplotlib('-', True, False)
+        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES)+\
+                         len(plotters.DASHES)+len(plotters.MARKERS))
+        for ls in plotters.LINESTYLES:
+            self.assertIn(dict(linestyle=ls), plotters.STYLES)
+        for d in plotters.DASHES:
+            self.assertIn(dict(dashes=d), plotters.STYLES)
+        for m in plotters.MARKERS:
+            self.assertIn(dict(marker=m, markevery=10), plotters.STYLES)
+
+        self.assertEqual(plotters.matplotlib.rcParams['axes.color_cycle'],
+                         plotters.COLOURS)
+
+    @prefork
+    def test_init_styles_nomarkers(self):
+        plotters.init_matplotlib('-', False, False)
+        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES)+\
+                         len(plotters.DASHES))
+        for ls in plotters.LINESTYLES:
+            self.assertIn(dict(linestyle=ls), plotters.STYLES)
+        for d in plotters.DASHES:
+            self.assertIn(dict(dashes=d), plotters.STYLES)
+
+    @prefork
+    def test_init_rcfile(self):
+        with mock.patch.object(plotters.matplotlib, 'matplotlib_fname') as mock_obj:
+            mock_obj.return_value = ''
+            if 'MATPLOTLIBRC' in os.environ:
+                del os.environ['MATPLOTLIBRC']
+
+            plotters.init_matplotlib('-', False, True)
+            for k,v in MATPLOTLIB_RC_VALUES.items():
+                self.assertEqual(v, plotters.matplotlib.rcParams[k],
+                                 msg='rc param mismatch on %s' %k)
+        self.assertEqual(plotters.matplotlib.rcParams['axes.color_cycle'],
+                         plotters.COLOURS)
 
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestPlotters)
