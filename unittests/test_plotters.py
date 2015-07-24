@@ -25,6 +25,8 @@ import unittest
 import os
 import sys
 
+import subprocess
+
 try:
     from unittest import mock
 except ImportError:
@@ -41,10 +43,36 @@ class TestPlotters(unittest.TestCase):
     def test_init_fail(self):
         self.assertRaises(RuntimeError, plotters.init_matplotlib, None, None, None)
 
-    @unittest.skipIf(not plotters.HAS_MATPLOTLIB, 'no matplotlib available')
-    def test_init_success(self):
-        pass
+    def init_test_backend(self, filename):
+        # Hack to test init; can't select backend multiple times in matplotlib, so
+        # do the init in a separate Python process.
+        return subprocess.check_output([sys.executable, '-c',
+                                        'from flent import plotters; '
+                                        'plotters.init_matplotlib("{filename}", False, False); '
+                                        'print(plotters.matplotlib.get_backend())'.format(filename=filename)]).decode().strip()
 
+    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_svg(self):
+        self.assertEqual(self.init_test_backend('test.svg'), 'svg')
 
+    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_svgz(self):
+        self.assertEqual(self.init_test_backend('test.svgz'), 'svg')
+
+    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_ps(self):
+        self.assertEqual(self.init_test_backend('test.ps'), 'ps')
+
+    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_eps(self):
+        self.assertEqual(self.init_test_backend('test.eps'), 'ps')
+
+    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_pdf(self):
+        self.assertEqual(self.init_test_backend('test.pdf'), 'pdf')
+
+    @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_png(self):
+        self.assertEqual(self.init_test_backend('test.png'), 'agg')
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestPlotters)
