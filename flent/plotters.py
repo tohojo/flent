@@ -32,7 +32,7 @@ from itertools import product,cycle,islice
 try:
     from collections import OrderedDict
 except ImportError:
-    from netperf_wrapper.ordereddict import OrderedDict
+    from flent.ordereddict import OrderedDict
 
 try:
     import matplotlib, numpy
@@ -231,7 +231,7 @@ class Plotter(object):
 
     def save_pdf(self, filename, data_filename, save_args):
         with matplotlib.backends.backend_pdf.PdfPages(filename) as pdf:
-            pdf.infodict()['Producer'] = 'netperf-wrapper v%s' % VERSION
+            pdf.infodict()['Producer'] = 'Flent v%s' % VERSION
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
@@ -989,7 +989,7 @@ class EllipsisPlotter(Plotter):
     def init(self, config=None, axis=None):
         Plotter.init(self, config, axis)
         try:
-            from netperf_wrapper.error_ellipse import plot_point_cov
+            from flent.error_ellipse import plot_point_cov
             self.plot_point_cov = plot_point_cov
         except ImportError:
             raise RuntimeError("Unable to load error_ellipse plotting functions.")
