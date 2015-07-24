@@ -101,7 +101,7 @@ def init_matplotlib(settings):
       and not 'MATPLOTLIBRC' in os.environ and hasattr(matplotlib, 'rc_file'):
         rcfile = os.path.join(DATA_DIR, 'matplotlibrc.dist')
         if os.path.exists(rcfile):
-            self.mpl.rc_file(rcfile)
+            matplotlib.rc_file(rcfile)
     COLOURS = matplotlib.rcParams['axes.color_cycle']
 
 def get_plotconfig(settings, plot=None):
@@ -140,7 +140,6 @@ class Plotter(object):
         self.title = None
         self.settings = settings
         self.output = settings.OUTPUT
-        self.mpl = matplotlib
         self.plt = pyplot
         self.np = numpy
         self.colours = COLOURS
@@ -226,7 +225,7 @@ class Plotter(object):
 
 
     def save_pdf(self, filename, data_filename, save_args):
-        with self.mpl.backends.backend_pdf.PdfPages(filename) as pdf:
+        with matplotlib.backends.backend_pdf.PdfPages(filename) as pdf:
             pdf.infodict()['Producer'] = 'netperf-wrapper v%s' % VERSION
             pdf.infodict()['Subject'] = data_filename
             if self.title:
