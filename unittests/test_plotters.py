@@ -1,9 +1,9 @@
 ## -*- coding: utf-8 -*-
 ##
-## __init__.py
+## test_plotters.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     16 July 2015
+## Date:     24 July 2015
 ## Copyright (c) 2015, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
@@ -22,11 +22,29 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
-from . import test_util
-from . import test_metadata
-from . import test_plotters
+import os
+import sys
 
-test_suite = unittest.TestSuite([test_util.test_suite,
-                                 test_metadata.test_suite,
-                                 test_plotters.test_suite,
-])
+try:
+    from unittest import mock
+except ImportError:
+    try:
+        import mock
+    except ImportError:
+        raise RuntimeError("Needs 'mock' library for these tests.")
+
+from flent import plotters
+
+class TestPlotters(unittest.TestCase):
+
+    @mock.patch.object(plotters, 'HAS_MATPLOTLIB', False)
+    def test_init_fail(self):
+        self.assertRaises(RuntimeError, plotters.init_matplotlib, None, None, None)
+
+    @unittest.skipIf(not plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+    def test_init_success(self):
+        pass
+
+
+
+test_suite = unittest.TestLoader().loadTestsFromTestCase(TestPlotters)

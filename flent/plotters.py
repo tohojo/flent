@@ -34,7 +34,11 @@ try:
 except ImportError:
     from netperf_wrapper.ordereddict import OrderedDict
 
-import matplotlib, numpy
+try:
+    import matplotlib, numpy
+    HAS_MATPLOTLIB=True
+except ImportError:
+    HAS_MATPLOTLIB=False
 
 PLOT_KWARGS = (
     'alpha',
@@ -69,9 +73,10 @@ DASHES     = [[8,4,2,4],
               ]
 STYLES     = []
 
-def init_matplotlib(settings):
+def init_matplotlib(output, use_markers, load_rc):
+    if not HAS_MATPLOTLIB:
+        raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
     global pyplot
-    output = settings.OUTPUT
     if output != "-":
         if output.endswith('.svg') or output.endswith('.svgz'):
             matplotlib.use('svg')
@@ -90,13 +95,13 @@ def init_matplotlib(settings):
         STYLES.append(dict(linestyle=ls))
     for d in DASHES:
         STYLES.append(dict(dashes=d))
-    if settings.USE_MARKERS:
+    if use_markers:
         for m in MARKERS:
             STYLES.append(dict(marker=m, markevery=10))
 
     # Try to detect if a custom matplotlibrc is installed, and if so don't
     # load our own values.
-    if settings.LOAD_MATPLOTLIBRC \
+    if load_rc \
       and not os.environ['HOME'] in matplotlib.matplotlib_fname() \
       and not 'MATPLOTLIBRC' in os.environ and hasattr(matplotlib, 'rc_file'):
         rcfile = os.path.join(DATA_DIR, 'matplotlibrc.dist')

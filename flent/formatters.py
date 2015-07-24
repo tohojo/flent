@@ -26,6 +26,7 @@ import json, sys, csv, math, inspect, os, re, io
 from .util import cum_prob, frange, classname, long_substr
 from .resultset import ResultSet
 from .build_info import DATA_DIR, VERSION
+from . import plotters
 from functools import reduce
 from itertools import product,cycle,islice
 try:
@@ -234,12 +235,9 @@ class PlotFormatter(Formatter):
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
-        try:
-            from . import plotters
-            plotters.init_matplotlib(settings)
-            self.plotters = plotters
-        except ImportError:
-            raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
+        plotters.init_matplotlib(settings.OUTPUT, settings.USE_MARKERS,
+                                 settings.LOAD_MATPLOTLIBRC)
+        self.plotters = plotters
 
         self.figure = None
         self.init_plots()
