@@ -1,5 +1,5 @@
-PYTHON=python
-PREFIX=/usr
+PYTHON:=python
+PREFIX:=/usr
 
 all: build
 
@@ -9,6 +9,10 @@ build: flent/*.py
 .PHONY: test
 test:
 	$(PYTHON) setup.py test
+
+.PHONY: test_long
+test_long:
+	$(PYTHON) setup.py test -s unittests.all_tests
 
 
 .PHONY: install

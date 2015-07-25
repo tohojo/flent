@@ -318,5 +318,4 @@ for fname,fmt in itertools.product(os.listdir(dirname), output_formats):
 
 
 test_suite = unittest.TestSuite([unittest.TestLoader().loadTestsFromTestCase(TestPlottersInit),
-                                 unittest.TestLoader().loadTestsFromTestCase(TestPlotters),
-                                 plot_suite])
+                                 unittest.TestLoader().loadTestsFromTestCase(TestPlotters)])
