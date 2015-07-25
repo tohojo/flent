@@ -258,37 +258,6 @@ class PlotFormatter(Formatter):
             self.plotter = self.plotters.new(self.settings, figure=self.figure)
             self.plotter.init()
 
-    def _init_timeseries_combine_plot(self, config=None, axis=None):
-        self._init_timeseries_plot(config, axis)
-
-    def _init_bar_combine_plot(self, config=None, axis=None):
-        self._init_bar_plot(config, axis)
-
-    def _init_box_combine_plot(self, config=None, axis=None):
-        self._init_box_plot(config, axis)
-
-    def _init_ellipsis_combine_plot(self, config=None, axis=None):
-        self._init_ellipsis_plot(config, axis)
-
-    def _init_cdf_combine_plot(self, config=None, axis=None):
-        self._init_cdf_plot(config, axis)
-
-    def do_timeseries_combine_plot(self, results, config=None, axis=None):
-        return self.do_combine_many_plot(self.do_timeseries_plot, results, config, axis)
-
-    def do_bar_combine_plot(self, results, config=None, axis=None):
-        return self.do_combine_many_plot(self.do_bar_plot, results, config, axis)
-
-    def do_box_combine_plot(self, results, config=None, axis=None):
-        self.do_combine_many_plot(self.do_box_plot, results, config, axis)
-
-    def do_ellipsis_combine_plot(self, results, config=None, axis=None):
-        self.do_combine_many_plot(self.do_ellipsis_plot, results, config, axis)
-
-    def do_cdf_combine_plot(self, results, config=None, axis=None):
-        self.do_combine_many_plot(self.do_cdf_plot, results, config, axis)
-
-
     @property
     def disable_cleanup(self):
         return self.plotter.disable_cleanup
