@@ -1144,7 +1144,10 @@ class EllipsisPlotter(Plotter):
 
         for s in series[1:]:
             data = [i for i in zip(x_values, results.series(s['data'])) if i[0] is not None and i[1] is not None]
-            points = self.np.array(data)
+            if len(data) < 2:
+                points = self.np.array(data*2)
+            else:
+                points = self.np.array(data)
             x_values,y_values = zip(*data)
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
             med = self.np.median(points, axis=0)
