@@ -51,9 +51,9 @@ def get_combiner(combiner_type):
         raise RuntimeError("Combiner not found: '%s'" % plot_type)
     return globals()[cname]
 
-def new(combiner_type):
+def new(combiner_type, *args):
     try:
-        return get_combiner(combiner_type)()
+        return get_combiner(combiner_type)(*args)
     except Exception as e:
         raise RuntimeError("Error loading combiner: %s." % e)
 
