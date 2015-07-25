@@ -1172,6 +1172,8 @@ class EllipsisPlotter(Plotter):
         for a,b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
+class EllipsisCombinePlotter(CombineManyPlotter, EllipsisPlotter):
+    pass
 
 class MetaPlotter(Plotter):
 
