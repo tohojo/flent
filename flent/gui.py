@@ -23,6 +23,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys, os, signal, traceback
 
+from itertools import chain
+
 # Python 2/3 compatibility
 try:
     unicode
@@ -154,6 +156,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
+        self.openFilesDock.visibilityChanged.connect(self.open_files_visibility)
         self.metadataView.entered.connect(self.update_statusbar)
         self.expandButton.clicked.connect(self.metadata_column_resize)
 
@@ -177,6 +180,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkLegend.toggled.connect(self.update_checkboxes)
         self.checkTitle.toggled.connect(self.update_checkboxes)
         self.checkFilterLegend.toggled.connect(self.update_checkboxes)
+
+        self.tabifyDockWidget(self.openFilesDock,self.metadataDock)
+        self.openFilesDock.raise_()
+        self.open_files = OpenFilesModel(self)
+        self.openFilesView.setModel(self.open_files)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -211,6 +219,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.restoreState(winstate)
             self.metadata_visibility()
             self.plot_visibility()
+            self.open_files_visibility()
 
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
@@ -229,6 +238,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
+    def open_files_visibility(self):
+        self.actionOpenFiles.setChecked(not self.openFilesDock.isHidden())
     def metadata_column_resize(self):
         self.metadataView.resizeColumnToContents(0)
 
@@ -443,6 +454,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save())
         widget.redraw()
+        self.open_files.set_active_widget(widget)
 
     def update_plots(self, testname, plotname):
         for i in range(self.viewArea.count()):
@@ -461,6 +473,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for f in filenames:
             try:
                 widget = ResultWidget(self.viewArea, f, self.settings)
+                self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
                 if isinstance(e, RuntimeError):
@@ -481,6 +494,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
+
+        self.openFilesView.resizeColumnsToContents()
         self.shorten_tabs()
         self.metadata_column_resize()
         self.busy_end()
@@ -575,6 +590,89 @@ class MetadataModel(QAbstractItemModel):
         if item is None:
             item = self.root
         return self.createIndex(row, column, item.children[row])
+
+class OpenFilesModel(QAbstractTableModel):
+    def __init__(self, parent):
+        QAbstractTableModel.__init__(self, parent)
+        self.open_files = []
+        self.columns = [(None,'Act'),
+                        ('DATA_FILENAME', 'Filename'),
+                        ('NAME', 'Test'),
+                        ('TITLE', 'Title'),
+                        ('LENGTH', 'Length')]
+        self.active_widget = None
+
+    def is_active(self, idx):
+        if self.active_widget is None:
+            return False
+        for r in chain([self.active_widget.results], self.active_widget.extra_results):
+            if r.meta('DATA_FILENAME') == self.open_files[idx].meta('DATA_FILENAME'):
+                return True
+        return False
+
+    def set_active_widget(self, widget):
+        self.active_widget = widget
+        self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),0))
+
+
+    def activate(self, idx):
+        if self.active_widget is None:
+            return False
+        return self.active_widget.add_extra(self.open_files[idx])
+
+    def deactivate(self, idx):
+        if self.active_widget is None:
+            return False
+        return self.active_widget.remove_extra(self.open_files[idx])
+
+    def add_file(self, r):
+        self.beginInsertRows(QModelIndex(), len(self.open_files), len(self.open_files))
+        self.open_files.append(r)
+        self.endInsertRows()
+
+    def rowCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self.open_files)
+
+    def columnCount(self, parent):
+        if parent.isValid():
+            return 0
+        return len(self.columns)
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            return self.columns[section][1]
+        if role == Qt.DisplayRole and orientation == Qt.Vertical:
+            return section+1
+        if role == Qt.TextAlignmentRole:
+            return Qt.AlignLeft | Qt.AlignVCenter
+
+    def flags(self, idx):
+        flags = super(OpenFilesModel, self).flags(idx)
+        if idx.column() == 0:
+            flags |= Qt.ItemIsEditable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
+        return flags
+
+    def data(self, idx, role=Qt.DisplayRole):
+        if idx.column() == 0:
+            value = self.is_active(idx.row())
+            if role == Qt.CheckStateRole:
+                return Qt.Checked if value else Qt.Unchecked
+            else:
+                return None
+        if role == Qt.TextAlignmentRole:
+            return Qt.AlignLeft|Qt.AlignVCenter
+        if role == Qt.DisplayRole:
+            return self.open_files[idx.row()].meta(self.columns[idx.column()][0])
+
+    def setData(self, idx, value, role):
+        if idx.column() == 0 and role == QtCore.Qt.CheckStateRole:
+            if value == Qt.Checked:
+                return self.activate(idx.row())
+            else:
+                return self.deactivate(idx.row())
+        return False
 
 
 class UpdateDisabler(object):
@@ -671,6 +769,17 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.update()
             return True
         return False
+
+    def remove_extra(self, resultset):
+        if not resultset in self.extra_results:
+            if resultset == self.results and self.extra_results:
+                self.results = self.extra_results.pop(0)
+                self.update()
+                return True
+            return False
+        self.extra_results.remove(resultset)
+        self.update()
+        return True
 
     def clear_extra(self):
         self.extra_results = []
