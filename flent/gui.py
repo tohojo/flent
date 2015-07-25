@@ -661,7 +661,7 @@ class OpenFilesModel(QAbstractTableModel):
             return Qt.AlignLeft | Qt.AlignVCenter
 
     def flags(self, idx):
-        flags = super(OpenFilesModel, self).flags(idx)
+        flags = super(OpenFilesModel, self).flags(idx) & (~Qt.ItemIsSelectable)
         if idx.column() == 0:
             flags |= Qt.ItemIsEditable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
         return flags
