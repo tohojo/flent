@@ -24,6 +24,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import unittest
 import os
 import sys
+import tempfile
+import shutil
+import itertools
+from unittest.util import strclass
 
 try:
     import cPickle as pickle
@@ -38,7 +42,8 @@ except ImportError:
     except ImportError:
         raise RuntimeError("Needs 'mock' library for these tests.")
 
-from flent import plotters
+from flent import plotters, resultset, formatters
+from flent.settings import settings
 
 MATPLOTLIB_RC_VALUES = {
     'axes.axisbelow': True,
@@ -176,10 +181,6 @@ class TestPlottersInit(unittest.TestCase):
 @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
 class TestPlotters(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(self):
-        plotters.init_matplotlib('-', True, True)
-
     def setUp(self):
         self.plot_config = {'series': [{'data': 'Test 1'}]}
         self.data_config = {'Test 1': {'units': 'ms'}}
@@ -189,31 +190,49 @@ class TestPlotters(unittest.TestCase):
         p.init()
         self.assertIsInstance(p, plotter_class)
 
+    @prefork
     def test_create_timeseries(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.TimeseriesPlotter)
 
+    @prefork
     def test_create_timeseries_combine(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.TimeseriesCombinePlotter)
 
+    @prefork
     def test_create_box(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.BoxPlotter)
 
+    @prefork
     def test_create_box_combine(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.BoxCombinePlotter)
 
+    @prefork
     def test_create_bar(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.BarPlotter)
 
+    @prefork
     def test_create_bar_combine(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.BarCombinePlotter)
 
+    @prefork
     def test_create_cdf(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.CdfPlotter)
 
+    @prefork
     def test_create_cdf_combine(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.CdfCombinePlotter)
 
+    @prefork
     def test_create_qq(self):
+        plotters.init_matplotlib('-', True, True)
         # QQ plots only work with only 1 data series
         p = plotters.QqPlotter(self.plot_config, self.data_config)
         p.init()
@@ -223,7 +242,9 @@ class TestPlotters(unittest.TestCase):
         p = plotters.QqPlotter(self.plot_config, self.data_config)
         self.assertRaises(RuntimeError, p.init)
 
+    @prefork
     def test_create_ellipsis(self):
+        plotters.init_matplotlib('-', True, True)
         # Ellipsis plots only work with >=2 data series
         p = plotters.EllipsisPlotter(self.plot_config, self.data_config)
         self.assertRaises(RuntimeError, p.init)
@@ -233,8 +254,53 @@ class TestPlotters(unittest.TestCase):
         p.init()
         self.assertIsInstance(p, plotters.EllipsisPlotter)
 
+    @prefork
     def test_create_subplot_combine(self):
+        plotters.init_matplotlib('-', True, True)
         self.create_plotter(plotters.SubplotCombinePlotter)
 
+from pprint import pprint
+class TestPlotting(unittest.TestCase):
+
+    def __init__(self, filename, fmt):
+        self.filename = filename
+        self.fmt = fmt
+        unittest.TestCase.__init__(self)
+        self._description = 'testtesttest'
+
+    def setUp(self):
+        self.output_dir = tempfile.mkdtemp()
+        self.settings = settings.copy()
+
+    def tearDown(self):
+        shutil.rmtree(self.output_dir)
+
+    def __str__(self):
+        return "%s of %s (%s)" % (self.fmt, os.path.basename(self.filename), strclass(self.__class__))
+
+    @prefork
+    def runTest(self):
+        r = resultset.load(self.filename)
+        self.settings.update(r.meta())
+        self.settings.load_test(informational=True)
+        self.settings.compute_missing_results(r)
+        self.settings.FORMAT='plot'
+
+        for p in self.settings.PLOTS.keys():
+            self.settings.PLOT = p
+            self.settings.OUTPUT = os.path.join(self.output_dir, "%s.%s" % (p,self.fmt))
+            formatter = formatters.new(self.settings)
+            formatter.format([r])
+
+
+dirname = os.path.join(os.path.dirname(__file__), "test_data")
+output_formats = ['svg', 'pdf', 'png']
+plot_suite = unittest.TestSuite()
+for fname,fmt in itertools.product(os.listdir(dirname), output_formats):
+    plot_suite.addTest(TestPlotting(fname, fmt))
+
+
+
 test_suite = unittest.TestSuite([unittest.TestLoader().loadTestsFromTestCase(TestPlottersInit),
-                                 unittest.TestLoader().loadTestsFromTestCase(TestPlotters)])
+                                 unittest.TestLoader().loadTestsFromTestCase(TestPlotters),
+                                 plot_suite])
