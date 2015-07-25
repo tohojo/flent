@@ -221,6 +221,7 @@ class Plotter(object):
         self.styles = STYLES
         self.legends = []
         self.artists = []
+        self.metadata = None
 
         self.config = plot_config
         self.data_config = data_config
@@ -272,7 +273,8 @@ class Plotter(object):
         self.configs = [self.config]
 
     def plot(self, results, config=None, axis=None):
-        self.metadata = results[0].meta()
+        if self.metadata is None:
+            self.metadata = results[0].meta()
         if len(results) > 1:
             self.combine(results, config, axis)
         else:
@@ -543,6 +545,8 @@ class Plotter(object):
 class CombineManyPlotter(object):
 
     def plot(self, results, config=None, axis=None):
+        if self.metadata is None:
+            self.metadata = results[0].meta()
         if config is None:
             config = self.config
 
@@ -698,6 +702,8 @@ class BoxPlotter(TimeseriesPlotter):
         self.start_position = 1
 
     def plot(self, results, config=None, axis=None):
+        if self.metadata is None:
+            self.metadata = results[0].meta()
         return self._plot(results,config,axis)
 
     def _plot(self, results, config=None, axis=None):
@@ -1019,6 +1025,8 @@ class QqPlotter(Plotter):
             raise RuntimeError("Can't do Q-Q plot with more than one series.")
 
     def plot(self, results):
+        if self.metadata is None:
+            self.metadata = results[0].meta()
         if len(results) < 2:
             results *= 2
         self._plot(results[:2])
@@ -1204,7 +1212,8 @@ class MetaPlotter(Plotter):
                 axis.set_xlabel("")
 
     def plot(self, results):
-        self.metadata = results[0].meta()
+        if self.metadata is None:
+            self.metadata = results[0].meta()
         for s in self.subplots:
             s.plot(results)
             self.legends.extend(s.do_legend())
@@ -1223,7 +1232,8 @@ class SubplotCombinePlotter(MetaPlotter):
         MetaPlotter.init(self, config)
 
     def plot(self, results):
-        self.metadata = results[0].meta()
+        if self.metadata is None:
+            self.metadata = results[0].meta()
         self._init(len(results))
         for s,r in zip(self.subplots, results):
             s.plot([r])
