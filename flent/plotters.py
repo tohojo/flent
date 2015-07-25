@@ -506,6 +506,9 @@ class Plotter(object):
         top_percentile = self._percentile(data, top)
         btm_percentile = self._percentile(data, btm)
 
+        if top_percentile == btm_percentile:
+            return
+
         # Leave 1 percent of the axis range as extra space, so the outermost
         # points are not smudged by the axis lines.
         space = (top_percentile - btm_percentile)*0.01
