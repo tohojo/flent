@@ -251,7 +251,7 @@ class PlotFormatter(Formatter):
         else:
             self.figure.clear()
             self.plotter.disable_cleanup = True
-            self.plotter = self.plotters.new(self.settings, self.figure)
+            self.plotter = self.plotters.new(self.settings, figure=self.figure)
             self.plotter.init()
 
     def _init_timeseries_combine_plot(self, config=None, axis=None):
@@ -300,7 +300,9 @@ class PlotFormatter(Formatter):
         if self.settings.SUBPLOT_COMBINE:
             self.plotter.disable_cleanup = True
             self.figure.clear()
-            self.plotter = self.plotters.get_plotter("subplot_combine")(self.settings, self.figure)
+            self.plotter = self.plotters.new(self.settings,
+                                             plotter=self.plotters.get_plotter("subplot_combine"),
+                                             figure=self.figure)
             self.plotter.init()
         self.plotter.plot(results)
         self.plotter.save(results)

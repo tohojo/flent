@@ -118,7 +118,18 @@ def get_plotconfig(settings, plot=None):
     if 'parent' in config:
         parent_config = settings.PLOTS[config['parent']].copy()
         parent_config.update(config)
-        return parent_config
+        config=parent_config
+
+    if 'subplots' in config:
+        subplots = OrderedDict()
+        for s in config['subplots']:
+            cfg = settings.PLOTS[s].copy()
+            if 'parent' in cfg:
+                parent = settings.PLOTS[cfg['parent']].copy()
+                parent.update(cfg)
+                cfg=parent
+            subplots[s] = cfg
+        config['subplots'] = subplots
     return config
 
 def get_plotter(plot_type):
@@ -127,9 +138,40 @@ def get_plotter(plot_type):
         raise RuntimeError("Plotter not found: '%s'" % plot_type)
     return globals()[cname]
 
-def new(settings, *args):
+def new(settings, plotter=None, **kwargs):
+    if plotter is None:
+        plotter = get_plotter(get_plotconfig(settings)['type'])
     try:
-        return get_plotter(get_plotconfig(settings)['type'])(settings, *args)
+        return plotter(
+            plot_config=get_plotconfig(settings),
+            data_config=settings.DATA_SETS,
+            output=settings.OUTPUT,
+
+            fig_width=settings.FIG_WIDTH,
+            fig_height=settings.FIG_HEIGHT,
+            fig_dpi=settings.FIG_DPI,
+            gui=settings.GUI,
+
+            norm_factors=settings.NORM_FACTORS,
+            invert_y=settings.INVERT_Y,
+            zero_y=settings.ZERO_Y,
+            bounds_x=settings.BOUNDS_X,
+            bounds_y=settings.BOUNDS_Y,
+            log_scale=settings.LOG_SCALE,
+            scale_data=settings.SCALE_DATA,
+
+            print_legend=settings.PRINT_LEGEND,
+            filter_legend=settings.FILTER_LEGEND,
+            horizontal_legend=settings.HORIZONTAL_LEGEND,
+            replace_legend=settings.REPLACE_LEGEND,
+            filter_regexp=settings.FILTER_REGEXP,
+            print_title=settings.PRINT_TITLE,
+            override_title=settings.OVERRIDE_TITLE,
+            annotate=settings.ANNOTATE,
+            description=settings.DESCRIPTION,
+            combine_print_n=settings.COMBINE_PRINT_N,
+
+            **kwargs)
     except Exception as e:
         raise RuntimeError("Error loading plotter: %s." % e)
 
@@ -139,12 +181,40 @@ class Plotter(object):
     can_subplot_combine = False
 
 
-    def __init__(self, settings, figure=None):
+    def __init__(self,
+                 plot_config,
+                 data_config,
+                 output="-",
+
+                 fig_width=None,
+                 fig_height=None,
+                 fig_dpi=None,
+                 gui=False,
+
+                 norm_factors=None,
+                 invert_y=False,
+                 zero_y=False,
+                 bounds_x=None,
+                 bounds_y=None,
+                 log_scale=True,
+                 scale_data=None,
+
+                 print_legend=True,
+                 filter_legend=False,
+                 horizontal_legend=False,
+                 replace_legend=None,
+                 filter_regexp=None,
+                 print_title=True,
+                 override_title='',
+                 annotate=True,
+                 description='',
+                 combine_print_n=False,
+
+                 figure=None):
 
         self.disable_cleanup = False
         self.title = None
-        self.settings = settings
-        self.output = settings.OUTPUT
+        self.output = output
         self.plt = pyplot
         self.np = numpy
         self.colours = COLOURS
@@ -152,12 +222,39 @@ class Plotter(object):
         self.legends = []
         self.artists = []
 
+        self.config = plot_config
+        self.data_config = data_config
+
+        self.fig_dpi = fig_dpi
+        self.gui = gui
+
+        self.norm_factors = norm_factors if norm_factors is not None else []
+        self.invert_y = invert_y
+        self.zero_y = zero_y
+        self.bounds_x = bounds_x if bounds_x is not None else []
+        self.bounds_y = bounds_y if bounds_y is not None else []
+        self.log_scale = log_scale
+        self.scale_data = scale_data if scale_data is not None else []
+
+        self.print_legend = print_legend
+        self.filter_legend = filter_legend
+        self.horizontal_legend = horizontal_legend
+        self.replace_legend = replace_legend if replace_legend is not None else {}
+        self.filter_regexp = filter_regexp if filter_regexp is not None else []
+        self.print_title = print_title
+        self.override_title = override_title
+        self.annotate = annotate
+        self.description = description
+        self.combine_print_n = combine_print_n
+
+
+
         if figure is None:
             self.figure = self.plt.figure()
-            if self.settings.FIG_WIDTH is not None:
-                self.figure.set_figwidth(self.settings.FIG_WIDTH)
-            if self.settings.FIG_HEIGHT is not None:
-                self.figure.set_figheight(self.settings.FIG_HEIGHT)
+            if fig_width is not None:
+                self.figure.set_figwidth(fig_width)
+            if fig_height is not None:
+                self.figure.set_figheight(fig_height)
         else:
             self.figure = figure
 
@@ -170,13 +267,12 @@ class Plotter(object):
 
 
     def init(self, config=None, axis=None):
-        if config is None:
-            self.config = get_plotconfig(self.settings)
-        else:
+        if config is not None:
             self.config = config
         self.configs = [self.config]
 
     def plot(self, results, config=None, axis=None):
+        self.metadata = results[0].meta()
         if len(results) > 1:
             self.combine(results, config, axis)
         else:
@@ -215,7 +311,7 @@ class Plotter(object):
         if self.output == "-":
             self.figure.canvas.mpl_connect('resize_event', self.size_legends)
             self.size_legends()
-            if not self.settings.GUI:
+            if not self.gui:
                 self.plt.show()
         else:
             try:
@@ -223,7 +319,7 @@ class Plotter(object):
                 if self.plt.get_backend() == 'pdf':
                     self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), save_args)
                 else:
-                    self.figure.savefig(self.output, dpi=self.settings.FIG_DPI, **save_args)
+                    self.figure.savefig(self.output, dpi=self.fig_dpi, **save_args)
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
@@ -235,7 +331,7 @@ class Plotter(object):
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
-            self.figure.savefig(pdf, dpi=self.settings.FIG_DPI, **save_args)
+            self.figure.savefig(pdf, dpi=self.fig_dpi, **save_args)
 
     def build_tight_layout(self, artists):
         rect = [0,0,1,1]
@@ -272,7 +368,7 @@ class Plotter(object):
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
-        if self.settings.PRINT_LEGEND and not self.settings.HORIZONTAL_LEGEND and self.legends:
+        if self.print_legend and not self.horizontal_legend and self.legends:
             self.figure.canvas.draw() # Legend width is not set before it's drawn
             legend_width = max([l.get_window_extent().width for l in self.legends])
             canvas_width = self.figure.canvas.get_width_height()[0]
@@ -290,18 +386,18 @@ class Plotter(object):
     def _annotate_plot(self, skip_title=False):
         titles = []
         title_y=1
-        if self.settings.OVERRIDE_TITLE:
-            self.title_obj = self.figure.suptitle(self.settings.OVERRIDE_TITLE,
+        if self.override_title:
+            self.title_obj = self.figure.suptitle(self.override_title,
                                                   fontsize=14, y=title_y)
             titles.append(self.title_obj)
-            self.title = self.settings.OVERRIDE_TITLE
-        elif self.settings.PRINT_TITLE:
-            plot_title = self.settings.DESCRIPTION
+            self.title = self.override_title
+        elif self.print_title:
+            plot_title = self.description
             if 'description' in self.config:
                 plot_title += "\n" + self.config['description']
-            if self.settings.TITLE and not skip_title:
-                plot_title += "\n" + self.settings.TITLE
-            if 'description' in self.config and self.settings.TITLE and not skip_title:
+            if self.metadata['TITLE'] and not skip_title:
+                plot_title += "\n" + self.metadata['TITLE']
+            if 'description' in self.config and self.metadata['TITLE'] and not skip_title:
                 title_y=1.00
             self.title_obj = self.figure.suptitle(plot_title, fontsize=14, y=title_y)
             titles.append(self.title_obj)
@@ -309,11 +405,11 @@ class Plotter(object):
         else:
                 self.title_obj = None
 
-        if self.settings.ANNOTATE:
+        if self.annotate:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
-                self.settings.LOCAL_HOST, self.settings.HOST,
-                self.settings.TIME,
-                self.settings.LENGTH, self.settings.STEP_SIZE)
+                self.metadata['LOCAL_HOST'], self.metadata['HOST'],
+                self.metadata['TIME'],
+                self.metadata['LENGTH'], self.metadata['STEP_SIZE'])
             self.annotation_obj = self.figure.text(0.5, 0.0, annotation_string,
                              horizontalalignment='center',
                              verticalalignment='bottom',
@@ -323,11 +419,11 @@ class Plotter(object):
         return titles
 
     def _filter_labels(self, labels):
-        for s,d in self.settings.REPLACE_LEGEND.items():
+        for s,d in self.replace_legend.items():
             labels = [l.replace(s,d) for l in labels]
-        for r in self.settings.FILTER_REGEXP:
+        for r in self.filter_regexp:
             labels = [re.sub(r, "", l) for l in labels]
-        if self.settings.FILTER_LEGEND and labels:
+        if self.filter_legend and labels:
             substr = long_substr(labels)
             if len(substr) > 3 and substr != " - ":
                 labels = [l.replace(substr, '') for l in labels]
@@ -343,7 +439,7 @@ class Plotter(object):
         return legends
 
     def _do_legend(self, config, postfix=""):
-        if not self.settings.PRINT_LEGEND:
+        if not self.print_legend:
             return []
 
         axes = config['axes']
@@ -369,7 +465,7 @@ class Plotter(object):
             offset_x = 1.02
 
         legends = []
-        if self.settings.HORIZONTAL_LEGEND:
+        if self.horizontal_legend:
             bbox = (0.5, -0.12)
             ncol = len(labels)
             loc = 'center'
@@ -413,20 +509,20 @@ class Plotter(object):
         space = (top_percentile - btm_percentile)*0.01
         top_scale = top_percentile + space
         btm_scale = btm_percentile - space
-        if self.settings.ZERO_Y:
+        if self.zero_y:
             # When y is set at zero, set space at the top to be one percent room
             # of the *axis* range, not the data range (this may be a big
             # difference if the data range is small).
             top_scale = top_percentile*1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
-            if btm_percentile > 0 and top_percentile/btm_percentile > 20.0 and self.settings.LOG_SCALE and allow_log:
+            if btm_percentile > 0 and top_percentile/btm_percentile > 20.0 and self.log_scale and allow_log:
                 axis.set_yscale('log')
                 axis.set_ylim(ymin=max(0,btm_scale), ymax=top_scale)
             else:
                 axis.set_ylim(ymin=btm_scale, ymax=top_scale)
 
-        if self.settings.INVERT_Y and unit in self.inverted_units:
+        if self.invert_y and unit in self.inverted_units:
             axis.invert_yaxis()
 
     def _percentile(self, lst, q):
@@ -451,7 +547,7 @@ class CombineManyPlotter(object):
             config = self.config
 
         combine_mode = config.get('group_by', 'groups')
-        combiner = combiners.new(combine_mode, self.settings)
+        combiner = combiners.new(combine_mode, self.combine_print_n)
         super(CombineManyPlotter,self).plot(combiner(results, config), config, axis)
 
 class TimeseriesPlotter(Plotter):
@@ -487,7 +583,7 @@ class TimeseriesPlotter(Plotter):
                 a = 1
             else:
                 a = 0
-            s_unit = self.settings.DATA_SETS[s['data']]['units']
+            s_unit = self.data_config[s['data']]['units']
             if unit[a] is not None and s_unit != unit[a]:
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
             unit[a] = s_unit
@@ -499,7 +595,7 @@ class TimeseriesPlotter(Plotter):
             else:
                 l = unit[i]
 
-            if self.settings.NORM_FACTORS:
+            if self.norm_factors:
                 l = l[0].lower() + l[1:]
                 l = "Normalised %s" % l
             config['axes'][i].set_ylabel(l)
@@ -517,7 +613,7 @@ class TimeseriesPlotter(Plotter):
         xlim = axis.get_xlim()
         axis.set_xlim(
             min(results.x_values+[xlim[0]]) if xlim[0] > 0 else min(results.x_values),
-            max(results.x_values+[self.settings.TOTAL_LENGTH, xlim[1]])
+            max(results.x_values+[self.metadata['TOTAL_LENGTH'], xlim[1]])
             )
 
         data = []
@@ -552,7 +648,7 @@ class TimeseriesPlotter(Plotter):
             else:
                 a = 0
             data[a] += y_values
-            for r in self.settings.SCALE_DATA+extra_scale_data:
+            for r in self.scale_data+extra_scale_data:
                 data[a] += r.series(s['data'], smooth)
             config['axes'][a].plot(results.x_values,
                    y_values,
@@ -571,13 +667,13 @@ class TimeseriesPlotter(Plotter):
             # largest data point and the TOTAL_LENGTH from settings, scale to
             # the data values, but round to nearest 10 above that value.
             max_xdata = max([l.get_xdata()[-1] for l in config['axes'][a].get_lines()])
-            if abs(self.settings.TOTAL_LENGTH - max_xdata) > 10:
+            if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
                 config['axes'][a].set_xlim(right=(max_xdata+(10-max_xdata%10)))
 
 
-        for a,b in zip(config['axes'], self.settings.BOUNDS_X):
+        for a,b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
-        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+        for a,b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
 class TimeseriesCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
@@ -665,7 +761,7 @@ class BoxPlotter(TimeseriesPlotter):
         for i,a in enumerate(config['axes']):
             self._do_scaling(a, all_data[i], 0, 100, config['units'][i], allow_log=False)
 
-        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+        for a,b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
         axis.set_xticks(ticks)
@@ -704,8 +800,8 @@ class BarPlotter(BoxPlotter):
         series_labels = self._filter_labels([s['label'] for s in config['series']])
         texts = []
 
-        if self.settings.NORM_FACTORS:
-            norms = list(islice(cycle(self.settings.NORM_FACTORS), len(config['series'])))
+        if self.norm_factors:
+            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
             norms = None
 
@@ -743,13 +839,13 @@ class BarPlotter(BoxPlotter):
 
             bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colour,
                                        alpha=0.75, width=width, align='edge')
-            if len(config['series']) > 1 or self.settings.PRINT_TITLE:
+            if len(config['series']) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(pos+group_size/2.0-0.5, 14, series_labels[i], ha='center'))
 
             config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size+1
 
-        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+        for a,b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
         min_y,max_y = config['axes'][0].get_ylim()
@@ -782,7 +878,7 @@ class CdfPlotter(Plotter):
 
         unit = None
         for s in config['series']:
-            s_unit = self.settings.DATA_SETS[s['data']]['units']
+            s_unit = self.data_config[s['data']]['units']
             if unit is not None and s_unit != unit:
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit, s_unit))
             unit = s_unit
@@ -818,10 +914,10 @@ class CdfPlotter(Plotter):
                 # plot; for e.g. pings that run long than the streams, we don't
                 # want the unloaded ping values
                 start,end = config['cutoff']
-                end = -int(end/self.settings.STEP_SIZE)
+                end = -int(end/self.metadata['STEP_SIZE'])
                 if end == 0:
                     end = None
-                s_data = s_data[int(start/self.settings.STEP_SIZE):end]
+                s_data = s_data[int(start/self.metadata['STEP_SIZE']):end]
             sizes.append(float(len(s_data)))
             d = sorted([x for x in s_data if x is not None])
             data.append(d)
@@ -830,7 +926,7 @@ class CdfPlotter(Plotter):
                 self.min_vals.append(min(d))
                 max_value = max([max_value]+d)
 
-                for r in self.settings.SCALE_DATA + extra_scale_data:
+                for r in self.scale_data + extra_scale_data:
                     d_s = [x for x in r.series(s['data']) if x is not None]
                     if d_s:
                         max_value = max([max_value]+d_s)
@@ -871,7 +967,7 @@ class CdfPlotter(Plotter):
                       y_vals,
                       **kwargs)
 
-        if self.settings.ZERO_Y:
+        if self.zero_y:
             axis.set_xlim(left=0)
         elif self.min_vals:
             min_val = min(self.min_vals)
@@ -881,11 +977,11 @@ class CdfPlotter(Plotter):
                 min_val -= min_val%100
             axis.set_xlim(left=min_val)
 
-        if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.settings.LOG_SCALE:
+        if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.log_scale:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
 
-        for a,b in zip(config['axes'], self.settings.BOUNDS_X):
+        for a,b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
 
     def _filter_dup_vals(self, x_vals, y_vals):
@@ -999,19 +1095,22 @@ class EllipsisPlotter(Plotter):
         if config is None:
             config = self.config
 
+        if len(config['series']) < 2:
+            raise RuntimeError("Can't do ellipsis plots with less than two series.")
+
         axis.minorticks_on()
         config['axes'] = [axis]
 
         for i,a in enumerate(['x','y']):
-            unit = self.settings.DATA_SETS[config['series'][i]['data']]['units']
-            if self.settings.INVERT_Y and unit in self.inverted_units:
+            unit = self.data_config[config['series'][i]['data']]['units']
+            if self.invert_y and unit in self.inverted_units:
                 config['invert_'+a] = True
             else:
                 config['invert_'+a] = False
             if 'axis_labels' in config and config['axis_labels'][i]:
                 getattr(axis, 'set_'+a+'label')(config['axis_labels'][i])
             else:
-                getattr(axis, 'set_'+a+'label')(self.settings.DATA_SETS[config['series'][i]['data']]['units'])
+                getattr(axis, 'set_'+a+'label')(self.data_config[config['series'][i]['data']]['units'])
 
 
 
@@ -1047,7 +1146,7 @@ class EllipsisPlotter(Plotter):
             axis.plot(*med, marker='o', linestyle=" ", **carg)
             axis.annotate(label, med, ha='center', annotation_clip=True, xytext=(0,8), textcoords='offset points')
 
-        if self.settings.ZERO_Y:
+        if self.zero_y:
             self.xvals.append(0.0)
             self.yvals.append(0.0)
         axis.set_xlim(max(min(self.xvals)*0.99,0), max(self.xvals)*1.1)
@@ -1057,13 +1156,17 @@ class EllipsisPlotter(Plotter):
         if config['invert_y']:
             axis.invert_yaxis()
 
-        for a,b in zip(config['axes'], self.settings.BOUNDS_X):
+        for a,b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
-        for a,b in zip(config['axes'], self.settings.BOUNDS_Y):
+        for a,b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
 
 class MetaPlotter(Plotter):
+
+    def __init__(self, plot_config, data_config, figure=None, **kwargs):
+        self._kwargs = kwargs
+        Plotter.__init__(self, plot_config, data_config, figure=figure, **kwargs)
 
     def init(self, config=None):
         Plotter.init(self, config)
@@ -1083,7 +1186,7 @@ class MetaPlotter(Plotter):
             sharex=ax
         else:
             sharex = None
-        for i,subplot in enumerate(config['subplots']):
+        for i,(subplot,cfg) in enumerate(config['subplots'].items()):
             if config.get('orientation', 'vertical') == 'vertical':
                 rows = len(config['subplots'])
                 cols = 1
@@ -1091,16 +1194,17 @@ class MetaPlotter(Plotter):
                 cols = len(config['subplots'])
                 rows = 1
             axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
-            cfg = get_plotconfig(self.settings, subplot)
             cfg['axes'] = [axis]
             self.configs.append(cfg)
-            plotter = get_plotter(cfg['type'])(self.settings, self.figure)
+            plotter = get_plotter(cfg['type'])(cfg, self.data_config,
+                                               figure=self.figure, **self._kwargs)
             plotter.init(cfg,axis)
             self.subplots.append(plotter)
             if i < len(config['subplots'])-1:
                 axis.set_xlabel("")
 
     def plot(self, results):
+        self.metadata = results[0].meta()
         for s in self.subplots:
             s.plot(results)
             self.legends.extend(s.do_legend())
@@ -1110,13 +1214,16 @@ class SubplotCombinePlotter(MetaPlotter):
         pass
 
     def _init(self, number):
-        config = get_plotconfig(self.settings)
-        config['subplots'] = [self.settings.PLOT] * number
+        config = self.config
+        config['subplots'] = OrderedDict()
+        for i in range(number):
+            config['subplots'][str(i)] = config.copy()
         if not get_plotter(config['type']).can_subplot_combine:
             raise RuntimeError("This plot type does not work with --subplot-combine.")
         MetaPlotter.init(self, config)
 
     def plot(self, results):
+        self.metadata = results[0].meta()
         self._init(len(results))
         for s,r in zip(self.subplots, results):
             s.plot([r])
