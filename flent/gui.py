@@ -612,18 +612,30 @@ class OpenFilesModel(QAbstractTableModel):
 
     def set_active_widget(self, widget):
         self.active_widget = widget
-        self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),0))
+        self.update()
 
+    def update(self):
+        self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),
+                                                          len(self.columns)))
 
     def activate(self, idx):
         if self.active_widget is None:
             return False
-        return self.active_widget.add_extra(self.open_files[idx])
+        ret = self.active_widget.add_extra(self.open_files[idx])
+        self.update()
+        return ret
 
     def deactivate(self, idx):
         if self.active_widget is None:
             return False
-        return self.active_widget.remove_extra(self.open_files[idx])
+        ret = self.active_widget.remove_extra(self.open_files[idx])
+        self.update()
+        return ret
+
+    def is_primary(self, idx):
+        if self.active_widget is None:
+            return False
+        return self.active_widget.results == self.open_files[idx]
 
     def add_file(self, r):
         self.beginInsertRows(QModelIndex(), len(self.open_files), len(self.open_files))
@@ -665,6 +677,11 @@ class OpenFilesModel(QAbstractTableModel):
             return Qt.AlignLeft|Qt.AlignVCenter
         if role == Qt.DisplayRole:
             return self.open_files[idx.row()].meta(self.columns[idx.column()][0])
+        if role == Qt.FontRole:
+            font = QFont()
+            if self.is_primary(idx.row()) and font is not None:
+                font.setBold(True)
+            return font
 
     def setData(self, idx, value, role):
         if idx.column() == 0 and role == QtCore.Qt.CheckStateRole:
