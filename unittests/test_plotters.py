@@ -95,7 +95,7 @@ def prefork(method):
 
 
 
-class TestPlotters(unittest.TestCase):
+class TestPlottersInit(unittest.TestCase):
 
     def init_test_backend(self, filename):
         plotters.init_matplotlib(filename, False, False)
@@ -173,5 +173,68 @@ class TestPlotters(unittest.TestCase):
         self.assertEqual(plotters.matplotlib.rcParams['axes.color_cycle'],
                          plotters.COLOURS)
 
+@unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
+class TestPlotters(unittest.TestCase):
 
-test_suite = unittest.TestLoader().loadTestsFromTestCase(TestPlotters)
+    @classmethod
+    def setUpClass(self):
+        plotters.init_matplotlib('-', True, True)
+
+    def setUp(self):
+        self.plot_config = {'series': [{'data': 'Test 1'}]}
+        self.data_config = {'Test 1': {'units': 'ms'}}
+
+    def create_plotter(self, plotter_class):
+        p = plotter_class(self.plot_config, self.data_config)
+        p.init()
+        self.assertIsInstance(p, plotter_class)
+
+    def test_create_timeseries(self):
+        self.create_plotter(plotters.TimeseriesPlotter)
+
+    def test_create_timeseries_combine(self):
+        self.create_plotter(plotters.TimeseriesCombinePlotter)
+
+    def test_create_box(self):
+        self.create_plotter(plotters.BoxPlotter)
+
+    def test_create_box_combine(self):
+        self.create_plotter(plotters.BoxCombinePlotter)
+
+    def test_create_bar(self):
+        self.create_plotter(plotters.BarPlotter)
+
+    def test_create_bar_combine(self):
+        self.create_plotter(plotters.BarCombinePlotter)
+
+    def test_create_cdf(self):
+        self.create_plotter(plotters.CdfPlotter)
+
+    def test_create_cdf_combine(self):
+        self.create_plotter(plotters.CdfCombinePlotter)
+
+    def test_create_qq(self):
+        # QQ plots only work with only 1 data series
+        p = plotters.QqPlotter(self.plot_config, self.data_config)
+        p.init()
+        self.assertIsInstance(p, plotters.QqPlotter)
+        self.plot_config['series'].append({'data': 'Test 1'})
+
+        p = plotters.QqPlotter(self.plot_config, self.data_config)
+        self.assertRaises(RuntimeError, p.init)
+
+    def test_create_ellipsis(self):
+        # Ellipsis plots only work with >=2 data series
+        p = plotters.EllipsisPlotter(self.plot_config, self.data_config)
+        self.assertRaises(RuntimeError, p.init)
+
+        self.plot_config['series'].append({'data': 'Test 1'})
+        p = plotters.EllipsisPlotter(self.plot_config, self.data_config)
+        p.init()
+        self.assertIsInstance(p, plotters.EllipsisPlotter)
+
+    def test_create_subplot_combine(self):
+        self.create_plotter(plotters.SubplotCombinePlotter)
+
+test_suite = unittest.TestSuite([unittest.TestLoader().loadTestsFromTestCase(TestPlottersInit),
+                                 unittest.TestLoader().loadTestsFromTestCase(TestPlotters)])
