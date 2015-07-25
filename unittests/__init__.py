@@ -29,6 +29,6 @@ from . import test_tests
 
 test_suite = unittest.TestSuite([test_util.test_suite,
                                  test_metadata.test_suite,
-                                 test_plotters.test_suite,
                                  test_tests.test_suite,
+                                 test_plotters.test_suite,
 ])
