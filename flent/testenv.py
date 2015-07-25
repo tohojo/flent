@@ -69,7 +69,8 @@ class TestEnvironment(object):
 
     def execute(self, filename):
         try:
-            exec(compile(open(filename).read(), filename, 'exec'), self.env)
+            with open(filename) as fp:
+                exec(compile(fp.read(), filename, 'exec'), self.env)
 
             # Informational loading can override HOSTS to satisfy
             # require_host_count(); this should not be propagated.
