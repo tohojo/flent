@@ -82,6 +82,10 @@ class Formatter(object):
                 except IOError as e:
                     raise RuntimeError("Unable to open output file: '%s'" % e)
 
+    def __del__(self):
+        if hasattr(self.output, 'close'):
+            self.output.close()
+
     def open_output(self):
         output = self.output
         if hasattr(output, 'read'):
