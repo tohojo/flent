@@ -310,6 +310,8 @@ dirname = os.path.join(os.path.dirname(__file__), "test_data")
 output_formats = ['svg', 'pdf', 'png']
 plot_suite = unittest.TestSuite()
 for fname,fmt in itertools.product(os.listdir(dirname), output_formats):
+    if not fname.endswith(resultset.SUFFIX):
+        continue
     plot_suite.addTest(TestPlotting(os.path.join(dirname,fname), fmt))
 
 
