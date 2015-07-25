@@ -1,9 +1,9 @@
 ## -*- coding: utf-8 -*-
 ##
-## __init__.py
+## test_tests.py
 ##
 ## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     16 July 2015
+## Date:     25 July 2015
 ## Copyright (c) 2015, Toke Høiland-Jørgensen
 ##
 ## This program is free software: you can redistribute it and/or modify
@@ -22,13 +22,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
-from . import test_util
-from . import test_metadata
-from . import test_plotters
-from . import test_tests
+import os
+import sys
 
-test_suite = unittest.TestSuite([test_util.test_suite,
-                                 test_metadata.test_suite,
-                                 test_plotters.test_suite,
-                                 test_tests.test_suite,
-])
+from flent.testenv import TestEnvironment, TEST_PATH
+from flent.settings import settings
+
+class TestTests(unittest.TestCase):
+
+    def setUp(self):
+        self.tests = sorted([os.path.splitext(i)[0] \
+                             for i in os.listdir(TEST_PATH) if i.endswith('.conf')])
+        self.settings = settings.copy()
+
+    def test_load_tests(self):
+        for t in self.tests:
+            self.settings.load_test(t, informational=True)
+
+test_suite = unittest.TestSuite([unittest.TestLoader().loadTestsFromTestCase(TestTests)])
