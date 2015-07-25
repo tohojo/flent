@@ -42,6 +42,13 @@ except ImportError:
     except ImportError:
         raise RuntimeError("Needs 'mock' library for these tests.")
 
+try:
+    from tblib import pickling_support
+    pickling_support.install()
+    HAS_TBLIB=True
+except ImportError:
+    HAS_TBLIB=False
+
 from flent import plotters, resultset, formatters
 from flent.settings import settings
 
@@ -84,6 +91,8 @@ def prefork(method):
             os.close(pipe_w)
             os.waitpid(pid, 0)
             res = pickle.loads(os.read(pipe_r, 65535))
+            if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1], Exception):
+                raise res[1].with_traceback(res[2])
             if isinstance(res, Exception):
                 raise res
             return res
@@ -93,7 +102,11 @@ def prefork(method):
                 res = method(*args, **kwargs)
                 os.write(pipe_w, pickle.dumps(res))
             except Exception as e:
-                os.write(pipe_w, pickle.dumps(e))
+                if HAS_TBLIB:
+                    os.write(pipe_w, pickle.dumps(sys.exc_info()))
+                else:
+                    os.write(pipe_w, pickle.dumps(e))
+                os.write(pipe_w, test)
             finally:
                 os._exit(0)
     return new_method
