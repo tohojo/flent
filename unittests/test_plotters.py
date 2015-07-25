@@ -44,6 +44,7 @@ except ImportError:
 
 try:
     from tblib import pickling_support
+    from six import reraise
     pickling_support.install()
     HAS_TBLIB=True
 except ImportError:
@@ -92,7 +93,7 @@ def prefork(method):
             os.waitpid(pid, 0)
             res = pickle.loads(os.read(pipe_r, 65535))
             if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1], Exception):
-                raise res[1].with_traceback(res[2])
+                reraise(*res)
             if isinstance(res, Exception):
                 raise res
             return res
