@@ -348,12 +348,16 @@ class ResultSet(object):
     @classmethod
     def load(cls, fp, absolute=False):
         if hasattr(fp, 'name'):
-            name,ext = os.path.splitext(fp.name)
+            filename = fp.name
+            name,ext = os.path.splitext(filename)
             if ext in ('.gz', '.bz2'):
                 ext = os.path.splitext(name)[1]+ext
         else:
-            ext = SUFFIX
-        obj = cls.unserialise(json.load(fp), absolute, SUFFIX=ext)
+            filename,ext = None,SUFFIX
+        try:
+            obj = cls.unserialise(json.load(fp), absolute, SUFFIX=ext)
+        except ValueError as e:
+            raise RuntimeError("Unable to load JSON from '%s': %s." % (filename,e))
         return obj
 
     @classmethod
@@ -374,4 +378,7 @@ class ResultSet(object):
 
     @classmethod
     def loads(cls, s):
-        return cls.unserialise(json.loads(s))
+        try:
+            return cls.unserialise(json.loads(s))
+        except ValueError as e:
+            raise RuntimeError("Unable to load JSON data: %s." % e)
