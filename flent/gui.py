@@ -185,6 +185,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.openFilesDock.raise_()
         self.open_files = OpenFilesModel(self)
         self.openFilesView.setModel(self.open_files)
+        self.openFilesView.setAlternatingRowColors(True)
+        self.openFilesView.doubleClicked.connect(self.open_files.on_click)
+        self.openFilesView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.openFilesView.setSelectionMode(QAbstractItemView.SingleSelection)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -616,6 +620,12 @@ class OpenFilesModel(QAbstractTableModel):
         self.active_widget = widget
         self.update()
 
+    def on_click(self, idx):
+        if self.is_active(idx.row()):
+            self.deactivate(idx.row())
+        else:
+            self.activate(idx.row())
+
     def update(self):
         self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),
                                                           len(self.columns)))
@@ -663,7 +673,7 @@ class OpenFilesModel(QAbstractTableModel):
             return Qt.AlignLeft | Qt.AlignVCenter
 
     def flags(self, idx):
-        flags = super(OpenFilesModel, self).flags(idx) & (~Qt.ItemIsSelectable)
+        flags = super(OpenFilesModel, self).flags(idx)
         if idx.column() == 0:
             flags |= Qt.ItemIsEditable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
         return flags
