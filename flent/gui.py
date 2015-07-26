@@ -293,6 +293,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if filenames:
             self.last_dir = os.path.dirname(unicode(filenames[0]))
 
+        # The dialog eats the KeyRelease so the open files logic thinks that
+        # ctrl is still pressed.
+        self.open_files.ctrl_press(False)
         return filenames
 
     def on_open(self):
@@ -359,6 +362,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.save_plot()
+            # The dialog eats the KeyRelease so the open files logic thinks that
+            # ctrl is still pressed.
+            self.open_files.ctrl_press(False)
 
     def refresh_plot(self):
         widget = self.viewArea.currentWidget()
