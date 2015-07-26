@@ -187,8 +187,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.openFilesView.setModel(self.open_files)
         self.openFilesView.setAlternatingRowColors(True)
         self.openFilesView.doubleClicked.connect(self.open_files.on_click)
-        self.openFilesView.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.openFilesView.setSelectionMode(QAbstractItemView.SingleSelection)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -449,12 +447,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             return
         widget = self.viewArea.widget(idx)
         if widget is None:
+            self.open_files.set_active_widget(None)
+            self.openFilesView.setModel(self.open_files)
             return
 
         self.plotView.setModel(widget.plotModel)
         self.plotView.setSelectionModel(widget.plotSelectionModel)
         self.metadataView.setModel(widget.metadataModel)
         self.metadataView.setSelectionModel(widget.metadataSelectionModel)
+        self.openFilesView.setModel(widget.open_model)
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save())
         widget.redraw()
@@ -477,6 +478,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for f in filenames:
             try:
                 widget = ResultWidget(self.viewArea, f, self.settings)
+                widget.open_model.setSourceModel(self.open_files)
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -596,6 +598,8 @@ class MetadataModel(QAbstractItemModel):
         return self.createIndex(row, column, item.children[row])
 
 class OpenFilesModel(QAbstractTableModel):
+    test_name_role = Qt.UserRole
+
     def __init__(self, parent):
         QAbstractTableModel.__init__(self, parent)
         self.open_files = []
@@ -696,6 +700,8 @@ class OpenFilesModel(QAbstractTableModel):
             return None
 
     def data(self, idx, role=Qt.DisplayRole):
+        if role == self.test_name_role:
+            return self.open_files[idx.row()].meta('NAME')
         if idx.column() == 0:
             value = self.is_active(idx.row())
             if role == Qt.CheckStateRole:
@@ -720,6 +726,16 @@ class OpenFilesModel(QAbstractTableModel):
                 return self.deactivate(idx.row())
         return False
 
+class OpenFilesFilterModel(QSortFilterProxyModel):
+
+    def __init__(self, parent, test_name):
+        super(OpenFilesFilterModel, self).__init__(parent)
+        self.test_name = test_name
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        idx = self.sourceModel().index(sourceRow, 0, sourceParent)
+        data = self.sourceModel().data(idx, OpenFilesModel.test_name_role)
+        return data == self.test_name
 
 class UpdateDisabler(object):
     def __init__(self, widget):
@@ -748,6 +764,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
         self.settings.compute_missing_results(self.results)
+
+        self.open_model = OpenFilesFilterModel(self, self.results.meta('NAME'))
 
         try:
             self.formatter = PlotFormatter(self.settings)
