@@ -599,7 +599,9 @@ class OpenFilesModel(QAbstractTableModel):
                         ('DATA_FILENAME', 'Filename'),
                         ('NAME', 'Test'),
                         ('TITLE', 'Title'),
-                        ('LENGTH', 'Length')]
+                        ('LENGTH', 'Length'),
+                        ('EGRESS_INFO:iface', 'Egress iface'),
+                        ('EGRESS_INFO:qdiscs:0:name', 'Egress qdisc')]
         self.active_widget = None
 
     def is_active(self, idx):
@@ -666,6 +668,23 @@ class OpenFilesModel(QAbstractTableModel):
             flags |= Qt.ItemIsEditable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
         return flags
 
+    def get_metadata(self, idx, name):
+        r = self.open_files[idx]
+        parts = name.split(":")
+        data = r.meta(parts[0])
+        parts = parts[1:]
+        try:
+            while parts:
+                k = parts.pop(0)
+                try:
+                    i = int(k)
+                    data = data[i]
+                except ValueError:
+                    data = data[k]
+            return str(data)
+        except (KeyError,IndexError):
+            return None
+
     def data(self, idx, role=Qt.DisplayRole):
         if idx.column() == 0:
             value = self.is_active(idx.row())
@@ -676,7 +695,7 @@ class OpenFilesModel(QAbstractTableModel):
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft|Qt.AlignVCenter
         if role == Qt.DisplayRole:
-            return self.open_files[idx.row()].meta(self.columns[idx.column()][0])
+            return self.get_metadata(idx.row(), self.columns[idx.column()][0])
         if role == Qt.FontRole:
             font = QFont()
             if self.is_primary(idx.row()) and font is not None:
