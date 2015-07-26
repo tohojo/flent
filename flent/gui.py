@@ -312,6 +312,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         if added == 0:
             self.warn_nomatch()
+        else:
+            for r in widget.extra_results[-added:]:
+                self.open_files.add_file(r)
 
     def other_extra(self):
         idx = self.viewArea.currentIndex()
@@ -327,11 +330,13 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         if not added:
             self.warn_nomatch()
+        self.open_files.update()
 
     def clear_extra(self):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.clear_extra()
+            self.open_files.update()
 
     def scale_open(self):
         self.checkScaleMode.setChecked(True)
@@ -348,6 +353,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                     widget.add_extra(r)
 
         self.viewArea.currentWidget().update()
+        self.open_files.update()
 
     def save_plot(self):
         widget = self.viewArea.currentWidget()
@@ -883,6 +889,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         return added
 
     def add_extra(self, resultset):
+        if resultset in self.extra_results:
+            return False
         if resultset.meta('NAME') == self.settings.NAME:
             self.extra_results.append(resultset)
             self.update()
