@@ -192,7 +192,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.open_files = OpenFilesModel(self)
         self.openFilesView.setModel(self.open_files)
         self.openFilesView.setAlternatingRowColors(True)
-        self.openFilesView.clicked.connect(self.open_files_click)
+        self.openFilesView.clicked.connect(self.open_files.on_click)
+        self.openFilesView.setCursor(QCursor(Qt.PointingHandCursor))
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -250,13 +251,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionOpenFiles.setChecked(not self.openFilesDock.isHidden())
     def metadata_column_resize(self):
         self.metadataView.resizeColumnToContents(0)
-
-    def open_files_click(self, idx):
-        widget = self.viewArea.currentWidget()
-        if widget is None:
-            self.open_files.on_click(idx)
-        else:
-            widget.open_model.on_click(idx)
 
     def update_checkboxes(self):
         widget = self.viewArea.currentWidget()
@@ -468,7 +462,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotView.setSelectionModel(widget.plotSelectionModel)
         self.metadataView.setModel(widget.metadataModel)
         self.metadataView.setSelectionModel(widget.metadataSelectionModel)
-        self.openFilesView.setModel(widget.open_model)
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save())
         widget.redraw()
@@ -501,8 +494,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for f in filenames:
             try:
                 widget = ResultWidget(self.viewArea, f, self.settings)
-                widget.open_model.setSourceModel(self.open_files)
-                self.open_files.dataChanged.connect(widget.open_model.invalidate)
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -625,7 +616,8 @@ class MetadataModel(QAbstractItemModel):
 class ResultsetStore(object):
 
     def __init__(self):
-        self._store = OrderedDict()
+        self._store = {}
+        self._order = []
 
     def __len__(self):
         return sum([len(i) for i in self._store.values()])
@@ -638,11 +630,15 @@ class ResultsetStore(object):
 
     def __getitem__(self, idx):
         offset = 0
-        for v in self._store.values():
+        for k in self._order:
+            v = self._store[k]
             if idx < len(v)+offset:
                 return v[idx-offset]
             offset += len(v)
         raise IndexError()
+
+    def update_order(self, active):
+        self._order = [active] + sorted([i for i in self._order if i != active])
 
     def append(self, itm):
         k = itm.meta('NAME')
@@ -650,6 +646,7 @@ class ResultsetStore(object):
             self._store[k].append(itm)
         else:
             self._store[k] = [itm]
+            self._order.append(k)
 
 
 class OpenFilesModel(QAbstractTableModel):
@@ -682,6 +679,7 @@ class OpenFilesModel(QAbstractTableModel):
 
     def set_active_widget(self, widget):
         self.active_widget = widget
+        self.open_files.update_order(widget.results.meta("NAME"))
         self.update()
 
     def on_click(self, idx):
@@ -742,15 +740,18 @@ class OpenFilesModel(QAbstractTableModel):
     def flags(self, idx):
         flags = super(OpenFilesModel, self).flags(idx)
         if idx.column() == 0:
-            flags |= Qt.ItemIsEditable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
+            flags |= Qt.ItemIsUserCheckable
+        if self.active_widget is not None and \
+           self.active_widget.results.meta("NAME") != self.open_files[idx.row()].meta("NAME"):
+            flags &= ~Qt.ItemIsEnabled
         return flags
 
     def get_metadata(self, idx, name):
         r = self.open_files[idx]
-        parts = name.split(":")
-        data = r.meta(parts[0])
-        parts = parts[1:]
         try:
+            parts = name.split(":")
+            data = r.meta(parts[0])
+            parts = parts[1:]
             while parts:
                 k = parts.pop(0)
                 try:
@@ -789,20 +790,6 @@ class OpenFilesModel(QAbstractTableModel):
                 return self.deactivate(idx.row())
         return False
 
-class OpenFilesFilterModel(QSortFilterProxyModel):
-
-    def __init__(self, parent, test_name):
-        super(OpenFilesFilterModel, self).__init__(parent)
-        self.test_name = test_name
-
-    def filterAcceptsRow(self, sourceRow, sourceParent):
-        idx = self.sourceModel().index(sourceRow, 0, sourceParent)
-        data = self.sourceModel().data(idx, OpenFilesModel.test_name_role)
-        return data == self.test_name
-
-    def on_click(self, idx):
-        self.sourceModel().on_click(self.mapToSource(idx))
-
 class UpdateDisabler(object):
     def __init__(self, widget):
         self.widget = widget
@@ -834,8 +821,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
         self.settings.compute_missing_results(self.results)
-
-        self.open_model = OpenFilesFilterModel(self, self.results.meta('NAME'))
 
         try:
             self.formatter = PlotFormatter(self.settings)
