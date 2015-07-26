@@ -782,6 +782,11 @@ class OpenFilesModel(QAbstractTableModel):
                 return Qt.Checked if value else Qt.Unchecked
             else:
                 return None
+        if role == Qt.ToolTipRole:
+            if self.flags(idx) & Qt.ItemIsEnabled:
+                return "Click to select/deselect. Ctrl+click to open in new tab."
+            else:
+                return "Ctrl+click to open in new tab."
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft|Qt.AlignVCenter
         if role == Qt.DisplayRole:
