@@ -192,7 +192,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.open_files = OpenFilesModel(self)
         self.openFilesView.setModel(self.open_files)
         self.openFilesView.setAlternatingRowColors(True)
-        self.openFilesView.doubleClicked.connect(self.open_files.on_click)
+        self.openFilesView.clicked.connect(self.open_files_click)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -250,6 +250,13 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionOpenFiles.setChecked(not self.openFilesDock.isHidden())
     def metadata_column_resize(self):
         self.metadataView.resizeColumnToContents(0)
+
+    def open_files_click(self, idx):
+        widget = self.viewArea.currentWidget()
+        if widget is None:
+            self.open_files.on_click(idx)
+        else:
+            widget.open_model.on_click(idx)
 
     def update_checkboxes(self):
         widget = self.viewArea.currentWidget()
@@ -473,6 +480,16 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Control:
+            self.open_files.ctrl_press(True)
+        super(MainWindow,self).keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Control:
+            self.open_files.ctrl_press(False)
+        super(MainWindow,self).keyPressEvent(event)
+
     def load_files(self, filenames, set_last_dir=True):
         self.busy_start()
         widget = self.viewArea.currentWidget()
@@ -650,6 +667,10 @@ class OpenFilesModel(QAbstractTableModel):
                         ('EGRESS_INFO:iface', 'Egress iface'),
                         ('EGRESS_INFO:qdiscs:0:name', 'Egress qdisc')]
         self.active_widget = None
+        self.ctrl_pressed = False
+
+    def ctrl_press(self, value):
+        self.ctrl_pressed = value
 
     def is_active(self, idx):
         if self.active_widget is None:
@@ -664,17 +685,17 @@ class OpenFilesModel(QAbstractTableModel):
         self.update()
 
     def on_click(self, idx):
-        if self.is_active(idx.row()):
-            self.deactivate(idx.row())
-        else:
+        if not self.is_active(idx.row()) or self.ctrl_pressed:
             self.activate(idx.row())
+        else:
+            self.deactivate(idx.row())
 
     def update(self):
         self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),
                                                           len(self.columns)))
 
     def activate(self, idx):
-        if self.active_widget is None:
+        if self.active_widget is None or self.ctrl_pressed:
             self._parent.load_files([self.open_files[idx]])
             return True
         ret = self.active_widget.add_extra(self.open_files[idx])
@@ -778,6 +799,9 @@ class OpenFilesFilterModel(QSortFilterProxyModel):
         idx = self.sourceModel().index(sourceRow, 0, sourceParent)
         data = self.sourceModel().data(idx, OpenFilesModel.test_name_role)
         return data == self.test_name
+
+    def on_click(self, idx):
+        self.sourceModel().on_click(self.mapToSource(idx))
 
 class UpdateDisabler(object):
     def __init__(self, widget):
