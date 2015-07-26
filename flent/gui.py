@@ -684,10 +684,8 @@ class OpenFilesModel(QAbstractTableModel):
     def is_active(self, idx):
         if self.active_widget is None:
             return False
-        for r in chain([self.active_widget.results], self.active_widget.extra_results):
-            if r.meta('DATA_FILENAME') == self.open_files[idx].meta('DATA_FILENAME'):
-                return True
-        return False
+        return self.open_files[idx] in chain([self.active_widget.results],
+                                             self.active_widget.extra_results)
 
     def set_active_widget(self, widget):
         self.active_widget = widget
