@@ -25,6 +25,12 @@ import sys, os, signal, traceback
 
 from itertools import chain
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from .ordereddict import OrderedDict
+
+
 # Python 2/3 compatibility
 try:
     unicode
@@ -467,7 +473,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
 
-    def load_files(self, filenames):
+    def load_files(self, filenames, set_last_dir=True):
         self.busy_start()
         widget = self.viewArea.currentWidget()
         if widget is not None:
@@ -479,6 +485,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             try:
                 widget = ResultWidget(self.viewArea, f, self.settings)
                 widget.open_model.setSourceModel(self.open_files)
+                self.open_files.dataChanged.connect(widget.open_model.invalidate)
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -496,7 +503,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.plot_changed.connect(self.update_plots)
             widget.change_plot(current_plot)
             self.viewArea.addTab(widget, widget.title)
-            self.last_dir = os.path.dirname(unicode(f))
+            if set_last_dir:
+                self.last_dir = os.path.dirname(unicode(f))
 
         if widget is not None:
             self.viewArea.setCurrentWidget(widget)
@@ -597,12 +605,43 @@ class MetadataModel(QAbstractItemModel):
             item = self.root
         return self.createIndex(row, column, item.children[row])
 
+class ResultsetStore(object):
+
+    def __init__(self):
+        self._store = OrderedDict()
+
+    def __len__(self):
+        return sum([len(i) for i in self._store.values()])
+
+    def __contains__(self, itm):
+        for v in self._store.values():
+            if itm in v:
+                return True
+        return False
+
+    def __getitem__(self, idx):
+        offset = 0
+        for v in self._store.values():
+            if idx < len(v)+offset:
+                return v[idx-offset]
+            offset += len(v)
+        raise IndexError()
+
+    def append(self, itm):
+        k = itm.meta('NAME')
+        if k in self._store:
+            self._store[k].append(itm)
+        else:
+            self._store[k] = [itm]
+
+
 class OpenFilesModel(QAbstractTableModel):
     test_name_role = Qt.UserRole
 
     def __init__(self, parent):
         QAbstractTableModel.__init__(self, parent)
-        self.open_files = []
+        self._parent = parent
+        self.open_files = ResultsetStore()
         self.columns = [(None,'Act'),
                         ('DATA_FILENAME', 'Filename'),
                         ('NAME', 'Test'),
@@ -636,7 +675,8 @@ class OpenFilesModel(QAbstractTableModel):
 
     def activate(self, idx):
         if self.active_widget is None:
-            return False
+            self._parent.load_files([self.open_files[idx]])
+            return True
         ret = self.active_widget.add_extra(self.open_files[idx])
         self.update()
         return ret
@@ -654,6 +694,8 @@ class OpenFilesModel(QAbstractTableModel):
         return self.active_widget.results == self.open_files[idx]
 
     def add_file(self, r):
+        if r in self.open_files:
+            return
         self.beginInsertRows(QModelIndex(), len(self.open_files), len(self.open_files))
         self.open_files.append(r)
         self.endInsertRows()
@@ -696,7 +738,7 @@ class OpenFilesModel(QAbstractTableModel):
                 except ValueError:
                     data = data[k]
             return str(data)
-        except (KeyError,IndexError):
+        except (KeyError,IndexError,TypeError):
             return None
 
     def data(self, idx, role=Qt.DisplayRole):
@@ -754,12 +796,16 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def __init__(self, parent, filename, settings):
         super(ResultWidget, self).__init__(parent)
-        self.filename = unicode(filename)
+        if isinstance(filename, ResultSet):
+            self.filename = filename.meta("DATA_FILENAME")
+            self.results = filename
+        else:
+            self.filename = unicode(filename)
+            self.results = ResultSet.load_file(self.filename)
         self.settings = settings.copy()
         self.dirty = True
         self.settings.OUTPUT = "-"
 
-        self.results = ResultSet.load_file(self.filename)
         self.extra_results = []
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
