@@ -191,9 +191,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.openFilesDock.raise_()
         self.open_files = OpenFilesModel(self)
         self.openFilesView.setModel(self.open_files)
-        self.openFilesView.setAlternatingRowColors(True)
         self.openFilesView.clicked.connect(self.open_files.on_click)
         self.openFilesView.setCursor(QCursor(Qt.PointingHandCursor))
+        self.openFilesView.sortByColumn(1,Qt.AscendingOrder)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -461,7 +461,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.widget(idx)
         if widget is None:
             self.open_files.set_active_widget(None)
-            self.openFilesView.setModel(self.open_files)
             return
 
         self.plotView.setModel(widget.plotModel)
@@ -614,6 +613,8 @@ class ResultsetStore(object):
     def __init__(self):
         self._store = {}
         self._order = []
+        self._sort_key = 'DATA_FILENAME'
+        self._sort_rev = False
 
     def __len__(self):
         return sum([len(i) for i in self._store.values()])
@@ -633,6 +634,22 @@ class ResultsetStore(object):
             offset += len(v)
         raise IndexError()
 
+    def sort(self, key=None, reverse=False, only=None):
+        if key is None:
+            key = self._sort_key
+            reverse = self._sort_rev
+        def get_key(itm):
+            try:
+                return itm.meta(key)
+            except KeyError:
+                return ''
+        if only:
+            only.sort(key=get_key, reverse=reverse)
+        else:
+            self._sort_key, self._sort_rev = key,reverse
+            for v in self._store.values():
+                v.sort(key=get_key, reverse=reverse)
+
     def update_order(self, active):
         self._order = [active] + sorted([i for i in self._order if i != active])
 
@@ -640,6 +657,7 @@ class ResultsetStore(object):
         k = itm.meta('NAME')
         if k in self._store:
             self._store[k].append(itm)
+            self.sort(only=self._store[k])
         else:
             self._store[k] = [itm]
             self._order.append(k)
@@ -772,6 +790,13 @@ class OpenFilesModel(QAbstractTableModel):
             if self.is_primary(idx.row()) and font is not None:
                 font.setBold(True)
             return font
+
+    def sort(self, column, order):
+        if column == 0:
+            return
+        key = self.columns[column][0]
+        self.open_files.sort(key, (order == Qt.DescendingOrder))
+        self.update()
 
     def setData(self, idx, value, role):
         if idx.column() == 0 and role == QtCore.Qt.CheckStateRole:
