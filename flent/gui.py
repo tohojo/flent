@@ -691,7 +691,8 @@ class OpenFilesModel(QAbstractTableModel):
 
     def set_active_widget(self, widget):
         self.active_widget = widget
-        self.open_files.update_order(widget.results.meta("NAME"))
+        if widget is not None:
+            self.open_files.update_order(widget.results.meta("NAME"))
         self.update()
 
     def on_click(self, idx):
@@ -789,7 +790,9 @@ class OpenFilesModel(QAbstractTableModel):
             else:
                 return None
         if role == Qt.ToolTipRole:
-            if self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0:
+            if self.active_widget is None:
+                return "Click to open in new tab."
+            elif self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0:
                 return "Can't deselect last item. Ctrl+click to open in new tab."
             elif self.flags(idx) & Qt.ItemIsEnabled:
                 return "Click to select/deselect. Ctrl+click to open in new tab."
