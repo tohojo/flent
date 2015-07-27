@@ -735,8 +735,9 @@ class OpenFilesModel(QAbstractTableModel):
         flags = super(OpenFilesModel, self).flags(idx)
         if idx.column() == 0:
             flags |= Qt.ItemIsUserCheckable
-        if self.active_widget is not None and \
-           self.active_widget.results.meta("NAME") != self.open_files[idx.row()].meta("NAME"):
+        if (self.active_widget is not None and \
+           self.active_widget.results.meta("NAME") != self.open_files[idx.row()].meta("NAME"))\
+           or (self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0):
             flags &= ~Qt.ItemIsEnabled
         return flags
 
@@ -756,7 +757,9 @@ class OpenFilesModel(QAbstractTableModel):
             else:
                 return None
         if role == Qt.ToolTipRole:
-            if self.flags(idx) & Qt.ItemIsEnabled:
+            if self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0:
+                return "Can't deselect last item. Ctrl+click to open in new tab."
+            elif self.flags(idx) & Qt.ItemIsEnabled:
                 return "Click to select/deselect. Ctrl+click to open in new tab."
             else:
                 return "Ctrl+click to open in new tab."
