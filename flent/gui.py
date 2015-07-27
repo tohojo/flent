@@ -672,11 +672,7 @@ class OpenFilesModel(QAbstractTableModel):
         self.open_files = ResultsetStore()
         self.columns = [(None,'Act'),
                         ('DATA_FILENAME', 'Filename'),
-                        ('NAME', 'Test'),
-                        ('TITLE', 'Title'),
-                        ('LENGTH', 'Length'),
-                        ('EGRESS_INFO:iface', 'Egress iface'),
-                        ('EGRESS_INFO:qdiscs:0:name', 'Egress qdisc')]
+                        ('TITLE', 'Title')]
         self.active_widget = None
 
     @property
