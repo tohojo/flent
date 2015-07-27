@@ -293,9 +293,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if filenames:
             self.last_dir = os.path.dirname(unicode(filenames[0]))
 
-        # The dialog eats the KeyRelease so the open files logic thinks that
-        # ctrl is still pressed.
-        self.open_files.ctrl_press(False)
         return filenames
 
     def on_open(self):
@@ -362,9 +359,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = self.viewArea.currentWidget()
         if widget is not None:
             widget.save_plot()
-            # The dialog eats the KeyRelease so the open files logic thinks that
-            # ctrl is still pressed.
-            self.open_files.ctrl_press(False)
 
     def refresh_plot(self):
         widget = self.viewArea.currentWidget()
@@ -484,16 +478,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget = self.viewArea.widget(i)
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Control:
-            self.open_files.ctrl_press(True)
-        super(MainWindow,self).keyPressEvent(event)
-
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Control:
-            self.open_files.ctrl_press(False)
-        super(MainWindow,self).keyPressEvent(event)
 
     def load_files(self, filenames, set_last_dir=True):
         self.busy_start()
@@ -676,10 +660,10 @@ class OpenFilesModel(QAbstractTableModel):
                         ('EGRESS_INFO:iface', 'Egress iface'),
                         ('EGRESS_INFO:qdiscs:0:name', 'Egress qdisc')]
         self.active_widget = None
-        self.ctrl_pressed = False
 
-    def ctrl_press(self, value):
-        self.ctrl_pressed = value
+    @property
+    def ctrl_pressed(self):
+        return bool(QApplication.keyboardModifiers() & Qt.ControlModifier)
 
     def is_active(self, idx):
         if self.active_widget is None:
