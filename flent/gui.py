@@ -21,7 +21,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, signal, traceback
+import sys, os, signal, traceback, base64
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 from itertools import chain
 
@@ -202,6 +207,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
 
         self.read_settings()
+        if self.open_files.columnCount(QModelIndex()) > 1:
+            self.openFilesView.sortByColumn(1,Qt.AscendingOrder)
 
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
@@ -229,6 +236,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.metadata_visibility()
             self.plot_visibility()
             self.open_files_visibility()
+        if settings.contains("open_files/columns"):
+            value = settings.value("open_files/columns")
+            if hasattr(value, 'toString'):
+                value = value.toString()
+            self.open_files.restore_columns(value)
 
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
@@ -240,6 +252,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         settings = QSettings("Flent", "GUI")
         settings.setValue("mainwindow/geometry", self.saveGeometry())
         settings.setValue("mainwindow/windowState", self.saveState())
+        settings.setValue("open_files/columns", self.open_files.save_columns())
         event.accept()
 
     # Helper functions to update menubar actions when dock widgets are closed
@@ -678,6 +691,26 @@ class OpenFilesModel(QAbstractTableModel):
     @property
     def ctrl_pressed(self):
         return bool(QApplication.keyboardModifiers() & Qt.ControlModifier)
+
+    def save_columns(self):
+        return base64.b64encode(pickle.dumps(self.columns, protocol=0)).decode()
+
+    def restore_columns(self, data):
+        try:
+            cols = pickle.loads(base64.b64decode(data))
+        except:
+            return
+        if len(cols) > len(self.columns):
+            self.beginInsertColumns(QModelIndex(), len(self.columns), len(cols)-1)
+            self.columns = cols
+            self.endInsertColumns()
+        elif len(cols) < len(self.columns):
+            self.beginRemoveColumns(QModelIndex(), len(cols), len(self.columns)-1)
+            self.columns = cols
+            self.endRemoveColumns()
+        else:
+            self.columns = cols
+        self.update()
 
     def is_active(self, idx):
         if self.active_widget is None:
