@@ -190,10 +190,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.tabifyDockWidget(self.openFilesDock,self.metadataDock)
         self.openFilesDock.raise_()
         self.open_files = OpenFilesModel(self)
+        self.openFilesView = OpenFilesView(self.openFilesDock)
+        self.openFilesDock.setWidget(self.openFilesView)
         self.openFilesView.setModel(self.open_files)
         self.openFilesView.clicked.connect(self.open_files.on_click)
-        self.openFilesView.setCursor(QCursor(Qt.PointingHandCursor))
-        self.openFilesView.sortByColumn(1,Qt.AscendingOrder)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -704,8 +704,8 @@ class OpenFilesModel(QAbstractTableModel):
         self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),
                                                           len(self.columns)))
 
-    def activate(self, idx):
-        if self.active_widget is None or self.ctrl_pressed:
+    def activate(self, idx, new_tab=False):
+        if new_tab or self.active_widget is None or self.ctrl_pressed:
             self._parent.load_files([self.open_files[idx]])
             return True
         ret = self.active_widget.add_extra(self.open_files[idx])
@@ -746,6 +746,8 @@ class OpenFilesModel(QAbstractTableModel):
             return self.columns[section][1]
         if role == Qt.DisplayRole and orientation == Qt.Vertical:
             return section+1
+        if role == Qt.ToolTipRole and orientation == Qt.Horizontal and section > 0:
+            return "Metadata path: %s.\nRight click to add or remove columns." % self.columns[section][0]
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft | Qt.AlignVCenter
 
@@ -764,6 +766,18 @@ class OpenFilesModel(QAbstractTableModel):
             return unicode(self.open_files[idx].meta(name))
         except KeyError:
             return None
+
+    def removeColumn(self, col, parent):
+        if col == 0:
+            return False
+        self.beginRemoveColumns(parent,col,col)
+        self.columns[col:col+1] = []
+        self.endRemoveColumns()
+
+    def add_column(self, pos, path, name):
+        self.beginInsertColumns(QModelIndex(),pos,pos)
+        self.columns.insert(pos, (path,name))
+        self.endInsertColumns()
 
     def data(self, idx, role=Qt.DisplayRole):
         if role == self.test_name_role:
@@ -805,6 +819,112 @@ class OpenFilesModel(QAbstractTableModel):
             else:
                 return self.deactivate(idx.row())
         return False
+
+class OpenFilesView(QTableView):
+
+    def __init__(self, parent):
+        super(OpenFilesView, self).__init__(parent)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setSelectionMode(QAbstractItemView.NoSelection)
+        self.setAlternatingRowColors(True)
+
+        self.setSortingEnabled(True)
+        self.sortByColumn(1,Qt.AscendingOrder)
+
+        self.setHorizontalHeader(OpenFilesHeader(self))
+
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+
+    def remove_column(self, col):
+        self.model().removeColumn(col, QModelIndex())
+
+    def close_file(self, row):
+        self.model().removeRow(row, QModelIndex())
+
+    def mouseReleaseEvent(self, event):
+        # Prevent clicked() from being emitted on right click
+        if event.button() == Qt.LeftButton:
+            super(OpenFilesView, self).mouseReleaseEvent(event)
+        else:
+            event.ignore()
+
+    def contextMenuEvent(self, event):
+        idx = self.indexAt(event.pos())
+        menu = QMenu()
+        def opn():
+            self.model().activate(idx.row(), True)
+        act_opn = QAction("&Open in new tab", menu, triggered=opn)
+        def cls():
+            self.close_file(idx.row())
+        act_cls = QAction("&Close file", menu, triggered=cls)
+        sep = QAction(menu)
+        sep.setSeparator(True)
+        menu.addActions([act_opn,sep])
+        menu.addActions(self.horizontalHeader().column_actions(idx.column(), menu))
+        menu.exec_(event.globalPos())
+        event.accept()
+
+class OpenFilesHeader(QHeaderView):
+
+    def __init__(self, parent):
+        super(OpenFilesHeader, self).__init__(Qt.Horizontal, parent)
+        self._parent = parent
+        self.setMovable(True)
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+
+    def column_actions(self, col, parent):
+        actions = []
+        if col > 0:
+            def rem():
+                self._parent.remove_column(col)
+            name = self.model().headerData(col, Qt.Horizontal, Qt.DisplayRole)
+            actions.append(QAction("&Remove column '%s'" % name, parent, triggered=rem))
+
+        def add():
+            self.add_column(col)
+        actions.append(QAction("&Add new column", parent, triggered=add))
+
+        return actions
+
+    def add_column(self, col):
+        dialog = AddColumnDialog(self)
+        if not dialog.exec() or not dialog.get_path():
+            return
+        vis_old = self.visualIndex(col)
+        self.model().add_column(col+1, dialog.get_path(), dialog.get_name())
+        vis_new = self.visualIndex(col+1)
+        self.moveSection(vis_new,vis_old+1)
+        self._parent.resizeColumnToContents(col+1)
+
+    def contextMenuEvent(self, event):
+        idx = self.logicalIndexAt(event.pos())
+        menu = QMenu()
+        menu.addActions(self.column_actions(idx, menu))
+        menu.exec_(event.globalPos())
+        event.accept()
+
+class AddColumnDialog(get_ui_class("addcolumn.ui")):
+    def __init__(self, parent):
+        super(AddColumnDialog, self).__init__(parent)
+
+        self.metadataPathEdit.textChanged.connect(self.update_name)
+        self.columnNameEdit.textEdited.connect(self.name_entered)
+        self.name_entered = False
+
+    def name_entered(self):
+        self.name_entered = True
+
+    def update_name(self, text):
+        if self.name_entered:
+            return
+        parts = text.split(":")
+        self.columnNameEdit.setText(parts[-1])
+
+    def get_path(self):
+        return unicode(self.metadataPathEdit.text())
+
+    def get_name(self):
+        return unicode(self.columnNameEdit.text())
 
 class UpdateDisabler(object):
     def __init__(self, widget):
