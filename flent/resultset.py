@@ -101,11 +101,29 @@ class ResultSet(object):
             self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
-    def meta(self, k=None, v=None):
-        if k:
-            if v:
-                self.metadata[k] = v
-            return self.metadata[k]
+    def meta(self, key=None, value=None):
+        if key:
+            if value:
+                self.metadata[key] = value
+            if key in self.metadata:
+                return self.metadata[key]
+            # Try to walk the metadata structure by the :-separated keys in 'key'.
+            # This makes it possible to extract arbitrary metadata strings from
+            # the structure.
+            try:
+                parts = key.split(":")
+                data = self.metadata[parts[0]]
+                parts = parts[1:]
+                while parts:
+                    k = parts.pop(0)
+                    try:
+                        i = int(k)
+                        data = data[i]
+                    except ValueError:
+                        data = data[k]
+                return data
+            except (KeyError,IndexError,TypeError):
+                raise KeyError
         return self.metadata
 
     def label(self):

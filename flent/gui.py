@@ -741,20 +741,9 @@ class OpenFilesModel(QAbstractTableModel):
         return flags
 
     def get_metadata(self, idx, name):
-        r = self.open_files[idx]
         try:
-            parts = name.split(":")
-            data = r.meta(parts[0])
-            parts = parts[1:]
-            while parts:
-                k = parts.pop(0)
-                try:
-                    i = int(k)
-                    data = data[i]
-                except ValueError:
-                    data = data[k]
-            return str(data)
-        except (KeyError,IndexError,TypeError):
+            return unicode(self.open_files[idx].meta(name))
+        except KeyError:
             return None
 
     def data(self, idx, role=Qt.DisplayRole):
