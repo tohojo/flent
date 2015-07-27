@@ -887,7 +887,7 @@ class OpenFilesHeader(QHeaderView):
 
     def add_column(self, col):
         dialog = AddColumnDialog(self)
-        if not dialog.exec() or not dialog.get_path():
+        if not dialog.exec_() or not dialog.get_path():
             return
         vis_old = self.visualIndex(col)
         self.model().add_column(col+1, dialog.get_path(), dialog.get_name())
