@@ -29,7 +29,7 @@ General options
 
 .. option:: -D DATA_DIR, --data-dir=DATA_DIR
 
-   Directory to store data files in. Defaults to the system tmpdir.
+   Directory to store data files in. Defaults to the current directory.
 
 .. option:: -i INPUT, --input=INPUT
 

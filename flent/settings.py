@@ -212,7 +212,7 @@ parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-st
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
                   help="File to write processed output to (default standard out).")
 parser.add_option("-D", "--data-dir", action="store", type="string", dest="DATA_DIR",
-                  help="Directory to store data files in. Defaults to the system tmpdir.")
+                  help="Directory to store data files in. Defaults to the current directory.")
 parser.add_option("-i", "--input", action="append", type="string", dest="INPUT",
                   help="File to read input from (instead of running tests). Input files "
                   "can also be specified as unqualified arguments without using the -i switch.")
