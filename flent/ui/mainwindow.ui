@@ -49,6 +49,7 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="actionNewTab"/>
     <addaction name="actionOpen"/>
     <addaction name="actionCloseTab"/>
     <addaction name="actionCloseAll"/>
@@ -382,6 +383,14 @@
    </property>
    <property name="text">
     <string>&amp;Open files</string>
+   </property>
+  </action>
+  <action name="actionNewTab">
+   <property name="text">
+    <string>&amp;New tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
  </widget>

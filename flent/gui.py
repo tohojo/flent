@@ -150,6 +150,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.last_dir = os.getcwd()
         self.defer_load = self.settings.INPUT
 
+        self.actionNewTab.activated.connect(self.add_tab)
         self.actionOpen.activated.connect(self.on_open)
         self.actionCloseTab.activated.connect(self.close_tab)
         self.actionCloseAll.activated.connect(self.close_all)
@@ -398,6 +399,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.load_files(self.defer_load)
             self.defer_load = None
 
+
     def shorten_tabs(self):
         """Try to shorten tab labels by filtering out common substrings.
 
@@ -412,13 +414,17 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         titles = []
         long_titles = []
+        indexes = []
         for i in range(self.viewArea.count()):
+            if self.viewArea.widget(i).title == ResultWidget.default_title:
+                continue
             titles.append(self.viewArea.widget(i).title)
             long_titles.append(self.viewArea.widget(i).long_title)
+            indexes.append(i)
 
         substr = util.long_substr(titles)
         prefix = util.long_substr(titles, prefix_only=True)
-        for i,t in enumerate(titles):
+        for i,t,lt in zip(indexes,titles,long_titles):
             if len(substr) > 0:
                 text = t.replace(substr, "...")
             if len(prefix) > 0 and prefix != substr:
@@ -426,7 +432,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if len(substr) == 0 or text == "...":
                 text = t
             self.viewArea.setTabText(i, text)
-            self.viewArea.setTabToolTip(i, long_titles[i])
+            self.viewArea.setTabToolTip(i, lt)
 
 
     def close_tab(self, idx=None):
@@ -483,11 +489,13 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             return
 
         self.plotView.setModel(widget.plotModel)
-        self.plotView.setSelectionModel(widget.plotSelectionModel)
+        if widget.plotSelectionModel is not None:
+            self.plotView.setSelectionModel(widget.plotSelectionModel)
         self.metadataView.setModel(widget.metadataModel)
-        self.metadataView.setSelectionModel(widget.metadataSelectionModel)
+        if widget.metadataSelectionModel is not None:
+            self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
-        self.actionSavePlot.setEnabled(widget.can_save())
+        self.actionSavePlot.setEnabled(widget.can_save)
         widget.redraw()
         self.open_files.set_active_widget(widget)
 
@@ -497,17 +505,30 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
 
+    def add_tab(self):
+        widget = ResultWidget(self.viewArea, self.settings)
+        widget.update_start.connect(self.busy_start)
+        widget.update_end.connect(self.busy_end)
+        widget.plot_changed.connect(self.update_plots)
+        self.viewArea.addTab(widget, widget.title)
+        self.viewArea.setCurrentWidget(widget)
+
+        return widget
+
     def load_files(self, filenames, set_last_dir=True):
         self.busy_start()
         widget = self.viewArea.currentWidget()
         if widget is not None:
-            current_plot = widget.current_plot()
+            current_plot = widget.current_plot
         else:
             current_plot = None
-        widget = None
+
         for f in filenames:
             try:
-                widget = ResultWidget(self.viewArea, f, self.settings)
+                if widget is None or widget.is_active:
+                    widget = self.add_tab()
+                widget.load_results(f)
+                self.activate_tab(self.viewArea.indexOf(widget))
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -520,17 +541,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                     "Error while loading data file:\n\n%s\n\nSkipping. Full traceback output to console." % err)
                 continue
 
-            widget.update_start.connect(self.busy_start)
-            widget.update_end.connect(self.busy_end)
-            widget.plot_changed.connect(self.update_plots)
             widget.change_plot(current_plot)
-            self.viewArea.addTab(widget, widget.title)
             if set_last_dir:
                 self.last_dir = os.path.dirname(unicode(f))
 
         if widget is not None:
-            self.viewArea.setCurrentWidget(widget)
-
+            widget.update()
         self.openFilesView.resizeColumnsToContents()
         self.shorten_tabs()
         self.metadata_column_resize()
@@ -985,27 +1001,30 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     update_start = pyqtSignal()
     update_end = pyqtSignal()
     plot_changed = pyqtSignal('QString', 'QString')
+    default_title = "New tab"
 
-    def __init__(self, parent, filename, settings):
+    def __init__(self, parent, settings):
         super(ResultWidget, self).__init__(parent)
-        if isinstance(filename, ResultSet):
-            self.filename = filename.meta("DATA_FILENAME")
-            self.results = filename
-        else:
-            self.filename = unicode(filename)
-            self.results = ResultSet.load_file(self.filename)
+        self.results = None
         self.settings = settings.copy()
         self.dirty = True
         self.settings.OUTPUT = "-"
 
         self.extra_results = []
-        self.settings.update(self.results.meta())
-        self.settings.load_test(informational=True)
-        self.settings.compute_missing_results(self.results)
+        self.title = self.default_title
+
+        self.plotModel = None
+        self.plotSelectionModel = None
+        self.metadataModel = None
+        self.metadataSelectionModel = None
+        self.toolbar = None
+        self.formatter = None
 
     @property
     def is_active(self):
         return self.results is not None
+
+    def init_formatter(self):
 
         try:
             self.formatter = PlotFormatter(self.settings)
@@ -1053,12 +1072,25 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def has(self, resultset):
         return resultset in chain([self.results], self.extra_results)
+
+    def load_results(self, results):
+        if isinstance(results, ResultSet):
+            self.results = results
+        else:
+            self.results = ResultSet.load_file(results)
+        self.settings.update(self.results.meta())
+        self.settings.load_test(informational=True)
+        self.settings.compute_missing_results(self.results)
+        self.init_formatter()
+        return True
+
     def disconnect_all(self):
         for s in (self.update_start, self.update_end, self.plot_changed):
             s.disconnect()
 
     def disable_cleanup(self):
-        self.formatter.disable_cleanup = True
+        if self.formatter is not None:
+            self.formatter.disable_cleanup = True
 
     def load_files(self, filenames):
         added = 0
@@ -1070,6 +1102,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         return added
 
     def add_extra(self, resultset):
+        if self.results is None:
+            return self.load_results(resultset)
         if resultset in self.extra_results:
             return False
         if resultset.meta('NAME') == self.settings.NAME:
@@ -1093,12 +1127,13 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.extra_results = []
         self.update()
 
+    @property
     def can_save(self):
         # Check for attribute to not crash on a matplotlib version that does not
         # have the save action.
         return hasattr(self.toolbar, 'save_figure')
     def save_plot(self):
-        if self.can_save():
+        if self.can_save:
             self.toolbar.save_figure()
 
     def zero_y(self, val=None):
@@ -1168,7 +1203,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             return True
         return False
 
+    @property
     def current_plot(self):
+        if not self.is_active:
+            return None
         return self.settings.PLOT
 
     def updates_disabled(self):
@@ -1180,7 +1218,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.redraw()
 
     def redraw(self):
-        if not self.dirty:
+        if not self.dirty or not self.is_active:
             return
         self.update_start.emit()
         try:
