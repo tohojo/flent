@@ -783,6 +783,10 @@ class BoxCombinePlotter(CombineManyPlotter, BoxPlotter):
 
 
 class BarPlotter(BoxPlotter):
+    # Since labels are printed vertically at the bottom, they tend to break
+    # matplotlib's layout logic if they're too long.
+    _max_label_length = 30
+
     def init(self, config=None, axis=None):
         BoxPlotter.init(self,config,axis)
 
@@ -863,6 +867,9 @@ class BarPlotter(BoxPlotter):
             x,y = t.get_position()
             t.set_position((x, max_y+abs(max_y-min_y)*0.01))
 
+        for i,l in enumerate(ticklabels):
+            if len(l) > self._max_label_length:
+                ticklabels[i] = l[:self._max_label_length]+"..."
 
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
