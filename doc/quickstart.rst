@@ -48,6 +48,6 @@ You must run netperf on two computers - a **server** and a **client**.
           flent tcp_download -p totals -l 60 -H address-of-netserver -t text-to-be-included-in-plot -o filename.png
 
 The output of each of these commands is a graphic (PNG) image along with a data
-file in the current working directory that can be used to re-create the plot,
-either from the command line (see :doc:`options`), or by loading them into the
-GUI. Run :command:`flent-gui` to start the GUI.
+file in `/tmp` that can be used to re-create the plot, either from the command line
+(see :doc:`options`), or by loading them into the GUI. Run :command:`flent-gui`
+to start the GUI.
