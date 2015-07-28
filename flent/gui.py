@@ -241,6 +241,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if hasattr(value, 'toString'):
                 value = value.toString()
             self.open_files.restore_columns(value)
+        if settings.contains("open_files/column_order"):
+            value = settings.value("open_files/column_order")
+            if hasattr(value, 'toByteArray'):
+                value = value.toByreArray()
+            self.openFilesView.horizontalHeader().restoreState(value)
 
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
@@ -253,6 +258,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         settings.setValue("mainwindow/geometry", self.saveGeometry())
         settings.setValue("mainwindow/windowState", self.saveState())
         settings.setValue("open_files/columns", self.open_files.save_columns())
+        settings.setValue("open_files/column_order",
+                          self.openFilesView.horizontalHeader().saveState())
         event.accept()
 
     # Helper functions to update menubar actions when dock widgets are closed
