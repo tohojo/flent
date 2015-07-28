@@ -207,8 +207,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
 
         self.read_settings()
-        if self.open_files.columnCount(QModelIndex()) > 1:
-            self.openFilesView.sortByColumn(1,Qt.AscendingOrder)
 
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
@@ -246,6 +244,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if hasattr(value, 'toByteArray'):
                 value = value.toByteArray()
             self.openFilesView.horizontalHeader().restoreState(value)
+            self.openFilesView.setSortingEnabled(True)
 
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
