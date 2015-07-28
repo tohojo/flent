@@ -87,6 +87,7 @@ class ResultSet(object):
         self._x_values = []
         self._results = OrderedDict()
         self._filename = None
+        self._loaded_from = None
         self._absolute = False
         self._raw_values = {}
         self.metadata = kwargs
@@ -244,6 +245,14 @@ class ResultSet(object):
     def __len__(self):
         return len(self._x_values)
 
+    def __hash__(self):
+        if self._loaded_from is None:
+            return id(self)
+        return self._loaded_from.__hash__()
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__hash__() == other.__hash__()
+
     def serialise_metadata(self):
         metadata = self.metadata.copy()
         for t in TIME_SETTINGS:
@@ -389,6 +398,7 @@ class ResultSet(object):
                 o = open
             fp = o(filename, 'rt')
             r = cls.load(fp, absolute)
+            r._loaded_from = os.path.realpath(filename)
             fp.close()
             return r
         except IOError:
