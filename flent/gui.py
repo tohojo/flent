@@ -244,7 +244,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if settings.contains("open_files/column_order"):
             value = settings.value("open_files/column_order")
             if hasattr(value, 'toByteArray'):
-                value = value.toByreArray()
+                value = value.toByteArray()
             self.openFilesView.horizontalHeader().restoreState(value)
 
     def closeEvent(self, event):
