@@ -718,16 +718,21 @@ class OpenFilesModel(QAbstractTableModel):
             self.columns = cols
         self.update()
 
+    @property
+    def has_widget(self):
+        return self.active_widget is not None and self.active_widget.is_active
+
     def is_active(self, idx):
-        if self.active_widget is None:
+        if not self.has_widget:
             return False
-        return self.open_files[idx] in chain([self.active_widget.results],
-                                             self.active_widget.extra_results)
+        return self.active_widget.has(self.open_files[idx])
+
+    def update_order(self):
+        if self.has_widget:
+            self.open_files.update_order(self.active_widget.results.meta("NAME"))
 
     def set_active_widget(self, widget):
         self.active_widget = widget
-        if widget is not None:
-            self.open_files.update_order(widget.results.meta("NAME"))
         self.update()
 
     def on_click(self, idx):
@@ -737,11 +742,12 @@ class OpenFilesModel(QAbstractTableModel):
             self.deactivate(idx.row())
 
     def update(self):
+        self.update_order()
         self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),
                                                           len(self.columns)))
 
     def activate(self, idx, new_tab=False):
-        if new_tab or self.active_widget is None or self.ctrl_pressed:
+        if new_tab or not self.has_widget or self.ctrl_pressed:
             self._parent.load_files([self.open_files[idx]])
             return True
         ret = self.active_widget.add_extra(self.open_files[idx])
@@ -749,14 +755,14 @@ class OpenFilesModel(QAbstractTableModel):
         return ret
 
     def deactivate(self, idx):
-        if self.active_widget is None:
+        if not self.has_widget:
             return False
         ret = self.active_widget.remove_extra(self.open_files[idx])
         self.update()
         return ret
 
     def is_primary(self, idx):
-        if self.active_widget is None:
+        if not self.has_widget:
             return False
         return self.active_widget.results == self.open_files[idx]
 
@@ -766,6 +772,7 @@ class OpenFilesModel(QAbstractTableModel):
         self.beginInsertRows(QModelIndex(), len(self.open_files), len(self.open_files))
         self.open_files.append(r)
         self.endInsertRows()
+        self.update()
 
     def rowCount(self, parent):
         if parent.isValid():
@@ -791,7 +798,7 @@ class OpenFilesModel(QAbstractTableModel):
         flags = super(OpenFilesModel, self).flags(idx)
         if idx.column() == 0:
             flags |= Qt.ItemIsUserCheckable
-        if (self.active_widget is not None and \
+        if (self.has_widget and \
            self.active_widget.results.meta("NAME") != self.open_files[idx.row()].meta("NAME"))\
            or (self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0):
             flags &= ~Qt.ItemIsEnabled
@@ -825,7 +832,7 @@ class OpenFilesModel(QAbstractTableModel):
             else:
                 return None
         if role == Qt.ToolTipRole:
-            if self.active_widget is None:
+            if not self.has_widget:
                 return "Click to open in new tab."
             elif self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0:
                 return "Can't deselect last item. Ctrl+click to open in new tab."
@@ -996,6 +1003,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings.load_test(informational=True)
         self.settings.compute_missing_results(self.results)
 
+    @property
+    def is_active(self):
+        return self.results is not None
+
         try:
             self.formatter = PlotFormatter(self.settings)
         except Exception as e:
@@ -1040,6 +1051,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if self.settings.GUI_NO_DEFER:
             self.redraw()
 
+    def has(self, resultset):
+        return resultset in chain([self.results], self.extra_results)
     def disconnect_all(self):
         for s in (self.update_start, self.update_end, self.plot_changed):
             s.disconnect()
