@@ -54,6 +54,11 @@ except ImportError:
 from flent import plotters, resultset, formatters
 from flent.settings import settings
 
+if hasattr(plotters, 'matplotlib'):
+    matplotlib_version = LooseVersion(plotters.matplotlib.__version__)
+else:
+    matplotlib_version = LooseVersion('0')
+
 MATPLOTLIB_RC_VALUES = {
     'axes.axisbelow': True,
     'axes.color_cycle': ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
@@ -179,7 +184,7 @@ class TestPlottersInit(unittest.TestCase):
         for d in plotters.DASHES:
             self.assertIn(dict(dashes=d), plotters.STYLES)
 
-    @unittest.skipIf(LooseVersion(plotters.matplotlib.__version__) < LooseVersion('1.2'), 'matplotlib too old')
+    @unittest.skipIf(matplotlib_version < LooseVersion('1.2'), 'matplotlib too old')
     @prefork
     def test_init_rcfile(self):
         with mock.patch.object(plotters.matplotlib, 'matplotlib_fname') as mock_obj:
