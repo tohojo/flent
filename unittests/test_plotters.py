@@ -28,6 +28,7 @@ import tempfile
 import shutil
 import itertools
 from unittest.util import strclass
+from distutils.version import LooseVersion
 
 try:
     import cPickle as pickle
@@ -155,7 +156,7 @@ class TestPlottersInit(unittest.TestCase):
 
     @prefork
     def test_init_styles(self):
-        plotters.init_matplotlib('-', True, False)
+        plotters.init_matplotlib('test.svg', True, False)
         self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES)+\
                          len(plotters.DASHES)+len(plotters.MARKERS))
         for ls in plotters.LINESTYLES:
@@ -170,7 +171,7 @@ class TestPlottersInit(unittest.TestCase):
 
     @prefork
     def test_init_styles_nomarkers(self):
-        plotters.init_matplotlib('-', False, False)
+        plotters.init_matplotlib('test.svg', False, False)
         self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES)+\
                          len(plotters.DASHES))
         for ls in plotters.LINESTYLES:
@@ -178,6 +179,7 @@ class TestPlottersInit(unittest.TestCase):
         for d in plotters.DASHES:
             self.assertIn(dict(dashes=d), plotters.STYLES)
 
+    @unittest.skipIf(LooseVersion(plotters.matplotlib.__version__) < LooseVersion('1.2'), 'matplotlib too old')
     @prefork
     def test_init_rcfile(self):
         with mock.patch.object(plotters.matplotlib, 'matplotlib_fname') as mock_obj:
@@ -185,10 +187,10 @@ class TestPlottersInit(unittest.TestCase):
             if 'MATPLOTLIBRC' in os.environ:
                 del os.environ['MATPLOTLIBRC']
 
-            plotters.init_matplotlib('-', False, True)
+            plotters.init_matplotlib('test.svg', False, True)
             for k,v in MATPLOTLIB_RC_VALUES.items():
                 self.assertEqual(v, plotters.matplotlib.rcParams[k],
-                                 msg='rc param mismatch on %s' %k)
+                                 msg='rc param mismatch on %s: %s != %s' %(k,v,plotters.matplotlib.rcParams[k]))
         self.assertEqual(plotters.matplotlib.rcParams['axes.color_cycle'],
                          plotters.COLOURS)
 
@@ -206,47 +208,47 @@ class TestPlotters(unittest.TestCase):
 
     @prefork
     def test_create_timeseries(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.TimeseriesPlotter)
 
     @prefork
     def test_create_timeseries_combine(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.TimeseriesCombinePlotter)
 
     @prefork
     def test_create_box(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.BoxPlotter)
 
     @prefork
     def test_create_box_combine(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.BoxCombinePlotter)
 
     @prefork
     def test_create_bar(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.BarPlotter)
 
     @prefork
     def test_create_bar_combine(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.BarCombinePlotter)
 
     @prefork
     def test_create_cdf(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.CdfPlotter)
 
     @prefork
     def test_create_cdf_combine(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.CdfCombinePlotter)
 
     @prefork
     def test_create_qq(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         # QQ plots only work with only 1 data series
         p = plotters.QqPlotter(self.plot_config, self.data_config)
         p.init()
@@ -258,7 +260,7 @@ class TestPlotters(unittest.TestCase):
 
     @prefork
     def test_create_ellipsis(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         # Ellipsis plots only work with >=2 data series
         p = plotters.EllipsisPlotter(self.plot_config, self.data_config)
         self.assertRaises(RuntimeError, p.init)
@@ -270,7 +272,7 @@ class TestPlotters(unittest.TestCase):
 
     @prefork
     def test_create_subplot_combine(self):
-        plotters.init_matplotlib('-', True, True)
+        plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.SubplotCombinePlotter)
 
 from pprint import pprint
