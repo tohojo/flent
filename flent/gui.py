@@ -873,14 +873,6 @@ class OpenFilesModel(QAbstractTableModel):
         self.open_files.sort(key, (order == Qt.DescendingOrder))
         self.update()
 
-    def setData(self, idx, value, role):
-        if idx.column() == 0 and role == QtCore.Qt.CheckStateRole:
-            if value == Qt.Checked:
-                return self.activate(idx.row())
-            else:
-                return self.deactivate(idx.row())
-        return False
-
 class OpenFilesView(QTableView):
 
     def __init__(self, parent):
