@@ -76,7 +76,7 @@ STYLES     = []
 def init_matplotlib(output, use_markers, load_rc):
     if not HAS_MATPLOTLIB:
         raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
-    global pyplot
+    global pyplot, COLOURS
     if output != "-":
         if output.endswith('.svg') or output.endswith('.svgz'):
             matplotlib.use('svg')
