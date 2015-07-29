@@ -42,8 +42,9 @@ except ImportError:
 
 try:
     import numpy
+    HAS_NUMPY=True
 except ImportError:
-    raise RuntimeError("Combining datasets requires numpy.")
+    HAS_NUMPY=False
 
 def get_combiner(combiner_type):
     cname = classname(combiner_type, "Combiner")
@@ -316,6 +317,7 @@ def get_reducer(reducer_type, cutoff):
 
 class Reducer(object):
     filter_none = True
+    numpy_req = False
 
     def __init__(self, arg, cutoff):
         self.arg = arg
@@ -325,6 +327,8 @@ class Reducer(object):
         return self.reduce(resultset,key, data)
 
     def reduce(self, resultset, key, data=None):
+        if self.numpy_req and not HAS_NUMPY:
+            raise RuntimeError("%s requires numpy." % self.__class__)
         if data is None:
             data = resultset[key]
         if self.cutoff:
@@ -341,18 +345,22 @@ class Reducer(object):
 
 
 class MeanReducer(Reducer):
+    numpy_req = True
     def _reduce(self, data):
         return numpy.mean(data)
 
 class MedianReducer(Reducer):
+    numpy_req = True
     def _reduce(self, data):
         return numpy.median(data)
 
 class MinReducer(Reducer):
+    numpy_req = True
     def _reduce(self, data):
         return numpy.mean(data)
 
 class MaxReducer(Reducer):
+    numpy_req = True
     def _reduce(self, data):
         return numpy.mean(data)
 
@@ -361,12 +369,14 @@ class SpanReducer(Reducer):
         return max(data)-min(data)
 
 class MeanSpanReducer(Reducer):
+    numpy_req = True
     def _reduce(self, data):
         min_val = min(data)
         d = [i-min_val for i in data]
         return numpy.mean(d)
 
 class MeanZeroReducer(Reducer):
+    numpy_req = True
     filter_none = False
     def _reduce(self, data):
         d = [p if p is not None else 0 for p in data]
