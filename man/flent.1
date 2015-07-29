@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "May 30, 2015" "0.11" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "July 29, 2015" "0.12" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -96,7 +96,7 @@ File to write processed output to (default standard out).
 .INDENT 0.0
 .TP
 .B \-D DATA_DIR, \-\-data\-dir=DATA_DIR
-Directory to store data files in. Defaults to the system tmpdir.
+Directory to store data files in. Defaults to the current directory.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -204,6 +204,23 @@ Dry batch run. Prints what would be done, but doesn’t actually run any tests.
 .TP
 .B \-\-batch\-repetitions=REPETITIONS
 Shorthand for \fI\%\-\-batch\-override\fP \fB\(aqrepetitions=REPETITIONS’\fP\&.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-batch\-resume=DIR
+Try to resume a previously interrupted batch run. The argument is the
+top\-level output directory from the previous run.
+.sp
+This will attempt to find a data file in the resume directory and load the
+BATCH_TIME from the previous run from that and continue. The assumption is
+that the output directory and filenames are generated from the batch time, so
+that they will match with the previous run when the same time is used. Then,
+tests for which data files already exist will be skipped on this run. If the
+rest of the batch invocation is different from the one being resumed, results
+may not be what you want.
+.sp
+There\(aqs a check to ensure that the generated output path is a subdirectory of
+the resume directory, and the whole run will be aborted if it isn\(aqt.
 .UNINDENT
 .SS Test configuration options
 .sp
