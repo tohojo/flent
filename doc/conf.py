@@ -57,7 +57,7 @@ author = 'Toke Høiland-Jørgensen'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-version = 'v0.12.3-git'
+version = '0.12.3-git'
 #
 # The short X.Y version.
 # The full version, including alpha/beta/rc tags.
