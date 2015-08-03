@@ -1071,7 +1071,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if isinstance(results, ResultSet):
             self.results = results
         else:
-            self.results = ResultSet.load_file(results)
+            self.results = ResultSet.load_file(unicode(results))
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
         self.settings.compute_missing_results(self.results)
