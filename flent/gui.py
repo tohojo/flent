@@ -57,7 +57,7 @@ try:
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
-from flent.build_info import DATA_DIR
+from flent.build_info import DATA_DIR,VERSION
 from flent.resultset import ResultSet
 from flent.formatters import PlotFormatter
 from flent import util
@@ -149,6 +149,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.settings = settings
         self.last_dir = os.getcwd()
         self.defer_load = self.settings.INPUT
+
+        self.setWindowTitle("Flent GUI v%s"%VERSION)
 
         self.actionNewTab.activated.connect(self.add_tab)
         self.actionOpen.activated.connect(self.on_open)
