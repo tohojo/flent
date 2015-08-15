@@ -113,6 +113,8 @@ class NullFormatter(Formatter):
         pass
     def format(self, results):
         pass
+    def __del__(self):
+        pass
 
 DefaultFormatter = Formatter
 
