@@ -123,7 +123,7 @@ class FileMonitorRunner(threading.Thread):
                         val = val.strip()
                     self.raw_values.append({'t': current_time, 'val': val})
                 except IOError as e:
-                    self.err += "Error opening file {}: {}\n".format(self.filename, e)
+                    self.err += "Error opening file {0}: {1}\n".format(self.filename, e)
                 finally:
                     self.kill_event.wait(self.interval)
                     current_time = time.time()
