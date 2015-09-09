@@ -29,11 +29,7 @@ except ImportError:
     import pickle
 
 from itertools import chain
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from .ordereddict import OrderedDict
+from collections import OrderedDict
 
 
 # Python 2/3 compatibility

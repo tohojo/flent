@@ -28,17 +28,12 @@ from .resultset import ResultSet
 
 from itertools import cycle
 from bisect import bisect_left, bisect_right
+from collections import OrderedDict
 
 try:
     from itertools import izip_longest as zip_longest
 except ImportError:
     from itertools import zip_longest
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from netperf_wrapper.ordereddict import OrderedDict
-
 
 try:
     import numpy

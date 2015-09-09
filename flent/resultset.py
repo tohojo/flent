@@ -26,16 +26,12 @@ from datetime import datetime
 from calendar import timegm
 from itertools import repeat
 from copy import deepcopy
+from collections import OrderedDict
 
 try:
     from dateutil.parser import parse as parse_date
 except ImportError:
     from .util import parse_date
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from .ordereddict import OrderedDict
 
 from .util import gzip_open, bz2_open
 

@@ -25,16 +25,13 @@ import sys, os, optparse, socket, subprocess, time, collections, tempfile
 
 from datetime import datetime
 from copy import copy, deepcopy
+from collections import OrderedDict
 
 try:
     from configparser import RawConfigParser
 except ImportError:
     from ConfigParser import RawConfigParser
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from flent.ordereddict import OrderedDict
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent import util, resultset, runners

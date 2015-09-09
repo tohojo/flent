@@ -25,15 +25,12 @@ import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceba
 
 from datetime import datetime
 from fnmatch import fnmatch
+from collections import OrderedDict
 
 try:
     from configparser import RawConfigParser
 except ImportError:
     from ConfigParser import RawConfigParser
-try:
-    from collections import OrderedDict
-except ImportError:
-    from flent.ordereddict import OrderedDict
 
 from flent import aggregators, formatters, resultset
 from flent.metadata import record_extended_metadata, record_postrun_metadata

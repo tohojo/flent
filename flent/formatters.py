@@ -29,14 +29,11 @@ from .build_info import DATA_DIR, VERSION
 from . import plotters
 from functools import reduce
 from itertools import product,cycle,islice
+from collections import OrderedDict
 try:
     from itertools import izip_longest as zip_longest
 except ImportError:
     from itertools import zip_longest
-try:
-    from collections import OrderedDict
-except ImportError:
-    from flent.ordereddict import OrderedDict
 
 def new(settings):
     formatter_name = classname(settings.FORMAT, 'Formatter')

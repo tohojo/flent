@@ -28,11 +28,7 @@ from .util import cum_prob, frange, classname, long_substr
 from .build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from flent.ordereddict import OrderedDict
+from collections import OrderedDict
 
 try:
     import matplotlib, numpy

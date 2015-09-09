@@ -30,8 +30,8 @@ from glob import glob
 
 version_string = VERSION
 
-if sys.version_info[:2] < (2,6):
-    sys.stderr.write("Sorry, flent requires v2.6 or later of Python\n")
+if sys.version_info[:3] < (2,7,3):
+    sys.stderr.write("Sorry, Flent requires v2.7.3 or later of Python.\n")
     sys.exit(1)
 
 def rewrite_build_info(module_file):
