@@ -1,6 +1,6 @@
 Source: flent
 Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
-Section: python
+Section: contrib/python
 Priority: optional
 Build-Depends: python (>= 2.6), debhelper (>= 7.4.3), python-setuptools, python-mock
 Standards-Version: 3.9.3
