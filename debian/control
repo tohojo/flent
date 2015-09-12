@@ -2,16 +2,16 @@ Source: flent
 Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
 Section: contrib/python
 Priority: optional
-Build-Depends: python (>= 2.6), debhelper (>= 7.4.3), python-setuptools, python-mock
+Build-Depends: python (>= 2.7.3), debhelper (>= 7.4.3), python-setuptools, python-mock
 Standards-Version: 3.9.3
 Homepage: https://flent.org
 Vcs-Git: git://github.com/tohojo/flent.git
 Vcs-Browser: https://github.com/tohojo/flent
-X-Python-Version: >=2.6
+X-Python-Version: >=2.7
 
 Package: flent
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python (>= 2.6), netperf (>= 2.6.0), python-pkg-resources
+Depends: ${python:Depends}, ${misc:Depends}, python (>= 2.7.3), netperf (>= 2.6.0), python-pkg-resources
 Replaces: netperf-wrapper
 Conflicts: netperf-wrapper
 Suggests: python-matplotlib, python-qt4
