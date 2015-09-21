@@ -92,7 +92,7 @@ class TestEnvironment(object):
         # Main code moved to the PingRunner class to be able to take advantage
         # of the parser code there.
         return runners.PingRunner.find_binary(ip_version, interval, length,
-                                              host, marking=None, local_bind=None)
+                                              host, marking=marking, local_bind=local_bind)
 
     @finder
     def find_netperf(self, test, length, host, **args):
