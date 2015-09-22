@@ -30,8 +30,8 @@ flent (${VERSION}-1) precise; urgency=low
 
 EOF
 
-    cat packaging/debian/changelog >> $tmpfile  || die error
-    mv $tmpfile packaging/debian/changelog || die error
+    cat debian/changelog >> $tmpfile  || die error
+    mv $tmpfile debian/changelog || die error
 
     echo ==== Creating and signing release tarball... ====
     python setup.py sdist bdist_wheel  || die error
@@ -45,7 +45,7 @@ EOF
 fi
 
 echo ==== Staging changed files ====
-git add flent/build_info.py man/flent.1 doc/conf.py packaging/debian/changelog packaging/archlinux/PKGBUILD || die error
+git add flent/build_info.py man/flent.1 doc/conf.py debian/changelog packaging/archlinux/PKGBUILD || die error
 
 echo ==== Done. Review changes and commit \(and tag\). ====
 [[ ! "$VERSION" =~ -git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
