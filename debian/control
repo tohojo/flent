@@ -3,7 +3,7 @@ Maintainer: Toke Høiland-Jørgensen <toke@toke.dk>
 Section: contrib/python
 Priority: optional
 Build-Depends: python (>= 2.7.3), debhelper (>= 7.4.3), python-setuptools, python-mock
-Standards-Version: 3.9.3
+Standards-Version: 3.9.6
 Homepage: https://flent.org
 Vcs-Git: git://github.com/tohojo/flent.git
 Vcs-Browser: https://github.com/tohojo/flent
