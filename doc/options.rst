@@ -322,6 +322,11 @@ sense combined with :option:`-f` *plot*.
    Don’t load included matplotlibrc values. Use this if autodetection of custom
    matplotlibrc fails and flent is inadvertently overriding rc values.
 
+.. option:: --no-hover-highlight
+
+   Don't highlight data series on hover in interactive plot views. Use this if
+   redrawing is too slow, or the highlighting is undesired for other reasons.
+
 Test tool-related options
 -------------------------
 .. option:: --control-host=HOST

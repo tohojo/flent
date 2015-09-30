@@ -243,6 +243,7 @@ class PlotFormatter(Formatter):
         self.plotters = plotters
 
         self.figure = None
+        self.plotter = None
         self.init_plots()
 
 
@@ -254,6 +255,7 @@ class PlotFormatter(Formatter):
         else:
             self.figure.clear()
             self.plotter.disable_cleanup = True
+            self.plotter.disconnect_callbacks()
             self.plotter = self.plotters.new(self.settings, figure=self.figure)
             self.plotter.init()
 
@@ -271,6 +273,7 @@ class PlotFormatter(Formatter):
 
         if self.settings.SUBPLOT_COMBINE:
             self.plotter.disable_cleanup = True
+            self.plotter.disconnect_callbacks()
             self.figure.clear()
             self.plotter = self.plotters.new(self.settings,
                                              plotter=self.plotters.get_plotter("subplot_combine"),

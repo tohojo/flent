@@ -70,6 +70,7 @@ DEFAULT_SETTINGS = {
     'ABSOLUTE_TIME': False,
     'SUBPLOT_COMBINE': False,
     'COMBINE_PRINT_N': True,
+    'HOVER_HIGHLIGHT': None,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
     'USE_MARKERS': True,
@@ -390,6 +391,9 @@ plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DP
 plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATPLOTLIBRC",
                   help="Don't load included matplotlibrc values. Use this if autodetection of custom "
                   "matplotlibrc fails and flent is inadvertently overriding rc values.")
+plot_group.add_option("--no-hover-highlight", action="store_false", dest="HOVER_HIGHLIGHT",
+                  help="Don't highlight data series on hover in interactive plot views. Use this if "
+                      "redrawing is too slow, or the highlighting is undesired for other reasons.")
 parser.add_option_group(plot_group)
 
 combine_group = optparse.OptionGroup(parser, "Data combination configuration",

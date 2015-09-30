@@ -27,7 +27,7 @@ from flent import combiners
 from .util import cum_prob, frange, classname, long_substr
 from .build_info import DATA_DIR, VERSION
 from functools import reduce
-from itertools import product,cycle,islice
+from itertools import product,cycle,islice,chain
 from collections import OrderedDict
 
 try:
@@ -166,6 +166,7 @@ def new(settings, plotter=None, **kwargs):
             annotate=settings.ANNOTATE,
             description=settings.DESCRIPTION,
             combine_print_n=settings.COMBINE_PRINT_N,
+            hover_highlight=settings.HOVER_HIGHLIGHT,
 
             **kwargs)
     except Exception as e:
@@ -175,6 +176,7 @@ class Plotter(object):
     open_mode = "wb"
     inverted_units = ('ms')
     can_subplot_combine = False
+    can_highlight = False
 
 
     def __init__(self,
@@ -205,6 +207,7 @@ class Plotter(object):
                  annotate=True,
                  description='',
                  combine_print_n=False,
+                 hover_highlight=None,
 
                  figure=None):
 
@@ -217,7 +220,13 @@ class Plotter(object):
         self.styles = STYLES
         self.legends = []
         self.artists = []
+        self.data_artists = []
         self.metadata = None
+        self.callbacks = []
+
+        self.interactive_callback = None
+        if hover_highlight is not None:
+            self.can_highlight = hover_highlight
 
         self.config = plot_config
         self.data_config = data_config
@@ -276,6 +285,8 @@ class Plotter(object):
         else:
             self._plot(results[0], config=config, axis=axis)
 
+        self.connect_interactive()
+
     def combine(self, results, config=None, axis=None, always_colour=False):
         styles = cycle(self.styles)
         colours = cycle(self.colours)
@@ -307,7 +318,7 @@ class Plotter(object):
         # Otherwise, the filename is passed to matplotlib, which selects an
         # appropriate output format based on the file name.
         if self.output == "-":
-            self.figure.canvas.mpl_connect('resize_event', self.size_legends)
+            self.callbacks.append(self.figure.canvas.mpl_connect('resize_event', self.size_legends))
             self.size_legends()
             if not self.gui:
                 self.plt.show()
@@ -321,6 +332,35 @@ class Plotter(object):
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
+
+    def connect_interactive(self):
+        if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
+            return
+        self.hovered = set()
+        self.interactive_callback = self.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
+        self.callbacks.append(self.interactive_callback)
+
+    def disconnect_callbacks(self):
+        for c in self.callbacks:
+            self.figure.canvas.mpl_disconnect(c)
+        self.callbacks = []
+
+    def on_move(self, event):
+        for a in self.data_artists:
+            contains, data = a.contains(event)
+            if contains and not a in self.hovered:
+                self.hovered.add(a)
+                width = a.get_linewidth()*2
+            elif not contains and a in self.hovered:
+                self.hovered.remove(a)
+                width = a.get_linewidth()/2
+            else:
+                continue
+
+            ax = a.get_axes()
+            a.set_linewidth(width)
+            ax.redraw_in_frame()
+            self.figure.canvas.blit(ax.bbox)
 
 
     def save_pdf(self, filename, data_filename, save_args):
@@ -555,6 +595,7 @@ class CombineManyPlotter(object):
 
 class TimeseriesPlotter(Plotter):
     can_subplot_combine = True
+    can_highlight = True
 
     def init(self, config=None, axis=None):
         Plotter.init(self, config, axis)
@@ -653,9 +694,9 @@ class TimeseriesPlotter(Plotter):
             data[a] += y_values
             for r in self.scale_data+extra_scale_data:
                 data[a] += r.series(s['data'], smooth)
-            config['axes'][a].plot(results.x_values,
+            self.data_artists.extend(config['axes'][a].plot(results.x_values,
                    y_values,
-                   **kwargs)
+                   **kwargs))
 
         if 'scaling' in config:
             btm,top = config['scaling']
@@ -880,6 +921,7 @@ class BarCombinePlotter(CombineManyPlotter, BarPlotter):
 
 class CdfPlotter(Plotter):
     can_subplot_combine = True
+    can_highlight = True
 
     def init(self, config=None, axis=None):
         Plotter.init(self, config, axis)
@@ -975,9 +1017,9 @@ class CdfPlotter(Plotter):
                 idx_0 +=1
 
             x_vals, y_vals = self._filter_dup_vals(x_values[idx_0:idx_1], y_values[idx_0:idx_1])
-            axis.plot(x_vals,
-                      y_vals,
-                      **kwargs)
+            self.data_artists.extend(axis.plot(x_vals,
+                                               y_vals,
+                                               **kwargs))
 
         if self.zero_y:
             axis.set_xlim(left=0)
@@ -1228,6 +1270,10 @@ class MetaPlotter(Plotter):
         for s in self.subplots:
             s.plot(results)
             self.legends.extend(s.do_legend())
+
+    def disconnect_callbacks(self):
+        for s in self.subplots:
+            s.disconnect_callbacks()
 
 class SubplotCombinePlotter(MetaPlotter):
     def init(self, config=None):
