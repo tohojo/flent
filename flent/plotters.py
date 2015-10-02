@@ -179,9 +179,7 @@ def lines_equal(a,b):
     # this condition when comparing markers.
     return a.get_label() == b.get_label() and \
         a.get_linestyle() == b.get_linestyle() and \
-        a.get_color() == b.get_color() and \
-        (all([x.get_marker() in ('', None, 'None') for x in (a,b)]) or \
-         a.get_marker() == b.get_marker())
+        a.get_color() == b.get_color()
 
 class Plotter(object):
     open_mode = "wb"
