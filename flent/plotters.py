@@ -172,6 +172,17 @@ def new(settings, plotter=None, **kwargs):
     except Exception as e:
         raise RuntimeError("Error loading plotter: %s." % e)
 
+def lines_equal(a,b):
+    """Compare two matplotlib line segments by line style, marker, colour and label.
+    Used to match legend items to data items on the axes."""
+    # A null marker can be the string 'None' for some reason, to check for
+    # this condition when comparing markers.
+    return a.get_label() == b.get_label() and \
+        a.get_linestyle() == b.get_linestyle() and \
+        a.get_color() == b.get_color() and \
+        (all([x.get_marker() in ('', None, 'None') for x in (a,b)]) or \
+         a.get_marker() == b.get_marker())
+
 class Plotter(object):
     open_mode = "wb"
     inverted_units = ('ms')
@@ -336,7 +347,9 @@ class Plotter(object):
     def connect_interactive(self):
         if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
             return
-        self.hovered = set()
+        self.highlight_widths = {}
+        for a in self.data_artists:
+            self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth()*2)
         self.interactive_callback = self.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
         self.callbacks.append(self.interactive_callback)
 
@@ -346,21 +359,34 @@ class Plotter(object):
         self.callbacks = []
 
     def on_move(self, event):
-        for a in self.data_artists:
-            contains, data = a.contains(event)
-            if contains and not a in self.hovered:
-                self.hovered.add(a)
-                width = a.get_linewidth()*2
-            elif not contains and a in self.hovered:
-                self.hovered.remove(a)
-                width = a.get_linewidth()/2
-            else:
-                continue
+        updated = set()
+        hovered = set()
+        for leg in self.legends:
+            for l,t in zip(leg.get_lines(), leg.get_texts()):
+                if l.contains(event)[0] or t.contains(event)[0]:
+                    for a in self.data_artists:
+                        if lines_equal(a,l):
+                            hovered.add(a)
 
-            ax = a.get_axes()
-            a.set_linewidth(width)
+        for a in self.data_artists:
+            if a.contains(event)[0] or a in hovered:
+                if a.get_linewidth() != self.highlight_widths[a][1]:
+                    a.set_linewidth(self.highlight_widths[a][1])
+                    updated.add(a.get_axes())
+            elif a.get_linewidth() != self.highlight_widths[a][0]:
+                a.set_linewidth(self.highlight_widths[a][0])
+                updated.add(a.get_axes())
+        if updated:
+            self.update_axes()
+
+    def update_axes(self):
+        bbox = None
+        for ax in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
             ax.redraw_in_frame()
-            self.figure.canvas.blit(ax.bbox)
+            if bbox is not None and ax.bbox != bbox:
+                self.figure.canvas.blit(bbox)
+            bbox = ax.bbox
+        self.figure.canvas.blit(bbox)
 
 
     def save_pdf(self, filename, data_filename, save_args):
