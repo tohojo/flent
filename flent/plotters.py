@@ -348,6 +348,7 @@ class Plotter(object):
         if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
             return
         self.highlight_widths = {}
+        self.hovered = set()
         for a in self.data_artists:
             self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth()*2)
         self.interactive_callback = self.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
@@ -359,7 +360,6 @@ class Plotter(object):
         self.callbacks = []
 
     def on_move(self, event):
-        updated = set()
         hovered = set()
         for leg in self.legends:
             for l,t in zip(leg.get_lines(), leg.get_texts()):
@@ -367,19 +367,30 @@ class Plotter(object):
                     for a in self.data_artists:
                         if lines_equal(a,l):
                             hovered.add(a)
+        if not hovered:
+            for a in self.data_artists:
+                if a.contains(event)[0]:
+                    hovered.add(a)
 
-        for a in self.data_artists:
-            if a.contains(event)[0] or a in hovered:
-                if a.get_linewidth() != self.highlight_widths[a][1]:
-                    a.set_linewidth(self.highlight_widths[a][1])
-                    updated.add(a.get_axes())
-            elif a.get_linewidth() != self.highlight_widths[a][0]:
+        self.update_axes(hovered)
+
+
+    def update_axes(self, hovered):
+        updated = False
+        for a in self.hovered:
+            if a.get_linewidth() != self.highlight_widths[a][0]:
                 a.set_linewidth(self.highlight_widths[a][0])
-                updated.add(a.get_axes())
-        if updated:
-            self.update_axes()
+                updated = True
 
-    def update_axes(self):
+        for a in hovered:
+            if a.get_linewidth() != self.highlight_widths[a][1]:
+                a.set_linewidth(self.highlight_widths[a][1])
+                updated = True
+        self.hovered = hovered
+
+        if not updated:
+            return
+
         bbox = None
         for ax in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
             ax.redraw_in_frame()
