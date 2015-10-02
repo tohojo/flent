@@ -315,10 +315,11 @@ class Plotter(object):
 
         artists = self.artists
         all_legends = []
-        for c in self.configs:
-            legends = self._do_legend(c)
-            if legends:
-                all_legends += legends
+        if not self.legends:
+            for c in self.configs:
+                legends = self._do_legend(c)
+                if legends:
+                    all_legends += legends
 
         artists += all_legends + self._annotate_plot(skip_title)
         self.legends.extend(all_legends)
@@ -1306,7 +1307,8 @@ class MetaPlotter(Plotter):
             self.metadata = results[0].meta()
         for s in self.subplots:
             s.plot(results)
-            self.legends.extend(s.do_legend())
+            s.legends.extend(s.do_legend())
+            self.legends.extend(s.legends)
 
     def disconnect_callbacks(self):
         for s in self.subplots:
