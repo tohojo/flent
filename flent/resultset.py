@@ -325,6 +325,9 @@ class ResultSet(object):
             obj = cls.unserialise_compat(version, obj, absolute)
         metadata = dict(obj['metadata'])
 
+        if not 'TOTAL_LENGTH' in metadata or metadata['TOTAL_LENGTH'] is None:
+            metadata['TOTAL_LENGTH'] = max(obj['x_values'])
+
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
                 metadata[t] = parse_date(metadata[t])
