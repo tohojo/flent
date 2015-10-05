@@ -84,6 +84,7 @@ class ResultSet(object):
         self._raw_values = {}
         self.metadata = kwargs
         self.SUFFIX = SUFFIX
+        self.t0 = None
         if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.utcnow()
         if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
@@ -192,8 +193,25 @@ class ResultSet(object):
             sys.stderr.write("Warning: Missing data points for series '%s'\n" % name)
             return [None]*len(self.x_values)
         if smooth:
-            return self.smoothed(name, smooth)
+            return self.smoothed(self._results[name], smooth)
         return self._results[name]
+
+    def _calculate_t0(self):
+        self.t0 = timegm(self.metadata['T0'].timetuple()) + self.metadata['T0'].microsecond / 1000000.0
+
+    def raw_series(self, name, smooth=None, absolute=False):
+        if not name in self.raw_values:
+            sys.stderr.write("Warning: Missing data points for series '%s'\n" % name)
+            return ([],[])
+        if self.t0 is None:
+            self._calculate_t0()
+        x_values, y_values = [], []
+        for i in self.raw_values[name]:
+            x_values.append(i['t'] if absolute else i['t']-self.t0)
+            y_values.append(i['val'])
+        if smooth:
+            y_values = self.smoothed(y_values, smooth)
+        return x_values,y_values
 
     def __getitem__(self, name):
         return self.series(name)
@@ -201,8 +219,7 @@ class ResultSet(object):
     def __contains__(self, name):
         return name in self._results
 
-    def smoothed(self, name, amount):
-        res = self._results[name]
+    def smoothed(self, res, amount):
         smooth_res = []
         for i in range(len(res)):
             s = int(max(0,i-amount/2))
