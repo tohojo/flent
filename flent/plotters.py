@@ -24,7 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, inspect, io
 
 from flent import combiners
-from .util import cum_prob, frange, classname, long_substr
+from .util import cum_prob, frange, classname, long_substr, format_date
 from .build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice,chain
@@ -482,7 +482,7 @@ class Plotter(object):
         if self.annotate:
             annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
                 self.metadata['LOCAL_HOST'], self.metadata['HOST'],
-                self.metadata['TIME'],
+                format_date(self.metadata['TIME']),
                 self.metadata['LENGTH'], self.metadata['STEP_SIZE'])
             self.annotation_obj = self.figure.text(0.5, 0.0, annotation_string,
                              horizontalalignment='center',

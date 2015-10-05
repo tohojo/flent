@@ -1051,10 +1051,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
         if self.settings.TITLE:
             self.title = "%s - %s" % (self.settings.NAME, self.settings.TITLE)
-            self.long_title = "%s - %s" % (self.title, self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
+            self.long_title = "%s - %s" % (self.title, util.format_date(self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
         else:
             self.title = "%s - %s" % (self.settings.NAME,
-                                      self.settings.TIME.strftime("%Y-%m-%d %H:%M:%S"))
+                                      util.format_date(self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
             self.long_title = self.title
 
         if self.settings.GUI_NO_DEFER:

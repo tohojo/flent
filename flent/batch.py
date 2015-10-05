@@ -34,7 +34,7 @@ except ImportError:
 
 from flent import aggregators, formatters, resultset
 from flent.metadata import record_extended_metadata, record_postrun_metadata
-from flent.util import clean_path, path_components
+from flent.util import clean_path, path_components, format_date
 from flent.settings import CONFIG_TYPES
 
 # Python2/3 compatibility
@@ -309,7 +309,7 @@ class BatchRunner(object):
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batchname
             settings.BATCH_TIME = batch_time
-            settings.TIME = datetime.now()
+            settings.TIME = datetime.utcnow()
 
             expand_vars = {'repetition': "%02d" % rep,
                            'batch_time': settings.BATCH_TIME.strftime("%Y-%m-%dT%H%M%S")}
@@ -458,7 +458,7 @@ class BatchRunner(object):
             return self.load_input(self.settings)
         elif self.settings.BATCH_NAMES:
             start_time = self.settings.TIME
-            sys.stderr.write("Started batch sequence at %s.\n" % start_time.strftime("%Y-%m-%d %H:%M:%S"))
+            sys.stderr.write("Started batch sequence at %s.\n" % format_date(start_time, fmt="%Y-%m-%d %H:%M:%S"))
             if len(self.settings.BATCH_NAMES) == 1 and self.settings.BATCH_NAMES[0] == 'ALL':
                 sys.stderr.write("Running all batches.\n")
                 batches = self.batches.keys()
@@ -474,10 +474,10 @@ class BatchRunner(object):
                     if self.settings.DEBUG_ERROR:
                         raise
                     raise RuntimeError("Error while running batch '%s': %r." % (b, e))
-            end_time = datetime.now()
-            sys.stderr.write("Ended batch sequence at %s. %s %d tests in %s.\n" % (end_time.strftime("%Y-%m-%d %H:%M:%S"),
+            end_time = datetime.utcnow()
+            sys.stderr.write("Ended batch sequence at %s. %s %d tests in %s.\n" % (format_date(end_time, fmt="%Y-%m-%d %H:%M:%S"),
                                                                                    "Ran" if not self.settings.BATCH_DRY else 'Would have run',
-                                                                                    self.tests_run, (end_time - start_time)))
+                                                                                   self.tests_run, (end_time - start_time)))
             return True
         else:
             return self.run_test(self.settings, self.settings.DATA_DIR, True)

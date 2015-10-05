@@ -28,12 +28,8 @@ from itertools import repeat
 from copy import deepcopy
 from collections import OrderedDict
 
-try:
-    from dateutil.parser import parse as parse_date
-except ImportError:
-    from .util import parse_date
 
-from .util import gzip_open, bz2_open
+from .util import gzip_open, bz2_open, parse_date, format_date
 
 # Controls pretty-printing of json dumps
 JSON_INDENT=2
@@ -89,7 +85,7 @@ class ResultSet(object):
         self.metadata = kwargs
         self.SUFFIX = SUFFIX
         if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
-            self.metadata['TIME'] = datetime.now()
+            self.metadata['TIME'] = datetime.utcnow()
         if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
             raise RuntimeError("Missing name for resultset")
         if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
@@ -124,7 +120,7 @@ class ResultSet(object):
         return self.metadata
 
     def label(self):
-        return self.metadata["TITLE"] or self.metadata["TIME"].strftime("%Y-%m-%d %H:%M:%S")
+        return self.metadata["TITLE"] or format_date(self.metadata["TIME"])
 
     def get_x_values(self):
         return self._x_values
@@ -253,7 +249,7 @@ class ResultSet(object):
         metadata = self.metadata.copy()
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
-                metadata[t] = metadata[t].isoformat()
+                metadata[t] = format_date(metadata[t], utc=True)
         return metadata
 
     def serialise(self):
@@ -291,11 +287,11 @@ class ResultSet(object):
             return self._filename
         if 'TITLE' in self.metadata and self.metadata['TITLE']:
             return "%s-%s.%s%s" % (self.metadata['NAME'],
-                                         self.metadata['TIME'].isoformat().replace(":", ""),
+                                         format_date(self.metadata['TIME']).replace(":", ""),
                                          re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:50],
                                          self.SUFFIX)
         else:
-            return "%s-%s%s" % (self.metadata['NAME'], self.metadata['TIME'].isoformat().replace(":", ""), self.SUFFIX)
+            return "%s-%s%s" % (self.metadata['NAME'], format_date(self.metadata['TIME']).replace(":", ""), self.SUFFIX)
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())

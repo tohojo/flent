@@ -25,6 +25,7 @@ import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
   signal, hmac, hashlib, calendar, socket
 
 from datetime import datetime
+from calendar import timegm
 from threading import Event
 
 from flent import util
@@ -392,10 +393,6 @@ class DitgRunner(ProcessRunner):
         except xmlrpc.Fault as e:
             self.err += "Error while getting results: %s.\n" % e
 
-        now = time.time()
-        tzoffset = (datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)).seconds
-        offset = utc_offset + tzoffset
-
         # D-ITG *should* output about 50 bytes of data per data point. However,
         # sometimes it runs amok and outputs megabytes of erroneous data. So, if
         # the length of the data is more than ten times the expected value,
@@ -411,7 +408,7 @@ class DitgRunner(ProcessRunner):
             if not line.strip():
                 continue
             parts = [float(i) for i in line.split()]
-            timestamp = parts.pop(0) + offset
+            timestamp = parts.pop(0) + utc_offset
             for i,n in enumerate(('bitrate', 'delay', 'jitter', 'loss')):
                 if not n in results:
                     results[n] = []
@@ -422,9 +419,6 @@ class DitgRunner(ProcessRunner):
     def parse_raw(self, data):
         raw_values = []
 
-        now = time.time()
-        tzoffset = (datetime.fromtimestamp(now) - datetime.utcfromtimestamp(now)).seconds
-
         for line in data.splitlines():
             parts = re.split(r">?\s*", line)
             vals = dict(zip(parts[::2], parts[1::2]))
@@ -432,14 +426,16 @@ class DitgRunner(ProcessRunner):
             for v in ('txTime', 'rxTime'):
                 t,microsec = vals[v].split(".")
                 h,m,s = t.split(":")
+                # FIXME: This is definitely going to break if a test is run
+                # around midnight
                 dt = datetime.utcnow().replace(hour=int(h),
                                                minute=int(m),
                                                second=int(s),
                                                microsecond=int(microsec))
-                times[v] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
+                times[v] = float(timegm(dt.timetuple())) + dt.microsecond / 10**6
 
             raw_values.append({
-                't': times['rxTime'] + tzoffset,
+                't': times['rxTime'],
                 'val': 1000.0 * (times['rxTime'] - times['txTime']),
                 'seq': int(vals['Seq']),
                 'size': int(vals['Size'])

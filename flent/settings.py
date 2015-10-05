@@ -63,7 +63,7 @@ DEFAULT_SETTINGS = {
     'SOCKET_TIMEOUT': 2,
     'TEST_PARAMETERS': {},
     'SWAP_UPDOWN': False,
-    'TIME': datetime.now(),
+    'TIME': datetime.utcnow(),
     'SCALE_DATA': [],
     'SCALE_MODE': False,
     'CONCATENATE': False,
