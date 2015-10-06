@@ -453,6 +453,14 @@ class BatchRunner(object):
         formatter = formatters.new(settings)
         formatter.format(results)
 
+    def fork_and_run(self):
+        pid = os.fork()
+        if pid:
+            return pid
+        else:
+            self.run()
+            os._exit(0)
+
     def run(self):
         if self.settings.INPUT:
             return self.load_input(self.settings)

@@ -678,14 +678,21 @@ def load(argv):
 
     return settings
 
-def list_tests():
-    tests = sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')])
-    sys.stderr.write('Available tests:\n')
-    max_len = max([len(t) for t in tests])
-    for t in tests:
+def get_tests():
+    tests = []
+    settings = Settings(DEFAULT_SETTINGS)
+    for t in sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')]):
         settings.update(DEFAULT_SETTINGS)
         settings.load_test(t, informational=True)
-        desc = settings.DESCRIPTION.replace("\n", "\n"+" "*(max_len+6))
+        tests.append((t,settings.DESCRIPTION))
+    return tests
+
+def list_tests():
+    tests = get_tests()
+    sys.stderr.write('Available tests:\n')
+    max_len = max([len(t[0]) for t in tests])
+    for t,desc in tests:
+        desc = desc.replace("\n", "\n"+" "*(max_len+6))
         sys.stderr.write(("  %-"+str(max_len)+"s :  %s\n") % (t, desc))
     sys.exit(0)
 

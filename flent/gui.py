@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, signal, traceback, base64
+import sys, os, signal, traceback, base64, time
 
 try:
     import cPickle as pickle
@@ -56,7 +56,8 @@ except ImportError:
 from flent.build_info import DATA_DIR,VERSION
 from flent.resultset import ResultSet
 from flent.formatters import PlotFormatter
-from flent import util
+from flent.settings import get_tests
+from flent import util, batch, resultset
 
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "flent-socket-"
@@ -160,6 +161,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionNextTab.activated.connect(self.next_tab)
         self.actionPrevTab.activated.connect(self.prev_tab)
         self.actionRefresh.activated.connect(self.refresh_plot)
+        self.actionNewTest.activated.connect(self.run_test)
 
         self.viewArea.tabCloseRequested.connect(self.close_tab)
         self.viewArea.currentChanged.connect(self.activate_tab)
@@ -549,6 +551,94 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.shorten_tabs()
         self.metadata_column_resize()
         self.busy_end()
+
+    def run_test(self):
+        dialog = NewTestDialog(self, self.settings)
+        dialog.exec_()
+
+class NewTestDialog(get_ui_class("newtestdialog.ui")):
+    def __init__(self, parent, settings):
+        super(NewTestDialog, self).__init__(parent)
+        self.settings = settings.copy()
+
+        tests = get_tests()
+        max_len = max([len(t[0]) for t in tests])
+        for t,desc in tests:
+            desc = desc.replace("\n", " ")
+            self.testName.addItem(("  %-"+str(max_len)+"s :  %s") % (t, desc), t)
+        self.testName.setCurrentIndex(self.testName.findData(self.settings.NAME))
+        self.hostName.setText(self.settings.HOST)
+        self.outputDir.setText(os.path.realpath(self.settings.DATA_DIR or os.getcwd()))
+        self.testLength.setValue(self.settings.LENGTH)
+        self.extendedMetadata.setChecked(self.settings.EXTENDED_METADATA)
+
+        self.selectOutputDir.clicked.connect(self.select_output_dir)
+        self.runButton.clicked.connect(self.run_test)
+
+        self.monitor_timer = QTimer()
+        self.monitor_timer.setInterval(500)
+        self.monitor_timer.setSingleShot(False)
+        self.monitor_timer.timeout.connect(self.update_progress)
+
+    def select_output_dir(self):
+        directory = QFileDialog.getExistingDirectory(self, "Select output directory",
+                                                     self.outputDir.text())
+        if directory:
+            self.outputDir.setText(directory)
+
+    def run_test(self):
+        test = self.testName.itemData(self.testName.currentIndex())
+        host = self.hostName.text()
+        path = self.outputDir.text()
+        if not test or not host:
+            QMessageBox.critical(self, "Error running test",
+                                 "You must select a test to run and a hostname to connect to.")
+            return
+        if not os.path.isdir(path):
+            QMessageBox.critical(self, "Error running test",
+                                 "Output dir does not exist.")
+            return
+
+        self.settings.HOSTS = [host]
+        self.settings.NAME = test
+        self.settings.TITLE = self.testTitle.text()
+        self.settings.LENGTH = self.testLength.value()
+        self.settings.DATA_DIR = path
+        self.settings.EXTENDED_METADATA = self.extendedMetadata.isChecked()
+        self.settings.load_test(informational=True)
+        self.settings.FORMATTER = "null"
+
+        self.settings.DATA_FILENAME = None
+        res = resultset.new(self.settings)
+        self.settings.DATA_FILENAME = res.dump_file
+
+
+        self.total_time = self.settings.TOTAL_LENGTH
+        self.start_time = time.time()
+
+        self.testConfig.setEnabled(False)
+        self.runButton.setEnabled(False)
+
+        b = batch.new(self.settings)
+        self.pid = b.fork_and_run()
+        self.monitor_timer.start()
+
+    def update_progress(self):
+
+        p,s = os.waitpid(self.pid, os.WNOHANG)
+        if (p,s) == (0,0):
+            elapsed = time.time() - self.start_time
+            self.progressBar.setValue(100 * elapsed / self.total_time)
+        else:
+            self.testConfig.setEnabled(True)
+            self.runButton.setEnabled(True)
+            self.progressBar.setValue(0)
+            self.monitor_timer.stop()
+            self.parent().load_files([os.path.join(self.settings.DATA_DIR, self.settings.DATA_FILENAME)])
+
+
+
+
 
 class PlotModel(QStringListModel):
 

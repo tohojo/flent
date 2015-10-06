@@ -42,7 +42,7 @@
      <x>0</x>
      <y>0</y>
      <width>1142</width>
-     <height>21</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -54,6 +54,8 @@
     <addaction name="actionCloseTab"/>
     <addaction name="actionCloseAll"/>
     <addaction name="actionSavePlot"/>
+    <addaction name="separator"/>
+    <addaction name="actionNewTest"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -374,6 +376,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionNewTest">
+   <property name="text">
+    <string>&amp;Run new test</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
  </widget>
