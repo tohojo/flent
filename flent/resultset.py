@@ -58,7 +58,7 @@ RECORDED_SETTINGS = (
     "HTTP_GETTER_WORKERS",
     )
 
-FILEFORMAT_VERSION=2
+FILEFORMAT_VERSION=3
 SUFFIX = '.flent.gz'
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
@@ -333,7 +333,7 @@ class ResultSet(object):
             version = 1
 
         if version > FILEFORMAT_VERSION:
-            raise RuntimeError("File format is version %d, but we only understand up to %d" % (version, FILEFORMAT_VERSION))
+            raise RuntimeError("File format version %d is too new. Please upgrade your version of Flent" % version)
         if version < FILEFORMAT_VERSION:
             obj = cls.unserialise_compat(version, obj, absolute)
         metadata = dict(obj['metadata'])
