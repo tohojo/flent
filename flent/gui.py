@@ -560,6 +560,8 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
     def __init__(self, parent, settings):
         super(NewTestDialog, self).__init__(parent)
         self.settings = settings.copy()
+        self.settings.INPUT = []
+        self.settings.GUI = False
 
         tests = get_tests()
         max_len = max([len(t[0]) for t in tests])
