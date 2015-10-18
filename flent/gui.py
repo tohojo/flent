@@ -567,7 +567,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         max_len = max([len(t[0]) for t in tests])
         for t,desc in tests:
             desc = desc.replace("\n", " ")
-            self.testName.addItem(("  %-"+str(max_len)+"s :  %s") % (t, desc), t)
+            self.testName.addItem(("%-"+str(max_len)+"s :  %s") % (t, desc), t)
         self.testName.setCurrentIndex(self.testName.findData(self.settings.NAME))
         self.hostName.setText(self.settings.HOST)
         self.outputDir.setText(os.path.realpath(self.settings.DATA_DIR or os.getcwd()))
