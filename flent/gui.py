@@ -570,6 +570,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             self.testName.addItem(("%-"+str(max_len)+"s :  %s") % (t, desc), t)
         self.testName.setCurrentIndex(self.testName.findData(self.settings.NAME))
         self.hostName.setText(self.settings.HOST)
+        self.testTitle.setText(self.settings.TITLE)
         self.outputDir.setText(os.path.realpath(self.settings.DATA_DIR or os.getcwd()))
         self.testLength.setValue(self.settings.LENGTH)
         self.extendedMetadata.setChecked(self.settings.EXTENDED_METADATA)
