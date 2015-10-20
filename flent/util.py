@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import math, os, gzip, bz2, io, socket, re
+import math, os, gzip, bz2, io, socket, re, time
 from bisect import bisect_left
 from datetime import datetime
 from calendar import timegm
