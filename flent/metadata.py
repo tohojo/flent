@@ -31,7 +31,9 @@ INTERESTING_OFFLOADS = ['tcp-segmentation-offload',
                         'generic-segmentation-offload',
                         'generic-receive-offload']
 
-INTERESTING_SYSCTLS = ['net.ipv4.tcp_autocorking',
+INTERESTING_SYSCTLS = ['net.core.rmem_max',
+                       'net.core.wmem_max',
+                       'net.ipv4.tcp_autocorking',
                        'net.ipv4.tcp_early_retrans',
                        'net.ipv4.tcp_ecn',
                        'net.ipv4.tcp_dsack',
@@ -46,6 +48,10 @@ INTERESTING_SYSCTLS = ['net.ipv4.tcp_autocorking',
                        'net.ipv4.tcp_congestion_control',
                        'net.ipv4.tcp_allowed_congestion_control',
                        'net.ipv4.tcp_available_congestion_control',
+                       'net.ipv4.tcp_mem',
+                       'net.ipv4.tcp_rmem',
+                       'net.ipv4.tcp_wmem',
+                       'net.ipv4.tcp_moderate_rcvbuf',
                        'net.ipv4.tcp_no_metrics_save']
 
 class CommandRunner(object):
