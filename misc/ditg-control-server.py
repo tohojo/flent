@@ -19,8 +19,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys, os, optparse, subprocess, time, tempfile, shutil, json
-import random, string, signal, traceback, time, hmac, hashlib
+import random, string, signal, traceback, time, hmac, hashlib, calendar
 
 from datetime import datetime
 
@@ -328,11 +330,10 @@ class DITGManager(object):
                     idx_e = data.index('Size>')
                     t,microsec = data[idx_s:idx_e].split(".")
                     h,m,s = t.split(":")
-                    dt = datetime.utcnow().replace(hour=int(h),
-                                                   minute=int(m),
-                                                   second=int(s),
-                                                   microsecond=int(microsec))
-                    ret['utc_offset'] = float(time.mktime(dt.timetuple())) + dt.microsecond / 10**6
+                    now = time.gmtime()
+                    ret['utc_offset'] = calendar.timegm((now[0], now[1], now[2],
+                                                         int(h), int(m), int(s),
+                                                         now[6], now[7], now[8])) + int(microsec) / 10**6
                 except Exception as e:
                     ret['utc_offset'] = None
 
