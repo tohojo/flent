@@ -344,7 +344,11 @@ class Plotter(object):
 
 
     def connect_interactive(self):
-        if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
+        try:
+            if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
+                return
+        except AttributeError:
+            # Old versions of matplotlib doesn't have the supports_blit attribute
             return
         self.highlight_widths = {}
         self.hovered = set()
