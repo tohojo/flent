@@ -46,6 +46,9 @@ def rr_to_ms(results):
 def s_to_ms(results):
     return transform_results(results, lambda x: x*1000.0)
 
+def bits_to_mbits(results):
+    return transform_results(results, lambda x: x/1000000.0)
+
 def cumulative_to_events(results):
     """Transform cumulative counter values into the increasing events."""
     try:

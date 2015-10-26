@@ -56,6 +56,7 @@ class TestEnvironment(object):
             'include': self.include_test,
             'min_host_count': self.require_host_count,
             'find_ping': self.find_ping,
+            'find_iperf': self.find_iperf,
             'find_netperf': self.find_netperf,
             'find_itgsend': self.find_itgsend,
             'find_http_getter': self.find_http_getter,
@@ -93,6 +94,17 @@ class TestEnvironment(object):
         # of the parser code there.
         return runners.PingRunner.find_binary(ip_version, interval, length,
                                               host, marking=marking, local_bind=local_bind)
+
+    @finder
+    def find_iperf(self, host, interval, length, ip_version, udp=False, local_bind=None, no_delay=False):
+        """Find a suitable iperf."""
+        if local_bind is None:
+            local_bind = self.env['LOCAL_BIND']
+
+        # Main code moved to the PingRunner class to be able to take advantage
+        # of the parser code there.
+        return runners.IperfCsvRunner.find_binary(host, interval, length, ip_version, udp=False,
+                                                  local_bind=local_bind)
 
     @finder
     def find_netperf(self, test, length, host, **args):

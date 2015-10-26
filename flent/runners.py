@@ -619,6 +619,7 @@ class IperfCsvRunner(ProcessRunner):
 
     def parse(self, output):
         result = []
+        raw_values = []
         lines = output.strip().split("\n")
         for line in lines[:-1]: # The last line is an average over the whole test
             parts = line.split(",")
@@ -628,19 +629,53 @@ class IperfCsvRunner(ProcessRunner):
             timestamp = parts[0]
             bandwidth = parts[8]
 
-            # If iperf is patched to emit sub-second resolution unix timestamps,
-            # there'll be a dot as the decimal marker; in this case, just parse
-            # the time as a float. Otherwise, assume that iperf is unpatched
-            # (and so emits YMDHMS timestamps).
-            #
-            # The patch for iperf (v2.0.5) is in the misc/ directory.
-            if "." in timestamp:
-                result.append([float(timestamp), float(bandwidth)])
-            else:
-                dt = datetime.strptime(timestamp, "%Y%m%d%H%M%S")
-                result.append([time.mktime(dt.timetuple()), float(bandwidth)])
+            # Newer versions of iperf2 emits sub-second timestamps if given the
+            # --enhancedreports argument. Since we detect this in find_iperf, we
+            # only support this format.
 
+            try:
+                sec,mil = timestamp.split(".")
+                dt = datetime.strptime(sec, "%Y%m%d%H%M%S")
+                timestamp = time.mktime(dt.timetuple())+float(mil)/1000
+                val = float(bandwidth)
+                result.append([timestamp, val])
+                raw_values.append({'t': timestamp, 'val': val})
+            except ValueError:
+                pass
+
+        self.raw_values = raw_values
+        try:
+            parts = lines[-1].split(",")
+            self.metadata['MEAN_VALUE'] = float(parts[8])
+        except (ValueError,IndexError):
+            pass
         return result
+
+    @classmethod
+    def find_binary(cls, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False):
+        iperf = util.which('iperf')
+
+        if iperf is not None:
+            proc = subprocess.Popen([iperf, '-h'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out,err = proc.communicate()
+
+            if "--enhancedreports" in str(err):
+                return "{binary} --enhancedreports --reportstyle C --format m --client {host} --time {length} --interval {interval} " \
+                    "{local_bind} {no_delay} {udp} {ip6}".format(
+                        host=host,
+                        binary=iperf,
+                        length=length,
+                        interval=interval,
+                        ip6="--ipv6_domain" if ip_version == 6 else "", # --help output is wrong
+                        local_bind="--bind {0}".format(local_bind) if local_bind else "",
+                        no_delay="--nodelay" if no_delay else "",
+                        udp="--udp" if udp else "")
+            else:
+                sys.stderr.write("Found iperf binary, but it does not have an --enhancedreport option. Not using.\n")
+
+        raise RuntimeError("No suitable Iperf binary found.")
 
 class TcRunner(ProcessRunner):
     """Runner for iterated `tc -s qdisc`. Expects iterations to be separated by
