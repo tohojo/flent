@@ -53,6 +53,17 @@ try:
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
+# The file selector dialog on OSX is buggy, so switching allowed file extensions
+# doesn't work with double extensions. So just include the deprecated extensions
+# in the default ones on Mac.
+if hasattr(QtGui, "qt_mac_set_native_menubar"):
+    FILE_SELECTOR_STRING = "Flent data files (*.flent *.flnt *.flent.gz *.flent.bz2 *.json.gz)"
+else:
+    FILE_SELECTOR_STRING = "Flent data files (*.flent *.flent.gz *.flent.bz2);;" \
+                           "Flent data files - deprecated extensions (*.flnt *.json.gz)"
+FILE_SELECTOR_STRING += ";;All files (*.*)"
+
+
 from flent.build_info import DATA_DIR,VERSION
 from flent.resultset import ResultSet
 from flent.formatters import PlotFormatter
@@ -308,8 +319,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         filenames = QFileDialog.getOpenFileNames(self,
                                                  "Select data file(s)",
                                                  self.last_dir,
-                                                 "Flent data files (*.flent *.flent.gz *.flent.bz2);; "
-                                                 "Flent data files - deprecated extensions (*.flnt *.json.gz)")
+                                                 FILE_SELECTOR_STRING)
         if filenames:
             self.last_dir = os.path.dirname(unicode(filenames[0]))
 
