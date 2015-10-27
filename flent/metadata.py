@@ -110,6 +110,7 @@ def record_extended_metadata(results, hostnames):
         m['REMOTE_METADATA'][h]['LOCAL_HOST'] = get_command_output("hostname")
         m['REMOTE_METADATA'][h]['KERNEL_NAME'] = get_command_output("uname -s")
         m['REMOTE_METADATA'][h]['KERNEL_RELEASE'] = get_command_output("uname -r")
+        m['REMOTE_METADATA'][h]['CAKE_VERSION'] = get_command_output("hexdump -e '/1 \"%02x\"' -s 16 /sys/module/sch_cake/notes/.note.gnu.build-id")
         m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
         m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
         m['REMOTE_METADATA'][h]['SYSCTLS'] = get_sysctls()
