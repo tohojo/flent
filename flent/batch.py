@@ -312,7 +312,7 @@ class BatchRunner(object):
             settings.TIME = datetime.utcnow()
 
             expand_vars = {'repetition': "%02d" % rep,
-                           'batch_time': settings.BATCH_TIME.strftime("%Y-%m-%dT%H%M%S")}
+                           'batch_time': format_date(settings.BATCH_TIME, fmt="%Y-%m-%dT%H%M%S")}
 
             for arg in argset:
                 if not arg in self.args:
