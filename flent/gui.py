@@ -506,6 +506,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save)
+        widget.activate()
         widget.redraw()
         self.open_files.set_active_widget(widget)
 
@@ -1309,6 +1310,16 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.dirty = True
         if redraw and ((self.isVisible() and self.updatesEnabled()) or self.settings.GUI_NO_DEFER):
             self.redraw()
+
+    def activate(self):
+        if not hasattr(self, "canvas"):
+            return
+
+        # Simulate a mouse move event when the widget is activated. This ensures
+        # that the interactive plot highlight will get updated correctly.
+        pt = self.canvas.mapFromGlobal(QCursor.pos())
+        evt = QMouseEvent(QEvent.MouseMove, pt, Qt.NoButton, Qt.NoButton, Qt.NoModifier)
+        self.canvas.mouseMoveEvent(evt)
 
     def redraw(self):
         if not self.dirty or not self.is_active:
