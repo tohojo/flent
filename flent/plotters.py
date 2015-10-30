@@ -344,6 +344,7 @@ class Plotter(object):
 
 
     def connect_interactive(self):
+        self.bg_cache = {}
         try:
             if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
                 return
@@ -379,29 +380,25 @@ class Plotter(object):
 
 
     def update_axes(self, hovered):
-        updated = False
-        for a in self.hovered:
-            if a.get_linewidth() != self.highlight_widths[a][0]:
-                a.set_linewidth(self.highlight_widths[a][0])
-                updated = True
+        bboxes = set()
+
+        for ax in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+            # If we don't have a background cache this is the first time we are
+            # called after a redraw, so no modifications to artists have been
+            # made. Hence, we just cache the background now.
+            bboxes.add(ax.bbox)
+            if not ax in self.bg_cache:
+                self.bg_cache[ax] = self.figure.canvas.copy_from_bbox(ax.bbox)
+            else:
+                self.figure.canvas.restore_region(self.bg_cache[ax])
 
         for a in hovered:
-            if a.get_linewidth() != self.highlight_widths[a][1]:
-                a.set_linewidth(self.highlight_widths[a][1])
-                updated = True
-        self.hovered = hovered
+            a.set_linewidth(self.highlight_widths[a][1])
+            a.axes.draw_artist(a)
+            a.set_linewidth(self.highlight_widths[a][0])
 
-        if not updated:
-            return
-
-        bbox = None
-        for ax in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
-            ax.redraw_in_frame()
-            if bbox is not None and ax.bbox != bbox:
-                self.figure.canvas.blit(bbox)
-            bbox = ax.bbox
-        self.figure.canvas.blit(bbox)
-
+        for bbox in bboxes:
+            self.figure.canvas.blit(bbox)
 
     def save_pdf(self, filename, data_filename, save_args):
         with matplotlib.backends.backend_pdf.PdfPages(filename) as pdf:
