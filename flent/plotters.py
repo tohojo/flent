@@ -452,8 +452,8 @@ class Plotter(object):
             legend_width = max([l.get_window_extent().width for l in self.legends])
             canvas_width = self.figure.canvas.get_width_height()[0]
             for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
-                # Save the original width of the (in the interval [0..1]) and
-                # use that as a base to scale the axis on subsequent calls.
+                # Save the original width of the axis (in the interval [0..1])
+                # and use that as a base to scale the axis on subsequent calls.
                 # Otherwise, each call will shrink the axis.
                 if not hasattr(a, 'orig_width'):
                     a.orig_width = a.get_position().width
