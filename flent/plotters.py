@@ -352,7 +352,8 @@ class Plotter(object):
 
     def connect_interactive(self):
         try:
-            if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
+            if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit \
+               or not hasattr(self.figure.canvas, "copy_from_bbox"):
                 return
         except AttributeError:
             # Old versions of matplotlib doesn't have the supports_blit attribute
