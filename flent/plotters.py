@@ -286,7 +286,7 @@ class Plotter(object):
             self.config = config
         self.configs = [self.config]
 
-    def plot(self, results, config=None, axis=None):
+    def plot(self, results, config=None, axis=None, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
         if len(results) > 1:
@@ -294,7 +294,8 @@ class Plotter(object):
         else:
             self._plot(results[0], config=config, axis=axis)
 
-        self.connect_interactive()
+        if connect_interactive:
+            self.connect_interactive()
 
     def combine(self, results, config=None, axis=None, always_colour=False):
         styles = cycle(self.styles)
@@ -342,19 +343,21 @@ class Plotter(object):
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
+    def init_interactive(self):
+        self.clear_bg_cache()
+        self.highlight_widths = {}
+        self.hovered = set()
+        for a in self.data_artists:
+            self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth()*2)
 
     def connect_interactive(self):
-        self.clear_bg_cache()
         try:
             if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
                 return
         except AttributeError:
             # Old versions of matplotlib doesn't have the supports_blit attribute
             return
-        self.highlight_widths = {}
-        self.hovered = set()
-        for a in self.data_artists:
-            self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth()*2)
+        self.init_interactive()
         self.interactive_callback = self.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
         self.callbacks.append(self.interactive_callback)
 
@@ -1302,24 +1305,43 @@ class MetaPlotter(Plotter):
             plotter = get_plotter(cfg['type'])(cfg, self.data_config,
                                                figure=self.figure, **self._kwargs)
             plotter.init(cfg,axis)
-            self.subplots.append(plotter)
+            self.subplots.append((plotter,axis))
             if i < len(config['subplots'])-1:
                 axis.set_xlabel("")
 
     def plot(self, results):
         if self.metadata is None:
             self.metadata = results[0].meta()
-        for s in self.subplots:
-            s.plot(results)
+        for s,ax in self.subplots:
+            s.plot(results, connect_interactive=False)
             s.legends.extend(s.do_legend())
             self.legends.extend(s.legends)
+            s.init_interactive()
+        self.connect_interactive()
+
+
+    @property
+    def can_highlight(self):
+        return all([s.can_highlight for s,ax in self.subplots])
+
+    def on_move(self, event):
+        for s,ax in self.subplots:
+            if ax.in_axes(event) or any([l.contains(event)[0] for l in s.legends]):
+                s.on_move(event)
+            else:
+                # If the event did not fit this axes, we may have just left it,
+                # so update with no hovered elements to make sure we clear any
+                # highlights.
+                s.update_axes(set())
+
 
     def clear_bg_cache(self):
-        for s in self.subplots:
+        for s,ax in self.subplots:
             s.clear_bg_cache()
 
     def disconnect_callbacks(self):
-        for s in self.subplots:
+        Plotter.disconnect_callbacks(self)
+        for s,ax in self.subplots:
             s.disconnect_callbacks()
 
 class SubplotCombinePlotter(MetaPlotter):
