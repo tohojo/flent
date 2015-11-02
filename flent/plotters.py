@@ -344,7 +344,7 @@ class Plotter(object):
 
 
     def connect_interactive(self):
-        self.bg_cache = {}
+        self.clear_bg_cache()
         try:
             if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit:
                 return
@@ -400,6 +400,9 @@ class Plotter(object):
         for bbox in bboxes:
             self.figure.canvas.blit(bbox)
 
+    def clear_bg_cache(self):
+        self.bg_cache = {}
+
     def save_pdf(self, filename, data_filename, save_args):
         with matplotlib.backends.backend_pdf.PdfPages(filename) as pdf:
             pdf.infodict()['Producer'] = 'Flent v%s' % VERSION
@@ -441,6 +444,7 @@ class Plotter(object):
         return args
 
     def size_legends(self, event=None):
+        self.clear_bg_cache()
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
         if self.print_legend and not self.horizontal_legend and self.legends:
@@ -1309,6 +1313,10 @@ class MetaPlotter(Plotter):
             s.plot(results)
             s.legends.extend(s.do_legend())
             self.legends.extend(s.legends)
+
+    def clear_bg_cache(self):
+        for s in self.subplots:
+            s.clear_bg_cache()
 
     def disconnect_callbacks(self):
         for s in self.subplots:
