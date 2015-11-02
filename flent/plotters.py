@@ -456,6 +456,7 @@ class Plotter(object):
                 ax_width = a.get_window_extent().width
                 box = a.get_position()
                 a.set_position([box.x0, box.y0, (a.orig_width - legend_width/canvas_width), box.height])
+            self.figure.canvas.draw()
 
 
     def _annotate_plot(self, skip_title=False):
