@@ -1315,6 +1315,11 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if not hasattr(self, "canvas"):
             return
 
+        try:
+            self.canvas.blit()
+        except AttributeError:
+            pass
+
         # Simulate a mouse move event when the widget is activated. This ensures
         # that the interactive plot highlight will get updated correctly.
         pt = self.canvas.mapFromGlobal(QCursor.pos())
