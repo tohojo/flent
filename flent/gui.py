@@ -58,9 +58,11 @@ except ImportError:
 # in the default ones on Mac.
 if hasattr(QtGui, "qt_mac_set_native_menubar"):
     FILE_SELECTOR_STRING = "Flent data files (*.flent *.flnt *.flent.gz *.flent.bz2 *.json.gz)"
+    DISABLE_HOVER=True
 else:
     FILE_SELECTOR_STRING = "Flent data files (*.flent *.flent.gz *.flent.bz2);;" \
                            "Flent data files - deprecated extensions (*.flnt *.json.gz)"
+    DISABLE_HOVER=False
 FILE_SELECTOR_STRING += ";;All files (*.*)"
 
 
@@ -1103,6 +1105,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings = settings.copy()
         self.dirty = True
         self.settings.OUTPUT = "-"
+
+        if DISABLE_HOVER:
+            self.settings.HOVER_HIGHLIGHT = False
 
         self.extra_results = []
         self.title = self.default_title
