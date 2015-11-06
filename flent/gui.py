@@ -58,11 +58,9 @@ except ImportError:
 # in the default ones on Mac.
 if hasattr(QtGui, "qt_mac_set_native_menubar"):
     FILE_SELECTOR_STRING = "Flent data files (*.flent *.flnt *.flent.gz *.flent.bz2 *.json.gz)"
-    DISABLE_HOVER=True
 else:
     FILE_SELECTOR_STRING = "Flent data files (*.flent *.flent.gz *.flent.bz2);;" \
                            "Flent data files - deprecated extensions (*.flnt *.json.gz)"
-    DISABLE_HOVER=False
 FILE_SELECTOR_STRING += ";;All files (*.*)"
 
 
@@ -195,6 +193,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
         self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
+        self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT is None or self.settings.HOVER_HIGHLIGHT)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
@@ -205,6 +204,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkLegend.toggled.connect(self.update_checkboxes)
         self.checkTitle.toggled.connect(self.update_checkboxes)
         self.checkFilterLegend.toggled.connect(self.update_checkboxes)
+        self.checkHighlight.toggled.connect(self.update_checkboxes)
 
         self.tabifyDockWidget(self.openFilesDock,self.metadataDock)
         self.openFilesDock.raise_()
@@ -297,6 +297,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.draw_legend(self.checkLegend.isChecked())
             widget.draw_title(self.checkTitle.isChecked())
             widget.filter_legend(self.checkFilterLegend.isChecked())
+            widget.highlight(self.checkHighlight.isChecked())
 
     def new_connection(self):
         sock = self.server.nextPendingConnection()
@@ -1106,9 +1107,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.dirty = True
         self.settings.OUTPUT = "-"
 
-        if DISABLE_HOVER:
-            self.settings.HOVER_HIGHLIGHT = False
-
         self.extra_results = []
         self.title = self.default_title
 
@@ -1288,6 +1286,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.FILTER_LEGEND = val
             self.update()
         return self.settings.FILTER_LEGEND
+
+    def highlight(self, val=None):
+        if val is not None and val != self.settings.HOVER_HIGHLIGHT:
+            self.settings.HOVER_HIGHLIGHT = val
+            self.update()
+        return self.settings.HOVER_HIGHLIGHT
 
     def change_plot(self, plot_name):
         if isinstance(plot_name, QModelIndex):
