@@ -1273,6 +1273,7 @@ class MetaPlotter(Plotter):
 
     def __init__(self, plot_config, data_config, figure=None, **kwargs):
         self._kwargs = kwargs
+        self._can_highlight = True
         Plotter.__init__(self, plot_config, data_config, figure=figure, **kwargs)
 
     def init(self, config=None):
@@ -1321,9 +1322,11 @@ class MetaPlotter(Plotter):
         self.connect_interactive()
 
 
-    @property
-    def can_highlight(self):
-        return all([s.can_highlight for s,ax in self.subplots])
+    def get_can_highlight(self):
+        return self._can_highlight and all([s.can_highlight for s,ax in self.subplots])
+    def set_can_highlight(self, v):
+        self._can_highlight = v
+    can_highlight = property(get_can_highlight,set_can_highlight)
 
     def on_move(self, event):
         for s,ax in self.subplots:
