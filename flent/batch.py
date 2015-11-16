@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback, io
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from fnmatch import fnmatch
 from collections import OrderedDict
 
@@ -246,21 +246,44 @@ class BatchRunner(object):
             )
         return clean_path(filename)
 
+    def expand_argsets(self, batch, argsets, batch_time, batch_name,
+                       print_status = True):
 
-    def run_batch(self, batchname):
-        if not batchname in self.batches:
-            raise RuntimeError("Can't find batch '%s' to run." % batchname)
-        batch = self.batches[batchname]
-        batch.update(self.settings.BATCH_OVERRIDE)
+        for argset in itertools.product(*argsets):
+            rep = argset[-1]
+            argset = argset[:-1]
+            settings = self.settings.copy()
+            if print_status:
+                sys.stderr.write(" args:%s rep:%02d" % (",".join(argset),rep))
+                if settings.BATCH_DRY:
+                    sys.stderr.write(" (dry run)")
+                sys.stderr.write(".\n")
+            settings.FORMAT = 'null'
+            settings.BATCH_NAME = batch_name
+            settings.BATCH_TIME = batch_time
+            settings.TIME = datetime.utcnow()
 
-        # A batch declared 'abstract' is not runnable
-        if batch.get('abstract', False):
-            sys.stderr.write(" Batch marked as abstract. Not running.\n")
-            return False
-        elif batch.get('disabled', False) or not batch.get('enabled', True):
-            sys.stderr.write(" Batch disabled.\n")
-            return False
+            expand_vars = {'repetition': "%02d" % rep,
+                           'batch_time': format_date(settings.BATCH_TIME, fmt="%Y-%m-%dT%H%M%S")}
 
+            for arg in argset:
+                if not arg in self.args:
+                    raise RuntimeError("Invalid arg: '%s'." % arg)
+                expand_vars.update(self.args[arg])
+
+            b = self.apply_args(batch, expand_vars, settings)
+
+            if not 'test_name' in b:
+                raise RuntimeError("Missing test name.")
+
+            settings.load_rcvalues(b.items(), override=True)
+            settings.NAME = b['test_name']
+            settings.load_test(informational=settings.BATCH_DRY)
+            settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
+
+            yield batch, settings
+
+    def get_argsets(self, batch):
         argsets = []
 
         for k in batch.keys():
@@ -276,6 +299,42 @@ class BatchRunner(object):
 
         reps = range(1,int(batch.get('repetitions', 1))+1)
         argsets.append(reps)
+
+        return argsets
+
+    def get_batch_runtime(self, batch_name):
+        if not batch_name in self.batches:
+            raise RuntimeError("Can't find batch '%s' to run." % batch_name)
+        batch = self.batches[batch_name].copy()
+        batch.update(self.settings.BATCH_OVERRIDE)
+
+        if batch.get('abstract', False) or batch.get('disabled', False):
+            return 0
+
+        total_time = 0
+        argsets = self.get_argsets(batch)
+
+        for _,s in self.expand_argsets(batch, argsets, self.settings.TIME, batch_name, False):
+            total_time += s.TOTAL_LENGTH + int(batch.get('pause', 0))
+
+        return total_time
+
+
+    def run_batch(self, batch_name):
+        if not batch_name in self.batches:
+            raise RuntimeError("Can't find batch '%s' to run." % batch_name)
+        batch = self.batches[batch_name].copy()
+        batch.update(self.settings.BATCH_OVERRIDE)
+
+        # A batch declared 'abstract' is not runnable
+        if batch.get('abstract', False):
+            sys.stderr.write(" Batch marked as abstract. Not running.\n")
+            return False
+        elif batch.get('disabled', False) or not batch.get('enabled', True):
+            sys.stderr.write(" Batch disabled.\n")
+            return False
+
+        argsets = self.get_argsets(batch)
 
         pause = int(batch.get('pause', 0))
 
@@ -298,35 +357,7 @@ class BatchRunner(object):
             batch_time = self.settings.TIME
 
 
-        for argset in itertools.product(*argsets):
-            rep = argset[-1]
-            argset = argset[:-1]
-            settings = self.settings.copy()
-            sys.stderr.write(" args:%s rep:%02d" % (",".join(argset),rep))
-            if settings.BATCH_DRY:
-                sys.stderr.write(" (dry run)")
-            sys.stderr.write(".\n")
-            settings.FORMAT = 'null'
-            settings.BATCH_NAME = batchname
-            settings.BATCH_TIME = batch_time
-            settings.TIME = datetime.utcnow()
-
-            expand_vars = {'repetition': "%02d" % rep,
-                           'batch_time': format_date(settings.BATCH_TIME, fmt="%Y-%m-%dT%H%M%S")}
-
-            for arg in argset:
-                if not arg in self.args:
-                    raise RuntimeError("Invalid arg: '%s'." % arg)
-                expand_vars.update(self.args[arg])
-            b = self.apply_args(batch, expand_vars, settings)
-
-            if not 'test_name' in b:
-                raise RuntimeError("Missing test name.")
-
-            settings.load_rcvalues(b.items(), override=True)
-            settings.NAME = b['test_name']
-            settings.load_test(informational=settings.BATCH_DRY)
-            settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
+        for b,settings in self.expand_argsets(batch, argsets, batch_time, batch_name):
 
             if 'output_path' in b:
                 output_path = clean_path(b['output_path'], allow_dirs=True)
@@ -472,6 +503,9 @@ class BatchRunner(object):
                 batches = self.batches.keys()
             else:
                 batches = self.settings.BATCH_NAMES
+            total_time = sum([self.get_batch_runtime(b) for b in batches])
+            if total_time > 0:
+                sys.stderr.write("Estimated total runtime: %s\n" % timedelta(seconds=total_time))
             for b in batches:
                 try:
                     sys.stderr.write("Running batch '%s'.\n" % b)
