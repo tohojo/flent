@@ -1325,7 +1325,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             return
 
         try:
-            self.canvas.blit()
+            self.canvas.blit(self.canvas.figure.bbox)
         except AttributeError:
             pass
 
