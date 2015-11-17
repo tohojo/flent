@@ -281,7 +281,7 @@ class BatchRunner(object):
             settings.load_test(informational=settings.BATCH_DRY)
             settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
 
-            yield batch, settings
+            yield b, settings
 
     def get_argsets(self, batch):
         argsets = []
