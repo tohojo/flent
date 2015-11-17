@@ -21,6 +21,7 @@ axes.facecolor: EAEAF2
 axes.grid: True
 axes.labelcolor: .15
 axes.linewidth: 0
+axes.formatter.useoffset: False
 figure.edgecolor: white
 figure.facecolor: white
 figure.frameon: False
