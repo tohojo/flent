@@ -180,7 +180,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.openFilesDock.visibilityChanged.connect(self.open_files_visibility)
-        self.metadataView.entered.connect(self.update_statusbar)
         self.expandButton.clicked.connect(self.metadata_column_resize)
 
         # Set initial value of checkboxes from settings
@@ -213,6 +212,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.openFilesDock.setWidget(self.openFilesView)
         self.openFilesView.setModel(self.open_files)
         self.openFilesView.clicked.connect(self.open_files.on_click)
+
+        self.metadataView = MetadataView(self)
+        self.metadataView.entered.connect(self.update_statusbar)
+        self.metadataLayout.insertWidget(0, self.metadataView)
+        self.expandButton.clicked.connect(self.metadataView.expandAll)
 
         # Start IPC socket server on name corresponding to pid
         self.server = QtNetwork.QLocalServer()
@@ -749,6 +753,63 @@ class MetadataModel(QAbstractItemModel):
         if item is None:
             item = self.root
         return self.createIndex(row, column, item.children[row])
+
+
+class MetadataView(QTreeView):
+    def __init__(self, parent):
+        super(MetadataView, self).__init__(parent)
+        self.setAlternatingRowColors(True)
+        self.setMouseTracking(True)
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        self.pinned_entries = set()
+
+    def contextMenuEvent(self, event):
+        idx = self.indexAt(event.pos())
+        menu = QMenu()
+        def pin():
+            self.add_pin(idx)
+        act_pin = QAction("&Pin expanded", menu, triggered=pin)
+        menu.addActions([act_pin])
+        menu.exec_(event.globalPos())
+        event.accept()
+
+    def add_pin(self, idx):
+        pin = []
+        while idx.isValid():
+            name = self.model().data(self.model().index(idx.row(), 0, idx.parent()), Qt.DisplayRole)
+            pin.insert(0, name or idx.row())
+            idx = idx.parent()
+
+        pin = tuple(pin)
+        if pin in self.pinned_entries:
+            self.pinned_entries.remove(pin)
+        else:
+            self.pinned_entries.add(pin)
+
+    def setModel(self, model):
+        super(MetadataView, self).setModel(model)
+        self.restore_pinned()
+
+    def restore_pinned(self):
+        if not self.model():
+            return
+        for pin in self.pinned_entries:
+            parent = QModelIndex()
+            for n in pin:
+                try:
+                    if isinstance(n, int):
+                        idx = self.model().index(n, 0, parent)
+                    else:
+                        idx = self.model().match(self.model().index(0,0,parent), Qt.DisplayRole, n)[0]
+                    self.setExpanded(idx, True)
+                    parent = idx
+                except IndexError:
+                    sys.stderr.write("Could not find pinned entry '%s'.\n" % ":".join(map(str,pin)))
+                    break
+                except Exception as e:
+                    sys.stderr.write("Restoring pin '%s' failed: %s.\n" % (":".join(map(str,pin)), e))
+                    break
 
 class ResultsetStore(object):
 
