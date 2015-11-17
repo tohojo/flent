@@ -213,7 +213,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.openFilesView.setModel(self.open_files)
         self.openFilesView.clicked.connect(self.open_files.on_click)
 
-        self.metadataView = MetadataView(self)
+        self.metadataView = MetadataView(self, self.openFilesView)
         self.metadataView.entered.connect(self.update_statusbar)
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
@@ -756,13 +756,14 @@ class MetadataModel(QAbstractItemModel):
 
 
 class MetadataView(QTreeView):
-    def __init__(self, parent):
+    def __init__(self, parent, openFilesView):
         super(MetadataView, self).__init__(parent)
         self.setAlternatingRowColors(True)
         self.setMouseTracking(True)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
         self.pinned_entries = set()
+        self.openFilesView = openFilesView
 
     def contextMenuEvent(self, event):
         idx = self.indexAt(event.pos())
@@ -770,22 +771,32 @@ class MetadataView(QTreeView):
         def pin():
             self.add_pin(idx)
         act_pin = QAction("&Pin expanded", menu, triggered=pin)
-        menu.addActions([act_pin])
+        def col():
+            self.add_open_files_col(idx)
+        act_col = QAction("&Add open files column", menu, triggered=col)
+        menu.addActions([act_pin,act_col])
         menu.exec_(event.globalPos())
         event.accept()
 
-    def add_pin(self, idx):
-        pin = []
+    def get_metadata_path(self, idx):
+        path = []
         while idx.isValid():
             name = self.model().data(self.model().index(idx.row(), 0, idx.parent()), Qt.DisplayRole)
-            pin.insert(0, name or idx.row())
+            path.insert(0, name or idx.row())
             idx = idx.parent()
 
-        pin = tuple(pin)
+        return tuple(path)
+
+    def add_pin(self, idx):
+        pin = self.get_metadata_path(idx)
         if pin in self.pinned_entries:
             self.pinned_entries.remove(pin)
         else:
             self.pinned_entries.add(pin)
+
+    def add_open_files_col(self, idx):
+        path = self.get_metadata_path(idx)
+        self.openFilesView.horizontalHeader().add_column(None, ":".join(map(str,path)))
 
     def setModel(self, model):
         super(MetadataView, self).setModel(model)
@@ -1107,8 +1118,10 @@ class OpenFilesHeader(QHeaderView):
 
         return actions
 
-    def add_column(self, col):
-        dialog = AddColumnDialog(self)
+    def add_column(self, col=None, path=None):
+        if col is None:
+            col = self.model().columnCount(QModelIndex())
+        dialog = AddColumnDialog(self, path)
         if not dialog.exec_() or not dialog.get_path():
             return
         vis_old = self.visualIndex(col)
@@ -1125,12 +1138,15 @@ class OpenFilesHeader(QHeaderView):
         event.accept()
 
 class AddColumnDialog(get_ui_class("addcolumn.ui")):
-    def __init__(self, parent):
+    def __init__(self, parent, path=None):
         super(AddColumnDialog, self).__init__(parent)
 
         self.metadataPathEdit.textChanged.connect(self.update_name)
         self.columnNameEdit.textEdited.connect(self.name_entered)
         self.name_entered = False
+
+        if path is not None:
+            self.metadataPathEdit.setText(path)
 
     def name_entered(self):
         self.name_entered = True
