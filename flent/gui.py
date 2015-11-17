@@ -738,9 +738,11 @@ class MetadataModel(QAbstractItemModel):
 
     def parent(self, idx):
         item = idx.internalPointer()
-        if item is None:
+        if item is None or item.parent in (None,self.root):
             return QModelIndex()
-        return self.createIndex(0, 0, item.parent)
+        parent = item.parent
+        row = parent.parent.children.index(parent)
+        return self.createIndex(row, 0, parent)
 
     def index(self, row, column, parent):
         item = parent.internalPointer()
