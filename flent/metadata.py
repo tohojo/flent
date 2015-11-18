@@ -193,6 +193,15 @@ def get_link_params(iface):
         if m:
             link_params['ether'] = m.group(1)
 
+    output = get_command_output("ethtool %s" % iface)
+    if output is not None:
+        m = re.search("Speed: ([0-9]+Mb/s)", output)
+        if m:
+            link_params['speed'] = m.group(1)
+        m = re.search("Duplex: (\w+)", output)
+        if m:
+            link_params['duplex'] = m.group(1)
+
     return link_params or None
 
 def get_offloads(iface):
