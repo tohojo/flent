@@ -17,7 +17,7 @@ while getopts "i:c:I:C:H:" opt; do
 done
 
 command_string=$(cat <<EOF
-for i in $(seq $count); do
+for i in \$(seq $count); do
     tc -s $command show dev $interface;
     date '+Time: %s.%N';
     echo "---";
