@@ -721,6 +721,32 @@ class TcRunner(ProcessRunner):
                    r"ecn_mark (?P<ecn_mark>\d+)"),
         ]
 
+    cake_alltins_re = re.compile(r"(\s*Tin \d)+")
+    cake_tin_re = re.compile(r"Tin \d")
+    cake_keys = ["av_delay", "sp_delay", "pkts", "bytes", "drops", "marks", "sp_flows", "bk_flows", "last_len"]
+
+    # Normalise time values (seconds, ms, us) to milliseconds and bit values
+    # (bit, Kbit, Mbit) to bits
+    def parse_val(self, v):
+        if v is None:
+            return None
+        elif v.endswith("us"):
+            return float(v[:-2])/1000
+        elif v.endswith("ms"):
+            return float(v[:-2])
+        elif v.endswith("s"):
+            return float(v[:-1])*1000
+        elif v.endswith("Kbit"):
+            return float(v[:-4])*1000
+        elif v.endswith("Mbit"):
+            return float(v[:-4])*10**6
+        elif v.endswith("bit"):
+            return float(v[:-3])
+        else:
+            try:
+                return float(v)
+            except ValueError:
+                return v
 
     def parse(self, output):
         results = {}
@@ -747,24 +773,22 @@ class TcRunner(ProcessRunner):
                 # what should be the root qdisc as per above).
                 while m is not None:
                     for k,v in list(m.groupdict().items()):
-                        if v is None:
-                            pass
-                        elif v.endswith("us"):
-                            v = float(v[:-2])/1000
-                        elif v.endswith("ms"):
-                            v = float(v[:-2])
-                        elif v.endswith("s"):
-                            v = float(v[:-1])*1000
-                        else:
-                            try:
-                                v = float(v)
-                            except ValueError:
-                                pass
+                        v = self.parse_val(v)
                         if not k in matches or not isinstance(v,float):
                             matches[k] = v
                         else:
                             matches[k] += v
                     m = r.search(part, m.end(0))
+
+            m = self.cake_alltins_re.search(part)
+            if m:
+                tins = self.cake_tin_re.findall(m.group(0))
+                start = m.end()
+                for key in self.cake_keys:
+                    m = re.search("^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (key, len(tins)), part[start:], re.IGNORECASE|re.MULTILINE)
+                    if m:
+                        k = "cake_%s" % key
+                        matches[k] = dict(zip(tins, map(self.parse_val, m.group(0).split()[1:])))
             for k,v in matches.items():
                 if not isinstance(v,float):
                     continue
