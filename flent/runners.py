@@ -801,7 +801,7 @@ class TcRunner(ProcessRunner):
         return results
 
     @classmethod
-    def find_binary(cls, interface, interval, length):
+    def find_binary(cls, interface, interval, length, host='localhost'):
         script = os.path.join(DATA_DIR, 'scripts', 'tc_iterate.sh')
         if not os.path.exists(script):
             raise RuntimeError("Cannot find tc_iterate.sh.")
@@ -814,12 +814,13 @@ class TcRunner(ProcessRunner):
             sys.stderr.write("Warning: No interface given for tc runner. Defaulting to 'eth0'.\n")
             interface='eth0'
 
-        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f}".format(
+        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f} -H {host}".format(
             bash=bash,
             script=script,
             interface=interface,
             interval=interval,
-            count=length // interval + 1)
+            count=length // interval + 1,
+            host=host)
 
 
 class NullRunner(object):
