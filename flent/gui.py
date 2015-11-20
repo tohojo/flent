@@ -454,7 +454,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def close_tab(self, idx=None):
         self.busy_start()
-        if idx is None:
+        if idx in (None,False):
             idx = self.viewArea.currentIndex()
         widget = self.viewArea.widget(idx)
         if widget is not None:
