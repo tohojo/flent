@@ -756,9 +756,12 @@ class TimeseriesPlotter(Plotter):
             # Handle cut-off data sets. If the x-axis difference between the
             # largest data point and the TOTAL_LENGTH from settings, scale to
             # the data values, but round to nearest 10 above that value.
-            max_xdata = max([l.get_xdata()[-1] for l in config['axes'][a].get_lines()])
-            if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
-                config['axes'][a].set_xlim(right=(max_xdata+(10-max_xdata%10)))
+            try:
+                max_xdata = max([l.get_xdata()[-1] for l in config['axes'][a].get_lines()])
+                if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
+                    config['axes'][a].set_xlim(right=(max_xdata+(10-max_xdata%10)))
+            except ValueError:
+                pass
 
 
         for a,b in zip(config['axes'], self.bounds_x):
