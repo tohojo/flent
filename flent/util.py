@@ -308,12 +308,14 @@ class Glob(object):
     @classmethod
     def expand_list(cls, l, values, exclude=None):
         l = list(l) # copy list, turns lone Glob objects into [obj]
+        new_l = []
         if exclude is None:
             exclude = []
         # Expand glob patterns in list. Go through all items in the
         # list  looking for Glob instances and expanding them.
-        for i in range(len(l)):
-            pattern = l[i]
+        for pattern in l:
             if isinstance(pattern, cls):
-                l[i:i+1] = pattern.filter(values, exclude)
-        return l
+                new_l.extend(pattern.filter(values, exclude))
+            else:
+                new_l.append(pattern)
+        return new_l
