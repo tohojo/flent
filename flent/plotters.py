@@ -24,7 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, inspect, io
 
 from flent import combiners
-from .util import cum_prob, frange, classname, long_substr, format_date
+from .util import cum_prob, frange, classname, long_substr, format_date, Glob
 from .build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice,chain
@@ -237,7 +237,7 @@ class Plotter(object):
         if hover_highlight is not None:
             self.can_highlight = hover_highlight
 
-        self.config = plot_config
+        self.config = self.expand_plot_config(plot_config, data_config)
         self.data_config = data_config
 
         self.fig_dpi = fig_dpi
@@ -285,6 +285,21 @@ class Plotter(object):
         if config is not None:
             self.config = config
         self.configs = [self.config]
+
+    def expand_plot_config(self, config, data):
+        if not 'series' in config:
+            return config
+        new_series = []
+        for s in config['series']:
+            if isinstance(s['data'], Glob):
+                for d in Glob.expand_list(s['data'], data.keys()):
+                    if 'label' in s and 'id' in data[d]:
+                        new_series.append(dict(s, data=d, label='%s -- %s' % (s['label'], data[d]['id'])))
+                    else:
+                        new_series.append(dict(s, data=d))
+            else:
+                new_series.append(s)
+        return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
         if self.metadata is None:
