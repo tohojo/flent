@@ -133,7 +133,7 @@ class Aggregator(object):
                     # postprocess() method)
                     self.postprocessors.append(t.result)
                 elif hasattr(t.result, 'keys'):
-                    if not t.results:
+                    if not t.result:
                         self.failed_runners += 1
                     for k in t.result.keys():
                         key = "%s::%s" % (n,k)
@@ -142,7 +142,7 @@ class Aggregator(object):
                             for tr in self.instances[key]['transformers']:
                                 result[key] = tr(result[key])
                 else:
-                    if not t.results:
+                    if not t.result:
                         self.failed_runners += 1
                     result[n] = t.result
                     if 'transformers' in self.instances[n]:
