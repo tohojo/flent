@@ -794,7 +794,7 @@ class TcRunner(ProcessRunner):
             # yet. For now, add in an 'ecn_marks' key that is the sum of all
             # cake tins, for comparability with other qdiscs
             if "cake_marks" in matches and not "ecn_mark" in matches:
-                matches['ecn_marks'] = sum(matches['cake_marks'])
+                matches['ecn_marks'] = sum(matches['cake_marks'].values())
 
             for k,v in matches.items():
                 if not isinstance(v,float):
