@@ -240,10 +240,10 @@ class TestEnvironment(object):
         return "%s %s" % (self.http_getter, args)
 
     @finder
-    def find_tc_iterate(self, interface, interval, length):
+    def find_tc_iterate(self, *args, **kwargs):
         """Find a suitable tc_iterate script."""
 
-        return runners.TcRunner.find_binary(interface, interval, length)
+        return runners.TcRunner.find_binary(*args, **kwargs)
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
