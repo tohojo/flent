@@ -57,6 +57,7 @@ class Aggregator(object):
         self.instances = {}
         self.threads = {}
         self.settings = settings
+        self.failed_runners = 0
         if self.settings.LOG_FILE is None:
             self.logfile = None
         else:
@@ -132,6 +133,8 @@ class Aggregator(object):
                     # postprocess() method)
                     self.postprocessors.append(t.result)
                 elif hasattr(t.result, 'keys'):
+                    if not t.results:
+                        self.failed_runners += 1
                     for k in t.result.keys():
                         key = "%s::%s" % (n,k)
                         result[key] = t.result[k]
@@ -139,6 +142,8 @@ class Aggregator(object):
                             for tr in self.instances[key]['transformers']:
                                 result[key] = tr(result[key])
                 else:
+                    if not t.results:
+                        self.failed_runners += 1
                     result[n] = t.result
                     if 'transformers' in self.instances[n]:
                         for tr in self.instances[n]['transformers']:
@@ -199,6 +204,7 @@ class IterationAggregator(Aggregator):
         for i in range(self.iterations):
             data,metadata,raw_values = self.collect()
             results.meta('SERIES_META', metadata)
+            results.meta('FAILED_RUNNERS', self.failed_runners)
             results.raw_values = raw_values
             if i == 0:
                 results.create_series(data.keys())
