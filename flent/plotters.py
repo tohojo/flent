@@ -376,6 +376,7 @@ class Plotter(object):
         self.init_interactive()
         self.interactive_callback = self.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
         self.callbacks.append(self.interactive_callback)
+        self.callbacks.append(self.figure.canvas.mpl_connect("draw_event", self.clear_bg_cache))
 
     def disconnect_callbacks(self):
         for c in self.callbacks:
@@ -419,7 +420,7 @@ class Plotter(object):
         for bbox in bboxes:
             self.figure.canvas.blit(bbox)
 
-    def clear_bg_cache(self):
+    def clear_bg_cache(self, evt=None):
         self.bg_cache = {}
 
     def save_pdf(self, filename, data_filename, save_args):
@@ -463,7 +464,6 @@ class Plotter(object):
         return args
 
     def size_legends(self, event=None):
-        self.clear_bg_cache()
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
         if self.print_legend and not self.horizontal_legend and self.legends:
