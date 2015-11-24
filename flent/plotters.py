@@ -1321,6 +1321,7 @@ class MetaPlotter(Plotter):
                 rows = 1
             axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
             cfg['axes'] = [axis]
+            cfg = self.expand_plot_config(cfg, self.data_config)
             self.configs.append(cfg)
             plotter = get_plotter(cfg['type'])(cfg, self.data_config,
                                                figure=self.figure, **self._kwargs)
