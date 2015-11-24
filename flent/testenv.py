@@ -77,9 +77,22 @@ class TestEnvironment(object):
             # require_host_count(); this should not be propagated.
             if self.informational:
                 self.env['HOSTS'] = self.orig_hosts
-            return self.env
+            return self.expand_duplicates(self.env)
         except (IOError, SyntaxError) as e:
             raise RuntimeError("Unable to read test config file '%s': '%s'." % (filename, e))
+
+    def expand_duplicates(self, env):
+        new_data_sets = []
+        if not 'DATA_SETS' in env:
+            return env
+        for k,v in env['DATA_SETS'].items():
+            try:
+                for i in range(int(v['duplicates'])):
+                    new_data_sets.append(("%s::%d" % (k, i+1), dict(v, id=str(i+1), duplicates=None)))
+            except (KeyError, TypeError):
+                new_data_sets.append((k,v))
+        env['DATA_SETS'] = OrderedDict(new_data_sets)
+        return env
 
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
