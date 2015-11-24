@@ -1358,7 +1358,7 @@ class MetaPlotter(Plotter):
                 s.update_axes(set())
 
 
-    def clear_bg_cache(self):
+    def clear_bg_cache(self, evt=None):
         for s,ax in self.subplots:
             s.clear_bg_cache()
 
