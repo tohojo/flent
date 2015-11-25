@@ -94,8 +94,8 @@ class Aggregator(object):
                                         kill_event = instance['kill_event'],
                                         finish_event = Event(),
                                         timeout = instance['kill_timeout'])
-        instance['kill_event'] = guard.finish_event
-        return guard
+        instance['kill_event'] = watchdog.finish_event
+        return watchdog
 
     def collect(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
