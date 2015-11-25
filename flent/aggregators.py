@@ -224,6 +224,7 @@ class TimeseriesAggregator(Aggregator):
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
         results.meta('SERIES_META', metadata)
+        results.meta('FAILED_RUNNERS', self.failed_runners)
         results.raw_values = raw_values
         results.create_series(list(measurements.keys()))
 
