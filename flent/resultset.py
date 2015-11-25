@@ -65,6 +65,8 @@ SUFFIX = '.flent.gz'
 # datetime instances
 TIME_SETTINGS = ("TIME", "BATCH_TIME", "T0")
 
+_EMPTY = object()
+
 def new(settings):
     d = {}
     for a in RECORDED_SETTINGS:
@@ -95,9 +97,9 @@ class ResultSet(object):
             self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
 
-    def meta(self, key=None, value=None):
+    def meta(self, key=None, value=_EMPTY):
         if key:
-            if value:
+            if value is not _EMPTY:
                 self.metadata[key] = value
             if key in self.metadata:
                 return self.metadata[key]
