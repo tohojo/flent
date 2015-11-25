@@ -176,8 +176,14 @@ class ProcessRunner(threading.Thread):
     def fork(self):
         # Use named temporary files to avoid errors on double-delete when
         # running on Windows/cygwin.
-        self.stdout = tempfile.NamedTemporaryFile(prefix="flent-", delete=False)
-        self.stderr = tempfile.NamedTemporaryFile(prefix="flent-", delete=False)
+        try:
+            self.stdout = tempfile.NamedTemporaryFile(prefix="flent-", delete=False)
+            self.stderr = tempfile.NamedTemporaryFile(prefix="flent-", delete=False)
+        except OSError as e:
+            if e.errno == 24:
+                raise RuntimeError("Unable to create temporary files because too many files are open. Try increasing ulimit.")
+            else:
+                raise RuntimeError("Unable to create temporary files: %s" % e)
 
         pid = os.fork()
 
