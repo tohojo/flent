@@ -88,6 +88,15 @@ class Aggregator(object):
     def aggregate(self):
         raise NotImplementedError()
 
+    def create_watchdog(self, name, instance):
+        watchdog = runners.get('timer')("Timeout watchdog for '%s'" % name, None,
+                                        start_event = instance['start_event'],
+                                        kill_event = instance['kill_event'],
+                                        finish_event = Event(),
+                                        timeout = instance['kill_timeout'])
+        instance['kill_event'] = guard.finish_event
+        return guard
+
     def collect(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
@@ -101,12 +110,18 @@ class Aggregator(object):
         raw_values = {}
         try:
             for n,i in list(self.instances.items()):
+                watchdog = None
                 if 'run_after' in i:
                     i['start_event'] = self.instances[i['run_after']]['finish_event']
                 if 'kill_after' in i:
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']
+                if 'kill_timeout' in i and i['kill_timeout']:
+                    watchdog = self.create_watchdog(n, i)
                 self.threads[n] = i['runner'](n, self.settings, **i)
                 self.threads[n].start()
+                if watchdog is not None:
+                    self.threads[watchdog.name] = watchdog
+                    watchdog.start()
             shutting_down = False
             for n,t in list(self.threads.items()):
                 while t.isAlive():
