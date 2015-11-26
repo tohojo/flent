@@ -17,11 +17,12 @@ while getopts "i:c:I:C:H:" opt; do
 done
 
 command_string=$(cat <<EOF
+which tc_iterate >/dev/null && exec tc_iterate -i $interface -c $count -I $interval -C $command;
 for i in \$(seq $count); do
     tc -s $command show dev $interface;
     date '+Time: %s.%N';
     echo "---";
-    sleep $interval;
+    sleep $interval || exit 1;
 done
 EOF
 )
@@ -29,5 +30,5 @@ EOF
 if [[ "$host" == "localhost" ]]; then
     eval $command_string
 else
-    echo $command_string | ssh $host bash
+    echo $command_string | ssh $host sh
 fi
