@@ -126,7 +126,7 @@ int process_options(int argc, char **argv, args *o)
 static void result(int out, int size, int bufsize, char *buffer,
 		   struct timespec *cur_time) {
 	if(bufsize - size > 40) {
-		int added = sprintf(&buffer[size],"Time: %ld.%ld\n---\n",
+		int added = sprintf(&buffer[size],"Time: %ld.%09ld\n---\n",
 			cur_time->tv_sec,cur_time->tv_nsec);
   		write(out,buffer,size+added);
 	} else {
