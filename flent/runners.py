@@ -24,6 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
   signal, hmac, hashlib, calendar, socket
 
+mswindows = (sys.platform == "win32")
+
 from datetime import datetime
 from calendar import timegm
 from threading import Event
@@ -48,6 +50,25 @@ except ImportError:
 
 
 from .util import Glob
+
+if mswindows:
+    def _handle_exitstatus(sts):
+        raise NotImplementedError("Subprocess management currently doesn't work on Windows")
+else:
+    # helper function from subprocess module
+    def _handle_exitstatus(sts, _WIFSIGNALED=os.WIFSIGNALED,
+                           _WTERMSIG=os.WTERMSIG, _WIFEXITED=os.WIFEXITED,
+                           _WEXITSTATUS=os.WEXITSTATUS):
+        # This method is called (indirectly) by __del__, so it cannot
+        # refer to anything outside of its local scope."""
+        if _WIFSIGNALED(sts):
+            return -_WTERMSIG(sts)
+        elif _WIFEXITED(sts):
+            return _WEXITSTATUS(sts)
+        else:
+            # Should never happen
+            raise RuntimeError("Unknown child exit status!")
+
 
 def get(name):
     cname = classname(name, "Runner")
@@ -240,21 +261,9 @@ class ProcessRunner(threading.Thread):
         with self.kill_lock:
             return self.killed
 
-    # helper function from subprocess module
-    def _handle_exitstatus(self, sts, _WIFSIGNALED=os.WIFSIGNALED,
-                           _WTERMSIG=os.WTERMSIG, _WIFEXITED=os.WIFEXITED,
-                           _WEXITSTATUS=os.WEXITSTATUS):
-        # This method is called (indirectly) by __del__, so it cannot
-        # refer to anything outside of its local scope."""
-        if _WIFSIGNALED(sts):
-            self.returncode = -_WTERMSIG(sts)
-        elif _WIFEXITED(sts):
-            self.returncode = _WEXITSTATUS(sts)
-        else:
-            # Should never happen
-            raise RuntimeError("Unknown child exit status!")
-
     def start(self):
+        if mswindows:
+            raise RuntimeError("Process management currently doesn't work on Windows, so running tests is not possible.")
         self.fork()
         threading.Thread.start(self)
 
@@ -284,7 +293,7 @@ class ProcessRunner(threading.Thread):
                 pid,sts = os.waitpid(self.pid, os.WNOHANG)
 
         self.finish_event.set()
-        self._handle_exitstatus(sts)
+        self.returncode = _handle_exitstatus(sts)
 
         # Even with locking, kill detection is not reliable; sleeping seems to
         # help. *sigh* -- threading.
