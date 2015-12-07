@@ -123,11 +123,12 @@ int process_options(int argc, char **argv, args *o)
 }
 
 
-static void result(int out, int size, int bufsize, char *buffer,
-		   struct timespec *cur_time) {
+static void result(int out, int size, int bufsize, char *buffer) {
+	struct timespec cur_time;
 	if(bufsize - size > 40) {
+		clock_gettime(CLOCK_REALTIME, &cur_time);
 		int added = sprintf(&buffer[size],"Time: %ld.%09ld\n---\n",
-			cur_time->tv_sec,cur_time->tv_nsec);
+			cur_time.tv_sec,cur_time.tv_nsec);
   		write(out,buffer,size+added);
 	} else {
 		write(2,"Buffer Overrun\n",sizeof("Buffer Overrun\n"));
@@ -154,7 +155,6 @@ int forkit(args *a)
   int in = filedes2[0]; // connect out to in
   int out=STDOUT_FILENO;
   pid_t child;
-  struct timespec cur_time;
   // probably want the pipe line buffered via fcntl
   if((child = fork())==0)
     {
@@ -195,19 +195,20 @@ int forkit(args *a)
 
   do {
 	long long fired;
-  	clock_gettime(CLOCK_REALTIME, &cur_time);
 	if(write(tool,cmd,csize)==-1) perror("writing cmd");
 	if(read(timer,&fired,sizeof(fired))!=8) perror("reading timer");
 	ctr+=fired;
 	if((size = read(in,buffer,sizeof(buffer))) > 0) {
-		result(out,size,BUFFERSIZE,buffer,&cur_time);
+		result(out,size,BUFFERSIZE,buffer);
 	} else {
-		result(out,0,BUFFERSIZE,buffer,&cur_time);
+		result(out,0,BUFFERSIZE,buffer);
 		perror("reading cmd output");
 	}
-     } while (ctr < a->count);
-    kill(child,SIGHUP);
-    return 0;
+  } while (ctr < a->count);
+  close(tool);
+  close(in);
+  kill(child,SIGHUP);
+  return 0;
 }
 
 int main(int argc,char **argv) {
