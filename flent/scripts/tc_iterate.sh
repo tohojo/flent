@@ -16,8 +16,12 @@ while getopts "i:c:I:C:H:" opt; do
     esac
 done
 
+buffer=""
+[[ "$host" == "localhost" ]] || buffer="-b"
+
+
 command_string=$(cat <<EOF
-which tc_iterate >/dev/null && exec tc_iterate -i $interface -c $count -I $interval -C $command;
+which tc_iterate >/dev/null && exec tc_iterate $buffer -i $interface -c $count -I $interval -C $command;
 for i in \$(seq $count); do
     tc -s $command show dev $interface;
     date '+Time: %s.%N';
