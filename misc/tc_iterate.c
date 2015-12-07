@@ -135,14 +135,6 @@ static void result(int out, int size, int bufsize, char *buffer) {
 	}
 }
 
-int closeall()
-{
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-	return 0;
-}
-
 // Since this is linux only we can use timerfd for an isochronous clock
 
 int forkit(args *a)
