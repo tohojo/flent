@@ -2,6 +2,7 @@
  * Author:   Dave Taht
  * Date:     22 Nov 2015
  * Copyright (C) 2015 Michael David Taht
+ * Copyright (C) 2015 Toke Høiland-Jørgensen
 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
