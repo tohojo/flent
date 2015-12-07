@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -34,92 +34,92 @@
 #include <sys/timerfd.h>
 
 /*
- openwrt's ash shell does not have usleep,
-	nor nanosecond time in the date command.
+  openwrt's ash shell does not have usleep,
+  nor nanosecond time in the date command.
 
-for i in $(seq $count); do
-    tc -s $command show dev $interface
-    date '+Time: %s.%N'
-    echo "---"
-    sleep $interval
-done
+  for i in $(seq $count); do
+  tc -s $command show dev $interface
+  date '+Time: %s.%N'
+  echo "---"
+  sleep $interval
+  done
 
-So this C program (which is more accurate and lighter weight
-than the shell script) needs to be used on things like openwrt,
-or when high resolution tc statistics are desired.
+  So this C program (which is more accurate and lighter weight
+  than the shell script) needs to be used on things like openwrt,
+  or when high resolution tc statistics are desired.
 */
 
 #define BUFFERSIZE (1024*1024)
 #define NSEC_PER_SEC (1000000000.0)
 
 struct arg {
-  int count;
-  struct timespec interval;
-  double finterval;
-  char *interface;
-  char *command;
+	int count;
+	struct timespec interval;
+	double finterval;
+	char *interface;
+	char *command;
 };
 
 typedef struct arg args;
 
 static const struct option long_options[] = {
-  { "interface", required_argument	, NULL , 'i' } ,
-  { "count"    , required_argument	, NULL , 'c' } ,
-  { "interval" , required_argument	, NULL , 'I' } ,
-  { "command"  , required_argument	, NULL , 'C' } ,
-  { "help"     , no_argument		, NULL , 'h' } ,
+	{ "interface", required_argument	, NULL , 'i' } ,
+	{ "count"    , required_argument	, NULL , 'c' } ,
+	{ "interval" , required_argument	, NULL , 'I' } ,
+	{ "command"  , required_argument	, NULL , 'C' } ,
+	{ "help"     , no_argument		, NULL , 'h' } ,
 };
 
 void usage (char *err) {
-  if(err) fprintf(stderr,"%s\n",err);
-  printf("tc_iterate [options]\n");
-  printf(
-         "\t-h --help \n"
-         "\t-i --interface [eth0*,wlan0,etc]\n"
-         "\t-c --count     [number of iterations]\n"
-         "\t-I --interval  [fractional number of seconds]\n"
-         "\t-C --command   [qdisc]\n");
-  exit(-1);
+	if(err) fprintf(stderr,"%s\n",err);
+	printf("tc_iterate [options]\n");
+	printf(
+		"\t-h --help \n"
+		"\t-i --interface [eth0*,wlan0,etc]\n"
+		"\t-c --count     [number of iterations]\n"
+		"\t-I --interval  [fractional number of seconds]\n"
+		"\t-C --command   [qdisc]\n");
+	exit(-1);
 }
 
 static void defaults(args *a) {
-    a->interface = "eth0";
-    a->command = "qdisc";
-    a->finterval=.2;
-    a->count=10;
-    a->interval.tv_nsec = 0;
-    a->interval.tv_sec = 0;
+	a->interface = "eth0";
+	a->command = "qdisc";
+	a->finterval=.2;
+	a->count=10;
+	a->interval.tv_nsec = 0;
+	a->interval.tv_sec = 0;
 }
 
 #define QSTRING "i:c:I:C:h"
 
 int process_options(int argc, char **argv, args *o)
 {
-  int          option_index = 0;
-  int          opt = 0;
-  optind       = 1;
+	int          option_index = 0;
+	int          opt = 0;
+	optind       = 1;
 
-  while(1)
-  {
-    opt = getopt_long(argc, argv,
-                      QSTRING,
-                      long_options, &option_index);
-    if(opt == -1) break;
+	while(1)
+	{
+		opt = getopt_long(argc, argv,
+				  QSTRING,
+				  long_options, &option_index);
+		if(opt == -1) break;
 
-    switch (opt)
-      {
-      case 'c': o->count = strtoul(optarg,NULL,10);  break;
-      case 'I': o->finterval = strtod(optarg,NULL); break;
-      case 'C': o->command = optarg; break;
-      case 'i': o->interface = optarg; break;
-      case '?':
-      case 'h': usage(NULL); break;
-      default:  usage(NULL);
-      }
-  }
-  o->interval.tv_sec = floor(o->finterval);
-  o->interval.tv_nsec = (long long) ((o->finterval - o->interval.tv_sec) * NSEC_PER_SEC);
-  return 0;
+		switch (opt)
+		{
+		case 'c': o->count = strtoul(optarg,NULL,10);  break;
+		case 'I': o->finterval = strtod(optarg,NULL); break;
+		case 'C': o->command = optarg; break;
+		case 'i': o->interface = optarg; break;
+		case '?':
+		case 'h': usage(NULL); break;
+		default:  usage(NULL);
+		}
+	}
+	o->interval.tv_sec = floor(o->finterval);
+	o->interval.tv_nsec = (long long) ((o->finterval - o->interval.tv_sec) * NSEC_PER_SEC);
+	return 0;
 }
 
 
@@ -128,7 +128,7 @@ static void result(int out, int size, int bufsize, char *buffer) {
 	if(bufsize - size > 40) {
 		clock_gettime(CLOCK_REALTIME, &cur_time);
 		int added = sprintf(&buffer[size],"Time: %ld.%09ld\n---\n",
-			cur_time.tv_sec,cur_time.tv_nsec);
+				    cur_time.tv_sec,cur_time.tv_nsec);
   		write(out,buffer,size+added);
 	} else {
 		write(2,"Buffer Overrun\n",sizeof("Buffer Overrun\n"));
@@ -137,85 +137,85 @@ static void result(int out, int size, int bufsize, char *buffer) {
 
 int closeall()
 {
-  close(STDIN_FILENO);
-  close(STDOUT_FILENO);
-  close(STDERR_FILENO);
-  return 0;
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	return 0;
 }
 
 // Since this is linux only we can use timerfd for an isochronous clock
 
 int forkit(args *a)
 {
-  int filedes[2]; // 0 = read
-  int filedes2[2]; // 0 = read
-  pipe(filedes);
-  pipe(filedes2);
-  int tool = filedes[1]; // write this
-  int in = filedes2[0]; // connect out to in
-  int out=STDOUT_FILENO;
-  pid_t child;
-  // probably want the pipe line buffered via fcntl
-  if((child = fork())==0)
-    {
-	close(filedes[1]);
-	close(filedes2[0]);
-	dup2(filedes2[1],STDOUT_FILENO);
-	dup2(filedes[0],STDIN_FILENO);
+	int filedes[2]; // 0 = read
+	int filedes2[2]; // 0 = read
+	pipe(filedes);
+	pipe(filedes2);
+	int tool = filedes[1]; // write this
+	int in = filedes2[0]; // connect out to in
+	int out=STDOUT_FILENO;
+	pid_t child;
+	// probably want the pipe line buffered via fcntl
+	if((child = fork())==0)
+	{
+		close(filedes[1]);
+		close(filedes2[0]);
+		dup2(filedes2[1],STDOUT_FILENO);
+		dup2(filedes[0],STDIN_FILENO);
 
-      if(execlp("tc", "tc", "-s", "-b", "-",NULL)==-1) {
-	perror("Failed to execute cmd");
-      	exit(-1);
+		if(execlp("tc", "tc", "-s", "-b", "-",NULL)==-1) {
+			perror("Failed to execute cmd");
+			exit(-1);
+		}
 	}
-   }
-  close(filedes2[1]);
-  close(filedes[0]);
-  struct itimerspec new_value;
+	close(filedes2[1]);
+	close(filedes[0]);
+	struct itimerspec new_value;
 
-  int timer = timerfd_create(CLOCK_REALTIME, 0);
-  //new_value.it_interval.tv_nsec = 100000000; // 10ms interval
-  //new_value.it_interval.tv_sec = 0;
-  new_value.it_interval = a->interval;
+	int timer = timerfd_create(CLOCK_REALTIME, 0);
+	//new_value.it_interval.tv_nsec = 100000000; // 10ms interval
+	//new_value.it_interval.tv_sec = 0;
+	new_value.it_interval = a->interval;
 
-  new_value.it_value.tv_nsec = 10; // arm the timer, wait 10ns
-  new_value.it_value.tv_sec = 0;
+	new_value.it_value.tv_nsec = 10; // arm the timer, wait 10ns
+	new_value.it_value.tv_sec = 0;
 
-/* better method would be to poll for input (since writes from the
-   tool could block or return no output for some reason), timestamp the input,
-   and if the difference is less than half, skip this round.
-   this would absorb noncompleting stuff */
+	/* better method would be to poll for input (since writes from the
+	   tool could block or return no output for some reason), timestamp the input,
+	   and if the difference is less than half, skip this round.
+	   this would absorb non-completing stuff */
 
-  char buffer[BUFFERSIZE];
-  char cmd[1024];
-  int size = 0;
-  sprintf(cmd,"%s show dev %s\n",a->command,a->interface);
-  int csize = strlen(cmd);
-  int ctr = 0;
-  timerfd_settime(timer,0,&new_value,NULL); // relative timer
+	char buffer[BUFFERSIZE];
+	char cmd[1024];
+	int size = 0;
+	sprintf(cmd,"%s show dev %s\n",a->command,a->interface);
+	int csize = strlen(cmd);
+	int ctr = 0;
+	timerfd_settime(timer,0,&new_value,NULL); // relative timer
 
-  do {
-	long long fired;
-	if(write(tool,cmd,csize)==-1) perror("writing cmd");
-	if(read(timer,&fired,sizeof(fired))!=8) perror("reading timer");
-	ctr+=fired;
-	if((size = read(in,buffer,sizeof(buffer))) > 0) {
-		result(out,size,BUFFERSIZE,buffer);
-	} else {
-		result(out,0,BUFFERSIZE,buffer);
-		perror("reading cmd output");
-	}
-  } while (ctr < a->count);
-  close(tool);
-  close(in);
-  kill(child,SIGHUP);
-  return 0;
+	do {
+		long long fired;
+		if(write(tool,cmd,csize)==-1) perror("writing cmd");
+		if(read(timer,&fired,sizeof(fired))!=8) perror("reading timer");
+		ctr+=fired;
+		if((size = read(in,buffer,sizeof(buffer))) > 0) {
+			result(out,size,BUFFERSIZE,buffer);
+		} else {
+			result(out,0,BUFFERSIZE,buffer);
+			perror("reading cmd output");
+		}
+	} while (ctr < a->count);
+	close(tool);
+	close(in);
+	kill(child,SIGHUP);
+	return 0;
 }
 
 int main(int argc,char **argv) {
-    args a;
-    int status = 0;
-    defaults(&a);
-    process_options(argc, argv, &a);
-    forkit(&a);
-    return status;
+	args a;
+	int status = 0;
+	defaults(&a);
+	process_options(argc, argv, &a);
+	forkit(&a);
+	return status;
 }
