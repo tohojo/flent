@@ -173,7 +173,7 @@ int forkit(args *a)
 	}
 	close(filedes2[1]);
 	close(filedes[0]);
-	struct itimerspec new_value;
+	struct itimerspec new_value = {0};
 
 	int timer = timerfd_create(CLOCK_REALTIME, 0);
 	//new_value.it_interval.tv_nsec = 100000000; // 10ms interval
