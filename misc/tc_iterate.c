@@ -58,6 +58,7 @@ struct arg {
 	double finterval;
 	char *interface;
 	char *command;
+	char buffer;
 };
 
 typedef struct arg args;
@@ -68,6 +69,7 @@ static const struct option long_options[] = {
 	{ "interval" , required_argument	, NULL , 'I' } ,
 	{ "command"  , required_argument	, NULL , 'C' } ,
 	{ "help"     , no_argument		, NULL , 'h' } ,
+	{ "buffer"   , no_argument		, NULL , 'b' } ,
 };
 
 void usage (char *err) {
@@ -75,6 +77,7 @@ void usage (char *err) {
 	printf("tc_iterate [options]\n");
 	printf(
 		"\t-h --help \n"
+		"\t-b --buffer \n"
 		"\t-i --interface [eth0*,wlan0,etc]\n"
 		"\t-c --count     [number of iterations]\n"
 		"\t-I --interval  [fractional number of seconds]\n"
@@ -89,9 +92,10 @@ static void defaults(args *a) {
 	a->count=10;
 	a->interval.tv_nsec = 0;
 	a->interval.tv_sec = 0;
+	a->buffer = 0;
 }
 
-#define QSTRING "i:c:I:C:h"
+#define QSTRING "i:c:I:C:hb"
 
 int process_options(int argc, char **argv, args *o)
 {
@@ -112,6 +116,7 @@ int process_options(int argc, char **argv, args *o)
 		case 'I': o->finterval = strtod(optarg,NULL); break;
 		case 'C': o->command = optarg; break;
 		case 'i': o->interface = optarg; break;
+		case 'b': o->buffer = 1; break;
 		case '?':
 		case 'h': usage(NULL); break;
 		default:  usage(NULL);
@@ -145,8 +150,14 @@ int forkit(args *a)
 	pipe(filedes2);
 	int tool = filedes[1]; // write this
 	int in = filedes2[0]; // connect out to in
-	int out=STDOUT_FILENO;
+	char tmpfile[] = "/tmp/tc_iterateXXXXXX";
+	int out = a->buffer ? mkstemp(tmpfile) : STDOUT_FILENO;
 	pid_t child;
+
+	if(a->buffer && !out) {
+		perror("Unable to create tmpfile");
+		exit(-1);
+	}
 	// probably want the pipe line buffered via fcntl
 	if((child = fork())==0)
 	{
@@ -199,7 +210,14 @@ int forkit(args *a)
 	} while (ctr < a->count);
 	close(tool);
 	close(in);
-	kill(child,SIGHUP);
+	if(a->buffer) {
+		lseek(out, 0, SEEK_SET);
+		while((size = read(out, buffer, sizeof(buffer))) > 0)
+			write(STDOUT_FILENO,buffer,size);
+		unlink(tmpfile);
+	}
+	close(out);
+	wait(NULL);
 	return 0;
 }
 
