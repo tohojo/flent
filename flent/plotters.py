@@ -98,7 +98,7 @@ def init_matplotlib(output, use_markers, load_rc):
     # Try to detect if a custom matplotlibrc is installed, and if so don't
     # load our own values.
     if load_rc \
-      and not os.environ['HOME'] in matplotlib.matplotlib_fname() \
+      and ('HOME' in os.environ and not os.environ['HOME'] in matplotlib.matplotlib_fname()) \
       and not 'MATPLOTLIBRC' in os.environ and hasattr(matplotlib, 'rc_file'):
         rcfile = os.path.join(DATA_DIR, 'matplotlibrc.dist')
         if os.path.exists(rcfile):
