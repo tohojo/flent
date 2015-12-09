@@ -23,8 +23,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import re
 
-from .util import classname, long_substr
-from .resultset import ResultSet
+from flent.util import classname, long_substr
+from flent.resultset import ResultSet
 
 from itertools import cycle
 from bisect import bisect_left, bisect_right

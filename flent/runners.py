@@ -31,8 +31,8 @@ from calendar import timegm
 from threading import Event
 
 from flent import util
-from .build_info import DATA_DIR
-from .util import classname, ENCODING
+from flent.build_info import DATA_DIR
+from flent.util import classname, ENCODING, Glob
 
 try:
     from defusedxml.xmlrpc import monkey_patch
@@ -48,8 +48,6 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpc
 
-
-from .util import Glob
 
 if mswindows:
     def _handle_exitstatus(sts):

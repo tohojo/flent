@@ -24,8 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, inspect, io
 
 from flent import combiners
-from .util import cum_prob, frange, classname, long_substr, format_date, Glob
-from .build_info import DATA_DIR, VERSION
+from flent.util import cum_prob, frange, classname, long_substr, format_date, Glob
+from flent.build_info import DATA_DIR, VERSION
 from functools import reduce
 from itertools import product,cycle,islice,chain
 from collections import OrderedDict

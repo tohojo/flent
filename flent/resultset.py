@@ -29,7 +29,7 @@ from copy import deepcopy
 from collections import OrderedDict
 
 
-from .util import gzip_open, bz2_open, parse_date, format_date
+from flent.util import gzip_open, bz2_open, parse_date, format_date
 
 # Controls pretty-printing of json dumps
 JSON_INDENT=2

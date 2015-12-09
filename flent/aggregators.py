@@ -25,9 +25,9 @@ import math, pprint, signal, sys, io
 from datetime import datetime
 from threading import Event
 
-from . import runners, transformers
+from flent import runners, transformers
 
-from .util import classname
+from flent.util import classname
 
 import collections
 

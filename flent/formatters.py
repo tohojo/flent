@@ -23,10 +23,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import json, sys, csv, math, inspect, os, re, io
 
-from .util import cum_prob, frange, classname, long_substr
-from .resultset import ResultSet
-from .build_info import DATA_DIR, VERSION
-from . import plotters
+from flent.util import cum_prob, frange, classname, long_substr
+from flent.resultset import ResultSet
+from flent.build_info import DATA_DIR, VERSION
+from flent import plotters
 from functools import reduce
 from itertools import product,cycle,islice
 from collections import OrderedDict
