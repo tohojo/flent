@@ -99,8 +99,8 @@ def check_running(settings):
     files = os.listdir(SOCKET_DIR)
     for f in files:
         if f.startswith(SOCKET_NAME_PREFIX):
-            pid = int(f.split("-")[-1])
             try:
+                pid = int(f.split("-")[-1])
                 os.kill(pid, 0)
                 sys.stderr.write("Found a running instance with pid %d. Trying to connect... " % pid)
                 # Signal handler did not raise an error, so the pid is running. Try to connect
@@ -126,8 +126,9 @@ def check_running(settings):
                     return True
                 else:
                     sys.stderr.write("Error!\n")
-            except OSError:
+            except (OSError, ValueError):
                 # os.kill raises OSError if the pid does not exist
+                # int() returns a ValueError if the pid is not an integer
                 pass
     return False
 
