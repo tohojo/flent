@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, signal, traceback, base64, time
+import sys, os, signal, traceback, base64, time, tempfile
 
 try:
     import cPickle as pickle
@@ -72,7 +72,7 @@ from flent import util, batch, resultset
 
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "flent-socket-"
-SOCKET_DIR = "/tmp"
+SOCKET_DIR = tempfile.gettempdir()
 
 __all__ = ['run_gui']
 
