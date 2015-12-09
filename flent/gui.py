@@ -31,6 +31,7 @@ except ImportError:
 from itertools import chain
 from collections import OrderedDict
 
+mswindows = (sys.platform == "win32")
 
 # Python 2/3 compatibility
 try:
@@ -93,7 +94,7 @@ def run_gui(settings):
 def check_running(settings):
     """Check for a valid socket of an already running instance, and if so,
     connect to it and send the input file names."""
-    if settings.NEW_GUI_INSTANCE:
+    if settings.NEW_GUI_INSTANCE or mswindows:
         return False
 
     files = os.listdir(SOCKET_DIR)
