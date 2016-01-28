@@ -842,6 +842,65 @@ class TcRunner(ProcessRunner):
             count=length // interval + 1,
             host=host)
 
+class CpuStatsRunner(ProcessRunner):
+    """Runner for getting CPU usage stats from /proc/stat. Expects iterations to be
+    separated by '\n---\n and a timestamp to be present in the form 'Time:
+    xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
+
+    """
+    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    value_re   = re.compile(r"^\d+ \d+ (?P<load>\d+\.\d+)$", re.MULTILINE)
+
+    def parse(self, output):
+        results = {}
+        parts = output.split("\n---\n")
+        for part in parts:
+            # Split out individual qdisc entries (in case there are more than
+            # one). If so, discard the root qdisc and sum the rest.
+            timestamp = self.time_re.search(part)
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
+            value = self.value_re.search(part)
+
+            if value is None:
+                continue
+            matches = {}
+
+            for k,v in list(value.groupdict().items()):
+                v = float(v)
+                if not k in matches:
+                    matches[k] = v
+                else:
+                    matches[k] += v
+
+            for k,v in matches.items():
+                if not isinstance(v,float):
+                    continue
+                if not k in results:
+                    results[k] = [[timestamp,v]]
+                else:
+                    results[k].append([timestamp,v])
+            matches['t'] = timestamp
+            self.raw_values.append(matches)
+        return results
+
+    @classmethod
+    def find_binary(cls, interval, length, host='localhost'):
+        script = os.path.join(DATA_DIR, 'scripts', 'stat_iterate.sh')
+        if not os.path.exists(script):
+            raise RuntimeError("Cannot find stat_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RuntimeError("TC stats requires a Bash shell.")
+
+        return "{bash} {script} -I {interval:.2f} -c {count:.0f} -H {host}".format(
+            bash=bash,
+            script=script,
+            interval=interval,
+            count=length // interval + 1,
+            host=host)
 
 class NullRunner(object):
     def __init__(self, *args, **kwargs):
