@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+   <mime-type type="application/x-compressed-json">
+     <comment>Compressed JSON data</comment>
+     <sub-class-of type="application/gzip"/>
+     <glob pattern="*.json.gz"/>
+   </mime-type>
+   <mime-type type="application/vnd.flent.data+json">
+     <comment>Flent data file</comment>
+     <glob pattern="*.flent"/>
+   </mime-type>
+   <mime-type type="application/vnd.flent.data.gzip">
+     <comment>Flent data file (gzipped)</comment>
+     <sub-class-of type="application/gzip"/>
+     <glob pattern="*.flent.gz"/>
+   </mime-type>
+   <mime-type type="application/vnd.flent.data.bzip2">
+     <comment>Flent data file (bzipped)</comment>
+     <sub-class-of type="application/x-bzip2"/>
+     <glob pattern="*.flent.bz2"/>
+   </mime-type>
+</mime-info>

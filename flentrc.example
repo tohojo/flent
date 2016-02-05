@@ -1,0 +1,195 @@
+## Sample rcfile for flent. Allows options to be specified
+## on a global or per-test basis. The file is divided into sections with
+## section headers between square brackets.
+##
+## Options specified in the [global] section apply to everything, while
+## further sections specify options that are specific for the test name
+## corresponding to the section name.
+##
+## Comments start with # or ;, and option names are case insensitive.
+## The supported options are listed with commentary below. Options specified
+## on the command line override options set in the rcfile.
+##
+## To use: Copy to ~/.flentrc and edit, or specify location of
+## the file with --rcfile.
+
+[global]
+
+# Default test target host(s).
+# Corresponding command line option: --host (or unqualified argument).
+# Multiple values are separated by commas.
+;hosts = demo.tohojo.dk
+
+# Data point step size and sampling interval (seconds).
+# Corresponding command line option: --step-size
+;step_size = 0.2
+
+# Test length (not including delay before starting test).
+# Corresponding command line option: --length
+;length = 60
+
+# Delay from start of test to the rest of the test starts (only some tests).
+# Typically used to delay bandwidth loaders after starting latency measurements;
+# the total runtime, for tests that use delay, typically becomes length+2*delay.
+# Corresponding command line option: --delay
+;delay = 5
+
+# Output file; defaults to standard output (or an interactive viewer for plots)
+# if a graphical display is available. Note that for some output modes (e.g. plots),
+# the output file name determines file format.
+# Corresponding command line option: --output
+;output =
+
+# Data file directory. Data files from test runs are stored in this directory.
+# Defaults to the system tmpdir (e.g. /tmp)
+# Corresponding command line option: --data-dir
+;data_dir = /tmp
+
+# Output format.
+# Corresponding command line option: --format
+;format =
+
+# Title added to data file name, printed on plots etc.
+# Probably not terribly useful to set in a config file...
+# Corresponding command line option: --title-extra
+;title =
+
+# Note added to the data file as metadata (key NOTE).
+# Probably not terribly useful to set in a config file...
+# Corresponding command line option: --note
+;note =
+
+# Filename to output debug logging to.
+# Debug logging is disabled if this is not set.
+# Corresponding command line option: --log-file
+;log_file =
+
+# IP version to use for connecting to the target host.
+# Valid values: 4 or 6.
+# Corresponding command line option: --ipv4 or --ipv6
+;ip_version = 4
+
+# Socket timeout to pass to netperf for UDP tests (if the netperf) version
+# supports it. Units of seconds.
+# Corresponding command line option: --socket-timeout
+;socket_timeout = 2
+
+# Whether to interpret multiple input files as being used to scale plots.
+# If not set, multiple input files are interpreted to be plotted side-by-side.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --scale-mode
+;scale_mode = no
+
+# Whether to plot each data series in a separate subplot when combining multiple
+# data series into a single plot. Only supported for some plot types, and only
+# works if scale_mode is not set.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --subplot-combine
+;subplot_combine = no
+
+# Whether to print annotations (hostname etc) on plots.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --no-annotation
+;annotate = yes
+
+# Whether to print the test title on plots.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --no-title
+;print_title = yes
+
+# Whether to print plot legend.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --no-legend
+;print_legend = yes
+
+# Whether to always start y-axis from 0 (rather than scaling to the smallest
+# data point).
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --zero-y
+;zero_y = no
+
+# Whether to Invert the y-axis for latency data series (making plots show
+# 'better values upwards').
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --invert-latency-y
+;invert_y = no
+
+# Whether to enable automatic log-scaling of plot axes.
+# If not disabled here (or on the command line), log scales are enabled if
+# the maximum data point is more than 20 times the value of the minimum.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --disable-log
+;log_scale = yes
+
+# Whether to gather extended meta data and store it in the data file.
+# This may include sensitive data from the machine running the test, that
+# it may not be desireable to publish. See the man page for the list of
+# data gathered.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --extended-metadata
+;extended_metadata = no
+
+# Remote hosts to gather metadata from.
+#
+# Multiple hosts are separated with commas; setting this also turns on
+# extended_metadata.
+# Corresponding command line option: --remote-metadata
+;remote_metadata = hostname1, hostname2
+
+# Host to connect to the D-ITG control server on (only used for D-ITG tests; see
+# man page).
+#
+# If this is not set (here or on the command line), the test hostname is used.
+;ditg_control_host = control-server.example.com
+
+# Port the D-ITG control server is listening on (only used for D-ITG tests; see
+# man page). Default: 8000.
+;ditg_control_port = 8000
+
+# Secret used for HMAC authentication to the D-ITG control server (only used for
+# D-ITG tests; see man page). Default: '' (the empty string).
+;digt_control_secret =
+
+# Whether to always start a new GUI instance rather than attempt to connect
+# to an already running instance. Note that unlike on the when it is passed
+# on the command line, setting this flag here does not imply --gui.
+#
+# Note that boolean options, if changed from the default, current cannot be
+# overridden from the command line.
+# Corresponding command line option: --new-gui-instance
+;new_gui_instance = no
+
+# List of batch file names to load -- to actually do a batch run, the batch name
+# has to be passed in on the command line. This allows for having a persistent
+# batch file specified in the rc file, which is always available for loading.
+#
+# Like with hosts, batch files specified here are overridden by batch files
+# specified on the command line, meaning that if one or more batch files are
+# passed on the command line, the files specified here are NOT loaded.
+#
+# Multiple values are specified comma-separated.
+;batch_files = ~/example.batch
+
+## Sections can specify settings overriding the global settings for
+## specific tests. For instance, this sets plot output to be default
+## for the RRUL test:
+;[rrul]
+;format=plot

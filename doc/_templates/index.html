@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% set title = _('Overview') %}
+{% block body %}
+<h1>Welcome</h1>
+<p>Welcome to the home of Flent: The FLExible Network Tester. Flent is a Python
+wrapper to run multiple simultaneous network benchmarking tool instances (e.g.
+netperf/iperf/ping) and aggregate the results. It was previously known as
+'netperf-wrapper'.</p>
+<p>There's a <a href="flent-the-flexible-network-tester.pdf">short paper
+  (pdf)</a> describing some of the design goals of Flent.</p>
+<h2>Getting started</h2>
+<p>Install Flent as per the instructions below, then see <a
+href="intro.html#quick-start">the Quick-start section</a> to get going</a>.</p>
+<p>For more information, see <a href="contents.html">the full documentation<a>
+or <a href="search.html">search</a> for specific content.</p>
+<h2>Installing Flent</h2>
+<p>Installing Flent can be done in several ways, depending on your operating system:</p>
+<ul>
+  <li><strong>Ubuntu users:</strong> Add the <a
+  href="https://launchpad.net/~tohojo/+archive/ubuntu/flent/+packages">tohojo/flent PPA</a>.</li>
+  <li><strong>Debian (and Ubuntu) users:</strong> Use the <a
+  href="https://software.opensuse.org/download.html?project=home:tohojo:flent&package=flent">Pre-built
+packages from the Open Build Service.</a></li>
+  <li><strong>Arch Linux users:</strong> Install 'flent' from the AUR.</li>
+  <li><strong>Other Linux and OSX with Macbrew:</strong>Install from the Python cheese shop: <code class="docutils literal"><span class="pre">pip install flent</span></code></li>
+</ul>
+<h2>Get involved</h2>
+<p>Getting involved is easy:</p>
+<ul>
+  <li>View the source code or issue tracker <a
+  href="https://github.com/tohojo/flent">on GitHub</a></li>
+  <li>Subscribe to the <a href="https://lists.flent.org">mailing lists</a></li>
+</ul>
+{% endblock %}

@@ -1,0 +1,263 @@
+# -*- mode:conf -*-
+[Command::clear_caches]
+exec = ./clear_caches.sh
+type = pre
+essential = yes
+
+[Command::setup_qdiscs]
+exec = ./setup_qdiscs.sh ${qdisc_name} "${qdisc_args_down}" "${qdisc_args_up}" ${rate_down} ${rate_up} ${rtt}
+type = pre
+essential = yes
+
+[Command::qdisc_stats]
+exec = ./qdisc_stats.sh
+type = post
+essential = no
+
+[Command::tcpdump]
+filename = ${data_filename}
+exec = ssh ${hostname} "python tcpdump-wrapper.py start ${filename} -i ${interface} -s ${capsize}"
+type = pre
+essential = yes
+
+[Command::tcpdump_stop]
+filename = ${data_filename}
+exec = ssh ${hostname} "python tcpdump-wrapper.py stop ${filename} -d /home/data/${batch_name}"
+type = post
+essential = yes
+
+[Command::tcpdump_egress]
+inherits = tcpdump
+hostname = ${egress_router_hostname}
+interface = ${egress_router_iface}
+extra_commands = tcpdump_egress_stop
+
+[Command::tcpdump_egress_stop]
+inherits = tcpdump_stop
+hostname = ${egress_router_hostname}
+
+[Command::tcpdump_ingress]
+inherits = tcpdump
+hostname = ${ingress_router_hostname}
+interface = ${ingress_router_iface}
+extra_commands = tcpdump_ingress_stop
+
+[Command::tcpdump_ingress_stop]
+inherits = tcpdump_stop
+hostname = ${ingress_router_hostname}
+
+[Command::tcpdump_server]
+inherits = tcpdump
+hostname = ${server_hostname}
+interface = ${server_iface}
+extra_commands = tcpdump_server_stop
+
+[Command::tcpdump_server_stop]
+inherits = tcpdump_stop
+hostname = ${server_hostname}
+
+[Command::tcpdump_client]
+filename = ${data_filename}
+exec = python tcpdump-wrapper.py start ${filename} -i ${interface} -s ${capsize}
+interface = "${client_iface}"
+type = pre
+essential = yes
+extra_commands = tcpdump_client_stop
+
+[Command::tcpdump_client_stop]
+filename = ${data_filename}
+exec = python tcpdump-wrapper.py stop ${filename} -d /home/data/${batch_name}
+type = post
+essential = yes
+
+
+
+[Batch::global]
+# rc file keys
+remote_metadata = ${egress_router_hostname}, ${ingress_router_hostname}, ${end_hostname}, ${delaybox_hostname}
+extended_metadata = yes
+title = qdisc:${qdisc_label} rep:${repetition} rtt:${rtt} rate:${rate_down}/${rate_up}
+filename_extra = ${rtt}-${rate_up}-${qdisc_label}-${repetition}
+output_path = batch-${batch_time}/${batch_name}/${rate_up}-${repetition}
+ip_version = 4
+length = 60
+commands = clear_caches, setup_qdiscs, tcpdump_client, tcpdump_egress, tcpdump_ingress, tcpdump_server, qdisc_stats
+for_qdiscs = ared, fq_codel, fq_nocodel, codel, pie, pfifo_fast, sfq
+for_bandwidths = 10mbit, 1mbit
+for_rtts = 50ms
+repetitions = 1
+debug_log = yes
+hosts = testserv-05
+
+# Not runnable
+abstract = yes
+
+# how long to pause after each run?
+pause = 5
+
+[Batch::rrul]
+inherits = global
+test_name = rrul_be
+disabled = yes
+
+[Batch::tcp-upload]
+inherits = global
+test_name = tcp_1up_noping
+disabled = yes
+
+[Batch::tcp-upload-compete]
+inherits = global
+test_name = tcp_2up_delay
+for_cap = fullcap
+repetitions = 30
+
+[Batch::rtt-fair]
+inherits = global
+hosts = testserv-01, testserv-02, testserv-03, testserv-04
+test_name = rtt_fair_up
+for_qdiscs = ared, fq_codel, fq_nocodel, codel, pie, pfifo_fast, pfifo_fast_1000, sfq
+for_rtts = multi
+repetitions = 30
+
+[Batch::voip]
+inherits = global
+test_name = voip
+disabled = yes
+
+[Batch::voip-1up]
+inherits = global
+test_name = voip-1up
+repetitions = 30
+
+[Batch::voip-rrul]
+inherits = global
+test_name = voip-rrul
+repetitions = 30
+
+[Batch::http]
+inherits = global
+filename_extra = ${rtt}-${rate_up}-${http_site}-${qdisc_label}-${repetition}
+title = qdisc:${qdisc_label} rep:${repetition} site:${http_site} rtt:${rtt} rate:${rate_down}/${rate_up}
+test_name = http
+for_rtts = multi
+for_sites = google, huffpost
+
+[Batch::http-1up]
+inherits = http
+test_name = http-1up
+repetitions = 30
+
+[Batch::http-rrul]
+inherits = http
+test_name = http-rrul
+repetitions = 30
+
+[Arg::global]
+egress_router_hostname = testbed-02
+egress_router_iface = eth2
+ingress_router_hostname = testbed-04
+ingress_router_iface = eth1
+server_hostname = testbed-05
+server_iface = eth1
+client_iface = eth2
+delaybox_hostname = testbed-03
+end_hostname = testbed-05
+capsize = 128
+qdisc_args =
+qdisc_label = ${qdisc_name}
+rate_down = 10Mbit
+rate_up = 10Mbit
+rtt = 50ms
+qdisc_args_up = ${qdisc_args}
+qdisc_args_down = ${qdisc_args}
+
+[Arg::fullcap]
+capsize = 0
+
+[Arg::http]
+http_getter_urllist = http://testserv-05.http/mirror/${http_site}_files.txt
+http_getter_dns = 10.60.5.1
+
+[Arg::google]
+inherits = http
+http_site = google
+
+[Arg::cnn]
+inherits = http
+http_site = cnn
+step_size = 1.0
+
+[Arg::huffpost]
+inherits = http
+http_site = huffpost
+step_size = 1.0
+
+[Arg::dn]
+inherits = http
+http_site = dn
+step_size = 1.0
+
+[Arg::1mbit]
+rate_up = 1Mbit
+ared_args_up = min 1514 max 3028
+codel_args_up = target 13ms
+
+[Arg::10mbit]
+rate_up = 10Mbit
+
+[Arg::50ms]
+rtt = 50ms
+
+[Arg::multi]
+rtt = multi
+
+[Arg::pie]
+inherits = global
+qdisc_name = pie
+qdisc_args = limit 100
+
+[Arg::codel]
+inherits = global
+qdisc_name = codel
+qdisc_args = limit 100
+qdisc_args_up = ${qdisc_args} ${codel_args_up}
+codel_args_up =
+
+[Arg::fq_codel]
+inherits = global
+qdisc_name = fq_codel
+qdisc_args = limit 100 noecn
+qdisc_args_up = ${qdisc_args} ${codel_args_up}
+codel_args_up =
+
+[Arg::fq_nocodel]
+inherits = fq_codel
+qdisc_args = limit 100 noecn target 100s
+qdisc_args_up = ${qdisc_args}
+qdisc_label = fq_nocodel
+
+[Arg::ared]
+inherits = global
+qdisc_name = red
+ared_args_up = min 3125
+ared_args_down = min 3125
+qdisc_args = limit 151400 avpkt 1514 adaptive harddrop
+qdisc_args_up = ${qdisc_args} bandwidth ${rate_up} ${ared_args_up}
+qdisc_args_down = ${qdisc_args} bandwidth ${rate_down} ${ared_args_down}
+qdisc_label = ared
+
+[Arg::pfifo_fast]
+inherits = global
+qdisc_name = pfifo_fast
+qdisc_args = limit 100
+
+[Arg::pfifo_fast_1000]
+inherits = global
+qdisc_name = pfifo_fast
+qdisc_args = limit 1000
+qdisc_label = pfifo_fast(1000)
+
+[Arg::sfq]
+inherits = global
+qdisc_name = sfq
+qdisc_args = limit 100

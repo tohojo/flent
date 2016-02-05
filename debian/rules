@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python2
+
+override_dh_auto_install:
+	sed -i.bak -e 's/flent =/run =/' -e 's/flent-gui =/run-gui =/' setup.py
+	python setup.py install --root=debian/flent --install-layout=deb --install-lib=/usr/share/flent --install-scripts=/usr/share/flent
+
+override_dh_auto_build:
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf build
+	rm -rf *.egg-info
+	! [ -f setup.py.bak ] || mv setup.py.bak setup.py

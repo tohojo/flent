@@ -7,7 +7,6 @@ dist
 build
 eggs
 parts
-bin
 var
 sdist
 develop-eggs
@@ -28,3 +27,17 @@ pip-log.txt
 
 # rope
 .ropeproject
+
+# data files
+*.json.gz
+*.flent
+/*.flent.gz
+*.flent.bz2
+*.csv
+*.pdf
+*.png
+*.svg
+data/
+
+# distutils gerated
+MANIFEST

@@ -1,0 +1,17 @@
+KNOWN ISSUES:
+
+- UDP pings stop completely when packet loss occurs, leaving out results
+  for the rest of the test duration. This is how netperf works by
+  design; however a better solution is being investigated for future
+  netperf versions. In the meantime, please bear this in mind when
+  looking at the results; especially for ping time CDF plots.
+
+REPORTING BUGS:
+
+Please report bugs at https://github.com/tohojo/flent/issues
+and include as much as possible of the following information with all
+reports:
+
+- Output on the console for the error.
+- The data file for the test (<testname>-<date>.flent.gz).
+- Log file output (rerun the test with -l logfile.txt).
