@@ -93,7 +93,9 @@ class TestEnvironment(object):
                     new_data_sets.append(("%s::%d" % (k, i+1), dict(v, id=str(i+1), duplicates=None)))
             except (KeyError, TypeError):
                 new_data_sets.append((k,v))
-        env['DATA_SETS'] = OrderedDict(new_data_sets)
+            except ValueError:
+                raise RuntimeError("Invalid number of duplicates: %s" % v['duplicates'])
+            env['DATA_SETS'] = OrderedDict(new_data_sets)
         return env
 
     def include_test(self, name, env=None):
