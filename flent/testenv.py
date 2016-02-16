@@ -62,6 +62,7 @@ class TestEnvironment(object):
             'find_http_getter': self.find_http_getter,
             'find_tc_iterate': self.find_tc_iterate,
             'find_stat_iterate': self.find_stat_iterate,
+            'get_test_parameter': self.get_test_parameter,
             })
         self.informational = informational
         self.netperf = None
@@ -92,11 +93,23 @@ class TestEnvironment(object):
                     new_data_sets.append(("%s::%d" % (k, i+1), dict(v, id=str(i+1), duplicates=None)))
             except (KeyError, TypeError):
                 new_data_sets.append((k,v))
-        env['DATA_SETS'] = OrderedDict(new_data_sets)
+            except ValueError:
+                raise RuntimeError("Invalid number of duplicates: %s" % v['duplicates'])
+            env['DATA_SETS'] = OrderedDict(new_data_sets)
         return env
 
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
+
+    def get_test_parameter(self, name, default=None):
+        try:
+            return self.env['TEST_PARAMETERS'][name]
+        except KeyError:
+            if default is not None:
+                return default
+            if self.informational:
+                return None
+            raise RuntimeError("Missing required test parameter: %s" % name)
 
     @finder
     def find_ping(self, ip_version, interval, length, host, marking=None, local_bind=None):
