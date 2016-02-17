@@ -14,8 +14,7 @@ Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}, python (>= 2.7.3), python-pkg-resources
 Replaces: netperf-wrapper
 Conflicts: netperf-wrapper
-Suggests: python-matplotlib, python-qt4
-Recommends: netperf (>= 2.6.0)
+Recommends: netperf (>= 2.6.0), python-matplotlib, python-qt4
 Description: The FLExible Network Tester
  The FLExible Network Tester: Python wrapper to run multiple simultaneous
  netperf/iperf/ping instances and aggregate the results.
