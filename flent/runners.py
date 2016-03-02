@@ -665,7 +665,7 @@ class IperfCsvRunner(ProcessRunner):
         return result
 
     @classmethod
-    def find_binary(cls, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False):
+    def find_binary(cls, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False, bw=None):
         iperf = util.which('iperf')
 
         if iperf is not None:
@@ -675,6 +675,10 @@ class IperfCsvRunner(ProcessRunner):
             out,err = proc.communicate()
 
             if "--enhancedreports" in str(err):
+                if udp:
+                    udp_args = "--udp --bandwidth {}".format(bw if bw else "100M")
+                else:
+                    udp_args = ""
                 return "{binary} --enhancedreports --reportstyle C --format m --client {host} --time {length} --interval {interval} " \
                     "{local_bind} {no_delay} {udp} {ip6}".format(
                         host=host,
@@ -684,7 +688,7 @@ class IperfCsvRunner(ProcessRunner):
                         ip6="--ipv6_domain" if ip_version == 6 else "", # --help output is wrong
                         local_bind="--bind {0}".format(local_bind) if local_bind else "",
                         no_delay="--nodelay" if no_delay else "",
-                        udp="--udp" if udp else "")
+                        udp=udp_args)
             else:
                 sys.stderr.write("Found iperf binary, but it does not have an --enhancedreport option. Not using.\n")
 

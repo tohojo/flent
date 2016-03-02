@@ -123,14 +123,14 @@ class TestEnvironment(object):
                                               host, marking=marking, local_bind=local_bind)
 
     @finder
-    def find_iperf(self, host, interval, length, ip_version, udp=False, local_bind=None, no_delay=False):
+    def find_iperf(self, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False, bw=None):
         """Find a suitable iperf."""
         if local_bind is None:
             local_bind = self.env['LOCAL_BIND']
 
         # Main code moved to the PingRunner class to be able to take advantage
         # of the parser code there.
-        return runners.IperfCsvRunner.find_binary(host, interval, length, ip_version, udp=False,
+        return runners.IperfCsvRunner.find_binary(host, interval, length, ip_version, udp=udp, bw=bw,
                                                   local_bind=local_bind)
 
     @finder
