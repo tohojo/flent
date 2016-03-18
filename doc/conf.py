@@ -53,7 +53,7 @@ master_doc = 'contents'
 
 # General information about the project.
 project = 'Flent: The FLExible Network Tester'
-copyright = '2012-2015, Toke Høiland-Jørgensen'
+copyright = '2012-2016, Toke Høiland-Jørgensen'
 author = 'Toke Høiland-Jørgensen'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -186,7 +186,7 @@ html_domain_indices = False
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
 # base URL from which the finished HTML is served.
-html_use_opensearch = 'http://flent.org'
+html_use_opensearch = 'https://flent.org'
 
 # This is the file name suffix for HTML files (e.g. ".xhtml").
 #html_file_suffix = None
