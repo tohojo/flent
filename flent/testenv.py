@@ -63,6 +63,7 @@ class TestEnvironment(object):
             'find_tc_iterate': self.find_tc_iterate,
             'find_stat_iterate': self.find_stat_iterate,
             'get_test_parameter': self.get_test_parameter,
+            'parse_int': self.parse_int,
             })
         self.informational = informational
         self.netperf = None
@@ -110,6 +111,17 @@ class TestEnvironment(object):
             if self.informational:
                 return None
             raise RuntimeError("Missing required test parameter: %s" % name)
+
+    def parse_int(self, val):
+        try:
+            try:
+                return int(val)
+            except ValueError:
+                if val.startswith("0x"):
+                    return int(val, 16)
+                raise
+        except:
+            raise RuntimeError("Invalid integer value: %s" % val)
 
     @finder
     def find_ping(self, ip_version, interval, length, host, marking=None, local_bind=None):
