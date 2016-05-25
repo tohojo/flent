@@ -897,7 +897,7 @@ class CpuStatsRunner(ProcessRunner):
 
         bash = util.which('bash')
         if not bash:
-            raise RuntimeError("TC stats requires a Bash shell.")
+            raise RuntimeError("CPU stats requires a Bash shell.")
 
         return "{bash} {script} -I {interval:.2f} -c {count:.0f} -H {host}".format(
             bash=bash,

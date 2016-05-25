@@ -4,7 +4,7 @@ count=10
 interval=0.1
 host=localhost
 
-while getopts "i:c:I:C:H:" opt; do
+while getopts "c:I:H:" opt; do
     case $opt in
         c) count=$OPTARG ;;
         I) interval=$OPTARG ;;
