@@ -22,14 +22,29 @@ if WIFI_STATS_HOSTS:
     PLOTS['airtime_rx'] = {'description': 'WiFi RX airtime',
                            'type': 'timeseries',
                            'axis_labels': ['Microseconds'],
+                           'legend_title': 'RX airtime',
                            'series': [
                                {'data': glob('wifi_stats_*::airtime_rx*'),
-                                'label': 'Airtime'},
+                                'label': 'RX airtime'},
                            ]}
     PLOTS['airtime_tx'] = {'description': 'WiFi TX airtime',
                            'type': 'timeseries',
                            'axis_labels': ['Microseconds'],
+                           'legend_title': 'TX airtime',
                            'series': [
                                {'data': glob('wifi_stats_*::airtime_tx*'),
-                                'label': 'Airtime'},
+                                'label': 'TX airtime'},
                            ]}
+    PLOTS['airtime'] = {'description': 'WiFi airtime',
+                        'type': 'meta',
+                        'subplots': ('airtime_rx', 'airtime_tx')}
+
+    PLOTS['airtime_rx_stacked'] = {'description': 'WiFi RX airtime (stacked)',
+                           'parent': 'airtime_rx',
+                           'stacked': True}
+    PLOTS['airtime_tx_stacked'] = {'description': 'WiFi TX airtime (stacked)',
+                           'parent': 'airtime_tx',
+                           'stacked': True}
+    PLOTS['airtime_stacked'] = {'description': 'WiFi airtime (stacked)',
+                        'type': 'meta',
+                        'subplots': ('airtime_rx_stacked', 'airtime_tx_stacked')}
