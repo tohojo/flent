@@ -916,8 +916,12 @@ class WifiStatsRunner(ProcessRunner):
     station_re   = re.compile(r"^Station: (?P<mac>(?:[0-9a-f]{2}:){5}[0-9a-f]{2})\n", re.MULTILINE)
     airtime_re   = re.compile(r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
 
-    def __init__(self, *args, stations=[], **kwargs):
-        self.stations = stations
+    def __init__(self, *args, **kwargs):
+        if 'stations' in kwargs:
+            self.stations = kwargs['stations']
+            del kwargs['stations']
+        else:
+            self.stations = []
         ProcessRunner.__init__(self, *args, **kwargs)
 
     def parse(self, output):
