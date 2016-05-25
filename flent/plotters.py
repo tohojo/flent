@@ -715,6 +715,8 @@ class TimeseriesPlotter(Plotter):
         if config is None:
             config = self.config
 
+        stack = 'stacked' in config and config['stacked']
+
         xlim = axis.get_xlim()
         axis.set_xlim(
             min(results.x_values+[xlim[0]]) if xlim[0] > 0 else min(results.x_values),
@@ -726,6 +728,9 @@ class TimeseriesPlotter(Plotter):
             data.append([])
 
         colours = cycle(self.colours)
+
+        if stack:
+            sums = self.np.zeros(len(results.x_values))
 
         for s in config['series']:
             if not s['data'] in results.series_names:
@@ -752,12 +757,21 @@ class TimeseriesPlotter(Plotter):
                 a = 1
             else:
                 a = 0
-            data[a] += y_values
-            for r in self.scale_data+extra_scale_data:
-                data[a] += r.series(s['data'], smooth)
-            self.data_artists.extend(config['axes'][a].plot(results.x_values,
-                   y_values,
-                   **kwargs))
+
+            if stack:
+                kwargs['facecolor'] = kwargs['color']
+                del kwargs['color']
+                y_values = self.np.array(y_values, dtype=float)
+
+                config['axes'][a].fill_between(results.x_values, sums, y_values+sums, **kwargs)
+                sums += y_values
+            else:
+                data[a] += y_values
+                for r in self.scale_data+extra_scale_data:
+                    data[a] += r.series(s['data'], smooth)
+                self.data_artists.extend(config['axes'][a].plot(results.x_values,
+                                                                y_values,
+                                                                    **kwargs))
 
         if 'scaling' in config:
             btm,top = config['scaling']
