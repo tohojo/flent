@@ -906,6 +906,87 @@ class CpuStatsRunner(ProcessRunner):
             count=length // interval + 1,
             host=host)
 
+class WifiStatsRunner(ProcessRunner):
+    """Runner for getting WiFi debug stats from /sys/kernel/debug. Expects
+    iterations to be separated by '\n---\n and a timestamp to be present in the
+    form 'Time: xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
+
+    """
+    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    station_re   = re.compile(r"^Station: (?P<mac>(?:[0-9a-f]{2}:){5}[0-9a-f]{2})\n", re.MULTILINE)
+    airtime_re   = re.compile(r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
+
+    def __init__(self, *args, stations=[], **kwargs):
+        self.stations = stations
+        ProcessRunner.__init__(self, *args, **kwargs)
+
+    def parse(self, output):
+        results = {}
+        parts = output.split("\n---\n")
+        for part in parts:
+            matches = {}
+            timestamp = self.time_re.search(part)
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
+
+            # Split by station regex: First entry is everything before the
+            # per-station stats, the rest is a pair of (<station mac>, contents).
+            station_parts = self.station_re.split(part)[1:]
+            stations = {}
+
+            for s,v in zip(station_parts[::2], station_parts[1::2]):
+                if not s in self.stations:
+                    continue
+                sv = {}
+                airtime = self.airtime_re.search(v)
+                if airtime is not None:
+                    sv['airtime_rx'] = float(airtime.group('rx'))
+                    sv['airtime_tx'] = float(airtime.group('tx'))
+                stations[s] = sv
+
+                # Flatten for results array
+                for k,v in sv.items():
+                    if not isinstance(v,float):
+                        continue
+                    rk = "::".join([k,s])
+                    if not rk in results:
+                        results[rk] = [[timestamp,v]]
+                    else:
+                        results[rk].append([timestamp,v])
+
+
+            for k,v in matches.items():
+                if not isinstance(v,float):
+                    continue
+                if not k in results:
+                    results[k] = [[timestamp,v]]
+                else:
+                    results[k].append([timestamp,v])
+            matches['t'] = timestamp
+            matches['stations'] = stations
+            self.raw_values.append(matches)
+        return results
+
+    @classmethod
+    def find_binary(cls, interface, interval, length, host='localhost'):
+        script = os.path.join(DATA_DIR, 'scripts', 'wifistats_iterate.sh')
+        if not os.path.exists(script):
+            raise RuntimeError("Cannot find wifistats_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RuntimeError("WiFi stats requires a Bash shell.")
+
+        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f} -H {host}".format(
+            bash=bash,
+            script=script,
+            interface=interface,
+            interval=interval,
+            count=length // interval + 1,
+            host=host)
+
+
 class NullRunner(object):
     def __init__(self, *args, **kwargs):
         self.result = None
