@@ -429,14 +429,16 @@ def get_module_versions():
         if m in INTERESTING_MODULES:
             modules.append((m,f))
 
-    # The hexdump output will be a string of hexadecimal values of the
-    # concatenation of all the .note.gnu.build-id files.
-    #
-    # Each file starts with "040000001400000003000000474e5500" (0x474e550 is
-    # "GNU\0"), so simply split on that to get the data we are interested in.
-    version_strings = get_command_output("hexdump -ve \"/1 \\\"%02x\\\"\" {}".format(" ".join([m[1] for m in modules])))
+    if modules:
 
-    for (m,f),v in zip(modules, version_strings.split("040000001400000003000000474e5500")[1:]):
-        module_versions[m] = v
+        # The hexdump output will be a string of hexadecimal values of the
+        # concatenation of all the .note.gnu.build-id files.
+        #
+        # Each file starts with "040000001400000003000000474e5500" (0x474e550 is
+        # "GNU\0"), so simply split on that to get the data we are interested in.
+        version_strings = get_command_output("hexdump -ve \"/1 \\\"%02x\\\"\" {}".format(" ".join([m[1] for m in modules])))
+
+        for (m,f),v in zip(modules, version_strings.split("040000001400000003000000474e5500")[1:]):
+            module_versions[m] = v
 
     return module_versions
