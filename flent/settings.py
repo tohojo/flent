@@ -268,6 +268,8 @@ parser.add_option("--batch-verbose", action="store_true", dest="BATCH_VERBOSE",
                   help="Be verbose during batch run: Print all commands executed.")
 parser.add_option("--batch-repetitions", action="store", type='int', dest="BATCH_REPS", metavar="REPETITIONS",
                   help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")
+parser.add_option("--batch-title", action="store", type='string', dest="BATCH_TITLE", metavar="TITLE",
+                  help="Shorthand for --batch-override 'batch_title=BATCH_TITLE'.")
 parser.add_option("--batch-resume", action="store", type='str', dest="BATCH_RESUME", metavar="DIR",
                   help="Try to resume a previously interrupted batch run. The argument is the top-level "
                   "output directory from the previous run. Tests for which data files already exist will "
@@ -620,6 +622,9 @@ class Settings(optparse.Values, object):
 
         if self.BATCH_REPS is not None:
             self.BATCH_OVERRIDE['repetitions'] = self.BATCH_REPS
+
+        if self.BATCH_TITLE is not None:
+            self.BATCH_OVERRIDE['batch_title'] = self.BATCH_TITLE
 
         if self.HOST is None and self.HOSTS:
             self.HOST = self.HOSTS[0]
