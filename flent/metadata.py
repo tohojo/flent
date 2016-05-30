@@ -54,6 +54,15 @@ INTERESTING_SYSCTLS = ['net.core.rmem_max',
                        'net.ipv4.tcp_moderate_rcvbuf',
                        'net.ipv4.tcp_no_metrics_save']
 
+# Modules we try to get versions for
+INTERESTING_MODULES = ['cake',
+                       'ath',
+                       'ath9k',
+                       'ath9k_common',
+                       'ath9k_hw',
+                       'mac80211',
+                       'cfg80211']
+
 class CommandRunner(object):
 
     def __init__(self):
@@ -96,7 +105,7 @@ def record_extended_metadata(results, hostnames):
     get_command_output.set_hostname(None)
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
-    m['CAKE_VERSION'] = get_command_output("hexdump -e \"/1 \\\"%02x\\\"\" -s 16 /sys/module/sch_cake/notes/.note.gnu.build-id")
+    m['MODULE_VERSIONS'] = get_module_versions()
     m['IP_ADDRS'] = get_ip_addrs()
     m['GATEWAYS'] = get_gateways()
     m['SYSCTLS'] = get_sysctls()
@@ -110,7 +119,7 @@ def record_extended_metadata(results, hostnames):
         m['REMOTE_METADATA'][h]['LOCAL_HOST'] = get_command_output("hostname")
         m['REMOTE_METADATA'][h]['KERNEL_NAME'] = get_command_output("uname -s")
         m['REMOTE_METADATA'][h]['KERNEL_RELEASE'] = get_command_output("uname -r")
-        m['REMOTE_METADATA'][h]['CAKE_VERSION'] = get_command_output("hexdump -e \"/1 \\\"%02x\\\"\" -s 16 /sys/module/sch_cake/notes/.note.gnu.build-id")
+        m['REMOTE_METADATA'][h]['MODULE_VERSIONS'] = get_module_versions()
         m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
         m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
         m['REMOTE_METADATA'][h]['SYSCTLS'] = get_sysctls()
@@ -406,3 +415,28 @@ def get_sysctls():
                 sysctls[k] = v
 
     return sysctls
+
+def get_module_versions():
+    module_versions = {}
+
+    module_files = get_command_output("find /sys/module -name .note.gnu.build-id").split()
+    modules = []
+
+    for f in module_files:
+        if "/sections/" in f:
+            continue
+        m = f.replace("/sys/module/", "").split("/", 1)[0]
+        if m in INTERESTING_MODULES:
+            modules.append((m,f))
+
+    # The hexdump output will be a string of hexadecimal values of the
+    # concatenation of all the .note.gnu.build-id files.
+    #
+    # Each file starts with "040000001400000003000000474e5500" (0x474e550 is
+    # "GNU\0"), so simply split on that to get the data we are interested in.
+    version_strings = get_command_output("hexdump -ve \"/1 \\\"%02x\\\"\" {}".format(" ".join([m[1] for m in modules])))
+
+    for (m,f),v in zip(modules, version_strings.split("040000001400000003000000474e5500")[1:]):
+        module_versions[m] = v
+
+    return module_versions
