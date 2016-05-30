@@ -107,6 +107,7 @@ DEFAULT_SETTINGS = {
     'BATCH_VERBOSE': False,
     'BATCH_REPS': None,
     'BATCH_RESUME': None,
+    'BATCH_TITLE': None,
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
