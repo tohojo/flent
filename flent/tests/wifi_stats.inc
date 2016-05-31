@@ -17,6 +17,8 @@ if WIFI_STATS_HOSTS:
                                                                            'runner': 'null', 'id': "%s::%s" % (host, station)}
             DATA_SETS['wifi_stats_%s::airtime_tx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
                                                                            'runner': 'null', 'id': "%s::%s" % (host, station)}
+            DATA_SETS['wifi_stats_%s::avg_aggr_size::%s' % (host,station)] = {'units': 'packets',
+                                                                              'runner': 'null', 'id': "%s::%s" % (host, station)}
 
 
     PLOTS['airtime_rx'] = {'description': 'WiFi RX airtime',
@@ -48,3 +50,11 @@ if WIFI_STATS_HOSTS:
     PLOTS['airtime_stacked'] = {'description': 'WiFi airtime (stacked)',
                         'type': 'meta',
                         'subplots': ('airtime_rx_stacked', 'airtime_tx_stacked')}
+    PLOTS['aggregation'] = {'description': 'WiFi aggregation size',
+                           'type': 'timeseries',
+                           'axis_labels': ['Packets'],
+                           'legend_title': 'Avg aggregation size',
+                           'series': [
+                               {'data': glob('wifi_stats_*::avg_aggr_size*'),
+                                'label': 'Aggr size'},
+                           ]}

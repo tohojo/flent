@@ -947,6 +947,16 @@ class WifiStatsRunner(ProcessRunner):
                 if airtime is not None:
                     sv['airtime_rx'] = float(airtime.group('rx'))
                     sv['airtime_tx'] = float(airtime.group('tx'))
+
+                rcs = v.find("RC stats:\n")
+
+                # For now, just parse the average aggregation size, which is the
+                # last field of each csv line output.
+                if rcs > -1:
+                    nl = v.find("\n", rcs+10)
+                    if nl > -1:
+                        line = v[rcs+10:nl]
+                        sv['avg_aggr_size'] = float(line.split(",")[-1])
                 stations[s] = sv
 
                 # Flatten for results array

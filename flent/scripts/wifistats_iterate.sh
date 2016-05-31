@@ -20,6 +20,7 @@ for i in \$(seq $count); do
     for s in \$dir/stations/*; do
         echo Station: \$(basename \$s);
         [ -f \$s/airtime ] && echo Airtime: && cat \$s/airtime;
+        [ -f \$s/rc_stats_csv ] && echo RC stats: && cat \$s/rc_stats_csv;
     done;
     echo "---";
     sleep $interval || exit 1;
