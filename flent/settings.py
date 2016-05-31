@@ -517,7 +517,7 @@ class Settings(optparse.Values, object):
                 elif CONFIG_TYPES[k] == 'list':
                     setattr(self, k, [i.strip() for i in v.split(",")])
                 elif CONFIG_TYPES[k] == 'dict':
-                    setattr(self, k, dict([[j.strip() for j in i.split('=',1)] for i in v.split(';')]))
+                    setattr(self, k, dict([[j.strip() for j in i.split('=',1)] for i in v.split(';') if i.strip() and '=' in i]))
                 elif CONFIG_TYPES[k] == 'bool':
                     if type(v) == bool:
                         setattr(self, k, v)
