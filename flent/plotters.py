@@ -21,7 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, inspect, io
+import os, inspect, io, re
 
 from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, Glob
