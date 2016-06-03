@@ -29,6 +29,16 @@ if WIFI_STATS_HOSTS:
                                {'data': glob('wifi_stats_*::airtime_rx*'),
                                 'label': 'RX airtime'},
                            ]}
+    PLOTS['airtime_rx_combine'] = {'description': 'Combined airtime RX plot (short timescale)',
+                                   'parent': 'airtime_rx',
+                                   'type': 'box_combine',
+                                   'cutoff': (DELAY,DELAY),
+                                   'group_by': 'groups_concat'}
+    PLOTS['airtime_rx_combine_long'] = {'description': 'Combined airtime RX plot (long timescale)',
+                                        'parent': 'airtime_rx',
+                                        'type': 'box_combine',
+                                        'cutoff': (DELAY,DELAY),
+                                        'group_by': 'groups'}
     PLOTS['airtime_tx'] = {'description': 'WiFi TX airtime',
                            'type': 'timeseries',
                            'axis_labels': ['Microseconds'],
@@ -37,6 +47,16 @@ if WIFI_STATS_HOSTS:
                                {'data': glob('wifi_stats_*::airtime_tx*'),
                                 'label': 'TX airtime'},
                            ]}
+    PLOTS['airtime_tx_combine'] = {'description': 'Combined airtime TX plot (short timescale)',
+                                   'parent': 'airtime_tx',
+                                   'type': 'box_combine',
+                                   'cutoff': (DELAY,DELAY),
+                                   'group_by': 'groups_concat'}
+    PLOTS['airtime_tx_combine_long'] = {'description': 'Combined airtime TX plot (long timescale)',
+                                        'parent': 'airtime_tx',
+                                        'type': 'box_combine',
+                                        'cutoff': (DELAY,DELAY),
+                                        'group_by': 'groups'}
     PLOTS['airtime'] = {'description': 'WiFi airtime',
                         'type': 'meta',
                         'subplots': ('airtime_rx', 'airtime_tx')}
