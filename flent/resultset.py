@@ -94,7 +94,7 @@ class ResultSet(object):
         if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
             raise RuntimeError("Missing name for resultset")
         if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
-            self.metadata['DATA_FILENAME'] = self.dump_file
+            self.metadata['DATA_FILENAME'] = self.dump_filename
         if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
             self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
@@ -294,11 +294,24 @@ class ResultSet(object):
 
         return fp.write(data)
 
+    def dump_file(self, filename):
+        try:
+            if filename.endswith(".gz"):
+                o = gzip_open
+            elif filename.endswith(".bz2"):
+                o = bz2_open
+            else:
+                o = open
+            with o(filename, "wt") as fp:
+                self.dump(fp)
+        except IOError as e:
+            sys.stderr.write("Unable to write results data file: %s\n" % e)
+
     def dumps(self):
         return json.dumps(self.serialise(), indent=JSON_INDENT, sort_keys=True)
 
     @property
-    def dump_file(self):
+    def dump_filename(self):
         if hasattr(self, '_dump_file'):
             return self._dump_file
         return self._gen_filename()
