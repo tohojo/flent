@@ -163,6 +163,7 @@ def new(settings, plotter=None, **kwargs):
             filter_regexp=settings.FILTER_REGEXP,
             print_title=settings.PRINT_TITLE,
             override_title=settings.OVERRIDE_TITLE,
+            override_group_by=settings.OVERRIDE_GROUP_BY,
             annotate=settings.ANNOTATE,
             description=settings.DESCRIPTION,
             combine_print_n=settings.COMBINE_PRINT_N,
@@ -213,6 +214,7 @@ class Plotter(object):
                  filter_regexp=None,
                  print_title=True,
                  override_title='',
+                 override_group_by=None,
                  annotate=True,
                  description='',
                  combine_print_n=False,
@@ -258,6 +260,7 @@ class Plotter(object):
         self.filter_regexp = filter_regexp if filter_regexp is not None else []
         self.print_title = print_title
         self.override_title = override_title
+        self.override_group_by = override_group_by
         self.annotate = annotate
         self.description = description
         self.combine_print_n = combine_print_n
@@ -650,7 +653,7 @@ class CombineManyPlotter(object):
         if config is None:
             config = self.config
 
-        combine_mode = config.get('group_by', 'groups')
+        combine_mode = self.override_group_by or config.get('group_by', 'groups')
         combiner = combiners.new(combine_mode, self.combine_print_n)
         super(CombineManyPlotter,self).plot(combiner(results, config), config, axis)
 

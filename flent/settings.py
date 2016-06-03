@@ -52,6 +52,7 @@ DEFAULT_SETTINGS = {
     'FORMAT': 'default',
     'TITLE': '',
     'OVERRIDE_TITLE': '',
+    'OVERRIDE_GROUP_BY': None,
     'NOTE': '',
     'RCFILE': os.path.expanduser("~/.flentrc"),
     'LOG_FILE': None,
@@ -369,6 +370,8 @@ plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
 plot_group.add_option("--override-title", action="store", type='string', dest="OVERRIDE_TITLE",
                   metavar="TITLE", help="Override plot title with this string. This parameter takes "
                   "precedence over --no-title.")
+plot_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
+                  metavar="GROUP", help="Override plot group_by attribute for combination plots.")
 plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
                   help="Don't use line markers to differentiate data series on plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
