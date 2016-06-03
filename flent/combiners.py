@@ -300,6 +300,39 @@ class BothCombiner(Combiner):
 
         return new_results
 
+class BatchCombiner(GroupsCombiner):
+    # group_by == 'batch' means group data sets by their batch UUID, getting
+    # titles from the BATCH_TITLE if set
+    def combine(self, results, config):
+
+        self.config = config
+        self.orig_series = config['series']
+        self.orig_name = results[0].meta('NAME')
+
+
+        groupmap = {}
+        groups = OrderedDict()
+        for r in results:
+            u = r.meta().get("BATCH_UUID", "None")
+            if not u in groupmap:
+                t = r.meta("BATCH_TITLE")
+                if not t or t in groupmap.values():
+                    t = u
+                groupmap[u] = t
+            k = groupmap[u]
+            if not k in groups:
+                groups[k] = []
+            groups[k].append(r)
+
+        new_results = self.group(groups, config)
+        config['cutoff'] = None
+
+        return new_results
+
+class BatchConcatCombiner(GroupsConcatCombiner, BatchCombiner):
+    pass
+
+
 def get_reducer(reducer_type, cutoff):
     if ":" in reducer_type:
         reducer_type,reducer_arg = reducer_type.split(":", 1)
