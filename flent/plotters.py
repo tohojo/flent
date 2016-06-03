@@ -893,7 +893,7 @@ class BoxPlotter(TimeseriesPlotter):
 
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
-        axis.set_xticklabels(ticklabels)
+        axis.set_xticklabels(self._filter_labels(ticklabels))
         axis.set_xlim(0,pos-1)
 
 class BoxCombinePlotter(CombineManyPlotter, BoxPlotter):
