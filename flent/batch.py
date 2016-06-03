@@ -497,7 +497,8 @@ class BatchRunner(object):
             return self.load_input(self.settings)
         elif self.settings.BATCH_NAMES:
             start_time = self.settings.TIME
-            sys.stderr.write("Started batch sequence at %s.\n" % format_date(start_time, fmt="%Y-%m-%d %H:%M:%S"))
+            self.settings.BATCH_UUID = str(uuid.uuid4())
+            sys.stderr.write("Started batch run %s at %s.\n" % (self.settings.BATCH_UUID, format_date(start_time, fmt="%Y-%m-%d %H:%M:%S")))
             if len(self.settings.BATCH_NAMES) == 1 and self.settings.BATCH_NAMES[0] == 'ALL':
                 sys.stderr.write("Running all batches.\n")
                 batches = self.batches.keys()

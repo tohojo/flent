@@ -108,6 +108,7 @@ DEFAULT_SETTINGS = {
     'BATCH_REPS': None,
     'BATCH_RESUME': None,
     'BATCH_TITLE': None,
+    'BATCH_UUID': None,
     'HTTP_GETTER_URLLIST': None,
     'HTTP_GETTER_DNS': None,
     'HTTP_GETTER_TIMEOUT': None,
