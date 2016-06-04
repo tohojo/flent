@@ -449,7 +449,7 @@ class BatchRunner(object):
             record_postrun_metadata(res, settings.REMOTE_METADATA)
         res.dump_dir(output_path)
         if print_datafile_loc:
-            sys.stderr.write("Data file written to %s.\n" % res.dump_file)
+            sys.stderr.write("Data file written to %s.\n" % res.dump_filename)
 
         formatter = formatters.new(settings)
         formatter.format([res])

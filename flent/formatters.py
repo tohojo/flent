@@ -96,8 +96,8 @@ class Formatter(object):
                 raise RuntimeError("Unable to output data: %s" % e)
 
     def format(self, results):
-        if results[0].dump_file is not None:
-            sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_file)
+        if results[0].dump_filename is not None:
+            sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_filename)
 
     def write(self, string):
         try:

@@ -633,7 +633,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
         self.settings.DATA_FILENAME = None
         res = resultset.new(self.settings)
-        self.settings.DATA_FILENAME = res.dump_file
+        self.settings.DATA_FILENAME = res.dump_filename
 
 
         self.total_time = self.settings.TOTAL_LENGTH
