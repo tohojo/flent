@@ -348,6 +348,11 @@ class BatchRunner(object):
                     f = datafiles[0]
                     r = resultset.load(os.path.join(dirpath, f))
                     batch_time = r.meta("BATCH_TIME")
+                    try:
+                        self.settings.BATCH_UUID = r.meta("BATCH_UUID")
+                        sys.stderr.write(" Using previous UUID %s.\n" % self.settings.BATCH_UUID)
+                    except KeyError:
+                        pass
                     break
             if batch_time is None:
                 raise RuntimeError("No data files found in resume directory %s." % self.settings.BATCH_RESUME)
