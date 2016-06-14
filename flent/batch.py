@@ -361,6 +361,7 @@ class BatchRunner(object):
         else:
             batch_time = self.settings.TIME
 
+        filenames_seen = set()
 
         for b,settings in self.expand_argsets(batch, argsets, batch_time, batch_name):
 
@@ -390,6 +391,10 @@ class BatchRunner(object):
                 self.log_fd = io.open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "at")
             if b.get('debug_log', False):
                 settings.LOG_FILE = os.path.join(output_path,"%s.debug.log" % settings.DATA_FILENAME)
+
+            if settings.DATA_FILENAME in filenames_seen:
+                sys.stderr.write("  Warning: Filename already seen in this run: %s\n" % settings.DATA_FILENAME)
+            filenames_seen.add(settings.DATA_FILENAME)
 
             self.run_commands(commands, 'pre')
             self.run_commands(commands, 'monitor')
