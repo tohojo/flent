@@ -630,17 +630,29 @@ class HttpGetterRunner(RegexpRunner):
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
+    def __init__(self, *args, **kwargs):
+        if 'udp' in kwargs:
+            self.udp = kwargs['udp']
+            del kwargs['udp']
+        else:
+            self.udp = False
+        ProcessRunner.__init__(self, *args, **kwargs)
+
     def parse(self, output):
         result = []
         raw_values = []
         lines = output.strip().split("\n")
+        dest = None
         for line in lines[:-1]: # The last line is an average over the whole test
             parts = line.split(",")
-            if len(parts) < 8:
+            if len(parts) < 9:
                 continue
 
             timestamp = parts[0]
             bandwidth = parts[8]
+
+            if dest is None:
+                dest = parts[3]
 
             # Newer versions of iperf2 emits sub-second timestamps if given the
             # --enhancedreports argument. Since we detect this in find_iperf, we
@@ -659,7 +671,12 @@ class IperfCsvRunner(ProcessRunner):
         self.raw_values = raw_values
         try:
             parts = lines[-1].split(",")
-            self.metadata['MEAN_VALUE'] = float(parts[8])
+            # src and dest should be reversed if this was a reply from the
+            # server. Track this for UDP where it may be missing.
+            if parts[1] == dest or not self.udp:
+                self.metadata['MEAN_VALUE'] = float(parts[8])
+            else:
+                self.metadata['MEAN_VALUE'] = None
         except (ValueError,IndexError):
             pass
         return result
