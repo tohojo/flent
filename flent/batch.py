@@ -166,7 +166,7 @@ class BatchRunner(object):
 
         while cmdnames:
             c = cmdnames.pop(0)
-            if c in commands:
+            if not c or c in commands:
                 continue
             if not c in self.commands:
                 raise RuntimeError("Can't find command '%s' when expanding batch command." % c)
