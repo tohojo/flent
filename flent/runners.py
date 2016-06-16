@@ -651,7 +651,7 @@ class IperfCsvRunner(ProcessRunner):
             if dur is None:
                 dur = float(e)-float(s)
             elif abs(dur - (float(e)-float(s))) > 0.0005: # interval different
-                if s == "0.0" && e == last_e:
+                if s == "0.0" and e == last_e:
                     # The average output at the end of the test will have the
                     # end be the same as the previous datapoint, and the start
                     # be 0.0
