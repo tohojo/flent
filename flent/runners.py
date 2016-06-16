@@ -634,13 +634,30 @@ class IperfCsvRunner(ProcessRunner):
         result = []
         raw_values = []
         lines = output.strip().split("\n")
-        for line in lines[:-1]: # The last line is an average over the whole test
+        dur = None # Track the datapoint interval
+        last_e = None
+        for line in lines:
             parts = line.split(",")
-            if len(parts) < 8:
+            if len(parts) < 9:
                 continue
 
             timestamp = parts[0]
             bandwidth = parts[8]
+            interval = parts[6]
+            if not '-' in interval:
+                continue
+
+            s,e = interval.split("-")
+            if dur is None:
+                dur = float(e)-float(s)
+            elif abs(dur - (float(e)-float(s))) > 0.0005: # interval different
+                if s == "0.0" && e == last_e:
+                    # The average output at the end of the test will have the
+                    # end be the same as the previous datapoint, and the start
+                    # be 0.0
+                    self.metadata['MEAN_VALUE'] = bandwidth
+                break
+            last_e = e
 
             # Newer versions of iperf2 emits sub-second timestamps if given the
             # --enhancedreports argument. Since we detect this in find_iperf, we
@@ -657,11 +674,10 @@ class IperfCsvRunner(ProcessRunner):
                 pass
 
         self.raw_values = raw_values
-        try:
-            parts = lines[-1].split(",")
-            self.metadata['MEAN_VALUE'] = float(parts[8])
-        except (ValueError,IndexError):
-            pass
+
+        # If we didn't find a mean value, explicitly indicate it
+        if not 'MEAN_VALUE' in self.metadata:
+            self.metadata['MEAN_VALUE'] = None
         return result
 
     @classmethod
