@@ -146,6 +146,7 @@ def new(settings, plotter=None, **kwargs):
             fig_width=settings.FIG_WIDTH,
             fig_height=settings.FIG_HEIGHT,
             fig_dpi=settings.FIG_DPI,
+            fig_note=settings.FIG_NOTE,
             gui=settings.GUI,
 
             norm_factors=settings.NORM_FACTORS,
@@ -197,6 +198,7 @@ class Plotter(object):
                  fig_width=None,
                  fig_height=None,
                  fig_dpi=None,
+                 fig_note=None,
                  gui=False,
 
                  norm_factors=None,
@@ -243,6 +245,7 @@ class Plotter(object):
         self.data_config = data_config
 
         self.fig_dpi = fig_dpi
+        self.fig_note = fig_note
         self.gui = gui
 
         self.norm_factors = norm_factors if norm_factors is not None else []
@@ -453,6 +456,10 @@ class Plotter(object):
                     annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
                     rect[1] = annotation_height/fig_bbox.height
 
+                if self.note_obj:
+                    note_height = self.note_obj.get_window_extent(renderer).height/self.figure.dpi
+                    rect[1] = max(rect[1], note_height/fig_bbox.height)
+
                 if self.title_obj:
                     title_height = self.title_obj.get_window_extent(renderer).height/self.figure.dpi
                     rect[3] = 1-title_height/fig_bbox.height
@@ -518,6 +525,14 @@ class Plotter(object):
                              fontsize=8)
         else:
             self.annotation_obj = None
+
+        if self.fig_note:
+            self.note_obj = self.figure.text(0.0, 0.0, self.fig_note,
+                                           horizontalalignment='left',
+                                           verticalalignment='bottom',
+                                           fontsize=8)
+        else:
+            self.note_obj = None
         return titles
 
     def _filter_labels(self, labels):

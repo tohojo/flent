@@ -90,6 +90,7 @@ DEFAULT_SETTINGS = {
     'FIG_WIDTH': None,
     'FIG_HEIGHT': None,
     'FIG_DPI': None,
+    'FIG_NOTE': None,
     'EXTENDED_METADATA': False,
     'REMOTE_METADATA': [],
     'GUI': False,
@@ -395,6 +396,8 @@ plot_group.add_option("--figure-height", action="store", type='float', dest="FIG
                   "the interactive plot window.")
 plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DPI",
                   help="Figure DPI. Used when saving plots to raster format files.")
+plot_group.add_option("--figure-note", action="store", type='string', dest="FIG_NOTE",
+                  help="Figure note. Will be added to the bottom-left corner of the figure.")
 plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATPLOTLIBRC",
                   help="Don't load included matplotlibrc values. Use this if autodetection of custom "
                   "matplotlibrc fails and flent is inadvertently overriding rc values.")
