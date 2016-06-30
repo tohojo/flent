@@ -69,6 +69,36 @@ DASHES     = [[8,4,2,4],
               ]
 STYLES     = []
 
+MATPLOTLIB_STYLES = {'axes.axisbelow': True,
+                     'axes.edgecolor': 'white',
+                     'axes.facecolor': '#EAEAF2',
+                     'axes.formatter.useoffset': False,
+                     'axes.grid': True,
+                     'axes.labelcolor': '.15',
+                     'axes.linewidth': 0.0,
+                     'figure.edgecolor': 'white',
+                     'figure.facecolor': 'white',
+                     'figure.frameon': False,
+                     'grid.color': 'white',
+                     'grid.linestyle': '-',
+                     'image.cmap': 'Greys',
+                     'legend.frameon': False,
+                     'legend.numpoints': 1,
+                     'legend.scatterpoints': 1,
+                     'lines.color': '.15',
+                     'lines.solid_capstyle': 'round',
+                     'pdf.fonttype': 42,
+                     'text.color': '.15',
+                     'xtick.color': '.15',
+                     'xtick.direction': 'out',
+                     'xtick.major.size': 0.0,
+                     'xtick.minor.size': 0.0,
+                     'ytick.color': '.15',
+                     'ytick.direction': 'out',
+                     'ytick.major.size': 0.0,
+                     'ytick.minor.size': 0.0}
+
+
 def init_matplotlib(output, use_markers, load_rc):
     if not HAS_MATPLOTLIB:
         raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
@@ -97,14 +127,14 @@ def init_matplotlib(output, use_markers, load_rc):
 
     # Try to detect if a custom matplotlibrc is installed, and if so don't
     # load our own values.
-    if load_rc \
-      and ('HOME' in os.environ and not os.environ['HOME'] in matplotlib.matplotlib_fname()) \
-      and not 'MATPLOTLIBRC' in os.environ and hasattr(matplotlib, 'rc_file'):
-        rcfile = os.path.join(DATA_DIR, 'matplotlibrc.dist')
-        if os.path.exists(rcfile):
-            conf_params = matplotlib.rc_params_from_file(rcfile, use_default_template=False)
-            matplotlib.rcParams.update(conf_params)
-    COLOURS = matplotlib.rcParams['axes.color_cycle']
+    if load_rc:
+        matplotlib.rcParams.update(MATPLOTLIB_STYLES)
+    elif 'axes.prop_cycle' in matplotlib.rcParams:
+        c = matplotlib.rcParams['axes.prop_cycle']
+        if 'color' in c.keys:
+            COLOURS=c.by_key()['color']
+    else:
+        COLOURS = matplotlib.rcParams['axes.color_cycle']
 
 def get_plotconfig(settings, plot=None):
     if plot is None:

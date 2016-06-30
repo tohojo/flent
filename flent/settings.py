@@ -399,8 +399,8 @@ plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DP
 plot_group.add_option("--figure-note", action="store", type='string', dest="FIG_NOTE",
                   help="Figure note. Will be added to the bottom-left corner of the figure.")
 plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATPLOTLIBRC",
-                  help="Don't load included matplotlibrc values. Use this if autodetection of custom "
-                  "matplotlibrc fails and flent is inadvertently overriding rc values.")
+                  help="Don't use included matplotlib styles. Use this if you have configured "
+                      "custom matplotlib styles that you want Flent to use.")
 plot_group.add_option("--no-hover-highlight", action="store_false", dest="HOVER_HIGHLIGHT",
                   help="Don't highlight data series on hover in interactive plot views. Use this if "
                       "redrawing is too slow, or the highlighting is undesired for other reasons.")
