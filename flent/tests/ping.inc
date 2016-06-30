@@ -18,3 +18,12 @@ if PING_HOSTS:
                         {'data': glob('Ping (ms) ICMP * (extra)'),
                          'label': 'Ping (ms)'},
                     ]}
+    PLOTS['ping_extra_combine'] = {'description': 'Extra ping hosts (combine)',
+                                   'type': 'cdf_combine',
+                                   'group_by': 'groups_concat',
+                                   'cutoff': (DELAY,DELAY),
+                                   'axis_labels': ['Latency (ms)'],
+                                   'series': [
+                                       {'data': glob('Ping (ms) ICMP * (extra)'),
+                                        'label': 'Ping (ms)'},
+                                   ]}
