@@ -531,6 +531,7 @@ class Plotter(object):
                                            horizontalalignment='left',
                                            verticalalignment='bottom',
                                            fontsize=8)
+            titles.append(self.note_obj)
         else:
             self.note_obj = None
         return titles
