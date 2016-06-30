@@ -102,7 +102,8 @@ def init_matplotlib(output, use_markers, load_rc):
       and not 'MATPLOTLIBRC' in os.environ and hasattr(matplotlib, 'rc_file'):
         rcfile = os.path.join(DATA_DIR, 'matplotlibrc.dist')
         if os.path.exists(rcfile):
-            matplotlib.rc_file(rcfile)
+            conf_params = matplotlib.rc_params_from_file(rcfile, use_default_template=False)
+            matplotlib.rcParams.update(conf_params)
     COLOURS = matplotlib.rcParams['axes.color_cycle']
 
 def get_plotconfig(settings, plot=None):
