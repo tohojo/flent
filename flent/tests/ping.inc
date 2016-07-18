@@ -4,9 +4,13 @@
 
 
 PING_HOSTS=TEST_PARAMETERS.get('ping_hosts')
+PING_LOCAL_BINDS=TEST_PARAMETERS.get('ping_local_binds')
+if PING_LOCAL_BINDS:
+    PING_LOCAL_BINDS = PING_LOCAL_BINDS.split(",")
 if PING_HOSTS:
-    for host in PING_HOSTS.split(","):
-        DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'command': find_ping(IP_VERSION, STEP_SIZE, TOTAL_LENGTH, host),
+    for i,host in enumerate(PING_HOSTS.split(",")):
+        local_bind = PING_LOCAL_BINDS[i] if PING_LOCAL_BINDS else None
+        DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'command': find_ping(IP_VERSION, STEP_SIZE, TOTAL_LENGTH, host, local_bind=local_bind),
                                                          'units': 'ms',
                                                          'id': host,
                                                          'runner': 'ping',}
