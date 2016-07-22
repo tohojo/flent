@@ -63,6 +63,7 @@ class TestEnvironment(object):
             'find_tc_iterate': self.find_tc_iterate,
             'find_stat_iterate': self.find_stat_iterate,
             'find_wifistats_iterate': self.find_wifistats_iterate,
+            'find_netstat_iterate': self.find_netstat_iterate,
             'get_test_parameter': self.get_test_parameter,
             'parse_int': self.parse_int,
             })
@@ -296,6 +297,12 @@ class TestEnvironment(object):
         """Find a suitable wifistats_iterate script."""
 
         return runners.WifiStatsRunner.find_binary(*args, **kwargs)
+
+    @finder
+    def find_netstat_iterate(self, *args, **kwargs):
+        """Find a suitable netstat_iterate script."""
+
+        return runners.NetstatRunner.find_binary(*args, **kwargs)
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:

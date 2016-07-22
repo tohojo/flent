@@ -1018,6 +1018,68 @@ class WifiStatsRunner(ProcessRunner):
             host=host)
 
 
+class NetstatRunner(ProcessRunner):
+    """Runner for getting TCP stats from /proc/net/netstat. Expects
+    iterations to be separated by '\n---\n and a timestamp to be present in the
+    form 'Time: xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
+
+    """
+    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    tcpext_header_re   = re.compile(r"^TcpExt: (?P<header>[A-Z][0-9a-zA-Z ]+)\n", re.MULTILINE)
+    tcpext_data_re   = re.compile(r"^TcpExt: (?P<data>[0-9 ]+)\n", re.MULTILINE)
+
+    def parse(self, output):
+        results = {}
+        parts = output.split("\n---\n")
+        for part in parts:
+            matches = {}
+            timestamp = self.time_re.search(part)
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
+            hdr = self.tcpext_header_re.search(part)
+            data = self.tcpext_data_re.search(part)
+
+            if hdr is None or data is None:
+                continue
+
+            h = hdr.group("header").split()
+            d = data.group("data").split()
+
+            if len(h) != len(d):
+                continue
+
+            matches = dict(zip(h, [float(i) for i in d]))
+
+            for k,v in matches.items():
+                if not isinstance(v,float):
+                    continue
+                if not k in results:
+                    results[k] = [[timestamp,v]]
+                else:
+                    results[k].append([timestamp,v])
+            matches['t'] = timestamp
+            self.raw_values.append(matches)
+        return results
+
+    @classmethod
+    def find_binary(cls, interval, length, host='localhost'):
+        script = os.path.join(DATA_DIR, 'scripts', 'netstat_iterate.sh')
+        if not os.path.exists(script):
+            raise RuntimeError("Cannot find netstat_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RuntimeError("Capturing netstat requires a Bash shell.")
+
+        return "{bash} {script} -I {interval:.2f} -c {count:.0f} -H {host}".format(
+            bash=bash,
+            script=script,
+            interval=interval,
+            count=length // interval + 1,
+            host=host)
+
+
 class NullRunner(object):
     def __init__(self, *args, **kwargs):
         self.result = None
