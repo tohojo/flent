@@ -419,12 +419,16 @@ class BatchRunner(object):
             except:
                 self.run_commands(commands, 'post', essential_only=True)
                 sys.stderr.write("  Error running test: %s\n" % "  ".join(traceback.format_exception_only(*sys.exc_info()[:2])))
+                if settings.DEBUG_ERROR:
+                    traceback.print_exc()
             else:
                 try:
                     self.run_commands(commands, 'post')
                 except:
                     self.run_commands(commands, 'post', essential_only=True)
                     sys.stderr.write("  Error running post-commands: %s\n" % "  ".join(traceback.format_exception_only(*sys.exc_info()[:2])))
+                    if settings.DEBUG_ERROR:
+                        traceback.print_exc()
             finally:
                 self.kill_children()
                 if self.log_fd:
