@@ -418,16 +418,19 @@ def get_sysctls():
 
 def get_module_versions():
     module_versions = {}
-
-    module_files = get_command_output("find /sys/module -name .note.gnu.build-id").split()
     modules = []
 
-    for f in module_files:
-        if "/sections/" in f:
-            continue
-        m = f.replace("/sys/module/", "").split("/", 1)[0]
-        if m in INTERESTING_MODULES:
-            modules.append((m,f))
+    output = get_command_output("find /sys/module -name .note.gnu.build-id")
+
+    if output is not None:
+        module_files = output.split()
+
+        for f in module_files:
+            if "/sections/" in f:
+                continue
+            m = f.replace("/sys/module/", "").split("/", 1)[0]
+            if m in INTERESTING_MODULES:
+                modules.append((m,f))
 
     if modules:
 
