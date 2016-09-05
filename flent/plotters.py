@@ -195,6 +195,7 @@ def new(settings, plotter=None, **kwargs):
             horizontal_legend=settings.HORIZONTAL_LEGEND,
             replace_legend=settings.REPLACE_LEGEND,
             filter_regexp=settings.FILTER_REGEXP,
+            filter_series=settings.FILTER_SERIES,
             print_title=settings.PRINT_TITLE,
             override_title=settings.OVERRIDE_TITLE,
             override_group_by=settings.OVERRIDE_GROUP_BY,
@@ -249,6 +250,7 @@ class Plotter(object):
                  horizontal_legend=False,
                  replace_legend=None,
                  filter_regexp=None,
+                 filter_series=None,
                  print_title=True,
                  override_title='',
                  override_group_by=None,
@@ -276,9 +278,6 @@ class Plotter(object):
         if hover_highlight is not None:
             self.can_highlight = hover_highlight
 
-        self.config = self.expand_plot_config(plot_config, data_config)
-        self.data_config = data_config
-
         self.fig_dpi = fig_dpi
         self.fig_note = fig_note
         self.gui = gui
@@ -298,6 +297,7 @@ class Plotter(object):
         self.horizontal_legend = horizontal_legend
         self.replace_legend = replace_legend if replace_legend is not None else {}
         self.filter_regexp = filter_regexp if filter_regexp is not None else []
+        self.filter_series = filter_series if filter_series is not None else []
         self.print_title = print_title
         self.override_title = override_title
         self.override_group_by = override_group_by
@@ -305,7 +305,8 @@ class Plotter(object):
         self.description = description
         self.combine_print_n = combine_print_n
 
-
+        self.config = self.expand_plot_config(plot_config, data_config)
+        self.data_config = data_config
 
         if figure is None:
             self.figure = self.plt.figure()
@@ -342,6 +343,8 @@ class Plotter(object):
                         new_series.append(dict(s, data=d))
             else:
                 new_series.append(s)
+        if self.filter_series:
+            new_series = [s for s in new_series if not s['data'] in self.filter_series]
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):

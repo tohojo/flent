@@ -82,6 +82,7 @@ DEFAULT_SETTINGS = {
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
+    'FILTER_SERIES': [],
     'REPLACE_LEGEND': OrderedDict(),
     'ZERO_Y': False,
     'BOUNDS_X': [],
@@ -395,6 +396,8 @@ plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", 
                   help="Filter out supplied regular expression from legend names. Can be specified "
                   "multiple times, in which case the regular expressions will be filtered in the order "
                   "specified.")
+plot_group.add_option("--filter-series", action="append", dest="FILTER_SERIES", metavar="SERIES",
+                  help="Filter out specified series from plot Can be specified multiple times.")
 plot_group.add_option("--replace-legend", action="update", dest="REPLACE_LEGEND", metavar="src=dest",
                   help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
