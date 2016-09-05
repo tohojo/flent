@@ -47,9 +47,9 @@ def get_combiner(combiner_type):
         raise RuntimeError("Combiner not found: '%s'" % plot_type)
     return globals()[cname]
 
-def new(combiner_type, *args):
+def new(combiner_type, *args, **kwargs):
     try:
-        return get_combiner(combiner_type)(*args)
+        return get_combiner(combiner_type)(*args, **kwargs)
     except Exception as e:
         raise RuntimeError("Error loading combiner: %s." % e)
 
@@ -60,11 +60,14 @@ class Combiner(object):
     # -01, -02, etc.
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
 
-    def __init__(self, print_n=False):
-        self.filter_regexps = []
+    def __init__(self, print_n=False, filter_regexps=None):
         self.filter_serial = True
         self.filter_prefix = True
         self.print_n = print_n
+        if filter_regexps is not None:
+            self.filter_regexps = filter_regexps
+        else:
+            self.filter_regexps = []
 
     def __call__(self, results, config):
         return self.combine(results, config)
