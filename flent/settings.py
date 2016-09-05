@@ -78,6 +78,7 @@ DEFAULT_SETTINGS = {
     'PRINT_LEGEND': True,
     'FILTER_LEGEND': False,
     'LEGEND_TITLE': None,
+    'LEGEND_PLACEMENT': None,
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
@@ -143,6 +144,7 @@ CONFIG_TYPES = {
     'PRINT_LEGEND': 'bool',
     'FILTER_LEGEND': 'bool',
     'LEGEND_TITLE': 'str',
+    'LEGEND_PLACEMENT': 'str',
     'ZERO_Y': 'bool',
     'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
@@ -384,6 +386,9 @@ plot_group.add_option("--horizontal-legend", action="store_true", dest="HORIZONT
                   "Doesn't work well if there are too many items in the legend, obviously.")
 plot_group.add_option("--legend-title", action="store", dest="LEGEND_TITLE",
                   help="Override legend title on plot.")
+plot_group.add_option("--legend-placement", action="store", dest="LEGEND_PLACEMENT",
+                  help="Control legend placement. Enabling this option will place the legend inside "
+                      "the plot at the specified location. Use 'best' to let matplotlib decide.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",

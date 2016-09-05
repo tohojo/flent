@@ -191,6 +191,7 @@ def new(settings, plotter=None, **kwargs):
             print_legend=settings.PRINT_LEGEND,
             filter_legend=settings.FILTER_LEGEND,
             legend_title=settings.LEGEND_TITLE,
+            legend_placement=settings.LEGEND_PLACEMENT,
             horizontal_legend=settings.HORIZONTAL_LEGEND,
             replace_legend=settings.REPLACE_LEGEND,
             filter_regexp=settings.FILTER_REGEXP,
@@ -244,6 +245,7 @@ class Plotter(object):
                  print_legend=True,
                  filter_legend=False,
                  legend_title=None,
+                 legend_placement=None,
                  horizontal_legend=False,
                  replace_legend=None,
                  filter_regexp=None,
@@ -292,6 +294,7 @@ class Plotter(object):
         self.print_legend = print_legend
         self.filter_legend = filter_legend
         self.legend_title = legend_title
+        self.legend_placement = legend_placement
         self.horizontal_legend = horizontal_legend
         self.replace_legend = replace_legend if replace_legend is not None else {}
         self.filter_regexp = filter_regexp if filter_regexp is not None else []
@@ -482,7 +485,7 @@ class Plotter(object):
                 self.figure.savefig(io.BytesIO())
                 renderer = self.figure._cachedRenderer
                 fig_bbox = self.figure.get_tightbbox(renderer)
-                if self.legends:
+                if self.legends and not self.legend_placement and not self.horizontal_legend:
                     legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
                     rect[2] = max(0.5,1-legend_width/fig_bbox.width)
 
@@ -510,7 +513,7 @@ class Plotter(object):
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
-        if self.print_legend and not self.horizontal_legend and self.legends:
+        if self.print_legend and not self.horizontal_legend and not self.legend_placement and self.legends:
             self.figure.canvas.draw() # Legend width is not set before it's drawn
             legend_width = max([l.get_window_extent().width for l in self.legends])
             canvas_width = self.figure.canvas.get_width_height()[0]
@@ -623,6 +626,10 @@ class Plotter(object):
             bbox = (0.5, -0.12)
             ncol = len(labels)
             loc = 'center'
+        elif self.legend_placement:
+            bbox = None
+            ncol = 1
+            loc = self.legend_placement
         else:
             bbox = (offset_x, 1.0)
             ncol = 1
