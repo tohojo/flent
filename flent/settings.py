@@ -77,6 +77,7 @@ DEFAULT_SETTINGS = {
     'USE_MARKERS': True,
     'PRINT_LEGEND': True,
     'FILTER_LEGEND': False,
+    'LEGEND_TITLE': None,
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
@@ -141,6 +142,7 @@ CONFIG_TYPES = {
     'PRINT_TITLE': 'bool',
     'PRINT_LEGEND': 'bool',
     'FILTER_LEGEND': 'bool',
+    'LEGEND_TITLE': 'str',
     'ZERO_Y': 'bool',
     'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
@@ -380,6 +382,8 @@ plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
 plot_group.add_option("--horizontal-legend", action="store_true", dest="HORIZONTAL_LEGEND",
                   help="Place a horizontal legend below the plot instead of a vertical one next to it. "
                   "Doesn't work well if there are too many items in the legend, obviously.")
+plot_group.add_option("--legend-title", action="store", dest="LEGEND_TITLE",
+                  help="Override legend title on plot.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",

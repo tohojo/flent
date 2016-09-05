@@ -190,6 +190,7 @@ def new(settings, plotter=None, **kwargs):
 
             print_legend=settings.PRINT_LEGEND,
             filter_legend=settings.FILTER_LEGEND,
+            legend_title=settings.LEGEND_TITLE,
             horizontal_legend=settings.HORIZONTAL_LEGEND,
             replace_legend=settings.REPLACE_LEGEND,
             filter_regexp=settings.FILTER_REGEXP,
@@ -242,6 +243,7 @@ class Plotter(object):
 
                  print_legend=True,
                  filter_legend=False,
+                 legend_title=None,
                  horizontal_legend=False,
                  replace_legend=None,
                  filter_regexp=None,
@@ -289,6 +291,7 @@ class Plotter(object):
 
         self.print_legend = print_legend
         self.filter_legend = filter_legend
+        self.legend_title = legend_title
         self.horizontal_legend = horizontal_legend
         self.replace_legend = replace_legend if replace_legend is not None else {}
         self.filter_regexp = filter_regexp if filter_regexp is not None else []
@@ -604,7 +607,9 @@ class Plotter(object):
         labels = self._filter_labels(labels)
 
         kwargs = {}
-        if 'legend_title' in config:
+        if self.legend_title is not None:
+            kwargs['title'] = self.legend_title
+        elif 'legend_title' in config:
             kwargs['title'] = config['legend_title']
 
 
