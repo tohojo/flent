@@ -906,6 +906,11 @@ class BoxPlotter(TimeseriesPlotter):
         # The median lines are red, so filter out red from the list of colours
         colours = list(islice(cycle([c for c in self.colours if c != 'r']), len(results)))
 
+        if self.norm_factors:
+            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
+        else:
+            norms = None
+
         for i,s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
                 a = 1
@@ -915,6 +920,8 @@ class BoxPlotter(TimeseriesPlotter):
             data = []
             for r in results:
                 d = [d for d in r.series(s['data']) if d is not None]
+                if norms is not None:
+                    d = [di/norms[i] for di in d]
                 all_data[a].extend(d)
                 if not d:
                     data.append([0.0])
