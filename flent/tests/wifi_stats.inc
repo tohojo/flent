@@ -20,8 +20,11 @@ if WIFI_STATS_HOSTS:
             DATA_SETS['wifi_stats_%s::airtime_total::%s' % (host,station)] = {'units': 'us', 'apply_to': ['wifi_stats_%s::airtime_rx::%s' % (host,station),
                                                                                                           'wifi_stats_%s::airtime_tx::%s' % (host,station),],
                                                                            'runner': 'sum', 'id': "%s::%s" % (host, station)}
-            DATA_SETS['wifi_stats_%s::avg_aggr_size::%s' % (host,station)] = {'units': 'packets',
-                                                                              'runner': 'null', 'id': "%s::%s" % (host, station)}
+        DATA_SETS['wifi_stats_%s::airtime_sum' % host] = {'units': 'us', 'apply_to': [glob('wifi_stats_%s::airtime_rx::*' % host),
+                                                                                      glob('wifi_stats_%s::airtime_tx::*' % host),],
+                                                          'runner': 'sum', 'id': host}
+        DATA_SETS['wifi_stats_%s::avg_aggr_size::%s' % (host,station)] = {'units': 'packets',
+                                                                          'runner': 'null', 'id': "%s::%s" % (host, station)}
 
 
     PLOTS['airtime_rx'] = {'description': 'WiFi RX airtime',
@@ -89,6 +92,19 @@ if WIFI_STATS_HOSTS:
                                    'type': 'box_combine',
                                    'cutoff': (DELAY,DELAY),
                                    'group_by': 'groups_concat'}
+    PLOTS['airtime_sum'] = {'description': 'WiFi airtime (all stations)',
+                            'type': 'timeseries',
+                            'axis_labels': ['Microseconds'],
+                            'legend_title': 'Airtime sum',
+                            'series': [
+                                {'data': glob('wifi_stats_*::airtime_sum'),
+                                 'label': 'Airtime sum'},
+                            ]}
+    PLOTS['airtime_sum_combine'] = {'description': 'Combined airtime sum plot',
+                                    'parent': 'airtime_sum',
+                                    'type': 'box_combine',
+                                    'cutoff': (DELAY,DELAY),
+                                    'group_by': 'groups_concat'}
     PLOTS['aggregation'] = {'description': 'WiFi aggregation size',
                            'type': 'timeseries',
                            'axis_labels': ['Packets'],
