@@ -44,7 +44,7 @@ DEFAULT_SETTINGS = {
     'HOST': None,
     'HOSTS': [],
     'LOCAL_HOST': socket.gethostname(),
-    'LOCAL_BIND': None,
+    'LOCAL_BIND': [],
     'STEP_SIZE': 0.2,
     'LENGTH': 60,
     'OUTPUT': '-',
@@ -123,7 +123,7 @@ DEFAULT_SETTINGS = {
 
 CONFIG_TYPES = {
     'HOSTS': 'list',
-    'LOCAL_BIND': 'str',
+    'LOCAL_BIND': 'list',
     'STEP_SIZE': 'float',
     'LENGTH': 'int',
     'OUTPUT': 'str',
@@ -294,8 +294,9 @@ test_group.add_option("-H", "--host", action="append", type="string", dest="HOST
                   "specified as unqualified arguments; this parameter guarantees that the "
                   "argument be interpreted as a host name (rather than being subject to "
                   "auto-detection between input files, hostnames and test names).")
-test_group.add_option("--local-bind", action="store", type="string", dest="LOCAL_BIND",
-                  help="Local hostname or IP address to bind to (for test tools that support this).")
+test_group.add_option("--local-bind", action="append", type="string", dest="LOCAL_BIND", metavar='IP',
+                  help="Local hostname or IP address to bind to (for test tools that support this). "
+                  "Can be specified multiple times to get different local bind address per host.")
 test_group.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="Base test length (some tests may add some time to this).")
 test_group.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
@@ -651,6 +652,11 @@ class Settings(optparse.Values, object):
 
         if self.DATA_DIR is None:
             self.DATA_DIR = os.path.dirname(self.OUTPUT) or '.'
+
+        # Backwards compatibility for when LOCAL_BIND could only be specified
+        # once - just duplicate the value
+        if len(self.LOCAL_BIND) == 1 and len(self.HOSTS) > 1:
+            self.LOCAL_BIND *= len(self.HOSTS)
 
         for k,v in self.BATCH_OVERRIDE.items():
             if not hasattr(v, 'lower'):

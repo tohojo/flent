@@ -129,7 +129,7 @@ class TestEnvironment(object):
     def find_ping(self, ip_version, interval, length, host, marking=None, local_bind=None):
         """Find a suitable ping."""
         if local_bind is None:
-            local_bind = self.env['LOCAL_BIND']
+            local_bind = self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else None
 
         # Main code moved to the PingRunner class to be able to take advantage
         # of the parser code there.
@@ -140,7 +140,7 @@ class TestEnvironment(object):
     def find_iperf(self, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False, bw=None):
         """Find a suitable iperf."""
         if local_bind is None:
-            local_bind = self.env['LOCAL_BIND']
+            local_bind = self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else None
 
         # Main code moved to the PingRunner class to be able to take advantage
         # of the parser code there.
@@ -182,7 +182,7 @@ class TestEnvironment(object):
         args.setdefault('ip_version', self.env['IP_VERSION'])
         args.setdefault('interval', self.env['STEP_SIZE'])
         args.setdefault('control_host', self.env['CONTROL_HOST'] or host)
-        args.setdefault('local_bind', self.env['LOCAL_BIND'] or "")
+        args.setdefault('local_bind', self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else "")
         args.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or args['local_bind'])
         args.setdefault('extra_args', "")
         args.setdefault('extra_test_args', "")
