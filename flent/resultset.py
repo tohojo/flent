@@ -62,6 +62,7 @@ RECORDED_SETTINGS = (
 
 FILEFORMAT_VERSION=3
 SUFFIX = '.flent.gz'
+MAX_FILENAME_LEN=250 # most filesystems have 255 as their limit
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
@@ -320,10 +321,12 @@ class ResultSet(object):
         if self._filename is not None:
             return self._filename
         if 'TITLE' in self.metadata and self.metadata['TITLE']:
-            return "%s-%s.%s%s" % (self.metadata['NAME'],
+            name = "%s-%s.%%s%s" % (self.metadata['NAME'],
                                          format_date(self.metadata['TIME']).replace(":", ""),
-                                         re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:50],
                                          self.SUFFIX)
+            title_len = MAX_FILENAME_LEN - len(name) + 2
+            return name % re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:title_len]
+
         else:
             return "%s-%s%s" % (self.metadata['NAME'], format_date(self.metadata['TIME']).replace(":", ""), self.SUFFIX)
 
