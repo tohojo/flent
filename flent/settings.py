@@ -162,6 +162,7 @@ CONFIG_TYPES = {
     'HTTP_GETTER_DNS': 'str',
     'HTTP_GETTER_TIMEOUT': 'int',
     'HTTP_GETTER_WORKERS': 'int',
+    'DEBUG_ERROR': 'bool',
     }
 
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
