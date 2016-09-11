@@ -285,28 +285,32 @@ class Glob(object):
             self.exclude = exclude
         self.pattern = pattern
 
-    def filter(self, values, exclude):
+    def filter(self, values, exclude, args=None):
+        if args is not None:
+            pattern = self.pattern.format(**args)
+        else:
+            pattern = self.pattern
         exclude += self.exclude
-        return [x for x in values if fnmatch(x, self.pattern) and x not in exclude]
+        return [x for x in values if fnmatch(x, pattern) and x not in exclude]
 
     def __iter__(self):
         return iter((self,)) # allow list(g) to return [g]
 
     @classmethod
-    def filter_dict(cls, d):
+    def filter_dict(cls, d, args=None):
         # Expand glob patterns in parameters. Go through all items in the
         # dictionary looking for subkeys that is a Glob instance or a list
         # that has a Glob instance in it.
         for k,v in list(d.items()):
             for g_k in list(v.keys()):
                 try:
-                    v[g_k] = cls.expand_list(v[g_k], list(d.keys()), [k])
+                    v[g_k] = cls.expand_list(v[g_k], list(d.keys()), [k], args=args)
                 except TypeError:
                     continue
         return d
 
     @classmethod
-    def expand_list(cls, l, values, exclude=None):
+    def expand_list(cls, l, values, exclude=None, args=None):
         l = list(l) # copy list, turns lone Glob objects into [obj]
         new_l = []
         if exclude is None:
@@ -315,7 +319,7 @@ class Glob(object):
         # list  looking for Glob instances and expanding them.
         for pattern in l:
             if isinstance(pattern, cls):
-                new_l.extend(pattern.filter(values, exclude))
+                new_l.extend(pattern.filter(values, exclude, args))
             else:
                 new_l.append(pattern)
         return new_l
