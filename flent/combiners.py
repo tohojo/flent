@@ -21,9 +21,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
+import re, math
 
-from flent.util import classname, long_substr
+from flent.util import classname, long_substr, Glob
 from flent.resultset import ResultSet
 
 from itertools import cycle
@@ -164,7 +164,7 @@ class GroupsCombiner(Combiner):
                 data = {}
                 for s in self.orig_series:
                     reducer = self.get_reducer(s)
-                    data[s['data']] = reducer(r, s['data'])
+                    data[s['data']] = reducer(r, s)
 
                 res.append_datapoint(x, data)
                 x += 1
@@ -196,7 +196,7 @@ class GroupsPointsCombiner(Combiner):
                 reducer.cutoff = None
                 for d in data:
                     if cutoff is None or (d[0] >= cutoff[0] and d[0] <= max(x_values)-cutoff[1]):
-                        new_data.append(reducer(res, s['data'], data=d[1:]))
+                        new_data.append(reducer(res, s, data=d[1:]))
                 res.add_result(s['data'], new_data)
             new_results.append(res)
         return new_results
@@ -256,7 +256,7 @@ class SeriesCombiner(Combiner):
                 data = {}
                 for k,v in zip(groups.keys(), d):
                     reducer = self.get_reducer(s)
-                    data[k] = reducer(v, s['data']) if v is not None else Non
+                    data[k] = reducer(v, s) if v is not None else Non
                 res.append_datapoint(x, data)
                 x += 1
             new_results.append(res)
@@ -294,7 +294,7 @@ class BothCombiner(Combiner):
                 data = {}
                 for k,v in zip([k.rsplit("-",1)[0] for k in groups.keys() if k.endswith("-%s" % s)], d):
                     reducer = self.get_reducer(old_s)
-                    data[k] = reducer(v, old_s['data']) if v is not None else Non
+                    data[k] = reducer(v, old_s) if v is not None else Non
 
                 res.append_datapoint(x, data)
                 x += 1
@@ -354,14 +354,14 @@ class Reducer(object):
         self.arg = arg
         self.cutoff = cutoff
 
-    def __call__(self, resultset, key, data=None):
-        return self.reduce(resultset,key, data)
+    def __call__(self, resultset, series, data=None):
+        return self.reduce(resultset, series, data)
 
-    def reduce(self, resultset, key, data=None):
+    def reduce(self, resultset, series, data=None):
         if self.numpy_req and not HAS_NUMPY:
             raise RuntimeError("%s requires numpy." % self.__class__)
         if data is None:
-            data = resultset[key]
+            data = resultset[series['data']]
         if self.cutoff:
             start = min(resultset.x_values)+self.cutoff[0]
             end = max(resultset.x_values)-self.cutoff[1]
@@ -374,6 +374,17 @@ class Reducer(object):
             return None
         return self._reduce(data)
 
+class FairnessReducer(Reducer):
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
+        source = Glob.expand_list(series['source'], resultset.series_names, args=series)
+        values = []
+        for key in source:
+            values.append(super(FairnessReducer, self).reduce(resultset, None, resultset[key]))
+        valsum = math.fsum([x**2 for x in values])
+        if not valsum:
+            return None
+        return math.fsum(values)**2/(len(values)*valsum)
 
 class MeanReducer(Reducer):
     numpy_req = True
@@ -416,7 +427,8 @@ class MeanZeroReducer(Reducer):
 class RawSeqLossReducer(Reducer):
     filter_none = False
 
-    def reduce(self, resultset, key, data=None):
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
         if '::' in key:
            key = key.split("::")[0]
         try:
@@ -434,9 +446,13 @@ class RawSeqLossReducer(Reducer):
 class MetaReducer(Reducer):
     filter_none = False
 
-    def reduce(self, resultset, key, data=None):
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
         metakey = self.arg
         try:
             return resultset.meta('SERIES_META')[key][metakey]
         except KeyError:
             return None
+
+class FairnessMeanReducer(FairnessReducer, MeanReducer):
+    pass
