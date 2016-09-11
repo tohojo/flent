@@ -26,6 +26,8 @@ if WIFI_STATS_HOSTS:
         DATA_SETS['wifi_stats_%s::airtime_sum' % host] = {'units': 'us', 'apply_to': [glob('wifi_stats_%s::airtime_rx::*' % host),
                                                                                       glob('wifi_stats_%s::airtime_tx::*' % host),],
                                                           'runner': 'sum', 'id': host}
+        DATA_SETS['wifi_stats_%s::airtime_fairness' % host] = {'units': 'us', 'apply_to': [glob('wifi_stats_%s::airtime_total::*' % host)],
+                                                               'runner': 'fairness', 'id': host}
 
     PLOTS['airtime_rx'] = {'description': 'WiFi RX airtime',
                            'type': 'timeseries',
@@ -92,6 +94,17 @@ if WIFI_STATS_HOSTS:
                                    'type': 'box_combine',
                                    'cutoff': (DELAY,DELAY),
                                    'group_by': 'groups_concat'}
+    PLOTS['airtime_fairness_combine'] = {'description': 'Combined airtime fairness plot',
+                                         'type': 'box_combine',
+                                         'axis_labels': ['Fairness index'],
+                                         'cutoff': (DELAY,DELAY),
+                                         'series': [
+                                             {'data': glob('wifi_stats_*::airtime_fairness'),
+                                              'source': glob('wifi_stats_{id}::airtime_total*'),
+                                              'label': 'Airtime fairness',
+                                              'combine_mode': 'fairness_mean'},
+                                         ],
+                                         'group_by': 'groups_concat'}
     PLOTS['airtime_sum'] = {'description': 'WiFi airtime (all stations)',
                             'type': 'timeseries',
                             'axis_labels': ['Microseconds'],
