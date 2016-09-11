@@ -312,12 +312,14 @@ class BatchRunner(object):
             return 0
 
         total_time = 0
+        n = 0
         argsets = self.get_argsets(batch)
 
         for _,s in self.expand_argsets(batch, argsets, self.settings.TIME, batch_name, False):
             total_time += s.TOTAL_LENGTH + int(batch.get('pause', 0))
+            n += 1
 
-        return total_time
+        return total_time, n
 
 
     def run_batch(self, batch_name):
@@ -518,9 +520,10 @@ class BatchRunner(object):
                 batches = self.batches.keys()
             else:
                 batches = self.settings.BATCH_NAMES
-            total_time = sum([self.get_batch_runtime(b) for b in batches])
+            runtimes = [self.get_batch_runtime(b) for b in batches]
+            total_time, total_n = map(sum, zip(*runtimes))
             if total_time > 0:
-                sys.stderr.write("Estimated total runtime: %s\n" % timedelta(seconds=total_time))
+                sys.stderr.write("Estimated total runtime: %s (%d tests)\n" % (timedelta(seconds=total_time), total_n))
             for b in batches:
                 try:
                     sys.stderr.write("Running batch '%s'.\n" % b)
