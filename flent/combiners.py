@@ -336,6 +336,9 @@ class BatchCombiner(GroupsCombiner):
 class BatchConcatCombiner(GroupsConcatCombiner, BatchCombiner):
     pass
 
+class BatchSeriesCombiner(SeriesCombiner, BatchCombiner):
+    pass
+
 
 def get_reducer(reducer_type, *args):
     if ":" in reducer_type:
