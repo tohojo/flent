@@ -718,7 +718,8 @@ class CombineManyPlotter(object):
 
         combine_mode = self.override_group_by or config.get('group_by', 'groups')
         combiner = combiners.new(combine_mode, print_n=self.combine_print_n,
-                                 filter_regexps=self.filter_regexp)
+                                 filter_regexps=self.filter_regexp,
+                                 filter_series=self.filter_series)
         super(CombineManyPlotter,self).plot(combiner(results, config), config, axis)
 
 class TimeseriesPlotter(Plotter):

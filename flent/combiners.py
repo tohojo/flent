@@ -60,7 +60,7 @@ class Combiner(object):
     # -01, -02, etc.
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
 
-    def __init__(self, print_n=False, filter_regexps=None):
+    def __init__(self, print_n=False, filter_regexps=None, filter_series=None):
         self.filter_serial = True
         self.filter_prefix = True
         self.print_n = print_n
@@ -68,6 +68,7 @@ class Combiner(object):
             self.filter_regexps = filter_regexps
         else:
             self.filter_regexps = []
+        self.filter_series = filter_series
 
     def __call__(self, results, config):
         return self.combine(results, config)
@@ -129,7 +130,7 @@ class Combiner(object):
             else:
                 groups[n] = [results[i]]
 
-        self.orig_series = config['series']
+        self.orig_series = [s for s in config['series'] if not s['data'] in self.filter_series]
         self.orig_name = results[0].meta('NAME')
 
         # Do the main combine - group() is defined by subclasses.
@@ -144,7 +145,7 @@ class Combiner(object):
     def get_reducer(self, s_config):
         reducer_name = s_config.get('combine_mode', 'mean')
         cutoff = self.config.get('cutoff', None)
-        return  get_reducer(reducer_name, cutoff)
+        return  get_reducer(reducer_name, cutoff, self.filter_series)
 
 
 class GroupsCombiner(Combiner):
@@ -336,7 +337,7 @@ class BatchConcatCombiner(GroupsConcatCombiner, BatchCombiner):
     pass
 
 
-def get_reducer(reducer_type, cutoff):
+def get_reducer(reducer_type, *args):
     if ":" in reducer_type:
         reducer_type,reducer_arg = reducer_type.split(":", 1)
     else:
@@ -344,15 +345,16 @@ def get_reducer(reducer_type, cutoff):
     cname = classname(reducer_type, "Reducer")
     if not cname in globals():
         raise RuntimeError("Reducer not found: '%s'" % reducer_type)
-    return globals()[cname](reducer_arg, cutoff)
+    return globals()[cname](reducer_arg, *args)
 
 class Reducer(object):
     filter_none = True
     numpy_req = False
 
-    def __init__(self, arg, cutoff):
+    def __init__(self, arg, cutoff, filter_series):
         self.arg = arg
         self.cutoff = cutoff
+        self.filter_series = filter_series
 
     def __call__(self, resultset, series, data=None):
         return self.reduce(resultset, series, data)
@@ -377,7 +379,8 @@ class Reducer(object):
 class FairnessReducer(Reducer):
     def reduce(self, resultset, series, data=None):
         key = series['data']
-        source = Glob.expand_list(series['source'], resultset.series_names, args=series)
+        source = Glob.expand_list(series['source'], resultset.series_names,
+                                  exclude=self.filter_series, args=series)
         values = []
         for key in source:
             values.append(super(FairnessReducer, self).reduce(resultset, None, resultset[key]))
