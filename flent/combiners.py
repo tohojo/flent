@@ -257,7 +257,7 @@ class SeriesCombiner(Combiner):
                 data = {}
                 for k,v in zip(groups.keys(), d):
                     reducer = self.get_reducer(s)
-                    data[k] = reducer(v, s) if v is not None else Non
+                    data[k] = reducer(v, s) if v is not None else None
                 res.append_datapoint(x, data)
                 x += 1
             new_results.append(res)
