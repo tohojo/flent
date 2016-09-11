@@ -338,7 +338,8 @@ class Plotter(object):
             if isinstance(s['data'], Glob):
                 for d in Glob.expand_list(s['data'], data.keys()):
                     if 'label' in s and 'id' in data[d]:
-                        new_series.append(dict(s, data=d, label='%s -- %s' % (s['label'], data[d]['id'])))
+                        new_series.append(dict(s, data=d, id=data[d]['id'],
+                                               label='%s -- %s' % (s['label'], data[d]['id'])))
                     else:
                         new_series.append(dict(s, data=d))
             else:
