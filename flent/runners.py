@@ -1212,5 +1212,8 @@ class FairnessRunner(ComputingRunner):
     command = "Fairness (computed)"
     def compute(self,values):
         if not len(values):
-            return 0.0
-        return math.fsum(values)**2/(len(values)*math.fsum([x**2 for x in values]))
+            return None
+        valsum = math.fsum([x**2 for x in values])
+        if not valsum:
+            return None
+        return math.fsum(values)**2/(len(values)*valsum)
