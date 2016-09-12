@@ -939,7 +939,12 @@ class WifiStatsRunner(ProcessRunner):
 
     def __init__(self, *args, **kwargs):
         if 'stations' in kwargs:
-            self.stations = kwargs['stations']
+            if kwargs['stations'] in (["all"],["ALL"]):
+                self.stations = []
+                self.all_stations = False # disabled as it doesn't work properly yet
+            else:
+                self.stations = kwargs['stations']
+                self.all_stations = False
             del kwargs['stations']
         else:
             self.stations = []
@@ -962,7 +967,10 @@ class WifiStatsRunner(ProcessRunner):
 
             for s,v in zip(station_parts[::2], station_parts[1::2]):
                 if not s in self.stations:
-                    continue
+                    if self.all_stations:
+                        self.stations.append(s)
+                    else:
+                        continue
                 sv = {}
                 airtime = self.airtime_re.search(v)
                 if airtime is not None:
@@ -1001,6 +1009,9 @@ class WifiStatsRunner(ProcessRunner):
             matches['t'] = timestamp
             matches['stations'] = stations
             self.raw_values.append(matches)
+
+        if self.all_stations:
+            self.test_parameters['wifi_stats_stations'] = ",".join(self.stations)
         return results
 
     @classmethod
