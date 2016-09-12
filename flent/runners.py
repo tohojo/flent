@@ -1086,6 +1086,7 @@ class NullRunner(object):
         self.result = None
         self.command = 'null'
         self.returncode = 0
+        self.metadata = {'runner': self.__class__.__name__}
         self.out = self.err = ''
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
@@ -1104,6 +1105,7 @@ class ComputingRunner(object):
     def __init__(self, name, settings, apply_to=None, *args, **kwargs):
         self.name = name
         self.settings = settings
+        self.metadata = {'runner': self.__class__.__name__}
         if apply_to is None:
             self.keys = []
         else:
