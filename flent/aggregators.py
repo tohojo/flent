@@ -106,7 +106,7 @@ class Aggregator(object):
         signal.signal(signal.SIGUSR1, handle_usr1)
 
         result = {}
-        metadata = {}
+        metadata = {'series': {}, 'test_parameters': {}}
         raw_values = {}
         try:
             for n,i in list(self.instances.items()):
@@ -161,14 +161,16 @@ class Aggregator(object):
                             result[n] = tr(result[n])
 
                 if hasattr(t, 'metadata'):
-                    metadata[n] = t.metadata
+                    metadata['series'][n] = t.metadata
                     if 'transformers' in self.instances[n]:
                         for tr in self.instances[n]['transformers']:
-                            for k,v in metadata[n].items():
+                            for k,v in metadata['series'][n].items():
                                 try:
-                                    metadata[n][k] = tr(v)
+                                    metadata['series'][n][k] = tr(v)
                                 except:
                                     pass
+                if hasattr(t, 'test_parameters'):
+                    metadata['test_parameters'].update(t.test_parameters)
                 if hasattr(t, 'raw_values'):
                     raw_values[n] = t.raw_values
         except KeyboardInterrupt:
@@ -214,7 +216,7 @@ class IterationAggregator(Aggregator):
     def aggregate(self, results):
         for i in range(self.iterations):
             data,metadata,raw_values = self.collect()
-            results.meta('SERIES_META', metadata)
+            results.meta('SERIES_META', metadata['series'])
             results.meta('FAILED_RUNNERS', self.failed_runners)
             results.raw_values = raw_values
             if i == 0:
@@ -238,7 +240,8 @@ class TimeseriesAggregator(Aggregator):
         measurements,metadata,raw_values = self.collect()
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
-        results.meta('SERIES_META', metadata)
+        results.meta('SERIES_META', metadata['series'])
+        results.meta('TEST_PARAMETERS').update(metadata['test_parameters'])
         results.meta('FAILED_RUNNERS', self.failed_runners)
         results.raw_values = raw_values
         results.create_series(list(measurements.keys()))

@@ -88,6 +88,7 @@ class TimerRunner(threading.Thread):
         self.returncode = 0
         self.out = self.err = ''
         self.metadata = {'runner': self.__class__.__name__}
+        self.test_parameters = {}
 
     def run(self):
         if self.start_event is not None:
@@ -114,6 +115,7 @@ class FileMonitorRunner(threading.Thread):
         self.result = None
         self.raw_values = []
         self.metadata = {'filename': self.filename, 'runner': self.__class__.__name__}
+        self.test_parameters = {}
         self.command = 'File monitor for %s' % self.filename
         self.returncode = 0
         self.out = self.err = ''
@@ -180,6 +182,7 @@ class ProcessRunner(threading.Thread):
         self.returncode = None
         self.kill_lock = threading.Lock()
         self.metadata = {'runner': self.__class__.__name__, 'command': command}
+        self.test_parameters = {}
         self.raw_values = []
         self.out = ""
         self.err = ""
