@@ -309,7 +309,7 @@ class BatchRunner(object):
         batch.update(self.settings.BATCH_OVERRIDE)
 
         if batch.get('abstract', False) or batch.get('disabled', False):
-            return 0
+            return (0,0)
 
         total_time = 0
         n = 0
