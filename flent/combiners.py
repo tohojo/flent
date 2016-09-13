@@ -317,9 +317,9 @@ class BatchCombiner(GroupsCombiner):
         groupmap = {}
         groups = OrderedDict()
         for r in results:
-            u = r.meta().get("BATCH_UUID", "None")
+            u = "%s - %s " % (r.meta().get("BATCH_UUID", "None"), r.meta('NAME'))
             if not u in groupmap:
-                t = r.meta("BATCH_TITLE")
+                t = "%s - %s" % (r.meta("BATCH_TITLE"), r.meta('NAME'))
                 if not t or t in groupmap.values():
                     t = u
                 groupmap[u] = t
