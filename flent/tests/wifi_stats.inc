@@ -94,6 +94,11 @@ if WIFI_STATS_HOSTS:
                                    'type': 'box_combine',
                                    'cutoff': (DELAY,DELAY),
                                    'group_by': 'groups_concat'}
+    PLOTS['airtime_total_combine_long'] = {'description': 'Combined airtime total plot (long timescale)',
+                                   'parent': 'airtime_total',
+                                   'type': 'box_combine',
+                                   'cutoff': (DELAY,DELAY),
+                                   'group_by': 'groups'}
     PLOTS['airtime_fairness_combine'] = {'description': 'Combined airtime fairness plot',
                                          'type': 'box_combine',
                                          'axis_labels': ['Fairness index'],
