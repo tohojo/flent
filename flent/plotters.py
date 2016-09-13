@@ -1121,10 +1121,11 @@ class CdfPlotter(Plotter):
                 # plot; for e.g. pings that run long than the streams, we don't
                 # want the unloaded ping values
                 start,end = config['cutoff']
-                end = -int(end/self.metadata['STEP_SIZE'])
+                end = int((self.metadata['TOTAL_LENGTH'] - end) / self.metadata['STEP_SIZE'])
+                start = int(start / self.metadata['STEP_SIZE'])
                 if end == 0:
                     end = None
-                s_data = s_data[int(start/self.metadata['STEP_SIZE']):end]
+                s_data = s_data[start:end]
             sizes.append(float(len(s_data)))
             d = sorted([x for x in s_data if x is not None])
             data.append(d)

@@ -191,12 +191,13 @@ class GroupsPointsCombiner(Combiner):
             else:
                 res.x_values = x_values
             for s in config['series']:
+                length = max([r.meta("TOTAL_LENGTH") for r in groups[k]])
                 data = zip_longest(x_values, *[r[s['data']] for r in groups[k]])
                 new_data = []
                 reducer = self.get_reducer(s)
                 reducer.cutoff = None
                 for d in data:
-                    if cutoff is None or (d[0] >= cutoff[0] and d[0] <= max(x_values)-cutoff[1]):
+                    if cutoff is None or (d[0] >= cutoff[0] and d[0] <= length-cutoff[1]):
                         new_data.append(reducer(res, s, data=d[1:]))
                 res.add_result(s['data'], new_data)
             new_results.append(res)
@@ -217,7 +218,7 @@ class GroupsConcatCombiner(Combiner):
             for r in groups[k]:
                 if cutoff:
                     start =  min(r.x_values) + cutoff[0]
-                    end   =  max(r.x_values) - cutoff[1]
+                    end   =  min(r.x_values) + r.meta("TOTAL_LENGTH") - cutoff[1]
                 keys , minvals = [], {}
                 for s in self.orig_series:
                     k = s['data']
@@ -369,7 +370,7 @@ class Reducer(object):
             data = resultset[series['data']]
         if self.cutoff:
             start = min(resultset.x_values)+self.cutoff[0]
-            end = max(resultset.x_values)-self.cutoff[1]
+            end = min(resultset.x_values)+resultset.meta("TOTAL_LENGTH")-self.cutoff[1]
             start_idx = bisect_left(resultset.x_values,start)
             end_idx = bisect_right(resultset.x_values,end)
             data = data[start_idx:end_idx]
@@ -440,8 +441,9 @@ class RawSeqLossReducer(Reducer):
         try:
             if self.cutoff is not None:
                 start,end = self.cutoff
-                start_t = min([r['t'] for r in resultset.raw_values[key]])+start
-                end_t = max([r['t'] for r in resultset.raw_values[key]])-end
+                min_t = min([r['t'] for r in resultset.raw_values[key]])
+                start_t = min_t+start
+                end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
                 seqs = [r['seq'] for r in resultset.raw_values[key] if r['t'] > start_t and r['t'] < end_t]
             else:
                 seqs = [r['seq'] for r in resultset.raw_values[key]]
