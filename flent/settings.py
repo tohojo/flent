@@ -87,6 +87,7 @@ DEFAULT_SETTINGS = {
     'ZERO_Y': False,
     'BOUNDS_X': [],
     'BOUNDS_Y': [],
+    'COLOURS': None,
     'INVERT_Y': False,
     'LOG_SCALE': True,
     'NORM_FACTORS': [],
@@ -345,6 +346,8 @@ plot_group.add_option("--bounds-y", action="append", dest="BOUNDS_Y", type='floa
                   "the upper bound. Specify two numbers separated by a comma to specify both "
                   "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
                   "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--colours", action="store", dest="COLOURS",
+                  help="Comma-separated list of colours to be used for the plot colour cycle.")
 plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INVERT_Y",
                   help="Invert the y-axis for latency data series (making plots show 'better values "
                   "upwards').")

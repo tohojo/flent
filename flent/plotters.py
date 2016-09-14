@@ -185,6 +185,7 @@ def new(settings, plotter=None, **kwargs):
             zero_y=settings.ZERO_Y,
             bounds_x=settings.BOUNDS_X,
             bounds_y=settings.BOUNDS_Y,
+            colours=settings.COLOURS,
             log_scale=settings.LOG_SCALE,
             scale_data=settings.SCALE_DATA,
 
@@ -242,6 +243,7 @@ class Plotter(object):
                  bounds_y=None,
                  log_scale=True,
                  scale_data=None,
+                 colours=None,
 
                  print_legend=True,
                  filter_legend=False,
@@ -266,7 +268,7 @@ class Plotter(object):
         self.output = output
         self.plt = pyplot
         self.np = numpy
-        self.colours = COLOURS
+        self.colours = colours.split(",") if colours else COLOURS
         self.styles = STYLES
         self.legends = []
         self.artists = []
