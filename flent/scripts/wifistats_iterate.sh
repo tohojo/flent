@@ -13,7 +13,11 @@ while getopts "i:c:I:H:" opt; do
     esac
 done
 
+buffer=""
+[[ "$host" == "localhost" ]] || buffer="-b"
+
 command_string=$(cat <<EOF
+which wifistats_iterate >/dev/null && exec wifistats_iterate $buffer -i $interface -c $count -I $interval
 for i in \$(seq $count); do
     date '+Time: %s.%N';
     dir=\$(find /sys/kernel/debug/ieee80211 -name netdev:$interface);
