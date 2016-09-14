@@ -591,6 +591,7 @@ class Plotter(object):
             prefix = long_substr(labels, prefix_only=True)
             if prefix and len(prefix) < len(labels[0]):
                 labels = [l.replace(prefix, '') for l in labels]
+        labels = [l.strip() for l in labels]
         return labels
 
     def do_legend(self):
