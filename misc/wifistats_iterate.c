@@ -65,6 +65,7 @@ typedef struct {
 	int rc_stats;
 	int airtime;
 	char macaddr[6*3];
+	char airtime_file[256];
 	char rc_stats_file[256];
 } station_stats;
 
@@ -108,10 +109,12 @@ void usage (char *err) {
 
 int stations_reset(station_stats *stations, int cnt) {
 	for(int i = 0; i < cnt; i++) {
-		close(stations[i].rc_stats);
+		if (stations[i].rc_stats)
+			close(stations[i].rc_stats);
+		if (stations[i].airtime)
+			close(stations[i].airtime);
 		stations[i].rc_stats = open(stations[i].rc_stats_file,O_RDONLY);
-//		lseek(stations[i].rc_stats,0,SEEK_SET);
-		lseek(stations[i].airtime, 0,SEEK_SET);
+		stations[i].airtime = open(stations[i].airtime_file,O_RDONLY);
 	}
 	return 0;
 }
@@ -201,20 +204,10 @@ int stations_open(char * dev, station_stats *stations, int limit) {
 			continue;
 		
 		sprintf(stations[cnt].macaddr,"%s",in->d_name);
-		sprintf(rc_stats,"%s/%s/%s",dir,in->d_name,"rc_stats_csv");
-		sprintf(airtime,"%s/%s/%s",dir,in->d_name,"airtime");
-		
-		strcpy(stations[cnt].rc_stats_file,rc_stats);
-		
-		stations[cnt].rc_stats = open(rc_stats, O_RDONLY);
-		stations[cnt].airtime = open(airtime, O_RDONLY);
-		
-		if (stations[cnt].rc_stats < 1 || stations[cnt].airtime < 1 )
-		{
-			perror("Error : Failed to open stations file\n");
-			close(stations[cnt].rc_stats);
-			close(stations[cnt].airtime);
-		} else if(++cnt > limit) {
+		sprintf(stations[cnt].rc_stats_file,"%s/%s/%s",dir,in->d_name,"rc_stats_csv");
+		sprintf(stations[cnt].airtime_file,"%s/%s/%s",dir,in->d_name,"airtime");
+
+		if(++cnt > limit) {
 			perror("Error : Too many stations to process\n");
 			break;
 		}
@@ -238,9 +231,12 @@ int stations_read(station_stats *s, char * buf, int cnt) {
 	
 	while(i < cnt) {
 		int t = 0;
-		if(s[i].rc_stats > 0) {
-			size += sprintf(&buf[size],"Station: %s\nAirtime:\n",s[i].macaddr);
+		size += sprintf(&buf[size],"Station: %s\n",s[i].macaddr);
+		if(s[i].airtime > 0) {
+			size += sprintf(&buf[size],"Airtime:\n");
 			if((t = read(s[i].airtime, &buf[size],8192)) > 0) size += t;
+		}
+		if(s[i].rc_stats > 0) {
 			size += sprintf(&buf[size],"RC stats:\n");
 			if((t = read(s[i].rc_stats,&buf[size],8192)) > 0) size += t;
 		}
@@ -386,10 +382,10 @@ int run(args *a)
 	do {
 		int err;
 		long long fired;
-		stations_reset(stations,c);
 		if(read(timer,&fired,sizeof(fired))!=8) perror("reading timer");
-
 		ctr+=fired;
+
+		stations_reset(stations,c);
 		if((size = stations_read(stations,buffer,c)) > 0) {
 			err = result(out,size,BUFFERSIZE,buffer);
 		} else {
