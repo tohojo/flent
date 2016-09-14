@@ -310,7 +310,7 @@ static int result(int out, int size, int bufsize, char *buffer) {
 	iov[1].iov_len = size;
 
 	iov[2].iov_base = "---\n";
-	iov[2].iov_len = sizeof("---\n");
+	iov[2].iov_len = sizeof("---\n")-1;
 	
 	if(bufsize - size > 40) {
   		if(( err = writev(out,iov,3) == -1)) {
