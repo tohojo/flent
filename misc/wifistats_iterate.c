@@ -134,8 +134,8 @@ int stations_bsize(station_stats *stations, int pad) {
 DIR *dir_exists(char * dir) {
 	DIR* fd;
 	struct dirent* in;
-	
-	if (NULL == (fd = opendir (dir))) 
+
+	if (NULL == (fd = opendir (dir)))
 	{
 		perror("Error : Failed to open stations directory");
 		return NULL;
@@ -155,7 +155,7 @@ int wifi_where(char * dev) {
 			return i;
 		}
 	}
-	return -1;    
+	return -1;
 }
 
 int count_stations(char * dev) {
@@ -165,14 +165,14 @@ int count_stations(char * dev) {
 	char dir[1024];
 	sprintf(dir,"/sys/kernel/debug/ieee80211/phy%i/netdev:%s/stations",
 		wifi_where(dev),dev);
-	
+
 	if ((fd = dir_exists(dir)) == NULL) return -1;
-	
-	while ((in = readdir(fd))) 
+
+	while ((in = readdir(fd)))
 	{
 		if (!strcmp (in->d_name, "."))
 			continue;
-		if (!strcmp (in->d_name, ".."))    
+		if (!strcmp (in->d_name, ".."))
 			continue;
 		cnt++;
 	}
@@ -188,21 +188,21 @@ int stations_open(char * dev, station_stats *stations, int limit) {
 	char dir[MAXPATHLEN];
 	char airtime[MAXPATHLEN];
 	char rc_stats[MAXPATHLEN];
-	
+
 	stations[cnt].rc_stats = stations[cnt].airtime = -1;
 	limit /= 2;
 	sprintf(dir,"/sys/kernel/debug/ieee80211/phy%i/netdev:%s/stations",
 		wifi_where(dev),dev);
-	
+
 	if ((fd = dir_exists(dir)) == NULL) return -1;
-	
-	while ((in = readdir(fd))) 
+
+	while ((in = readdir(fd)))
 	{
 		if (!strcmp (in->d_name, "."))
 			continue;
-		if (!strcmp (in->d_name, ".."))    
+		if (!strcmp (in->d_name, ".."))
 			continue;
-		
+
 		sprintf(stations[cnt].macaddr,"%s",in->d_name);
 		sprintf(stations[cnt].rc_stats_file,"%s/%s/%s",dir,in->d_name,"rc_stats_csv");
 		sprintf(stations[cnt].airtime_file,"%s/%s/%s",dir,in->d_name,"airtime");
@@ -228,7 +228,7 @@ int stations_close(station_stats *stations, int cnt) {
 int stations_read(station_stats *s, char * buf, int cnt) {
 	int i = 0;
 	int size = 0;
-	
+
 	while(i < cnt) {
 		int t = 0;
 		size += sprintf(&buf[size],"Station: %s\n",s[i].macaddr);
@@ -242,9 +242,9 @@ int stations_read(station_stats *s, char * buf, int cnt) {
 		}
 		i++;
 	}
-	
+
 	return size;
-}     
+}
 
 static void defaults(args *a) {
 	a->filename = NULL;
@@ -307,7 +307,7 @@ static int result(int out, int size, int bufsize, char *buffer) {
 
 	iov[2].iov_base = "---\n";
 	iov[2].iov_len = sizeof("---\n")-1;
-	
+
 	if(bufsize - size > 40) {
   		if(( err = writev(out,iov,3) == -1)) {
 			perror("Write failed - out of disk?");
@@ -329,14 +329,14 @@ int run(args *a)
 	station_stats *stations = NULL;
 	char *buf;
 	int c;
-	
+
 	if(a->buffer && !out) {
 		perror("Unable to create tmpfile");
 		exit(-1);
 	} else {
 		unlink(tmpfile); // make it disappear on close
 	}
-	
+
 //	if (!a->filename)
 //		usage("Must specify filename");
 
@@ -357,9 +357,9 @@ int run(args *a)
 	} else {
 		usage("No stations found");
 	}
-	
+
 	if((c = stations_open(a->dev,a->stations,512)) < 1) usage("No stations found");
-	
+
 	struct itimerspec new_value = {0};
 
 	int timer = timerfd_create(CLOCK_REALTIME, 0);
@@ -376,7 +376,7 @@ int run(args *a)
 	int size = 0;
 	int ctr = 0;
 	stations = a->stations;
-	
+
 	timerfd_settime(timer,0,&new_value,NULL); // relative timer
 
 	do {
