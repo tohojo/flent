@@ -4,6 +4,7 @@ DATA_SETS['VoIP']                 = {'command': find_itgsend('VoIP', LENGTH, VOI
                                      'duration': LENGTH,
                                      'interval': STEP_SIZE,
                                      'units': 'Kbps',
+                                     'control_host': VOIP_CONTROL_HOST,
                                      'runner': 'ditg'}
 DATA_SETS['VoIP::bitrate']        = {'units': 'Kbits/s', 'runner': 'null'}
 DATA_SETS['VoIP::delay']          = {'units': 'ms', 'runner': 'null', 'data_transform': 's_to_ms'}

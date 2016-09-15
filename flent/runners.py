@@ -358,7 +358,11 @@ class DitgRunner(ProcessRunner):
 
     def __init__(self, name, settings, duration, interval, **kwargs):
         ProcessRunner.__init__(self, name, settings, **kwargs)
-        self.proxy = xmlrpc.ServerProxy("http://%s:%s" % (self.settings.CONTROL_HOST or self.settings.HOST,
+        if 'control_host' in kwargs:
+            control_host = kwargs['control_host']
+        else:
+            control_host = self.settings.CONTROL_HOST or self.settings.HOST
+        self.proxy = xmlrpc.ServerProxy("http://%s:%s" % (control_host,
                                                           self.settings.DITG_CONTROL_PORT),
                                         allow_none=True)
         self.ditg_secret = self.settings.DITG_CONTROL_SECRET
