@@ -34,6 +34,9 @@ except ImportError:
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
 
+class _no_default():
+    pass
+
 
 def finder(fn):
     """Decorator to put on find_* methods that makes sure common operations
@@ -104,11 +107,11 @@ class TestEnvironment(object):
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
 
-    def get_test_parameter(self, name, default=None):
+    def get_test_parameter(self, name, default=_no_default):
         try:
             return self.env['TEST_PARAMETERS'][name]
         except KeyError:
-            if default is not None:
+            if default is not _no_default:
                 return default
             if self.informational:
                 return None
