@@ -1,7 +1,7 @@
 ## -*- mode: python; coding: utf-8 -*-
 
-DATA_SETS['VoIP']                 = {'command': find_itgsend('VoIP', LENGTH, VOIP_HOST, local_bind=VOIP_LOCAL_BIND),
-                                     'duration': LENGTH,
+DATA_SETS['VoIP']                 = {'command': find_itgsend('VoIP', VOIP_LENGTH, VOIP_HOST, local_bind=VOIP_LOCAL_BIND),
+                                     'duration': VOIP_LENGTH,
                                      'interval': STEP_SIZE,
                                      'units': 'Kbps',
                                      'control_host': VOIP_CONTROL_HOST,
