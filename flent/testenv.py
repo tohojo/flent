@@ -234,7 +234,7 @@ class TestEnvironment(object):
             binary=self.itgsend,
             length=int(length*1000),
             dest_host=host,
-            local_bind="-sa {0}".format(local_bind) if local_bind else "",
+            local_bind="-sa {0} -Ssa {0}".format(local_bind) if local_bind else "",
             args=test_args)
 
     @finder
