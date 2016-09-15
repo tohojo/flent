@@ -24,9 +24,11 @@ PLOTS['voip_delay']              = {'description': 'VoIP delay and jitter',
                                     ]}
 PLOTS['voip_delay_cdf']          = {'description': 'VoIP delay and jitter CDF',
                                     'type': 'cdf',
+                                    'cutoff': VOIP_CUTOFF,
                                     'parent': 'voip_delay'}
 PLOTS['voip_delay_box']          = {'description': 'VoIP delay and jitter box plot',
                                     'type': 'box',
+                                    'cutoff': VOIP_CUTOFF,
                                     'parent': 'voip_delay'}
 PLOTS['voip_induced_delay']      = {'description': 'VoIP induced delay CDF',
                                     'type': 'timeseries',
@@ -35,13 +37,15 @@ PLOTS['voip_induced_delay']      = {'description': 'VoIP induced delay CDF',
                                                 'label': 'VoIP induced delay'}]}
 PLOTS['voip_induced_delay_cdf']  = {'description': 'VoIP induced delay box plot',
                                     'type': 'cdf',
+                                    'cutoff': VOIP_CUTOFF,
                                     'parent': 'voip_induced_delay'}
 PLOTS['voip_induced_delay_box']  = {'description': 'VoIP induced delay box plot',
                                     'type': 'box',
+                                    'cutoff': VOIP_CUTOFF,
                                     'parent': 'voip_induced_delay'}
 PLOTS['voip_box_delay_loss']     = {'description': "Box delay/loss combination plot",
                                     'type': 'box_combine',
-                                    'cutoff': (DELAY,DELAY),
+                                    'cutoff': VOIP_CUTOFF,
                                     'dual_axes': True,
                                     'axis_labels': ['Mean induced delay (ms)', 'Mean loss rate'],
                                     'series': [{'data': 'VoIP::delay',
