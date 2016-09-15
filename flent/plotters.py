@@ -186,6 +186,8 @@ def new(settings, plotter=None, **kwargs):
             zero_y=settings.ZERO_Y,
             bounds_x=settings.BOUNDS_X,
             bounds_y=settings.BOUNDS_Y,
+            label_x=settings.LABEL_X,
+            label_y=settings.LABEL_Y,
             colours=settings.COLOURS,
             log_scale=settings.LOG_SCALE,
             scale_data=settings.SCALE_DATA,
@@ -243,6 +245,8 @@ class Plotter(object):
                  zero_y=False,
                  bounds_x=None,
                  bounds_y=None,
+                 label_x=None,
+                 label_y=None,
                  log_scale=True,
                  scale_data=None,
                  colours=None,
@@ -292,6 +296,8 @@ class Plotter(object):
         self.zero_y = zero_y
         self.bounds_x = bounds_x if bounds_x is not None else []
         self.bounds_y = bounds_y if bounds_y is not None else []
+        self.label_x = label_x if label_x is not None else []
+        self.label_y = label_y if label_y is not None else []
         self.log_scale = log_scale
         self.scale_data = scale_data if scale_data is not None else []
 
@@ -769,7 +775,7 @@ class TimeseriesPlotter(Plotter):
                 raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
             unit[a] = s_unit
 
-        axis.set_xlabel('Time (s)')
+        axis.set_xlabel(self.label_x[0] if self.label_x else 'Time (s)')
         for i,u in enumerate(unit):
             if 'axis_labels' in config and config['axis_labels'][i]:
                 l = config['axis_labels'][i]
@@ -779,6 +785,10 @@ class TimeseriesPlotter(Plotter):
             if self.norm_factors:
                 l = l[0].lower() + l[1:]
                 l = "Normalised %s" % l
+
+            if self.label_y:
+                l = self.label_y[min(i, len(self.label_y)-1)]
+
             config['axes'][i].set_ylabel(l)
 
 

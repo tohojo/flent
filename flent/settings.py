@@ -88,6 +88,8 @@ DEFAULT_SETTINGS = {
     'ZERO_Y': False,
     'BOUNDS_X': [],
     'BOUNDS_Y': [],
+    'LABEL_X': [],
+    'LABEL_Y': [],
     'COLOURS': None,
     'INVERT_Y': False,
     'LOG_SCALE': True,
@@ -346,6 +348,12 @@ plot_group.add_option("--bounds-y", action="append", dest="BOUNDS_Y", type='floa
                   help="Specify bounds of the plot Y axis. If specifying one number, that will become "
                   "the upper bound. Specify two numbers separated by a comma to specify both "
                   "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
+                  "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--label-x", action="append", dest="LABEL_X",
+                  help="Override the X axis label. "
+                  "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--label-y", action="append", dest="LABEL_Y",
+                  help="Override the Y axis label. "
                   "Can be specified twice, corresponding to figures with multiple axes.")
 plot_group.add_option("--colours", action="store", dest="COLOURS",
                   help="Comma-separated list of colours to be used for the plot colour cycle.")
