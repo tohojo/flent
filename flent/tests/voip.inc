@@ -67,4 +67,4 @@ PLOTS['voip_loss']               = {'description': 'VoIP loss',
                                     ]}
 PLOTS['voip_delay_loss']         = {'description': 'VoIP delay and loss plots',
                                     'type': 'meta',
-                                    'subplots': ('delay', 'loss')}
+                                    'subplots': ('voip_delay', 'voip_loss')}
