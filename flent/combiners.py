@@ -426,7 +426,9 @@ class FairnessReducer(Reducer):
                                   exclude=self.filter_series, args=series)
         values = []
         for key in source:
-            values.append(super(FairnessReducer, self).reduce(resultset, None, resultset[key]))
+            v = super(FairnessReducer, self).reduce(resultset, None, resultset[key])
+            if v is not None:
+                values.append(v)
         valsum = math.fsum([x**2 for x in values])
         if not valsum:
             return None
