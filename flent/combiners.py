@@ -21,11 +21,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re, math
+import re, math, sys
 
-from flent.util import classname, long_substr, Glob
+from flent.util import classname, long_substr, Glob, format_date
 from flent.resultset import ResultSet
 
+from datetime import datetime
 from itertools import cycle
 from bisect import bisect_left, bisect_right
 from collections import OrderedDict
@@ -60,10 +61,11 @@ class Combiner(object):
     # -01, -02, etc.
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
 
-    def __init__(self, print_n=False, filter_regexps=None, filter_series=None):
+    def __init__(self, print_n=False, filter_regexps=None, filter_series=None, save_dir=None):
         self.filter_serial = True
         self.filter_prefix = True
         self.print_n = print_n
+        self.save_dir = save_dir
         if filter_regexps is not None:
             self.filter_regexps = filter_regexps
         else:
@@ -71,7 +73,44 @@ class Combiner(object):
         self.filter_series = filter_series
 
     def __call__(self, results, config):
-        return self.combine(results, config)
+        if self.check_intermediate(results, config):
+            return results
+
+        res = self.combine(results, config)
+        self.save_intermediate(res, config, results[0].meta())
+
+        return res
+
+    def check_intermediate(self, results, config):
+        valid = True
+        for r in results:
+            if "FROM_COMBINER" in r.meta():
+                if r.meta("FROM_COMBINER") != self.__class__.__name__:
+                    raise RuntimeError("Intermediate results from different combiner: %s/%s" % (r.meta("FROM_COMBINER"),
+                                                                                                self.__class__.__name__))
+                if r.meta("COMBINER_PLOT") != config['plot_name']:
+                    raise RuntimeError("Intermediate results from different plot: %s/%s" % (r.meta("COMBINER_PLOT"),
+                                                                                            config['plot_name']))
+            else:
+                valid = False
+        if valid:
+            config['series'] = results[0].meta("COMBINER_SERIES")
+            config['cutoff'] = None
+        return valid
+
+    def save_intermediate(self, new_results, config, orig_meta):
+        if self.save_dir:
+            t = datetime.utcnow()
+            for i,r in enumerate(new_results):
+                r.meta().update(orig_meta)
+                r.meta("FROM_COMBINER", self.__class__.__name__)
+                r.meta("COMBINER_SERIES", config['series'])
+                r.meta("COMBINER_PLOT", config['plot_name'])
+                r._filename = "%s-%s-%s-%02d%s" % (config['plot_name'],
+                                                   self.__class__.__name__,
+                                                   format_date(t).replace(":",""),
+                                                   i, r.SUFFIX)
+                r.dump_dir(self.save_dir)
 
     def combine(self, results, config):
 

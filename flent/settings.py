@@ -71,6 +71,7 @@ DEFAULT_SETTINGS = {
     'ABSOLUTE_TIME': False,
     'SUBPLOT_COMBINE': False,
     'COMBINE_PRINT_N': True,
+    'COMBINE_SAVE_DIR': None,
     'HOVER_HIGHLIGHT': None,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
@@ -383,6 +384,10 @@ plot_group.add_option("--override-title", action="store", type='string', dest="O
                   "precedence over --no-title.")
 plot_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
                   metavar="GROUP", help="Override plot group_by attribute for combination plots.")
+plot_group.add_option("--combine-save-dir", action="store", type='string', dest="COMBINE_SAVE_DIR",
+                      metavar="DIRNAME", help="When doing a combination plot save the intermediate data "
+                      "to DIRNAME. This can then be used for subsequent plotting to avoid having to "
+                      "load all the source data files again on each plot.")
 plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
                   help="Don't use line markers to differentiate data series on plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",

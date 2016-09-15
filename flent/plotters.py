@@ -142,6 +142,7 @@ def get_plotconfig(settings, plot=None):
     if not plot in settings.PLOTS:
         raise RuntimeError("Unable to find plot configuration '%s'." % plot)
     config = settings.PLOTS[plot].copy()
+    config['plot_name'] = plot
     if 'parent' in config:
         parent_config = settings.PLOTS[config['parent']].copy()
         parent_config.update(config)
@@ -200,6 +201,7 @@ def new(settings, plotter=None, **kwargs):
             print_title=settings.PRINT_TITLE,
             override_title=settings.OVERRIDE_TITLE,
             override_group_by=settings.OVERRIDE_GROUP_BY,
+            combine_save_dir=settings.COMBINE_SAVE_DIR,
             annotate=settings.ANNOTATE,
             description=settings.DESCRIPTION,
             combine_print_n=settings.COMBINE_PRINT_N,
@@ -256,6 +258,7 @@ class Plotter(object):
                  print_title=True,
                  override_title='',
                  override_group_by=None,
+                 combine_save_dir=None,
                  annotate=True,
                  description='',
                  combine_print_n=False,
@@ -303,6 +306,7 @@ class Plotter(object):
         self.print_title = print_title
         self.override_title = override_title
         self.override_group_by = override_group_by
+        self.combine_save_dir = combine_save_dir
         self.annotate = annotate
         self.description = description
         self.combine_print_n = combine_print_n
@@ -722,7 +726,8 @@ class CombineManyPlotter(object):
         combine_mode = self.override_group_by or config.get('group_by', 'groups')
         combiner = combiners.new(combine_mode, print_n=self.combine_print_n,
                                  filter_regexps=self.filter_regexp,
-                                 filter_series=self.filter_series)
+                                 filter_series=self.filter_series,
+                                 save_dir=self.combine_save_dir)
         super(CombineManyPlotter,self).plot(combiner(results, config), config, axis)
 
 class TimeseriesPlotter(Plotter):
