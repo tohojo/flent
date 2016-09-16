@@ -87,6 +87,7 @@ DEFAULT_SETTINGS = {
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
     'FILTER_SERIES': [],
+    'SKIP_MISSING': False,
     'REPLACE_LEGEND': OrderedDict(),
     'ZERO_Y': False,
     'BOUNDS_X': [],
@@ -429,6 +430,8 @@ plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", 
                   "specified.")
 plot_group.add_option("--filter-series", action="append", dest="FILTER_SERIES", metavar="SERIES",
                   help="Filter out specified series from plot Can be specified multiple times.")
+plot_group.add_option("--skip-missing-series", action="store_true", dest="SKIP_MISSING",
+                  help="Skip missing series entirely from plots. Only works for bar plots.")
 plot_group.add_option("--replace-legend", action="update", dest="REPLACE_LEGEND", metavar="src=dest",
                   help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",

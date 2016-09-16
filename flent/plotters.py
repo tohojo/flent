@@ -202,6 +202,7 @@ def new(settings, plotter=None, **kwargs):
             replace_legend=settings.REPLACE_LEGEND,
             filter_regexp=settings.FILTER_REGEXP,
             filter_series=settings.FILTER_SERIES,
+            skip_missing=settings.SKIP_MISSING,
             print_title=settings.PRINT_TITLE,
             override_title=settings.OVERRIDE_TITLE,
             override_group_by=settings.OVERRIDE_GROUP_BY,
@@ -263,6 +264,8 @@ class Plotter(object):
                  replace_legend=None,
                  filter_regexp=None,
                  filter_series=None,
+                 skip_missing=False,
+
                  print_title=True,
                  override_title='',
                  override_group_by=None,
@@ -315,6 +318,8 @@ class Plotter(object):
         self.replace_legend = replace_legend if replace_legend is not None else {}
         self.filter_regexp = filter_regexp if filter_regexp is not None else []
         self.filter_series = filter_series if filter_series is not None else []
+        self.skip_missing = skip_missing
+
         self.print_title = print_title
         self.override_title = override_title
         self.override_group_by = override_group_by
@@ -1032,7 +1037,6 @@ class BarPlotter(BoxPlotter):
             config = self.config
         axis = config['axes'][0]
 
-        group_size = len(results)
         ticklabels = []
         ticks = []
         pos = 1
@@ -1067,17 +1071,18 @@ class BarPlotter(BoxPlotter):
                 dp = [d for d in r.series(s['data']) if d is not None]
                 if norms is not None:
                     dp = [d/norms[i] for d in dp]
-                if not dp:
+                if not dp and not self.skip_missing:
                     data.append(0.0)
                     errors.append(0.0)
                     all_data[a].append(0.0)
-                else:
+                elif dp:
                     dp = self.np.array(dp)
                     data.append(dp.mean())
                     errors.append(dp.std())
                     all_data[a].append(data[-1]+errors[-1])
                     all_data[a].append(data[-1]-errors[-1])
 
+            group_size = len(data)
 
             positions = [p-width/2.0 for p in range(pos,pos+group_size)]
             ticks.extend(list(range(pos,pos+group_size)))
