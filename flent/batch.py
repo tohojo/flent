@@ -476,7 +476,7 @@ class BatchRunner(object):
         settings = settings.copy()
         results = []
         test_name = None
-        for filename in settings.INPUT:
+        for i,filename in enumerate(settings.INPUT):
             r = resultset.load(filename, settings.ABSOLUTE_TIME)
             if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
                 sys.stderr.write("Warning: result sets are not from the same test (found %s/%s).\n" % (test_name, r.meta("NAME")))
@@ -484,6 +484,8 @@ class BatchRunner(object):
             if results and settings.CONCATENATE:
                 results[0].concatenate(r)
             else:
+                if len(settings.OVERRIDE_LABELS) > i:
+                    r.set_label(settings.OVERRIDE_LABELS[i])
                 results.append(r)
 
         if settings.GUI:

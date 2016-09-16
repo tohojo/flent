@@ -53,6 +53,7 @@ DEFAULT_SETTINGS = {
     'TITLE': '',
     'OVERRIDE_TITLE': '',
     'OVERRIDE_GROUP_BY': None,
+    'OVERRIDE_LABELS': [],
     'NOTE': '',
     'RCFILE': os.path.expanduser("~/.flentrc"),
     'LOG_FILE': None,
@@ -390,6 +391,9 @@ plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
 plot_group.add_option("--override-title", action="store", type='string', dest="OVERRIDE_TITLE",
                   metavar="TITLE", help="Override plot title with this string. This parameter takes "
                   "precedence over --no-title.")
+plot_group.add_option("--override-label", action="append", type='string', dest="OVERRIDE_LABELS",
+                      metavar="LABEL", help="Override dataset label. Must be specified multiple times "
+                      "corresponding to the datasets being overridden.")
 plot_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
                   metavar="GROUP", help="Override plot group_by attribute for combination plots.")
 plot_group.add_option("--combine-save-dir", action="store", type='string', dest="COMBINE_SAVE_DIR",
