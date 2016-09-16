@@ -653,7 +653,7 @@ class Plotter(object):
         if self.horizontal_legend:
             bbox = (0.5, -0.15)
             ncol = len(labels)
-            loc = 'center'
+            loc = 'upper center'
         elif self.legend_placement:
             bbox = None
             ncol = 1
