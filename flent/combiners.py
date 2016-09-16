@@ -101,10 +101,15 @@ class Combiner(object):
     def save_intermediate(self, new_results, config, orig_meta):
         if self.save_dir:
             t = datetime.utcnow()
+            series = config['series']
+            # Can't serialise 'source' Glob objects
+            for s in series:
+                if 'source' in s:
+                    del s['source']
             for i,r in enumerate(new_results):
                 r.meta().update(orig_meta)
                 r.meta("FROM_COMBINER", self.__class__.__name__)
-                r.meta("COMBINER_SERIES", config['series'])
+                r.meta("COMBINER_SERIES", series)
                 r.meta("COMBINER_PLOT", config['plot_name'])
                 r._filename = "%s-%s-%s-%02d%s" % (config['plot_name'],
                                                    self.__class__.__name__,
