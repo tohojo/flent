@@ -99,6 +99,8 @@ class Combiner(object):
         return valid
 
     def save_intermediate(self, new_results, config, orig_meta):
+        orig_meta = orig_meta.copy()
+        del orig_meta['TITLE']
         if self.save_dir:
             t = datetime.utcnow()
             series = config['series']
