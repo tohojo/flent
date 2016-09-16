@@ -45,7 +45,7 @@ except ImportError:
 def get_combiner(combiner_type):
     cname = classname(combiner_type, "Combiner")
     if not cname in globals():
-        raise RuntimeError("Combiner not found: '%s'" % plot_type)
+        raise RuntimeError("Combiner not found: '%s'" % combiner_type)
     return globals()[cname]
 
 def new(combiner_type, *args, **kwargs):
