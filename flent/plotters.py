@@ -647,7 +647,7 @@ class Plotter(object):
 
         legends = []
         if self.horizontal_legend:
-            bbox = (0.5, -0.12)
+            bbox = (0.5, -0.15)
             ncol = len(labels)
             loc = 'center'
         elif self.legend_placement:
