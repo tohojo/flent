@@ -504,9 +504,13 @@ class Plotter(object):
                 self.figure.savefig(io.BytesIO())
                 renderer = self.figure._cachedRenderer
                 fig_bbox = self.figure.get_tightbbox(renderer)
-                if self.legends and not self.legend_placement and not self.horizontal_legend:
-                    legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
-                    rect[2] = max(0.5,1-legend_width/fig_bbox.width)
+                if self.legends and not self.legend_placement:
+                    if self.horizontal_legend:
+                        legend_height = max([l.get_window_extent().height for l in self.legends])/self.figure.dpi
+                        rect[1] = legend_height/fig_bbox.width
+                    else:
+                        legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
+                        rect[2] = max(0.5,1-legend_width/fig_bbox.width)
 
                 if self.annotation_obj:
                     annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
