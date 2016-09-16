@@ -62,10 +62,11 @@ PLOT_KWARGS = (
     'zorder'
     )
 
-LINESTYLES = ['-', '--', ':']
+LINESTYLES = ['-', '--']
 MARKERS    = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
 COLOURS    = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666"]
-DASHES     = [[8,4,2,4],
+DASHES     = [[2,4],
+              [8,4,2,4],
               ]
 STYLES     = []
 
