@@ -249,7 +249,7 @@ class Plotter(object):
                  bounds_y=None,
                  label_x=None,
                  label_y=None,
-                 log_scale=True,
+                 log_scale=False,
                  scale_data=None,
                  colours=None,
 
@@ -705,7 +705,7 @@ class Plotter(object):
             top_scale = top_percentile*1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
-            if btm_percentile > 0 and top_percentile/btm_percentile > 20.0 and self.log_scale and allow_log:
+            if self.log_scale:
                 axis.set_yscale('log')
                 axis.set_ylim(ymin=max(0,btm_scale), ymax=top_scale)
             else:
@@ -1229,7 +1229,7 @@ class CdfPlotter(Plotter):
                 min_val -= min_val%100
             axis.set_xlim(left=min_val)
 
-        if self.medians and max(self.medians)/min(self.medians) > 10.0 and self.log_scale:
+        if self.log_scale:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
 

@@ -94,7 +94,7 @@ DEFAULT_SETTINGS = {
     'LABEL_Y': [],
     'COLOURS': None,
     'INVERT_Y': False,
-    'LOG_SCALE': True,
+    'LOG_SCALE': False,
     'NORM_FACTORS': [],
     'FIG_WIDTH': None,
     'FIG_HEIGHT': None,
@@ -362,8 +362,8 @@ plot_group.add_option("--colours", action="store", dest="COLOURS",
 plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INVERT_Y",
                   help="Invert the y-axis for latency data series (making plots show 'better values "
                   "upwards').")
-plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
-                  help="Disable log scales on plots.")
+plot_group.add_option("--log-scale", action="store_true", dest="LOG_SCALE",
+                  help="Use logarithmic scaled on plots.")
 plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS", metavar="FACTOR",
                   help="Factor to normalise data by. I.e. divide all data points by this value. "
                   "Can be specified multiple times, in which case each value corresponds to a "
