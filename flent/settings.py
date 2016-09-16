@@ -82,6 +82,7 @@ DEFAULT_SETTINGS = {
     'FILTER_LEGEND': False,
     'LEGEND_TITLE': None,
     'LEGEND_PLACEMENT': None,
+    'LEGEND_COLUMNS': None,
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
@@ -152,6 +153,7 @@ CONFIG_TYPES = {
     'FILTER_LEGEND': 'bool',
     'LEGEND_TITLE': 'str',
     'LEGEND_PLACEMENT': 'str',
+    'LEGEND_COLUMNS': 'int',
     'ZERO_Y': 'bool',
     'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
@@ -417,6 +419,8 @@ plot_group.add_option("--legend-title", action="store", dest="LEGEND_TITLE",
 plot_group.add_option("--legend-placement", action="store", dest="LEGEND_PLACEMENT",
                   help="Control legend placement. Enabling this option will place the legend inside "
                       "the plot at the specified location. Use 'best' to let matplotlib decide.")
+plot_group.add_option("--legend-columns", action="store", type=int, dest="LEGEND_COLUMNS",
+                  help="Set the number of columns in the legend.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",

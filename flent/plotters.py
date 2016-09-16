@@ -197,6 +197,7 @@ def new(settings, plotter=None, **kwargs):
             filter_legend=settings.FILTER_LEGEND,
             legend_title=settings.LEGEND_TITLE,
             legend_placement=settings.LEGEND_PLACEMENT,
+            legend_columns=settings.LEGEND_COLUMNS,
             horizontal_legend=settings.HORIZONTAL_LEGEND,
             replace_legend=settings.REPLACE_LEGEND,
             filter_regexp=settings.FILTER_REGEXP,
@@ -257,6 +258,7 @@ class Plotter(object):
                  filter_legend=False,
                  legend_title=None,
                  legend_placement=None,
+                 legend_columns=None,
                  horizontal_legend=False,
                  replace_legend=None,
                  filter_regexp=None,
@@ -308,6 +310,7 @@ class Plotter(object):
         self.filter_legend = filter_legend
         self.legend_title = legend_title
         self.legend_placement = legend_placement
+        self.legend_columns = legend_columns
         self.horizontal_legend = horizontal_legend
         self.replace_legend = replace_legend if replace_legend is not None else {}
         self.filter_regexp = filter_regexp if filter_regexp is not None else []
@@ -663,7 +666,7 @@ class Plotter(object):
                                 bbox_to_anchor=bbox,
                                 loc=loc, borderaxespad=0.,
                                 prop={'size':'small'},
-                                ncol=ncol,
+                                ncol=self.legend_columns or ncol,
                                 **kwargs)
 
         # Work around a bug in older versions of matplotlib where the
