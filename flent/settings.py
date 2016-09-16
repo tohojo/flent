@@ -54,6 +54,7 @@ DEFAULT_SETTINGS = {
     'OVERRIDE_TITLE': '',
     'OVERRIDE_GROUP_BY': None,
     'OVERRIDE_LABELS': [],
+    'SPLIT_GROUPS': [],
     'NOTE': '',
     'RCFILE': os.path.expanduser("~/.flentrc"),
     'LOG_FILE': None,
@@ -394,6 +395,10 @@ plot_group.add_option("--override-title", action="store", type='string', dest="O
 plot_group.add_option("--override-label", action="append", type='string', dest="OVERRIDE_LABELS",
                       metavar="LABEL", help="Override dataset label. Must be specified multiple times "
                       "corresponding to the datasets being overridden.")
+plot_group.add_option("--split-group", action="append", type='string', dest="SPLIT_GROUPS",
+                      metavar="LABEL", help="Split data sets into groups. Specify this option multiple "
+                      "times to define the new groups. The value of each option is the group name. This "
+                      "only works for box plots.")
 plot_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
                   metavar="GROUP", help="Override plot group_by attribute for combination plots.")
 plot_group.add_option("--combine-save-dir", action="store", type='string', dest="COMBINE_SAVE_DIR",

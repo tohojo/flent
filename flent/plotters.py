@@ -203,6 +203,7 @@ def new(settings, plotter=None, **kwargs):
             print_title=settings.PRINT_TITLE,
             override_title=settings.OVERRIDE_TITLE,
             override_group_by=settings.OVERRIDE_GROUP_BY,
+            split_groups=settings.SPLIT_GROUPS,
             combine_save_dir=settings.COMBINE_SAVE_DIR,
             annotate=settings.ANNOTATE,
             description=settings.DESCRIPTION,
@@ -262,6 +263,7 @@ class Plotter(object):
                  print_title=True,
                  override_title='',
                  override_group_by=None,
+                 split_groups=None,
                  combine_save_dir=None,
                  annotate=True,
                  description='',
@@ -312,6 +314,7 @@ class Plotter(object):
         self.print_title = print_title
         self.override_title = override_title
         self.override_group_by = override_group_by
+        self.split_groups = split_groups
         self.combine_save_dir = combine_save_dir
         self.annotate = annotate
         self.description = description
@@ -915,7 +918,6 @@ class BoxPlotter(TimeseriesPlotter):
             config = self.config
         axis = config['axes'][0]
 
-        group_size = len(results)
         ticklabels = []
         ticks = []
         pos = 1
@@ -923,15 +925,34 @@ class BoxPlotter(TimeseriesPlotter):
         for a in config['axes']:
             all_data.append([])
 
+        if self.split_groups:
+            if len(results) % len(self.split_groups) > 0:
+                raise RuntimeError("Split groups only works when the number of results is divisible by the number of groups.")
+            split_results = []
+            series = []
+            group_size = len(results)//len(self.split_groups)
+            for i,g in enumerate(self.split_groups):
+                split_results.append(results[i*group_size:(i+1)*group_size])
+                for s in config['series']:
+                    ns = s.copy()
+                    ns['label'] = g
+                    series.append(ns)
+        else:
+            group_size = len(results)
+            split_results = []
+            series = config['series']
+
         # The median lines are red, so filter out red from the list of colours
-        colours = list(islice(cycle([c for c in self.colours if c != 'r']), len(results)))
+        colours = list(islice(cycle([c for c in self.colours if c != 'r']), group_size))
 
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
             norms = None
 
-        for i,s in enumerate(config['series']):
+        for i,s in enumerate(series):
+            if split_results:
+                results = split_results[i]
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
@@ -962,7 +983,7 @@ class BoxPlotter(TimeseriesPlotter):
                 self.plt.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
                     bp['caps'][j*2].set_label(r.label())
-                if len(bp['fliers']) == len(results):
+                if len(bp['fliers']) == group_size:
                     self.plt.setp([bp['fliers'][j]], markeredgecolor=colours[j])
                     keys = 'caps','whiskers'
                 else:
