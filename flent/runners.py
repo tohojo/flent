@@ -165,12 +165,23 @@ class FileMonitorRunner(threading.Thread):
 class ProcessRunner(threading.Thread):
     """Default process runner for any process."""
     silent = False
+    supports_remote = True
 
-    def __init__(self, name, settings, command, delay, start_event, finish_event, kill_event, *args, **kwargs):
+    def __init__(self, name, settings, command, delay, start_event, finish_event, kill_event, idx, remote_host, *args, **kwargs):
         threading.Thread.__init__(self)
+
+        # Rudimentary remote host capability. Note that this is modifying the
+        # final command, so all the find_* stuff must match on the local and
+        # remote hosts. I.e. the same binaries must exist in the same places.
+        if remote_host:
+            if not self.supports_remote:
+                raise RuntimeError("%s (idx %d) does not support running on remote hosts." % (self.__class__.__name__, idx))
+            command = "ssh %s '%s'" % (remote_host, command)
+
         self.name = name
         self.settings = settings
         self.command = command
+        self.idx = idx
         self.args = shlex.split(self.command)
         self.delay = delay
         self.start_event = start_event
@@ -181,7 +192,8 @@ class ProcessRunner(threading.Thread):
         self.pid = None
         self.returncode = None
         self.kill_lock = threading.Lock()
-        self.metadata = {'runner': self.__class__.__name__, 'command': command}
+        self.metadata = {'runner': self.__class__.__name__, 'command': command,
+                         'idx': idx, 'remote_host': remote_host}
         self.test_parameters = {}
         self.raw_values = []
         self.out = ""
@@ -355,6 +367,7 @@ class SilentProcessRunner(ProcessRunner):
 
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
+    supports_remote = False
 
     def __init__(self, name, settings, duration, interval, **kwargs):
         ProcessRunner.__init__(self, name, settings, **kwargs)

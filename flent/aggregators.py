@@ -58,6 +58,7 @@ class Aggregator(object):
         self.threads = {}
         self.settings = settings
         self.failed_runners = 0
+        self.runner_counter = 0
         if self.settings.LOG_FILE is None:
             self.logfile = None
         else:
@@ -68,9 +69,21 @@ class Aggregator(object):
     def add_instance(self, name, config):
         instance = dict(config)
 
+        if name in self.instances:
+            raise RuntimeError("Duplicate runner name: '%s' (probably unsupported duplicate parameters or hosts)" % name)
+
         if not 'delay' in instance:
             instance['delay'] = 0
 
+        idx = self.runner_counter
+        self.runner_counter += 1
+        instance['idx'] = idx
+
+        print(self.settings.REMOTE_HOSTS)
+        if len(self.settings.REMOTE_HOSTS) > idx and self.settings.REMOTE_HOSTS[idx] != 'None':
+            instance['remote_host'] = self.settings.REMOTE_HOSTS[idx]
+        else:
+            instance['remote_host'] = None
 
         instance['runner'] = runners.get(instance['runner'])
         instance['start_event'] = None
