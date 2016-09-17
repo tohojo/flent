@@ -76,7 +76,7 @@ def get(name):
 
 class RunnerBase(object):
 
-    def __init__(self, name, settings, idx, start_event, finish_event, kill_event, **kwargs):
+    def __init__(self, name, settings, idx=None, start_event=None, finish_event=None, kill_event=None, **kwargs):
         self.name = name
         self.settings = settings
         self.idx = idx
@@ -658,13 +658,13 @@ class HttpGetterRunner(RegexpRunner):
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         if 'udp' in kwargs:
             self.udp = kwargs['udp']
             del kwargs['udp']
         else:
             self.udp = False
-        ProcessRunner.__init__(self, *args, **kwargs)
+        ProcessRunner.__init__(self, **kwargs)
 
     def parse(self, output):
         result = []
@@ -961,7 +961,7 @@ class WifiStatsRunner(ProcessRunner):
     station_re   = re.compile(r"^Station: (?P<mac>(?:[0-9a-f]{2}:){5}[0-9a-f]{2})\n", re.MULTILINE)
     airtime_re   = re.compile(r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         if 'stations' in kwargs:
             if kwargs['stations'] in (["all"],["ALL"]):
                 self.stations = []
@@ -972,7 +972,7 @@ class WifiStatsRunner(ProcessRunner):
             del kwargs['stations']
         else:
             self.stations = []
-        ProcessRunner.__init__(self, *args, **kwargs)
+        ProcessRunner.__init__(self, **kwargs)
 
     def parse(self, output):
         results = {}
@@ -1187,8 +1187,8 @@ class AverageRunner(ComputingRunner):
 
 class SmoothAverageRunner(ComputingRunner):
     command = "Smooth average (computed)"
-    def __init__(self, smooth_steps=5, *args, **kwargs):
-        ComputingRunner.__init__(self, *args, **kwargs)
+    def __init__(self, smooth_steps=5, **kwargs):
+        ComputingRunner.__init__(self, **kwargs)
         self._smooth_steps = smooth_steps
         self._avg_values = []
 
