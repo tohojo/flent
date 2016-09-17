@@ -93,7 +93,7 @@ class RunnerBase(object):
         self.kill_event = kill_event if kill_event is not None else Event()
         self.finish_event = finish_event
 
-        self.metadata = {'runner': self.__class__.__name__, 'idx': idx}
+        self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
 
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
@@ -132,7 +132,7 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
         self.length = length
         self.interval = interval
         self.delay = delay
-        self.metadata['filename'] = self.filename
+        self.metadata['FILENAME'] = self.filename
         self.command = 'File monitor for %s' % self.filename
 
     def run(self):
@@ -193,7 +193,7 @@ class ProcessRunner(threading.Thread, RunnerBase):
             if not self.supports_remote:
                 raise RuntimeError("%s (idx %d) does not support running on remote hosts." % (self.__class__.__name__, self.idx))
             command = "ssh %s '%s'" % (remote_host, command)
-            self.metadata['remote_host'] = remote_host
+            self.metadata['REMOTE_HOST'] = remote_host
 
         self.command = command
         self.args = shlex.split(self.command)
@@ -202,7 +202,7 @@ class ProcessRunner(threading.Thread, RunnerBase):
         self.pid = None
         self.returncode = None
         self.kill_lock = threading.Lock()
-        self.metadata['command'] = command
+        self.metadata['COMMAND'] = command
         self.test_parameters = {}
         self.raw_values = []
         self.stdout = None
