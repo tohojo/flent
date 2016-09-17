@@ -1146,7 +1146,7 @@ class ComputingRunner(RunnerBase):
                 new_res.append(self.compute(values))
 
         meta = res.meta('SERIES_META') if 'SERIES_META' in res.meta() else {}
-        meta[self.name] = {}
+        meta[self.name] = self.metadata
         for mk in self.supported_meta:
             vals = []
             for k in keys:
