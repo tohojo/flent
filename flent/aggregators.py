@@ -152,9 +152,9 @@ class Aggregator(object):
                 metadata['series'][n] = t.metadata
                 if 'transformers' in self.instances[n]:
                     for tr in self.instances[n]['transformers']:
-                        for k,v in metadata['series'][n].items():
+                        for k in t.transformed_metadata:
                             try:
-                                metadata['series'][n][k] = tr(v)
+                                metadata['series'][n][k] = tr(metadata['series'][n][k])
                             except:
                                 pass
                 if t.test_parameters:
