@@ -76,7 +76,7 @@ def get(name):
 
 class RunnerBase(object):
 
-    transformed_meta = []
+    transformed_metadata = []
 
     def __init__(self, name, settings, idx=None, start_event=None, finish_event=None, kill_event=None, **kwargs):
         self.name = name
@@ -488,7 +488,7 @@ class DitgRunner(ProcessRunner):
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
-    transformed_meta = ('MEAN_VALUE',)
+    transformed_metadata = ('MEAN_VALUE',)
 
     def parse(self, output):
         """Parses the interim result lines and returns a list of (time,value)
@@ -587,7 +587,7 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
-    transformed_meta = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
+    transformed_metadata = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
 
     @classmethod
     def find_binary(cls, ip_version, interval, length, host, marking=None, local_bind=None):
@@ -658,12 +658,12 @@ class HttpGetterRunner(RegexpRunner):
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
-    transformed_meta = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
+    transformed_metadata = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
-    transformed_meta = ('MEAN_VALUE',)
+    transformed_metadata = ('MEAN_VALUE',)
     def __init__(self, **kwargs):
         if 'udp' in kwargs:
             self.udp = kwargs['udp']
