@@ -1,0 +1,23 @@
+## -*- mode: python; coding: utf-8 -*-
+
+DATA_SETS['HTTP latency'] = {'command': find_http_getter(STEP_SIZE, LENGTH),
+                             'units': 'ms',
+                             'data_transform': 's_to_ms',
+                             'runner': 'http_getter',}
+
+
+PLOTS['http_delay']       = {'description': 'HTTP latency over time',
+                             'type': 'timeseries',
+                             'series': [{'data': 'HTTP latency',
+                                      'label': 'HTTP get (ms)'}]}
+
+PLOTS['http_delay_cdf']   = {'description': 'Latency CDF plot',
+                             'type': 'cdf',
+                             'parent': 'http_delay'}
+
+PLOTS['http_box_combine'] = {'description': 'Box combination of HTTP latency',
+                             'type': 'box_combine',
+                             'axis_labels': ['Mean download time (ms)'],
+                             'series': [{'data': 'HTTP latency',
+                                         'label': 'HTTP get (ms)',
+                                         'combine_mode': 'mean'}]}
