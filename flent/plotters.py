@@ -739,7 +739,7 @@ class Plotter(object):
 
 class CombineManyPlotter(object):
 
-    def plot(self, results, config=None, axis=None):
+    def plot(self, results, config=None, axis=None, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
         if config is None:
@@ -750,7 +750,8 @@ class CombineManyPlotter(object):
                                  filter_regexps=self.filter_regexp,
                                  filter_series=self.filter_series,
                                  save_dir=self.combine_save_dir)
-        super(CombineManyPlotter,self).plot(combiner(results, config), config, axis)
+        super(CombineManyPlotter,self).plot(combiner(results, config), config, axis,
+                                            connect_interactive=connect_interactive)
 
 class TimeseriesPlotter(Plotter):
     can_subplot_combine = True
@@ -921,7 +922,7 @@ class BoxPlotter(TimeseriesPlotter):
 
         self.start_position = 1
 
-    def plot(self, results, config=None, axis=None):
+    def plot(self, results, config=None, axis=None, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
         return self._plot(results,config,axis)
@@ -1278,7 +1279,7 @@ class QqPlotter(Plotter):
         if len(config['series']) > 1:
             raise RuntimeError("Can't do Q-Q plot with more than one series.")
 
-    def plot(self, results):
+    def plot(self, results, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
         if len(results) < 2:
@@ -1522,7 +1523,7 @@ class SubplotCombinePlotter(MetaPlotter):
             raise RuntimeError("This plot type does not work with --subplot-combine.")
         MetaPlotter.init(self, config)
 
-    def plot(self, results):
+    def plot(self, results, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
         self._init(len(results))
