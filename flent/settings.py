@@ -204,21 +204,33 @@ def check_float_pair(option, opt, value):
     except ValueError:
         raise optparse.OptionValueError("Invalid pair value: %s" % value)
 
+def check_keyval(option, opt, value):
+    if not '=' in value:
+        raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
+    k,v = value.split('=', 1)
+    return {k:v}
+
+def check_keyval_int(option, opt, value):
+    try:
+        return {int(k):v for k,v in check_keyval(option, opt, value).items()}
+    except ValueError:
+        raise optparse.OptionValueError("Keys must be integers for option %s." % opt)
+
+
 class ExtendedOption(optparse.Option):
     ACTIONS = optparse.Option.ACTIONS + ("update",)
     STORE_ACTIONS = optparse.Option.STORE_ACTIONS + ("update",)
     TYPED_ACTIONS = optparse.Option.TYPED_ACTIONS + ("update",)
     ALWAYS_TYPED_ACTIONS = optparse.Option.ALWAYS_TYPED_ACTIONS + ("update",)
-    TYPES = optparse.Option.TYPES + ("float_pair",)
+    TYPES = optparse.Option.TYPES + ("float_pair","keyval","keyval_int")
     TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
     TYPE_CHECKER['float_pair'] = check_float_pair
+    TYPE_CHECKER['keyval'] = check_keyval
+    TYPE_CHECKER['keyval_int'] = check_keyval_int
 
     def take_action(self, action, dest, opt, value, values, parser):
         if action == 'update':
-            if not '=' in value:
-                raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
-            k,v = value.split('=', 1)
-            values.ensure_value(dest, {})[k] = v
+            values.ensure_value(dest, {}).update(value)
         else:
             optparse.Option.take_action(self, action, dest, opt, value, values, parser)
 
@@ -279,7 +291,7 @@ parser.add_option("-B", "--batch-file", action="append", type="string", dest="BA
                   help="Load batch file BATCH_FILE. Can be specified multiple times, in which "
                   "case the files will be combined (with identically-named sections being overridden "
                   "by later files). See the man page for an explanation of the batch file format.")
-parser.add_option("--batch-override", action="update", type="string", dest="BATCH_OVERRIDE",
+parser.add_option("--batch-override", action="update", type="keyval", dest="BATCH_OVERRIDE",
                   metavar="key=value",
                   help="Override parameter 'key' in the batch config and set it to 'value'. "
                   "The key name will be case folded to lower case. Can be specified multiple times.")
@@ -333,7 +345,7 @@ test_group.add_option("--socket-timeout", action="store", type=int, dest="SOCKET
                   "stalls on packet loss. Only enabled if the installed netperf version is "
                   "detected to support this (requires SVN version of netperf). "
                   "Default value: %d seconds. Set to 0 to disable." % DEFAULT_SETTINGS['SOCKET_TIMEOUT'])
-test_group.add_option("--test-parameter", action="update", dest="TEST_PARAMETERS", metavar='key=value',
+test_group.add_option("--test-parameter", action="update", type="keyval", dest="TEST_PARAMETERS", metavar='key=value',
                   help="Arbitrary test parameter in key=value format. "
                   "Key will be case folded to lower case. Some test configurations may "
                   "alter behaviour based on values passed as test parameters. Additionally, "
@@ -442,7 +454,7 @@ plot_group.add_option("--filter-series", action="append", dest="FILTER_SERIES", 
                   help="Filter out specified series from plot Can be specified multiple times.")
 plot_group.add_option("--skip-missing-series", action="store_true", dest="SKIP_MISSING",
                   help="Skip missing series entirely from plots. Only works for bar plots.")
-plot_group.add_option("--replace-legend", action="update", dest="REPLACE_LEGEND", metavar="src=dest",
+plot_group.add_option("--replace-legend", action="update", type="keyval", dest="REPLACE_LEGEND", metavar="src=dest",
                   help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
                   help="Figure width in inches. Used when saving plots to file and for default size of "
