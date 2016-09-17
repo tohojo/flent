@@ -79,7 +79,7 @@ class Aggregator(object):
         self.runner_counter += 1
         instance['idx'] = idx
 
-        if len(self.settings.REMOTE_HOSTS) > idx and self.settings.REMOTE_HOSTS[idx] != 'None':
+        if idx in self.settings.REMOTE_HOSTS:
             instance['remote_host'] = self.settings.REMOTE_HOSTS[idx]
         else:
             instance['remote_host'] = None

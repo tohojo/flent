@@ -43,7 +43,7 @@ DEFAULT_SETTINGS = {
     'NAME': None,
     'HOST': None,
     'HOSTS': [],
-    'REMOTE_HOSTS': [],
+    'REMOTE_HOSTS': {},
     'LOCAL_HOST': socket.gethostname(),
     'LOCAL_BIND': [],
     'STEP_SIZE': 0.2,
@@ -132,7 +132,7 @@ DEFAULT_SETTINGS = {
 
 CONFIG_TYPES = {
     'HOSTS': 'list',
-    'REMOTE_HOSTS': 'list',
+    'REMOTE_HOSTS': 'dict_int',
     'LOCAL_BIND': 'list',
     'STEP_SIZE': 'float',
     'LENGTH': 'int',
@@ -321,14 +321,13 @@ test_group.add_option("-H", "--host", action="append", type="string", dest="HOST
 test_group.add_option("--local-bind", action="append", type="string", dest="LOCAL_BIND", metavar='IP',
                   help="Local hostname or IP address to bind to (for test tools that support this). "
                   "Can be specified multiple times to get different local bind address per host.")
-test_group.add_option("--remote-host", action="append", type="string", dest="REMOTE_HOSTS", metavar='HOSTNAME',
-                      help="A remote hostname to connect to when starting a test. This can be specified "
-                      "multiple times corresponding to the number of *runners* in a test (which is *not* "
-                      "the same as the number of hosts. Look for the 'idx' key in SERIES_META for a test "
-                      "get the 0-indexed number of a runner, which corresponds to this parameter. This "
-                      "simply prepends 'ssh HOSTNAME' to the runner command, so it relies on the same "
-                      "binaries being in the same places on both machines, and won't work for all runners. "
-                      "The special value 'None' can be used to specify no remote host for a runner.")
+test_group.add_option("--remote-host", action="update", type="keyval_int", dest="REMOTE_HOSTS", metavar='idx=HOSTNAME',
+                      help="A remote hostname to connect to when starting a test. The idx is the runner "
+                      "index, which is assigned sequentially by the number of *runners* (which is *not* "
+                      "the same as the number of hosts). Look for the 'IDX' key in SERIES_META for a test "
+                      "get the idx used here. This works by simply prepending  'ssh HOSTNAME' to the "
+                      "runner command, so it relies on the same binaries being in the same places on "
+                      "both machines, and won't work for all runners. Can be specified multiple times.")
 test_group.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="Base test length (some tests may add some time to this).")
 test_group.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
@@ -592,7 +591,9 @@ class Settings(optparse.Values, object):
                 elif CONFIG_TYPES[k] == 'list':
                     setattr(self, k, [i.strip() for i in v.split(",")])
                 elif CONFIG_TYPES[k] == 'dict':
-                    setattr(self, k, dict([[j.strip() for j in i.split('=',1)] for i in v.split(';') if i.strip() and '=' in i]))
+                    setattr(self, k, {k.strip():v.strip() for k,v in [i.split("=",1) for i in v.split(';') if '=' in i]})
+                elif CONFIG_TYPES[k] == 'dict_int':
+                    setattr(self, k, {int(k):v.strip() for k,v in [i.split("=",1) for i in v.split(';') if '=' in i]})
                 elif CONFIG_TYPES[k] == 'bool':
                     if type(v) == bool:
                         setattr(self, k, v)
