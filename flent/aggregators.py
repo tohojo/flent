@@ -148,6 +148,21 @@ class Aggregator(object):
                         else:
                             sys.stderr.write("Already initiated graceful shutdown. Patience, please...\n")
                 self._log(n,t)
+
+                if hasattr(t, 'metadata'):
+                    metadata['series'][n] = t.metadata
+                    if 'transformers' in self.instances[n]:
+                        for tr in self.instances[n]['transformers']:
+                            for k,v in metadata['series'][n].items():
+                                try:
+                                    metadata['series'][n][k] = tr(v)
+                                except:
+                                    pass
+                if hasattr(t, 'test_parameters'):
+                    metadata['test_parameters'].update(t.test_parameters)
+                if hasattr(t, 'raw_values'):
+                    raw_values[n] = t.raw_values
+
                 if t.result is None:
                     continue
                 elif isinstance(t.result, collections.Callable):
@@ -172,19 +187,6 @@ class Aggregator(object):
                         for tr in self.instances[n]['transformers']:
                             result[n] = tr(result[n])
 
-                if hasattr(t, 'metadata'):
-                    metadata['series'][n] = t.metadata
-                    if 'transformers' in self.instances[n]:
-                        for tr in self.instances[n]['transformers']:
-                            for k,v in metadata['series'][n].items():
-                                try:
-                                    metadata['series'][n][k] = tr(v)
-                                except:
-                                    pass
-                if hasattr(t, 'test_parameters'):
-                    metadata['test_parameters'].update(t.test_parameters)
-                if hasattr(t, 'raw_values'):
-                    raw_values[n] = t.raw_values
         except KeyboardInterrupt:
             self.kill_runners()
             raise
