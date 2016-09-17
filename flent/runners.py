@@ -74,21 +74,42 @@ def get(name):
         raise RuntimeError("Runner not found: '%s'" % name)
     return globals()[cname]
 
-class TimerRunner(threading.Thread):
+class RunnerBase(object):
 
-    def __init__(self, name, settings, timeout, start_event, finish_event, kill_event, *args, **kwargs):
-        threading.Thread.__init__(self)
+    def __init__(self, name, settings, idx, start_event, finish_event, kill_event, **kwargs):
         self.name = name
-        self.timeout = timeout
+        self.settings = settings
+        self.idx = idx
+        self.test_parameters = {}
+        self.raw_values = []
+        self.result = None
+        self.command = None
+        self.returncode = 0
+        self.out = self.err = ''
+
         self.start_event = start_event
         self.kill_event = kill_event if kill_event is not None else Event()
         self.finish_event = finish_event
-        self.result = None
+
+        self.metadata = {'runner': self.__class__.__name__, 'idx': idx}
+
+    # Emulate threading interface to fit into aggregator usage.
+    def start(self):
+        pass
+    def join(self):
+        pass
+    def isAlive(self):
+        return False
+    def kill(self, graceful=False):
+        pass
+
+class TimerRunner(threading.Thread, RunnerBase):
+
+    def __init__(self, timeout, **kwargs):
+        threading.Thread.__init__(self)
+        RunnerBase.__init__(self, **kwargs)
+        self.timeout = timeout
         self.command = 'Timeout after %f seconds' % self.timeout
-        self.returncode = 0
-        self.out = self.err = ''
-        self.metadata = {'runner': self.__class__.__name__}
-        self.test_parameters = {}
 
     def run(self):
         if self.start_event is not None:
@@ -100,25 +121,17 @@ class TimerRunner(threading.Thread):
     def kill(self, graceful=False):
         self.kill_event.set()
 
-class FileMonitorRunner(threading.Thread):
+class FileMonitorRunner(threading.Thread, RunnerBase):
 
-    def __init__(self, name, settings, filename, length, interval, delay, start_event, finish_event, kill_event, *args, **kwargs):
+    def __init__(self, filename, length, interval, delay, **kwargs):
         threading.Thread.__init__(self)
-        self.name = name
+        RunnerBase.__init__(self, **kwargs)
         self.filename = filename
         self.length = length
         self.interval = interval
         self.delay = delay
-        self.start_event = start_event
-        self.kill_event = kill_event if kill_event is not None else Event()
-        self.finish_event = finish_event
-        self.result = None
-        self.raw_values = []
-        self.metadata = {'filename': self.filename, 'runner': self.__class__.__name__}
-        self.test_parameters = {}
+        self.metadata['filename'] = self.filename
         self.command = 'File monitor for %s' % self.filename
-        self.returncode = 0
-        self.out = self.err = ''
 
     def run(self):
         if self.start_event is not None:
@@ -162,42 +175,34 @@ class FileMonitorRunner(threading.Thread):
     def kill(self, graceful=False):
         self.kill_event.set()
 
-class ProcessRunner(threading.Thread):
+class ProcessRunner(threading.Thread, RunnerBase):
     """Default process runner for any process."""
     silent = False
     supports_remote = True
 
-    def __init__(self, name, settings, command, delay, start_event, finish_event, kill_event, idx, remote_host, *args, **kwargs):
+    def __init__(self, command, delay, remote_host, **kwargs):
         threading.Thread.__init__(self)
+        RunnerBase.__init__(self, **kwargs)
 
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
         # remote hosts. I.e. the same binaries must exist in the same places.
         if remote_host:
             if not self.supports_remote:
-                raise RuntimeError("%s (idx %d) does not support running on remote hosts." % (self.__class__.__name__, idx))
+                raise RuntimeError("%s (idx %d) does not support running on remote hosts." % (self.__class__.__name__, self.idx))
             command = "ssh %s '%s'" % (remote_host, command)
+            self.metadata['remote_host'] = remote_host
 
-        self.name = name
-        self.settings = settings
         self.command = command
-        self.idx = idx
         self.args = shlex.split(self.command)
         self.delay = delay
-        self.start_event = start_event
-        self.kill_event = kill_event
-        self.finish_event = finish_event
-        self.result = None
         self.killed = False
         self.pid = None
         self.returncode = None
         self.kill_lock = threading.Lock()
-        self.metadata = {'runner': self.__class__.__name__, 'command': command,
-                         'idx': idx, 'remote_host': remote_host}
+        self.metadata['command'] = command
         self.test_parameters = {}
         self.raw_values = []
-        self.out = ""
-        self.err = ""
         self.stdout = None
         self.stderr = None
 
@@ -1112,50 +1117,19 @@ class NetstatRunner(ProcessRunner):
             host=host)
 
 
-class NullRunner(object):
-    def __init__(self, *args, **kwargs):
-        self.result = None
-        self.command = 'null'
-        self.returncode = 0
-        self.metadata = {'runner': self.__class__.__name__}
-        self.out = self.err = ''
-    # Emulate threading interface to fit into aggregator usage.
-    def start(self):
-        pass
-    def join(self):
-        pass
-    def isAlive(self):
-        return False
-    def kill(self, graceful=False):
-        pass
+class NullRunner(RunnerBase):
+    pass
 
-class ComputingRunner(object):
+class ComputingRunner(RunnerBase):
     command = "Computed"
     supported_meta = ['MEAN_VALUE']
     copied_meta = ['UNITS']
-    def __init__(self, name, settings, apply_to=None, *args, **kwargs):
-        self.name = name
-        self.settings = settings
-        self.metadata = {'runner': self.__class__.__name__}
+    def __init__(self, apply_to=None, **kwargs):
+        RunnerBase.__init__(self, **kwargs)
         if apply_to is None:
             self.keys = []
         else:
             self.keys = apply_to
-
-        # These are use for debug logging
-        self.returncode = 0
-        self.out = ""
-        self.err = ""
-
-    # Emulate threading interface to fit into aggregator usage.
-    def start(self):
-        pass
-    def join(self):
-        pass
-    def isAlive(self):
-        return False
-    def kill(self, graceful=False):
-        pass
 
     def result(self, res):
         if not self.keys:

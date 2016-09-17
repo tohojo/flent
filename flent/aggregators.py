@@ -129,7 +129,7 @@ class Aggregator(object):
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']
                 if 'kill_timeout' in i and i['kill_timeout']:
                     watchdog = self.create_watchdog(n, i)
-                self.threads[n] = i['runner'](n, self.settings, **i)
+                self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
                 self.threads[n].start()
                 if watchdog is not None:
                     self.threads[watchdog.name] = watchdog
@@ -149,18 +149,17 @@ class Aggregator(object):
                             sys.stderr.write("Already initiated graceful shutdown. Patience, please...\n")
                 self._log(n,t)
 
-                if hasattr(t, 'metadata'):
-                    metadata['series'][n] = t.metadata
-                    if 'transformers' in self.instances[n]:
-                        for tr in self.instances[n]['transformers']:
-                            for k,v in metadata['series'][n].items():
-                                try:
-                                    metadata['series'][n][k] = tr(v)
-                                except:
-                                    pass
-                if hasattr(t, 'test_parameters'):
+                metadata['series'][n] = t.metadata
+                if 'transformers' in self.instances[n]:
+                    for tr in self.instances[n]['transformers']:
+                        for k,v in metadata['series'][n].items():
+                            try:
+                                metadata['series'][n][k] = tr(v)
+                            except:
+                                pass
+                if t.test_parameters:
                     metadata['test_parameters'].update(t.test_parameters)
-                if hasattr(t, 'raw_values'):
+                if t.raw_values:
                     raw_values[n] = t.raw_values
 
                 if t.result is None:
