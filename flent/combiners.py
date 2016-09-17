@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import re, math, sys
 
-from flent.util import classname, long_substr, Glob, format_date
+from flent.util import classname, long_substr, Glob, format_date, mos_score
 from flent.resultset import ResultSet
 
 from datetime import datetime
@@ -479,7 +479,19 @@ class MeanZeroReducer(Reducer):
         d = [p if p is not None else 0 for p in data]
         return numpy.mean(d) if d else None
 
-class RawSeqLossReducer(Reducer):
+class RawReducer(Reducer):
+
+    def _get_series(self, resultset, name):
+        data = resultset.raw_values[name]
+        if self.cutoff is not None:
+            start,end = self.cutoff
+            min_t = min((d['t'] for d in data))
+            start_t = min_t+start
+            end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
+            return [d for d in data if d['t'] > start_t and d['t'] < end_t]
+        return data
+
+class RawSeqLossReducer(RawReducer):
     filter_none = False
 
     def reduce(self, resultset, series, data=None):
@@ -487,17 +499,38 @@ class RawSeqLossReducer(Reducer):
         if '::' in key:
            key = key.split("::")[0]
         try:
-            if self.cutoff is not None:
-                start,end = self.cutoff
-                min_t = min([r['t'] for r in resultset.raw_values[key]])
-                start_t = min_t+start
-                end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
-                seqs = [r['seq'] for r in resultset.raw_values[key] if r['t'] > start_t and r['t'] < end_t]
-            else:
-                seqs = [r['seq'] for r in resultset.raw_values[key]]
+            data = self._get_series(resultset, key)
+            seqs = [d['seq'] for d in data]
+
             return 1-len(seqs)/(max(seqs)-min(seqs)+1)
         except KeyError:
             return None
+
+class MosReducer(RawReducer):
+    filter_none = False
+    numpy_req = True
+
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
+        data = self._get_series(resultset, key)
+        jitter_samples = []
+        delay_samples = []
+        loss = 0
+        last_delay = -1
+        last_seq = -1
+        for d in data:
+            if last_seq > -1 and d['seq'] - last_seq > 1:
+                loss += 1
+            last_seq = d['seq']
+            if last_delay > -1:
+                jitter_samples.append(abs(last_delay - d['val']))
+            last_delay = d['val']
+            delay_samples.append(d['val'])
+
+        delay = numpy.mean(delay_samples) + 2 * numpy.mean(jitter_samples)
+        lossrate = loss / len(data)
+        mos = mos_score(delay, lossrate)
+        return mos
 
 class MetaReducer(Reducer):
     filter_none = False
