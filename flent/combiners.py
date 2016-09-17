@@ -513,6 +513,8 @@ class MosReducer(RawReducer):
     def reduce(self, resultset, series, data=None):
         key = series['data']
         data = self._get_series(resultset, key)
+        if not data:
+            return None
         jitter_samples = []
         delay_samples = []
         loss = 0
