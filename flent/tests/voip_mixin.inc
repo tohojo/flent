@@ -1,6 +1,6 @@
 ## -*- mode: python; coding: utf-8 -*-
 
-# Mixin include file to add extra hosts to ping
+# Mixin include file to add a host to receive a VoIP flow
 
 
 VOIP_HOST=get_test_parameter('voip_host', default=None)
