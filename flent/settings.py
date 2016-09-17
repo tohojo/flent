@@ -637,6 +637,8 @@ class Settings(optparse.Values, object):
 
 
     def compute_missing_results(self, results):
+        if "FROM_COMBINER" in results.meta():
+            return
         for dname, dvals in self.DATA_SETS.items():
             if not dname in results:
                 runner = runners.get(dvals['runner'])
