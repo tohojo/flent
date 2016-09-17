@@ -627,9 +627,9 @@ class Settings(optparse.Values, object):
         for dname, dvals in self.DATA_SETS.items():
             if not dname in results:
                 runner = runners.get(dvals['runner'])
-                if hasattr(runner, 'result') and isinstance(runner.result, collections.Callable):
+                if issubclass(runner, runners.ComputingRunner):
                     try:
-                        runner = runner(dname, settings, **dvals)
+                        runner = runner(name=dname, settings=settings, post=True, **dvals)
                         runner.result(results)
                     except Exception as e:
                         sys.stderr.write("Unable to compute missing data series '%s': '%s'.\n" % (dname, e))

@@ -1124,12 +1124,13 @@ class ComputingRunner(RunnerBase):
     command = "Computed"
     supported_meta = ['MEAN_VALUE']
     copied_meta = ['UNITS']
-    def __init__(self, apply_to=None, **kwargs):
+    def __init__(self, apply_to=None, post=False, **kwargs):
         RunnerBase.__init__(self, **kwargs)
         if apply_to is None:
             self.keys = []
         else:
             self.keys = apply_to
+        self.metadata['COMPUTED_LATE'] = post
 
     def result(self, res):
         if not self.keys:
