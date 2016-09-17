@@ -82,10 +82,12 @@ class RunnerBase(object):
         self.idx = idx
         self.test_parameters = {}
         self.raw_values = []
-        self.result = None
         self.command = None
         self.returncode = 0
         self.out = self.err = ''
+
+        if not hasattr(self, 'result'):
+            self.result = None
 
         self.start_event = start_event
         self.kill_event = kill_event if kill_event is not None else Event()
