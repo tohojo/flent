@@ -483,7 +483,7 @@ class RawReducer(Reducer):
 
     def _get_series(self, resultset, name):
         data = resultset.raw_values[name]
-        if self.cutoff is not None:
+        if data and self.cutoff is not None:
             start,end = self.cutoff
             min_t = min((d['t'] for d in data))
             start_t = min_t+start
