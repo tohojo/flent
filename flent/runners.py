@@ -378,8 +378,8 @@ class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
     supports_remote = False
 
-    def __init__(self, name, settings, duration, interval, **kwargs):
-        ProcessRunner.__init__(self, name, settings, **kwargs)
+    def __init__(self, duration, interval, **kwargs):
+        ProcessRunner.__init__(self, **kwargs)
         if 'control_host' in kwargs:
             control_host = kwargs['control_host']
         else:
