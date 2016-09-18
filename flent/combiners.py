@@ -503,7 +503,7 @@ class RawSeqLossReducer(RawReducer):
             seqs = [d['seq'] for d in data]
 
             return 1-len(seqs)/(max(seqs)-min(seqs)+1)
-        except KeyError:
+        except (KeyError,ValueError):
             return None
 
 class MosReducer(RawReducer):
