@@ -59,9 +59,9 @@ PLOTS['voip_box_delay_loss']     = {'description': "Box delay/loss combination p
 PLOTS['voip_mos_combine']         = {'description': "VoIP MOS score combination plot",
                                     'type': 'box_combine',
                                     'cutoff': VOIP_CUTOFF,
-                                    'axis_labels': ['MOS score'],
+                                    'axis_labels': ['MOS value'],
                                     'series': [{'data': 'VoIP',
-                                                'label': 'MOS score',
+                                                'label': 'MOS',
                                                 'combine_mode': 'mos'},
                                                ]}
 PLOTS['voip_bitrate']            = {'description': 'VoIP bitrate',
