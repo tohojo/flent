@@ -18,8 +18,8 @@ PLOTS['http_delay_cdf']   = {'description': 'Latency CDF plot',
 
 PLOTS['http_box_combine'] = {'description': 'Box combination of HTTP latency',
                              'type': 'box_combine',
-                             'axis_labels': ['Mean download time (ms)'],
+                             'axis_labels': ['Mean download time (s)'],
                              'cutoff': HTTP_CUTOFF,
                              'series': [{'data': 'HTTP latency',
                                          'label': 'HTTP get (ms)',
-                                         'combine_mode': 'mean'}]}
+                                         'combine_mode': 'raw_mean'}]}
