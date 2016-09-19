@@ -486,9 +486,12 @@ class RawReducer(Reducer):
         if data and self.cutoff is not None:
             start,end = self.cutoff
             min_t = min((d['t'] for d in data))
-            start_t = min_t+start
-            end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
-            return [d for d in data if d['t'] > start_t and d['t'] < end_t]
+            start_t = min_t+start if start else min_t-1
+            if end is not None:
+                end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
+                return [d for d in data if d['t'] > start_t and d['t'] < end_t]
+            else:
+                return [d for d in data if d['t'] > start_t]
         return data
 
 class RawSeqLossReducer(RawReducer):
