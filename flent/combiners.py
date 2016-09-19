@@ -498,12 +498,18 @@ class RawReducer(Reducer):
         key = series['data']
         if '::' in key:
            key = key.split("::")[0]
-        rawdata = self._get_series(resultset, key)
+        try:
+            rawdata = self._get_series(resultset, key)
+        except KeyError:
+            return None
+        if not rawdata and self.cutoff:
+            sys.stderr.write("Warning: No data points with current cutoff settings, relaxing end cutoff.\n")
+            self.cutoff = (self.cutoff[0],None)
+            rawdata = self._get_series(resultset, key)
         if self.filter_none:
             data = [d['val'] for d in rawdata if d['val'] is not None]
         else:
             data = [d['val'] for d in rawdata]
-        print(resultset.meta('TITLE'), len(data))
         if not data:
             return None
         return self._reduce(data)
