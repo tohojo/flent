@@ -494,6 +494,23 @@ class RawReducer(Reducer):
                 return [d for d in data if d['t'] > start_t]
         return data
 
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
+        if '::' in key:
+           key = key.split("::")[0]
+        rawdata = self._get_series(resultset, key)
+        if self.filter_none:
+            data = [d['val'] for d in rawdata if d['val'] is not None]
+        else:
+            data = [d['val'] for d in rawdata]
+        print(resultset.meta('TITLE'), len(data))
+        if not data:
+            return None
+        return self._reduce(data)
+
+class RawMeanReducer(MeanReducer, RawReducer):
+    pass
+
 class RawSeqLossReducer(RawReducer):
     filter_none = False
 
