@@ -411,7 +411,7 @@ class Reducer(object):
 
     def reduce(self, resultset, series, data=None):
         if self.numpy_req and not HAS_NUMPY:
-            raise RuntimeError("%s requires numpy." % self.__class__)
+            raise RuntimeError("%s requires numpy." % self.__class__.__name__)
         if data is None:
             data = resultset[series['data']]
         if self.cutoff:
