@@ -412,19 +412,39 @@ class Reducer(object):
     def reduce(self, resultset, series, data=None):
         if self.numpy_req and not HAS_NUMPY:
             raise RuntimeError("%s requires numpy." % self.__class__.__name__)
+
         if data is None:
             data = resultset[series['data']]
+
+        if 'norm_by' in series:
+            norm_series = series['norm_by'].format(**series)
+            norm_data = resultset[norm_series]
+        else:
+            norm_data = []
+
         if self.cutoff:
             start = min(resultset.x_values)+self.cutoff[0]
             end = min(resultset.x_values)+resultset.meta("TOTAL_LENGTH")-self.cutoff[1]
             start_idx = bisect_left(resultset.x_values,start)
             end_idx = bisect_right(resultset.x_values,end)
             data = data[start_idx:end_idx]
+            if norm_data:
+                norm_data = norm_data[start_idx:end_idx]
+
         if self.filter_none:
             data = [p for p in data if p is not None]
+            norm_data = [p for p in norm_data if p is not None]
+
         if not data:
             return None
-        return self._reduce(data)
+
+        val =  self._reduce(data)
+
+        if norm_data:
+            normval = self._reduce(norm_data)
+            return val/normval
+
+        return val
 
 class FairnessReducer(Reducer):
     def reduce(self, resultset, series, data=None):

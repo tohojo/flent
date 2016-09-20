@@ -362,8 +362,11 @@ class Plotter(object):
             if isinstance(s['data'], Glob):
                 for d in Glob.expand_list(s['data'], data.keys()):
                     if 'label' in s and 'id' in data[d]:
-                        new_series.append(dict(s, data=d, id=data[d]['id'],
-                                               label='%s -- %s' % (s['label'], data[d]['id'])))
+                        ns = dict(s, data=d, id=data[d]['id'],
+                                  label='%s -- %s' % (s['label'], data[d]['id']))
+                        if 'parent_id' in data[d]:
+                            ns['parent_id'] = data[d]['parent_id']
+                        new_series.append(ns)
                     else:
                         new_series.append(dict(s, data=d))
             else:
