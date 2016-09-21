@@ -74,21 +74,46 @@ def get(name):
         raise RuntimeError("Runner not found: '%s'" % name)
     return globals()[cname]
 
-class TimerRunner(threading.Thread):
+class RunnerBase(object):
 
-    def __init__(self, name, settings, timeout, start_event, finish_event, kill_event, *args, **kwargs):
-        threading.Thread.__init__(self)
+    transformed_metadata = []
+
+    def __init__(self, name, settings, idx=None, start_event=None, finish_event=None, kill_event=None, **kwargs):
         self.name = name
-        self.timeout = timeout
+        self.settings = settings
+        self.idx = idx
+        self.test_parameters = {}
+        self.raw_values = []
+        self.command = None
+        self.returncode = 0
+        self.out = self.err = ''
+
+        if not hasattr(self, 'result'):
+            self.result = None
+
         self.start_event = start_event
         self.kill_event = kill_event if kill_event is not None else Event()
         self.finish_event = finish_event
-        self.result = None
+
+        self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
+
+    # Emulate threading interface to fit into aggregator usage.
+    def start(self):
+        pass
+    def join(self):
+        pass
+    def isAlive(self):
+        return False
+    def kill(self, graceful=False):
+        pass
+
+class TimerRunner(threading.Thread, RunnerBase):
+
+    def __init__(self, timeout, **kwargs):
+        threading.Thread.__init__(self)
+        RunnerBase.__init__(self, **kwargs)
+        self.timeout = timeout
         self.command = 'Timeout after %f seconds' % self.timeout
-        self.returncode = 0
-        self.out = self.err = ''
-        self.metadata = {'runner': self.__class__.__name__}
-        self.test_parameters = {}
 
     def run(self):
         if self.start_event is not None:
@@ -100,25 +125,17 @@ class TimerRunner(threading.Thread):
     def kill(self, graceful=False):
         self.kill_event.set()
 
-class FileMonitorRunner(threading.Thread):
+class FileMonitorRunner(threading.Thread, RunnerBase):
 
-    def __init__(self, name, settings, filename, length, interval, delay, start_event, finish_event, kill_event, *args, **kwargs):
+    def __init__(self, filename, length, interval, delay, **kwargs):
         threading.Thread.__init__(self)
-        self.name = name
+        RunnerBase.__init__(self, **kwargs)
         self.filename = filename
         self.length = length
         self.interval = interval
         self.delay = delay
-        self.start_event = start_event
-        self.kill_event = kill_event if kill_event is not None else Event()
-        self.finish_event = finish_event
-        self.result = None
-        self.raw_values = []
-        self.metadata = {'filename': self.filename, 'runner': self.__class__.__name__}
-        self.test_parameters = {}
+        self.metadata['FILENAME'] = self.filename
         self.command = 'File monitor for %s' % self.filename
-        self.returncode = 0
-        self.out = self.err = ''
 
     def run(self):
         if self.start_event is not None:
@@ -162,30 +179,34 @@ class FileMonitorRunner(threading.Thread):
     def kill(self, graceful=False):
         self.kill_event.set()
 
-class ProcessRunner(threading.Thread):
+class ProcessRunner(threading.Thread, RunnerBase):
     """Default process runner for any process."""
     silent = False
+    supports_remote = True
 
-    def __init__(self, name, settings, command, delay, start_event, finish_event, kill_event, *args, **kwargs):
+    def __init__(self, command, delay, remote_host, **kwargs):
         threading.Thread.__init__(self)
-        self.name = name
-        self.settings = settings
+        RunnerBase.__init__(self, **kwargs)
+
+        # Rudimentary remote host capability. Note that this is modifying the
+        # final command, so all the find_* stuff must match on the local and
+        # remote hosts. I.e. the same binaries must exist in the same places.
+        if remote_host:
+            if not self.supports_remote:
+                raise RuntimeError("%s (idx %d) does not support running on remote hosts." % (self.__class__.__name__, self.idx))
+            command = "ssh %s '%s'" % (remote_host, command)
+            self.metadata['REMOTE_HOST'] = remote_host
+
         self.command = command
         self.args = shlex.split(self.command)
         self.delay = delay
-        self.start_event = start_event
-        self.kill_event = kill_event
-        self.finish_event = finish_event
-        self.result = None
         self.killed = False
         self.pid = None
         self.returncode = None
         self.kill_lock = threading.Lock()
-        self.metadata = {'runner': self.__class__.__name__, 'command': command}
+        self.metadata['COMMAND'] = command
         self.test_parameters = {}
         self.raw_values = []
-        self.out = ""
-        self.err = ""
         self.stdout = None
         self.stderr = None
 
@@ -355,10 +376,15 @@ class SilentProcessRunner(ProcessRunner):
 
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
+    supports_remote = False
 
-    def __init__(self, name, settings, duration, interval, **kwargs):
-        ProcessRunner.__init__(self, name, settings, **kwargs)
-        self.proxy = xmlrpc.ServerProxy("http://%s:%s" % (self.settings.CONTROL_HOST or self.settings.HOST,
+    def __init__(self, duration, interval, **kwargs):
+        ProcessRunner.__init__(self, **kwargs)
+        if 'control_host' in kwargs:
+            control_host = kwargs['control_host']
+        else:
+            control_host = self.settings.CONTROL_HOST or self.settings.HOST
+        self.proxy = xmlrpc.ServerProxy("http://%s:%s" % (control_host,
                                                           self.settings.DITG_CONTROL_PORT),
                                         allow_none=True)
         self.ditg_secret = self.settings.DITG_CONTROL_SECRET
@@ -462,6 +488,7 @@ class DitgRunner(ProcessRunner):
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
+    transformed_metadata = ('MEAN_VALUE',)
 
     def parse(self, output):
         """Parses the interim result lines and returns a list of (time,value)
@@ -560,6 +587,7 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
+    transformed_metadata = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
 
     @classmethod
     def find_binary(cls, ip_version, interval, length, host, marking=None, local_bind=None):
@@ -630,17 +658,19 @@ class HttpGetterRunner(RegexpRunner):
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
+    transformed_metadata = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
-    def __init__(self, *args, **kwargs):
+    transformed_metadata = ('MEAN_VALUE',)
+    def __init__(self, **kwargs):
         if 'udp' in kwargs:
             self.udp = kwargs['udp']
             del kwargs['udp']
         else:
             self.udp = False
-        ProcessRunner.__init__(self, *args, **kwargs)
+        ProcessRunner.__init__(self, **kwargs)
 
     def parse(self, output):
         result = []
@@ -937,7 +967,7 @@ class WifiStatsRunner(ProcessRunner):
     station_re   = re.compile(r"^Station: (?P<mac>(?:[0-9a-f]{2}:){5}[0-9a-f]{2})\n", re.MULTILINE)
     airtime_re   = re.compile(r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         if 'stations' in kwargs:
             if kwargs['stations'] in (["all"],["ALL"]):
                 self.stations = []
@@ -948,7 +978,7 @@ class WifiStatsRunner(ProcessRunner):
             del kwargs['stations']
         else:
             self.stations = []
-        ProcessRunner.__init__(self, *args, **kwargs)
+        ProcessRunner.__init__(self, **kwargs)
 
     def parse(self, output):
         results = {}
@@ -1095,50 +1125,20 @@ class NetstatRunner(ProcessRunner):
             host=host)
 
 
-class NullRunner(object):
-    def __init__(self, *args, **kwargs):
-        self.result = None
-        self.command = 'null'
-        self.returncode = 0
-        self.metadata = {'runner': self.__class__.__name__}
-        self.out = self.err = ''
-    # Emulate threading interface to fit into aggregator usage.
-    def start(self):
-        pass
-    def join(self):
-        pass
-    def isAlive(self):
-        return False
-    def kill(self, graceful=False):
-        pass
+class NullRunner(RunnerBase):
+    pass
 
-class ComputingRunner(object):
+class ComputingRunner(RunnerBase):
     command = "Computed"
     supported_meta = ['MEAN_VALUE']
     copied_meta = ['UNITS']
-    def __init__(self, name, settings, apply_to=None, *args, **kwargs):
-        self.name = name
-        self.settings = settings
-        self.metadata = {'runner': self.__class__.__name__}
+    def __init__(self, apply_to=None, post=False, **kwargs):
+        RunnerBase.__init__(self, **kwargs)
         if apply_to is None:
             self.keys = []
         else:
             self.keys = apply_to
-
-        # These are use for debug logging
-        self.returncode = 0
-        self.out = ""
-        self.err = ""
-
-    # Emulate threading interface to fit into aggregator usage.
-    def start(self):
-        pass
-    def join(self):
-        pass
-    def isAlive(self):
-        return False
-    def kill(self, graceful=False):
-        pass
+        self.metadata['COMPUTED_LATE'] = post
 
     def result(self, res):
         if not self.keys:
@@ -1155,7 +1155,7 @@ class ComputingRunner(object):
                 new_res.append(self.compute(values))
 
         meta = res.meta('SERIES_META') if 'SERIES_META' in res.meta() else {}
-        meta[self.name] = {}
+        meta[self.name] = self.metadata
         for mk in self.supported_meta:
             vals = []
             for k in keys:
@@ -1193,8 +1193,8 @@ class AverageRunner(ComputingRunner):
 
 class SmoothAverageRunner(ComputingRunner):
     command = "Smooth average (computed)"
-    def __init__(self, smooth_steps=5, *args, **kwargs):
-        ComputingRunner.__init__(self, *args, **kwargs)
+    def __init__(self, smooth_steps=5, **kwargs):
+        ComputingRunner.__init__(self, **kwargs)
         self._smooth_steps = smooth_steps
         self._avg_values = []
 

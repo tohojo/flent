@@ -14,14 +14,14 @@ if WIFI_STATS_HOSTS:
                                              'runner': 'wifi_stats',}
         for station in WIFI_STATS_STATIONS.split(","):
             DATA_SETS['wifi_stats_%s::airtime_rx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
-                                                                           'runner': 'null', 'id': "%s::%s" % (host, station)}
+                                                                           'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
             DATA_SETS['wifi_stats_%s::airtime_tx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
-                                                                           'runner': 'null', 'id': "%s::%s" % (host, station)}
+                                                                           'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
             DATA_SETS['wifi_stats_%s::airtime_total::%s' % (host,station)] = {'units': 'us', 'apply_to': ['wifi_stats_%s::airtime_rx::%s' % (host,station),
                                                                                                           'wifi_stats_%s::airtime_tx::%s' % (host,station),],
-                                                                           'runner': 'sum', 'id': "%s::%s" % (host, station)}
+                                                                              'runner': 'sum', 'id': "%s::%s" % (host, station), 'parent_id' : host}
             DATA_SETS['wifi_stats_%s::avg_aggr_size::%s' % (host,station)] = {'units': 'packets',
-                                                                              'runner': 'null', 'id': "%s::%s" % (host, station)}
+                                                                              'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
 
         DATA_SETS['wifi_stats_%s::airtime_sum' % host] = {'units': 'us', 'apply_to': [glob('wifi_stats_%s::airtime_rx::*' % host),
                                                                                       glob('wifi_stats_%s::airtime_tx::*' % host),],
@@ -90,14 +90,17 @@ if WIFI_STATS_HOSTS:
                            'parent': 'airtime_total',
                            'stacked': True}
     PLOTS['airtime_total_combine'] = {'description': 'Combined airtime total plot',
-                                   'parent': 'airtime_total',
-                                   'type': 'box_combine',
-                                   'cutoff': (DELAY,DELAY),
-                                   'group_by': 'groups_concat'}
+                                      'type': 'box_combine',
+                                      'axis_labels': ['Airtime share'],
+                                      'cutoff': (DELAY,DELAY),
+                                      'group_by': 'groups_concat',
+                                      'series': [
+                                          {'data': glob('wifi_stats_*::airtime_total*'),
+                                           'label': 'Total airtime',
+                                           'norm_by': 'wifi_stats_{parent_id}::airtime_sum'},
+                                      ]}
     PLOTS['airtime_total_combine_long'] = {'description': 'Combined airtime total plot (long timescale)',
-                                   'parent': 'airtime_total',
-                                   'type': 'box_combine',
-                                   'cutoff': (DELAY,DELAY),
+                                   'parent': 'airtime_total_combine',
                                    'group_by': 'groups'}
     PLOTS['airtime_fairness_combine'] = {'description': 'Combined airtime fairness plot',
                                          'type': 'box_combine',

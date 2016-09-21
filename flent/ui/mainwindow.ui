@@ -42,7 +42,7 @@
      <x>0</x>
      <y>0</y>
      <width>1142</width>
-     <height>29</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -88,7 +88,7 @@
     </property>
     <addaction name="checkZeroY"/>
     <addaction name="checkInvertY"/>
-    <addaction name="checkDisableLog"/>
+    <addaction name="checkLogScale"/>
     <addaction name="separator"/>
     <addaction name="checkScaleMode"/>
     <addaction name="checkSubplotCombine"/>
@@ -295,12 +295,12 @@
     <string>&amp;Invert latency Y-axis</string>
    </property>
   </action>
-  <action name="checkDisableLog">
+  <action name="checkLogScale">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Disable log scale</string>
+    <string>L&amp;og scale</string>
    </property>
   </action>
   <action name="checkScaleMode">

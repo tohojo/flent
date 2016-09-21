@@ -21,11 +21,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re, math
+import re, math, sys
 
-from flent.util import classname, long_substr, Glob
+from flent.util import classname, long_substr, Glob, format_date, mos_score
 from flent.resultset import ResultSet
 
+from datetime import datetime
 from itertools import cycle
 from bisect import bisect_left, bisect_right
 from collections import OrderedDict
@@ -44,7 +45,7 @@ except ImportError:
 def get_combiner(combiner_type):
     cname = classname(combiner_type, "Combiner")
     if not cname in globals():
-        raise RuntimeError("Combiner not found: '%s'" % plot_type)
+        raise RuntimeError("Combiner not found: '%s'" % combiner_type)
     return globals()[cname]
 
 def new(combiner_type, *args, **kwargs):
@@ -60,10 +61,11 @@ class Combiner(object):
     # -01, -02, etc.
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
 
-    def __init__(self, print_n=False, filter_regexps=None, filter_series=None):
+    def __init__(self, print_n=False, filter_regexps=None, filter_series=None, save_dir=None):
         self.filter_serial = True
         self.filter_prefix = True
         self.print_n = print_n
+        self.save_dir = save_dir
         if filter_regexps is not None:
             self.filter_regexps = filter_regexps
         else:
@@ -71,7 +73,51 @@ class Combiner(object):
         self.filter_series = filter_series
 
     def __call__(self, results, config):
-        return self.combine(results, config)
+        if self.check_intermediate(results, config):
+            return results
+
+        res = self.combine(results, config)
+        self.save_intermediate(res, config, results[0].meta())
+
+        return res
+
+    def check_intermediate(self, results, config):
+        valid = True
+        for r in results:
+            if "FROM_COMBINER" in r.meta():
+                if r.meta("FROM_COMBINER") != self.__class__.__name__:
+                    raise RuntimeError("Intermediate results from different combiner: %s/%s" % (r.meta("FROM_COMBINER"),
+                                                                                                self.__class__.__name__))
+                if r.meta("COMBINER_PLOT") != config['plot_name']:
+                    raise RuntimeError("Intermediate results from different plot: %s/%s" % (r.meta("COMBINER_PLOT"),
+                                                                                            config['plot_name']))
+            else:
+                valid = False
+        if valid:
+            config['series'] = results[0].meta("COMBINER_SERIES")
+            config['cutoff'] = None
+        return valid
+
+    def save_intermediate(self, new_results, config, orig_meta):
+        orig_meta = orig_meta.copy()
+        del orig_meta['TITLE']
+        if self.save_dir:
+            t = datetime.utcnow()
+            series = config['series']
+            # Can't serialise 'source' Glob objects
+            for s in series:
+                if 'source' in s:
+                    del s['source']
+            for i,r in enumerate(new_results):
+                r.meta().update(orig_meta)
+                r.meta("FROM_COMBINER", self.__class__.__name__)
+                r.meta("COMBINER_SERIES", series)
+                r.meta("COMBINER_PLOT", config['plot_name'])
+                r._filename = "%s-%s-%s-%02d%s" % (config['plot_name'],
+                                                   self.__class__.__name__,
+                                                   format_date(t).replace(":",""),
+                                                   i, r.SUFFIX)
+                r.dump_dir(self.save_dir)
 
     def combine(self, results, config):
 
@@ -365,20 +411,40 @@ class Reducer(object):
 
     def reduce(self, resultset, series, data=None):
         if self.numpy_req and not HAS_NUMPY:
-            raise RuntimeError("%s requires numpy." % self.__class__)
+            raise RuntimeError("%s requires numpy." % self.__class__.__name__)
+
         if data is None:
             data = resultset[series['data']]
+
+        if 'norm_by' in series:
+            norm_series = series['norm_by'].format(**series)
+            norm_data = resultset[norm_series]
+        else:
+            norm_data = []
+
         if self.cutoff:
             start = min(resultset.x_values)+self.cutoff[0]
             end = min(resultset.x_values)+resultset.meta("TOTAL_LENGTH")-self.cutoff[1]
             start_idx = bisect_left(resultset.x_values,start)
             end_idx = bisect_right(resultset.x_values,end)
             data = data[start_idx:end_idx]
+            if norm_data:
+                norm_data = norm_data[start_idx:end_idx]
+
         if self.filter_none:
             data = [p for p in data if p is not None]
+            norm_data = [p for p in norm_data if p is not None]
+
         if not data:
             return None
-        return self._reduce(data)
+
+        val =  self._reduce(data)
+
+        if norm_data:
+            normval = self._reduce(norm_data)
+            return val/normval
+
+        return val
 
 class FairnessReducer(Reducer):
     def reduce(self, resultset, series, data=None):
@@ -387,7 +453,9 @@ class FairnessReducer(Reducer):
                                   exclude=self.filter_series, args=series)
         values = []
         for key in source:
-            values.append(super(FairnessReducer, self).reduce(resultset, None, resultset[key]))
+            v = super(FairnessReducer, self).reduce(resultset, None, resultset[key])
+            if v is not None:
+                values.append(v)
         valsum = math.fsum([x**2 for x in values])
         if not valsum:
             return None
@@ -431,7 +499,45 @@ class MeanZeroReducer(Reducer):
         d = [p if p is not None else 0 for p in data]
         return numpy.mean(d) if d else None
 
-class RawSeqLossReducer(Reducer):
+class RawReducer(Reducer):
+
+    def _get_series(self, resultset, name):
+        data = resultset.raw_values[name]
+        if data and self.cutoff is not None:
+            start,end = self.cutoff
+            min_t = min((d['t'] for d in data))
+            start_t = min_t+start if start else min_t-1
+            if end is not None:
+                end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
+                return [d for d in data if d['t'] > start_t and d['t'] < end_t]
+            else:
+                return [d for d in data if d['t'] > start_t]
+        return data
+
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
+        if '::' in key:
+           key = key.split("::")[0]
+        try:
+            rawdata = self._get_series(resultset, key)
+        except KeyError:
+            return None
+        if not rawdata and self.cutoff:
+            sys.stderr.write("Warning: No data points with current cutoff settings, relaxing end cutoff.\n")
+            self.cutoff = (self.cutoff[0],None)
+            rawdata = self._get_series(resultset, key)
+        if self.filter_none:
+            data = [d['val'] for d in rawdata if d['val'] is not None]
+        else:
+            data = [d['val'] for d in rawdata]
+        if not data:
+            return None
+        return self._reduce(data)
+
+class RawMeanReducer(MeanReducer, RawReducer):
+    pass
+
+class RawSeqLossReducer(RawReducer):
     filter_none = False
 
     def reduce(self, resultset, series, data=None):
@@ -439,17 +545,40 @@ class RawSeqLossReducer(Reducer):
         if '::' in key:
            key = key.split("::")[0]
         try:
-            if self.cutoff is not None:
-                start,end = self.cutoff
-                min_t = min([r['t'] for r in resultset.raw_values[key]])
-                start_t = min_t+start
-                end_t = min_t+resultset.meta("TOTAL_LENGTH")-end
-                seqs = [r['seq'] for r in resultset.raw_values[key] if r['t'] > start_t and r['t'] < end_t]
-            else:
-                seqs = [r['seq'] for r in resultset.raw_values[key]]
+            data = self._get_series(resultset, key)
+            seqs = [d['seq'] for d in data]
+
             return 1-len(seqs)/(max(seqs)-min(seqs)+1)
-        except KeyError:
+        except (KeyError,ValueError):
             return None
+
+class MosReducer(RawReducer):
+    filter_none = False
+    numpy_req = True
+
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
+        data = self._get_series(resultset, key)
+        if not data:
+            return None
+        jitter_samples = []
+        delay_samples = []
+        loss = 0
+        last_delay = -1
+        last_seq = -1
+        for d in data:
+            if last_seq > -1 and d['seq'] - last_seq > 1:
+                loss += 1
+            last_seq = d['seq']
+            if last_delay > -1:
+                jitter_samples.append(abs(last_delay - d['val']))
+            last_delay = d['val']
+            delay_samples.append(d['val'])
+
+        delay = numpy.mean(delay_samples) + 2 * numpy.mean(jitter_samples)
+        lossrate = loss / len(data)
+        mos = mos_score(delay, lossrate)
+        return mos
 
 class MetaReducer(Reducer):
     filter_none = False

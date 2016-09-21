@@ -34,6 +34,9 @@ except ImportError:
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
 
+class _no_default():
+    pass
+
 
 def finder(fn):
     """Decorator to put on find_* methods that makes sure common operations
@@ -104,11 +107,11 @@ class TestEnvironment(object):
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
 
-    def get_test_parameter(self, name, default=None):
+    def get_test_parameter(self, name, default=_no_default):
         try:
             return self.env['TEST_PARAMETERS'][name]
         except KeyError:
-            if default is not None:
+            if default is not _no_default:
                 return default
             if self.informational:
                 return None
@@ -219,7 +222,10 @@ class TestEnvironment(object):
                "{extra_test_args}".format(**args)
 
     @finder
-    def find_itgsend(self, test_args, length, host):
+    def find_itgsend(self, test_args, length, host, local_bind=None):
+
+        if local_bind is None:
+            local_bind = self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else None
 
         if self.itgsend is None:
             self.itgsend = util.which("ITGSend", fail=True)
@@ -227,10 +233,11 @@ class TestEnvironment(object):
         # We put placeholders in the command string to be filled out by string
         # format expansion by the runner once it has communicated with the control
         # server and obtained the port values.
-        return "{binary} -Sdp {{signal_port}} -t {length} -a {dest_host} -rp {{dest_port}} {args}".format(
+        return "{binary} -Sdp {{signal_port}} -t {length} {local_bind} -a {dest_host} -rp {{dest_port}} {args}".format(
             binary=self.itgsend,
             length=int(length*1000),
             dest_host=host,
+            local_bind="-sa {0} -Ssa {0}".format(local_bind) if local_bind else "",
             args=test_args)
 
     @finder

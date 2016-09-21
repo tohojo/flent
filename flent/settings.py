@@ -43,6 +43,7 @@ DEFAULT_SETTINGS = {
     'NAME': None,
     'HOST': None,
     'HOSTS': [],
+    'REMOTE_HOSTS': {},
     'LOCAL_HOST': socket.gethostname(),
     'LOCAL_BIND': [],
     'STEP_SIZE': 0.2,
@@ -53,6 +54,8 @@ DEFAULT_SETTINGS = {
     'TITLE': '',
     'OVERRIDE_TITLE': '',
     'OVERRIDE_GROUP_BY': None,
+    'OVERRIDE_LABELS': [],
+    'SPLIT_GROUPS': [],
     'NOTE': '',
     'RCFILE': os.path.expanduser("~/.flentrc"),
     'LOG_FILE': None,
@@ -71,6 +74,7 @@ DEFAULT_SETTINGS = {
     'ABSOLUTE_TIME': False,
     'SUBPLOT_COMBINE': False,
     'COMBINE_PRINT_N': True,
+    'COMBINE_SAVE_DIR': None,
     'HOVER_HIGHLIGHT': None,
     'ANNOTATE': True,
     'PRINT_TITLE': True,
@@ -79,16 +83,21 @@ DEFAULT_SETTINGS = {
     'FILTER_LEGEND': False,
     'LEGEND_TITLE': None,
     'LEGEND_PLACEMENT': None,
+    'LEGEND_COLUMNS': None,
     'HORIZONTAL_LEGEND': False,
     'LOAD_MATPLOTLIBRC': True,
     'FILTER_REGEXP': [],
     'FILTER_SERIES': [],
+    'SKIP_MISSING': False,
     'REPLACE_LEGEND': OrderedDict(),
     'ZERO_Y': False,
     'BOUNDS_X': [],
     'BOUNDS_Y': [],
+    'LABEL_X': [],
+    'LABEL_Y': [],
+    'COLOURS': None,
     'INVERT_Y': False,
-    'LOG_SCALE': True,
+    'LOG_SCALE': False,
     'NORM_FACTORS': [],
     'FIG_WIDTH': None,
     'FIG_HEIGHT': None,
@@ -123,6 +132,7 @@ DEFAULT_SETTINGS = {
 
 CONFIG_TYPES = {
     'HOSTS': 'list',
+    'REMOTE_HOSTS': 'dict_int',
     'LOCAL_BIND': 'list',
     'STEP_SIZE': 'float',
     'LENGTH': 'int',
@@ -146,6 +156,7 @@ CONFIG_TYPES = {
     'FILTER_LEGEND': 'bool',
     'LEGEND_TITLE': 'str',
     'LEGEND_PLACEMENT': 'str',
+    'LEGEND_COLUMNS': 'int',
     'ZERO_Y': 'bool',
     'INVERT_Y': 'bool',
     'LOG_SCALE': 'bool',
@@ -193,21 +204,33 @@ def check_float_pair(option, opt, value):
     except ValueError:
         raise optparse.OptionValueError("Invalid pair value: %s" % value)
 
+def check_keyval(option, opt, value):
+    if not '=' in value:
+        raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
+    k,v = value.split('=', 1)
+    return {k:v}
+
+def check_keyval_int(option, opt, value):
+    try:
+        return {int(k):v for k,v in check_keyval(option, opt, value).items()}
+    except ValueError:
+        raise optparse.OptionValueError("Keys must be integers for option %s." % opt)
+
+
 class ExtendedOption(optparse.Option):
     ACTIONS = optparse.Option.ACTIONS + ("update",)
     STORE_ACTIONS = optparse.Option.STORE_ACTIONS + ("update",)
     TYPED_ACTIONS = optparse.Option.TYPED_ACTIONS + ("update",)
     ALWAYS_TYPED_ACTIONS = optparse.Option.ALWAYS_TYPED_ACTIONS + ("update",)
-    TYPES = optparse.Option.TYPES + ("float_pair",)
+    TYPES = optparse.Option.TYPES + ("float_pair","keyval","keyval_int")
     TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
     TYPE_CHECKER['float_pair'] = check_float_pair
+    TYPE_CHECKER['keyval'] = check_keyval
+    TYPE_CHECKER['keyval_int'] = check_keyval_int
 
     def take_action(self, action, dest, opt, value, values, parser):
         if action == 'update':
-            if not '=' in value:
-                raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
-            k,v = value.split('=', 1)
-            values.ensure_value(dest, {})[k] = v
+            values.ensure_value(dest, {}).update(value)
         else:
             optparse.Option.take_action(self, action, dest, opt, value, values, parser)
 
@@ -268,7 +291,7 @@ parser.add_option("-B", "--batch-file", action="append", type="string", dest="BA
                   help="Load batch file BATCH_FILE. Can be specified multiple times, in which "
                   "case the files will be combined (with identically-named sections being overridden "
                   "by later files). See the man page for an explanation of the batch file format.")
-parser.add_option("--batch-override", action="update", type="string", dest="BATCH_OVERRIDE",
+parser.add_option("--batch-override", action="update", type="keyval", dest="BATCH_OVERRIDE",
                   metavar="key=value",
                   help="Override parameter 'key' in the batch config and set it to 'value'. "
                   "The key name will be case folded to lower case. Can be specified multiple times.")
@@ -298,6 +321,13 @@ test_group.add_option("-H", "--host", action="append", type="string", dest="HOST
 test_group.add_option("--local-bind", action="append", type="string", dest="LOCAL_BIND", metavar='IP',
                   help="Local hostname or IP address to bind to (for test tools that support this). "
                   "Can be specified multiple times to get different local bind address per host.")
+test_group.add_option("--remote-host", action="update", type="keyval_int", dest="REMOTE_HOSTS", metavar='idx=HOSTNAME',
+                      help="A remote hostname to connect to when starting a test. The idx is the runner "
+                      "index, which is assigned sequentially by the number of *runners* (which is *not* "
+                      "the same as the number of hosts). Look for the 'IDX' key in SERIES_META for a test "
+                      "get the idx used here. This works by simply prepending  'ssh HOSTNAME' to the "
+                      "runner command, so it relies on the same binaries being in the same places on "
+                      "both machines, and won't work for all runners. Can be specified multiple times.")
 test_group.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
                   help="Base test length (some tests may add some time to this).")
 test_group.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
@@ -314,7 +344,7 @@ test_group.add_option("--socket-timeout", action="store", type=int, dest="SOCKET
                   "stalls on packet loss. Only enabled if the installed netperf version is "
                   "detected to support this (requires SVN version of netperf). "
                   "Default value: %d seconds. Set to 0 to disable." % DEFAULT_SETTINGS['SOCKET_TIMEOUT'])
-test_group.add_option("--test-parameter", action="update", dest="TEST_PARAMETERS", metavar='key=value',
+test_group.add_option("--test-parameter", action="update", type="keyval", dest="TEST_PARAMETERS", metavar='key=value',
                   help="Arbitrary test parameter in key=value format. "
                   "Key will be case folded to lower case. Some test configurations may "
                   "alter behaviour based on values passed as test parameters. Additionally, "
@@ -345,11 +375,19 @@ plot_group.add_option("--bounds-y", action="append", dest="BOUNDS_Y", type='floa
                   "the upper bound. Specify two numbers separated by a comma to specify both "
                   "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
                   "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--label-x", action="append", dest="LABEL_X",
+                  help="Override the X axis label. "
+                  "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--label-y", action="append", dest="LABEL_Y",
+                  help="Override the Y axis label. "
+                  "Can be specified twice, corresponding to figures with multiple axes.")
+plot_group.add_option("--colours", action="store", dest="COLOURS",
+                  help="Comma-separated list of colours to be used for the plot colour cycle.")
 plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INVERT_Y",
                   help="Invert the y-axis for latency data series (making plots show 'better values "
                   "upwards').")
-plot_group.add_option("--disable-log", action="store_false", dest="LOG_SCALE",
-                  help="Disable log scales on plots.")
+plot_group.add_option("--log-scale", action="store_true", dest="LOG_SCALE",
+                  help="Use logarithmic scaled on plots.")
 plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS", metavar="FACTOR",
                   help="Factor to normalise data by. I.e. divide all data points by this value. "
                   "Can be specified multiple times, in which case each value corresponds to a "
@@ -378,8 +416,19 @@ plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
 plot_group.add_option("--override-title", action="store", type='string', dest="OVERRIDE_TITLE",
                   metavar="TITLE", help="Override plot title with this string. This parameter takes "
                   "precedence over --no-title.")
+plot_group.add_option("--override-label", action="append", type='string', dest="OVERRIDE_LABELS",
+                      metavar="LABEL", help="Override dataset label. Must be specified multiple times "
+                      "corresponding to the datasets being overridden.")
+plot_group.add_option("--split-group", action="append", type='string', dest="SPLIT_GROUPS",
+                      metavar="LABEL", help="Split data sets into groups. Specify this option multiple "
+                      "times to define the new groups. The value of each option is the group name. This "
+                      "only works for box plots.")
 plot_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
                   metavar="GROUP", help="Override plot group_by attribute for combination plots.")
+plot_group.add_option("--combine-save-dir", action="store", type='string', dest="COMBINE_SAVE_DIR",
+                      metavar="DIRNAME", help="When doing a combination plot save the intermediate data "
+                      "to DIRNAME. This can then be used for subsequent plotting to avoid having to "
+                      "load all the source data files again on each plot.")
 plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
                   help="Don't use line markers to differentiate data series on plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
@@ -392,6 +441,8 @@ plot_group.add_option("--legend-title", action="store", dest="LEGEND_TITLE",
 plot_group.add_option("--legend-placement", action="store", dest="LEGEND_PLACEMENT",
                   help="Control legend placement. Enabling this option will place the legend inside "
                       "the plot at the specified location. Use 'best' to let matplotlib decide.")
+plot_group.add_option("--legend-columns", action="store", type=int, dest="LEGEND_COLUMNS",
+                  help="Set the number of columns in the legend.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                   help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",
@@ -400,7 +451,9 @@ plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", 
                   "specified.")
 plot_group.add_option("--filter-series", action="append", dest="FILTER_SERIES", metavar="SERIES",
                   help="Filter out specified series from plot Can be specified multiple times.")
-plot_group.add_option("--replace-legend", action="update", dest="REPLACE_LEGEND", metavar="src=dest",
+plot_group.add_option("--skip-missing-series", action="store_true", dest="SKIP_MISSING",
+                  help="Skip missing series entirely from plots. Only works for bar plots.")
+plot_group.add_option("--replace-legend", action="update", type="keyval", dest="REPLACE_LEGEND", metavar="src=dest",
                   help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
                   help="Figure width in inches. Used when saving plots to file and for default size of "
@@ -538,7 +591,9 @@ class Settings(optparse.Values, object):
                 elif CONFIG_TYPES[k] == 'list':
                     setattr(self, k, [i.strip() for i in v.split(",")])
                 elif CONFIG_TYPES[k] == 'dict':
-                    setattr(self, k, dict([[j.strip() for j in i.split('=',1)] for i in v.split(';') if i.strip() and '=' in i]))
+                    setattr(self, k, {k.strip():v.strip() for k,v in [i.split("=",1) for i in v.split(';') if '=' in i]})
+                elif CONFIG_TYPES[k] == 'dict_int':
+                    setattr(self, k, {int(k):v.strip() for k,v in [i.split("=",1) for i in v.split(';') if '=' in i]})
                 elif CONFIG_TYPES[k] == 'bool':
                     if type(v) == bool:
                         setattr(self, k, v)
@@ -582,12 +637,14 @@ class Settings(optparse.Values, object):
 
 
     def compute_missing_results(self, results):
+        if "FROM_COMBINER" in results.meta():
+            return
         for dname, dvals in self.DATA_SETS.items():
             if not dname in results:
                 runner = runners.get(dvals['runner'])
-                if hasattr(runner, 'result') and isinstance(runner.result, collections.Callable):
+                if issubclass(runner, runners.ComputingRunner):
                     try:
-                        runner = runner(dname, settings, **dvals)
+                        runner = runner(name=dname, settings=settings, post=True, **dvals)
                         runner.result(results)
                     except Exception as e:
                         sys.stderr.write("Unable to compute missing data series '%s': '%s'.\n" % (dname, e))

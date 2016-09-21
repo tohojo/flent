@@ -58,6 +58,7 @@ class Aggregator(object):
         self.threads = {}
         self.settings = settings
         self.failed_runners = 0
+        self.runner_counter = 0
         if self.settings.LOG_FILE is None:
             self.logfile = None
         else:
@@ -68,9 +69,20 @@ class Aggregator(object):
     def add_instance(self, name, config):
         instance = dict(config)
 
+        if name in self.instances:
+            raise RuntimeError("Duplicate runner name: '%s' (probably unsupported duplicate parameters or hosts)" % name)
+
         if not 'delay' in instance:
             instance['delay'] = 0
 
+        idx = self.runner_counter
+        self.runner_counter += 1
+        instance['idx'] = idx
+
+        if idx in self.settings.REMOTE_HOSTS:
+            instance['remote_host'] = self.settings.REMOTE_HOSTS[idx]
+        else:
+            instance['remote_host'] = None
 
         instance['runner'] = runners.get(instance['runner'])
         instance['start_event'] = None
@@ -117,7 +129,7 @@ class Aggregator(object):
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']
                 if 'kill_timeout' in i and i['kill_timeout']:
                     watchdog = self.create_watchdog(n, i)
-                self.threads[n] = i['runner'](n, self.settings, **i)
+                self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
                 self.threads[n].start()
                 if watchdog is not None:
                     self.threads[watchdog.name] = watchdog
@@ -136,6 +148,20 @@ class Aggregator(object):
                         else:
                             sys.stderr.write("Already initiated graceful shutdown. Patience, please...\n")
                 self._log(n,t)
+
+                metadata['series'][n] = t.metadata
+                if 'transformers' in self.instances[n]:
+                    for tr in self.instances[n]['transformers']:
+                        for k in t.transformed_metadata:
+                            try:
+                                metadata['series'][n][k] = tr(metadata['series'][n][k])
+                            except:
+                                pass
+                if t.test_parameters:
+                    metadata['test_parameters'].update(t.test_parameters)
+                if t.raw_values:
+                    raw_values[n] = t.raw_values
+
                 if t.result is None:
                     continue
                 elif isinstance(t.result, collections.Callable):
@@ -160,19 +186,6 @@ class Aggregator(object):
                         for tr in self.instances[n]['transformers']:
                             result[n] = tr(result[n])
 
-                if hasattr(t, 'metadata'):
-                    metadata['series'][n] = t.metadata
-                    if 'transformers' in self.instances[n]:
-                        for tr in self.instances[n]['transformers']:
-                            for k,v in metadata['series'][n].items():
-                                try:
-                                    metadata['series'][n][k] = tr(v)
-                                except:
-                                    pass
-                if hasattr(t, 'test_parameters'):
-                    metadata['test_parameters'].update(t.test_parameters)
-                if hasattr(t, 'raw_values'):
-                    raw_values[n] = t.raw_values
         except KeyboardInterrupt:
             self.kill_runners()
             raise

@@ -187,7 +187,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         # Set initial value of checkboxes from settings
         self.checkZeroY.setChecked(self.settings.ZERO_Y)
         self.checkInvertY.setChecked(self.settings.INVERT_Y)
-        self.checkDisableLog.setChecked(not self.settings.LOG_SCALE)
+        self.checkLogScale.setChecked(self.settings.LOG_SCALE)
         self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
         self.checkSubplotCombine.setChecked(self.settings.SUBPLOT_COMBINE)
         self.checkAnnotation.setChecked(self.settings.ANNOTATE)
@@ -198,7 +198,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
-        self.checkDisableLog.toggled.connect(self.update_checkboxes)
+        self.checkLogScale.toggled.connect(self.update_checkboxes)
         self.checkScaleMode.toggled.connect(self.update_checkboxes)
         self.checkSubplotCombine.toggled.connect(self.update_checkboxes)
         self.checkAnnotation.toggled.connect(self.update_checkboxes)
@@ -296,7 +296,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget is not None:
             widget.zero_y(self.checkZeroY.isChecked())
             widget.invert_y(self.checkInvertY.isChecked())
-            widget.disable_log(self.checkDisableLog.isChecked())
+            widget.log_scale(self.checkLogScale.isChecked())
             widget.scale_mode(self.checkScaleMode.isChecked())
             widget.subplot_combine(self.checkSubplotCombine.isChecked())
             widget.draw_annotation(self.checkAnnotation.isChecked())
@@ -1326,11 +1326,11 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.update()
         return self.settings.INVERT_Y
 
-    def disable_log(self, val=None):
-        if val is not None and val == self.settings.LOG_SCALE:
-            self.settings.LOG_SCALE = not val
+    def log_scale(self, val=None):
+        if val is not None and val != self.settings.LOG_SCALE:
+            self.settings.LOG_SCALE = val
             self.update()
-        return not self.settings.LOG_SCALE
+        return self.settings.LOG_SCALE
 
     def scale_mode(self, val=None):
         if val is not None and val != self.settings.SCALE_MODE:

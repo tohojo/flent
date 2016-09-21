@@ -99,6 +99,7 @@ class ResultSet(object):
         if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
             self.metadata['DATA_FILENAME'] += self.SUFFIX
         self._filename = self.metadata['DATA_FILENAME']
+        self._label = None
 
     def meta(self, key=None, value=_EMPTY):
         if key:
@@ -126,7 +127,10 @@ class ResultSet(object):
         return self.metadata
 
     def label(self):
-        return self.metadata["TITLE"] or format_date(self.metadata["TIME"])
+        return self._label or self.metadata["TITLE"] or format_date(self.metadata["TIME"])
+
+    def set_label(self, label):
+        self._label = label
 
     def get_x_values(self):
         return self._x_values

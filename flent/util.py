@@ -21,7 +21,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import math, os, gzip, bz2, io, socket, re, time
+import os, gzip, bz2, io, socket, re, time
+from math import ceil, log10, exp, sqrt
 from bisect import bisect_left
 from datetime import datetime
 from calendar import timegm
@@ -120,7 +121,7 @@ def frange(limit1, limit2 = None, increment = 1.):
   else:
     limit1 = float(limit1)
 
-  count = int(math.ceil((limit2 - limit1)/increment))
+  count = int(ceil((limit2 - limit1)/increment))
   return (limit1 + n*increment for n in range(count))
 
 def is_executable(filename):
@@ -323,3 +324,83 @@ class Glob(object):
             else:
                 new_l.append(pattern)
         return new_l
+
+
+def mos_score(T, loss):
+    """Calculate a MOS score based on a one-way delay and a packet loss rate.
+    Based on ITU G.107 06/2015.
+
+    Verified against the online reference implementation at
+    https://www.itu.int/ITU-T/studygroups/com12/emodelv1/calcul.php
+
+    This version assumes the default values are used for all parameters other
+    than delay and loss.
+
+    @T: Mean one-way delay
+    @loss: Packet loss rate between 0 and 1.
+
+    """
+
+    # All variable names are from G.107.
+
+    # Parameters
+    Ta = T
+    Tr = 2*T
+    Ppl = loss * 100 # in percent
+
+
+    # Defaults
+    mT = 100 # Table 1
+
+    # From Table 3:
+    WEPL = 110
+    TELR = 65
+    RLR = 2
+    SLR = 8
+
+    # Constants calculated from the Table 3 defaults:
+    No = -61.17921438624169 # (7-3)
+    Ro = 15 - (1.5*(SLR+No)) # (7-2)
+    Is = 1.4135680813438616 # (7-8)
+
+
+    Rle = 10.5*(WEPL+7)*pow(Tr+1,-0.25) # (7-26)
+    if Ta == 0:
+        X = 0
+    else:
+        X = log10(Ta/mT)/log10(2) # (7-28)
+
+    if Ta <= 100:
+        Idd = 0
+    else:
+        Idd = 25*((1+X**6)**(1/6) - 3 * (1+(X/3)**6)**1/6+2) # (7-27)
+
+    Idle = (Ro - Rle)/2 + sqrt((Ro-Rle)**2/4 + 169) # (7-25)
+
+    TERV = TELR - 40 * log10((1+T/10) / (1+T/150))+6 * exp(-0.3*T**2) # (7-22)
+    Roe = -1.5 * (No - RLR) # (7-20)
+    Re = 80 + 2.5*(TERV - 14) # (7-21)
+
+
+
+    if T < 1:
+        Idte = 0
+    else:
+        Idte = ((Roe - Re)/2 + sqrt((Roe - Re)**2/4 + 100) - 1) * (1 - exp(-T)) # (7-19)
+
+
+    Id = Idte+Idle+Idd # (7-18)
+
+
+    Ieeff = 95*(Ppl/(Ppl+1)) # (7-29) with BurstR = Bpl = 1
+
+    R = Ro-Is-Id-Ieeff
+
+    if R < 0:
+        MOS = 1
+    elif R > 100:
+        MOS = 4.5
+    else:
+        MOS = 1 + 0.035 * R + R * (R - 60) * (100 - R) * 7 * 10**-6 # (B-4)
+
+    return MOS
