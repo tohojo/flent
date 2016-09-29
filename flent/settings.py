@@ -302,7 +302,7 @@ parser.add_option("--batch-verbose", action="store_true", dest="BATCH_VERBOSE",
 parser.add_option("--batch-repetitions", action="store", type='int', dest="BATCH_REPS", metavar="REPETITIONS",
                   help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")
 parser.add_option("--batch-title", action="store", type='string', dest="BATCH_TITLE", metavar="TITLE",
-                  help="Shorthand for --batch-override 'batch_title=BATCH_TITLE'.")
+                  help="Shorthand for --batch-override 'batch_title=TITLE'.")
 parser.add_option("--batch-resume", action="store", type='str', dest="BATCH_RESUME", metavar="DIR",
                   help="Try to resume a previously interrupted batch run. The argument is the top-level "
                   "output directory from the previous run. Tests for which data files already exist will "
@@ -387,7 +387,7 @@ plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INV
                   help="Invert the y-axis for latency data series (making plots show 'better values "
                   "upwards').")
 plot_group.add_option("--log-scale", action="store_true", dest="LOG_SCALE",
-                  help="Use logarithmic scaled on plots.")
+                  help="Use logarithmic scale on plots.")
 plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS", metavar="FACTOR",
                   help="Factor to normalise data by. I.e. divide all data points by this value. "
                   "Can be specified multiple times, in which case each value corresponds to a "
@@ -423,12 +423,6 @@ plot_group.add_option("--split-group", action="append", type='string', dest="SPL
                       metavar="LABEL", help="Split data sets into groups. Specify this option multiple "
                       "times to define the new groups. The value of each option is the group name. This "
                       "only works for box plots.")
-plot_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
-                  metavar="GROUP", help="Override plot group_by attribute for combination plots.")
-plot_group.add_option("--combine-save-dir", action="store", type='string', dest="COMBINE_SAVE_DIR",
-                      metavar="DIRNAME", help="When doing a combination plot save the intermediate data "
-                      "to DIRNAME. This can then be used for subsequent plotting to avoid having to "
-                      "load all the source data files again on each plot.")
 plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
                   help="Don't use line markers to differentiate data series on plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
@@ -450,7 +444,7 @@ plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", 
                   "multiple times, in which case the regular expressions will be filtered in the order "
                   "specified.")
 plot_group.add_option("--filter-series", action="append", dest="FILTER_SERIES", metavar="SERIES",
-                  help="Filter out specified series from plot Can be specified multiple times.")
+                  help="Filter out specified series from plot. Can be specified multiple times.")
 plot_group.add_option("--skip-missing-series", action="store_true", dest="SKIP_MISSING",
                   help="Skip missing series entirely from plots. Only works for bar plots.")
 plot_group.add_option("--replace-legend", action="update", type="keyval", dest="REPLACE_LEGEND", metavar="src=dest",
@@ -477,6 +471,12 @@ combine_group = optparse.OptionGroup(parser, "Data combination configuration",
                                      "These options are used to combine several datasets, "
                                      "for instance to make aggregate plots.")
 
+combine_group.add_option("--override-group-by", action="store", type='string', dest="OVERRIDE_GROUP_BY",
+                         metavar="GROUP", help="Override plot group_by attribute for combination plots.")
+combine_group.add_option("--combine-save-dir", action="store", type='string', dest="COMBINE_SAVE_DIR",
+                         metavar="DIRNAME", help="When doing a combination plot save the intermediate data "
+                         "to DIRNAME. This can then be used for subsequent plotting to avoid having to "
+                         "load all the source data files again on each plot.")
 parser.add_option_group(combine_group)
 
 

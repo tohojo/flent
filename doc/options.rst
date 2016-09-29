@@ -78,7 +78,8 @@ General options
 
    Run the flent GUI. All other options are used as defaults in the GUI, but can
    be changed once it is running. The GUI can also be started by running the
-   :command:`flent-gui` binary. For more information on the GUI, see :doc:`gui`.
+   :command:`flent-gui` binary. For more information on the GUI, see the
+   :doc:`gui` section.
 
 .. option:: --new-gui-instance
 
@@ -118,9 +119,17 @@ General options
 
    Dry batch run. Prints what would be done, but doesn’t actually run any tests.
 
+.. option:: --batch-verbose
+
+   Be verbose during batch run: Print all commands executed.
+
 .. option:: --batch-repetitions=REPETITIONS
 
    Shorthand for :option:`--batch-override` ``'repetitions=REPETITIONS’``.
+
+.. option:: --batch-title=TITLE
+
+   Shorthand for :option:`--batch-override` ``'batch_title=TITLE’``.
 
 .. option:: --batch-resume=DIR
 
@@ -156,6 +165,21 @@ parsing input files.
 
    Local hostname or IP address to bind to (for test tools that support this).
 
+.. option:: --remote-host=idx=HOSTNAME
+
+   A remote hostname to connect to when starting a test. The idx is the runner
+   index, which is assigned sequentially to each *runner* (and so it is *not*
+   the same as the sequence of hostnames). Look for the 'IDX' key in SERIES_META
+   for a test get the idx used here, but note that the idx assignment depends on
+   the exact arguments to the test.
+
+   This works by simply prepending 'ssh HOSTNAME' to the runner command, so it
+   relies on the same binaries being in the same places on both machines, and
+   won't work for all runners.
+
+   This option can be specified multiple times to have multiple runners run on
+   remote hosts.
+
 .. option:: -l LENGTH, --length=LENGTH
 
    Base test length (some tests may add some time to this).
@@ -190,10 +214,14 @@ parsing input files.
 .. option:: --test-parameter=key=value
 
    Arbitrary test parameter in key=value format. Key will be case folded to
-   lower case. Some test configurations may alter behaviour based on values
-   passed as test parameters. Additionally, the values are stored with the
-   results metadata, and so can be used for arbitrary resultset categorisation.
-   Can be specified multiple times.
+   lower case. The values are stored with the results metadata, and so can be
+   used for storing arbitrary information relevant for a particular test run.
+
+   In addition to serving as simple metadata, the test parameters can also
+   affect the behaviour of some test configurations. See the :doc:`tests`
+   section for information on these.
+
+   This option can be specified multiple times to set multiple test parameters.
 
 .. option:: --swap-up-down
 
@@ -213,14 +241,38 @@ sense combined with :option:`-f` *plot*.
    Always start y axis of plot at zero, instead of autoscaling the axis (also
    disables log scales). Autoscaling is still enabled for the upper bound.
 
+.. option:: --bounds-x=BOUNDS
+.. option:: --bounds-y=BOUNDS
+
+   Specify bounds of the plot axes. If specifying one number, that will become
+   the upper bound. Specify two numbers separated by a comma to specify both
+   upper and lower bounds. To specify just the lower bound, add a comma
+   afterwards. Can be specified twice, corresponding to figures with multiple
+   axes.
+
+.. option:: --label-x=LABEL
+.. option:: --label-y=LABEL
+
+   Override the figure axis labels. Can be specified twice, corresponding to
+   figures with multiple axes.
+
+.. option:: --colours=COLOURS
+
+   Comma-separated list of colours to be used for the plot colour cycle. Can be
+   specified in any format understood by matplotlib (including HTML hex values
+   prefixed with a #).
+
+   Yes, this option uses British spelling. No, American spelling is not
+   supported. Deal with it.
+
 .. option:: -I, --invert-latency-y
 
    Invert the y-axis for latency data series (making plots show ’better values
    upwards’).
 
-.. option:: --disable-log
+.. option:: --log-scale
 
-   Disable log scales on plots.
+   Use logarithmic scale on plots.
 
 .. option:: --norm-factor=FACTOR
 
@@ -284,6 +336,30 @@ sense combined with :option:`-f` *plot*.
    aggregate plot from several data series. When this parameter is specified,
    :option:`--no-title` has no effect.
 
+.. option:: --override-label=LABEL
+
+   Override dataset label. Can be specified multiple times when multiple
+   datasets are being plotted, in which case the order of labels corresponds to
+   the order of datasets.
+
+   Like :option:`--override-title`, this is applied *at the time of plotting*.
+
+.. option:: --split-group=LABEL
+
+   Split data sets into groups when creating box plots. Specify this option
+   multiple times to define the new groups; the value of each option is the
+   group name.
+
+   Say you're plotting nine datasets which are really testing two variables with
+   three values each. In this case, it can be useful to have the box plot of the
+   results be split into three parts (corresponding to the values of one
+   variable) with each three boxes in each of them (corresponding to the values
+   of the second variable). This option makes this possible; simply specify it
+   three times with the labels to be used for the three groups.
+
+   A constraint on this option is that the number of datasets being plotted must
+   be divisible by the number of groups.
+
 .. option:: --no-markers
 
    Don’t use line markers to differentiate data series on plots.
@@ -291,6 +367,23 @@ sense combined with :option:`-f` *plot*.
 .. option:: --no-legend
 
    Exclude legend from plots.
+
+.. option:: --horizontal-legend
+
+   Place a horizontal legend below the plot instead of a vertical one next to
+   it. Doesn't work well if there are too many items in the legend, obviously.
+
+.. option:: --legend-title=LEGEND_TITLE
+
+   Override legend title on plot.
+
+.. option:: --legend-placement=LEGEND_PLACEMENT
+
+   Control legend placement. Enabling this option will place the legend inside
+   the plot at the specified location. Use 'best' to let matplotlib decide.
+
+.. option:: --legend-columns=LEGEND_COLUMNS
+    Set the number of columns in the legend.
 
 .. option:: --filter-legend
 
@@ -302,6 +395,18 @@ sense combined with :option:`-f` *plot*.
    Filter the plot legend by the supplied regular expression. Note that for
    combining several plot results, the regular expression is also applied before
    the grouping logic, meaning that a too wide filter can mess up the grouping.
+
+.. option:: --filter-series=SERIES
+
+   Filter out specified series from plot. Can be specified multiple times.
+
+.. option:: --skip-missing-series
+
+   Skip missing series entirely from plots. Only works for bar plots.
+
+.. option:: --replace-legend=src=dest
+
+   Replace 'src' with 'dst' in legends. Can be specified multiple times.
 
 .. option:: --figure-width=FIG_WIDTH
 
@@ -326,6 +431,25 @@ sense combined with :option:`-f` *plot*.
 
    Don't highlight data series on hover in interactive plot views. Use this if
    redrawing is too slow, or the highlighting is undesired for other reasons.
+
+Data combination configuration
+------------------------------
+
+These options are used to combine several datasets, for instance to make
+aggregate plots.
+
+.. option:: --override-group-by=GROUP
+
+   Override the ``group_by`` setting for combination plots. This is useful to,
+   for instance, switch to splitting up combined data sets by batch run instead
+   of by file name.
+
+.. option:: --combine-save-dir=DIRNAME
+
+   When doing a combination plot save the intermediate data to ``DIRNAME``. This
+   can then be used for subsequent plotting to avoid having to load all the
+   source data files again on each plot.
+
 
 Test tool-related options
 -------------------------

@@ -1,5 +1,7 @@
 Supplied Tests
 ==============
+.. todo::
+   - Add test parameters documentation
 
 Test are supplied as Python files and can specify commands to run etc.
 For a full list of the tests supported by flent, see the
@@ -29,3 +31,10 @@ UDP flood test
 This test runs *iperf* configured to emit 100Mbps of UDP packets targeted at the
 test host, while measuring RTT using ICMP ping. It is useful for observing
 latency in the face of a completely unresponsive packet stream.
+
+Test parameters
+---------------
+
+Some test parameters affect the way tests behave. These are:
+
+
