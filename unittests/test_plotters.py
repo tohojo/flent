@@ -184,21 +184,6 @@ class TestPlottersInit(unittest.TestCase):
         for d in plotters.DASHES:
             self.assertIn(dict(dashes=d), plotters.STYLES)
 
-    @unittest.skipIf(matplotlib_version < LooseVersion('1.2'), 'matplotlib too old')
-    @prefork
-    def test_init_rcfile(self):
-        with mock.patch.object(plotters.matplotlib, 'matplotlib_fname') as mock_obj:
-            mock_obj.return_value = ''
-            if 'MATPLOTLIBRC' in os.environ:
-                del os.environ['MATPLOTLIBRC']
-
-            plotters.init_matplotlib('test.svg', False, True)
-            for k,v in MATPLOTLIB_RC_VALUES.items():
-                self.assertEqual(v, plotters.matplotlib.rcParams[k],
-                                 msg='rc param mismatch on %s: %s != %s' %(k,v,plotters.matplotlib.rcParams[k]))
-        self.assertEqual(plotters.matplotlib.rcParams['axes.color_cycle'],
-                         plotters.COLOURS)
-
 @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
 class TestPlotters(unittest.TestCase):
 
