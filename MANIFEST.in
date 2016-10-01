@@ -1,5 +1,4 @@
 include flent/tests/*.conf flent/tests/*.inc flent/ui/*.ui flent/scripts/*
-include flent/matplotlibrc.dist
 include misc/*
 include unittests/*.py unittests/test_data/*.gz
 include doc/*.rst doc/_static/* doc/_templates/*.html doc/conf.py doc/Makefile
