@@ -164,6 +164,8 @@ parsing input files.
 .. option:: --local-bind=IP
 
    Local hostname or IP address to bind to (for test tools that support this).
+   Can be specified multiple times for tests that connect to more than one host;
+   if it is, it must be specified as many times as there are hosts.
 
 .. option:: --remote-host=idx=HOSTNAME
 
