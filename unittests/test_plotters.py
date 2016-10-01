@@ -171,9 +171,6 @@ class TestPlottersInit(unittest.TestCase):
         for m in plotters.MARKERS:
             self.assertIn(dict(marker=m, markevery=10), plotters.STYLES)
 
-        self.assertEqual(plotters.matplotlib.rcParams['axes.color_cycle'],
-                         plotters.COLOURS)
-
     @prefork
     def test_init_styles_nomarkers(self):
         plotters.init_matplotlib('test.svg', False, False)
