@@ -24,7 +24,7 @@
 import os
 
 # this value works for the source distribution
-VERSION="0.14.0-git"
+VERSION="0.15.0"
 DATA_DIR=os.path.dirname(__file__)
 
 ENCODING = "UTF-8"
