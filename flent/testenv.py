@@ -68,6 +68,7 @@ class TestEnvironment(object):
             'find_wifistats_iterate': self.find_wifistats_iterate,
             'find_netstat_iterate': self.find_netstat_iterate,
             'get_test_parameter': self.get_test_parameter,
+            'try_test_parameters': self.try_test_parameters,
             'parse_int': self.parse_int,
             })
         self.informational = informational
@@ -116,6 +117,15 @@ class TestEnvironment(object):
             if self.informational:
                 return None
             raise RuntimeError("Missing required test parameter: %s" % name)
+
+    def try_test_parameters(self, names, default=_no_default):
+        for name in names:
+            if name in self.env['TEST_PARAMETERS']:
+                return self.env['TEST_PARAMETERS'][name]
+
+        # Didn't find a value; hand over to get_test_parameter for error
+        # handling
+        return self.get_test_parameter(names[0], default)
 
     def parse_int(self, val):
         try:
