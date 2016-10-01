@@ -789,9 +789,10 @@ class TcRunner(ProcessRunner):
                    r"ecn_mark (?P<ecn_mark>\d+)"),
         ]
 
-    cake_alltins_re = re.compile(r"(\s*Tin \d)+")
-    cake_tin_re = re.compile(r"Tin \d")
-    cake_keys = ["av_delay", "sp_delay", "pkts", "bytes", "drops", "marks", "sp_flows", "bk_flows", "last_len"]
+    cake_tin_re = r"(Tin \d|Bulk|Best Effort|Video|Voice)"
+    cake_alltins_re = re.compile(r"(\s*"+cake_tin_re+r")+")
+    cake_1tin_re = re.compile(cake_tin_re)
+    cake_keys = ["av_delay", "sp_delay", "pkts", "bytes", "drops", "marks", "sp_flows", "bk_flows", "max_len"]
 
     # Normalise time values (seconds, ms, us) to milliseconds and bit values
     # (bit, Kbit, Mbit) to bits
@@ -850,7 +851,7 @@ class TcRunner(ProcessRunner):
 
             m = self.cake_alltins_re.search(part)
             if m:
-                tins = self.cake_tin_re.findall(m.group(0))
+                tins = self.cake_1tin_re.findall(m.group(0))
                 start = m.end()
                 for key in self.cake_keys:
                     m = re.search("^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (key, len(tins)), part[start:], re.IGNORECASE|re.MULTILINE)
