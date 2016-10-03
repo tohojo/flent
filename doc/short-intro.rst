@@ -17,7 +17,7 @@ CDF plots of (e.g.) ping times.
 
 Plots can be output to the formats supported by matplotlib by specifying
 the output filename with :option:`-o` *output.{png,ps,pdf,svg}*. If no output
-file is specified, the plot is diplayed using matplotlib’s interactive
+file is specified, the plot is displayed using matplotlib’s interactive
 plot browser, which also allows saving of the output (in .png format).
 
 Requirements
