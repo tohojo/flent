@@ -21,7 +21,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import math, pprint, signal, sys, io
+import io
+import math
+import pprint
+import signal
+import sys
+
 from datetime import datetime
 from threading import Event
 

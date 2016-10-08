@@ -21,7 +21,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import json, os, math, re, sys
+import json
+import math
+import os
+import re
+import sys
+
 from datetime import datetime
 from calendar import timegm
 from itertools import repeat

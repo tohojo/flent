@@ -21,13 +21,13 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re, math, sys
+import math
+import re
 
 from flent.util import classname, long_substr, Glob, format_date, mos_score
 from flent.resultset import ResultSet
 
 from datetime import datetime
-from itertools import cycle
 from bisect import bisect_left, bisect_right
 from collections import OrderedDict
 

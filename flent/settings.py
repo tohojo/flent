@@ -21,7 +21,11 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, optparse, socket, subprocess, time, collections, tempfile
+import collections
+import optparse
+import os
+import socket
+import sys
 
 from datetime import datetime
 from copy import copy, deepcopy
@@ -35,7 +39,6 @@ except ImportError:
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent import util, resultset, runners
-from flent.util import Glob
 
 OLD_RCFILE = os.path.expanduser("~/.netperf-wrapperrc")
 
@@ -181,7 +184,8 @@ DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 def version(*args):
     print("Flent v%s.\nRunning on Python %s." %(VERSION, sys.version.replace("\n", " ")))
     try:
-        import matplotlib, numpy
+        import matplotlib
+        import numpy
         print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, numpy.__version__))
     except ImportError:
         print("No matplotlib found. Plots won't be available.")

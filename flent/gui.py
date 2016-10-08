@@ -21,7 +21,13 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, signal, traceback, base64, time, tempfile
+import base64
+import os
+import signal
+import sys
+import tempfile
+import time
+import traceback
 
 try:
     import cPickle as pickle
@@ -29,7 +35,6 @@ except ImportError:
     import pickle
 
 from itertools import chain
-from collections import OrderedDict
 
 mswindows = (sys.platform == "win32")
 

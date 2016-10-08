@@ -21,8 +21,19 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import threading, time, shlex, subprocess, re, time, sys, math, os, tempfile, \
-  signal, hmac, hashlib, calendar, socket
+import hashlib
+import hmac
+import math
+import os
+import re
+import shlex
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
 
 mswindows = (sys.platform == "win32")
 

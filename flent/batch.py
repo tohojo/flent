@@ -21,7 +21,16 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, pprint, string, re, time, os, subprocess, signal, itertools, traceback, io, uuid
+import io
+import itertools
+import os
+import pprint
+import re
+import subprocess
+import sys
+import time
+import traceback
+import uuid
 
 from datetime import datetime, timedelta
 from fnmatch import fnmatch
@@ -34,7 +43,7 @@ except ImportError:
 
 from flent import aggregators, formatters, resultset
 from flent.metadata import record_extended_metadata, record_postrun_metadata
-from flent.util import clean_path, path_components, format_date
+from flent.util import clean_path, format_date
 from flent.settings import CONFIG_TYPES
 
 # Python2/3 compatibility

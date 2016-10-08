@@ -21,7 +21,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, socket, subprocess, time, re
+import os
+import re
+import subprocess
 
 from flent import util
 

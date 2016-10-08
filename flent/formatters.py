@@ -21,19 +21,15 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import json, sys, csv, math, inspect, os, re, io
+import csv
+import io
+import json
+import os
+import sys
 
-from flent.util import cum_prob, frange, classname, long_substr
-from flent.resultset import ResultSet
-from flent.build_info import DATA_DIR, VERSION
+from flent.util import classname
 from flent import plotters
 from functools import reduce
-from itertools import product,cycle,islice
-from collections import OrderedDict
-try:
-    from itertools import izip_longest as zip_longest
-except ImportError:
-    from itertools import zip_longest
 
 def new(settings):
     formatter_name = classname(settings.FORMAT, 'Formatter')

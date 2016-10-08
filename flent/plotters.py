@@ -21,17 +21,20 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, inspect, io, re
+import inspect
+import io
+import re
 
 from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, Glob
-from flent.build_info import DATA_DIR, VERSION
+from flent.build_info import VERSION
 from functools import reduce
-from itertools import product,cycle,islice,chain
+from itertools import cycle, islice
 from collections import OrderedDict
 
 try:
-    import matplotlib, numpy
+    import matplotlib
+    import numpy
     HAS_MATPLOTLIB=True
 except ImportError:
     HAS_MATPLOTLIB=False

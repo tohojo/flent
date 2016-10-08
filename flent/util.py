@@ -21,12 +21,20 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, gzip, bz2, io, socket, re, time
-from math import ceil, log10, exp, sqrt
+import bz2
+import gzip
+import io
+import math
+import os
+import re
+import socket
+import time
+
 from bisect import bisect_left
-from datetime import datetime
 from calendar import timegm
+from datetime import datetime
 from fnmatch import fnmatch
+from math import ceil, log10, exp, sqrt
 
 ENCODING = "UTF-8"
 try:
