@@ -342,7 +342,7 @@ class BothCombiner(Combiner):
                 data = {}
                 for k,v in zip([k.rsplit("-",1)[0] for k in groups.keys() if k.endswith("-%s" % s)], d):
                     reducer = self.get_reducer(old_s)
-                    data[k] = reducer(v, old_s) if v is not None else Non
+                    data[k] = reducer(v, old_s) if v is not None else None
 
                 res.append_datapoint(x, data)
                 x += 1

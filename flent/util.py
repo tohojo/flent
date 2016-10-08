@@ -163,7 +163,7 @@ def lookup_host(hostname, version=None):
     hostnames = socket.getaddrinfo(hostname, None, version,
                                    socket.SOCK_STREAM)
     if not hostnames:
-        raise RuntimeError("Found no hostnames on lookup of %s" % h)
+        raise RuntimeError("Found no hostnames on lookup of %s" % hostname)
 
     return hostnames[0]
 

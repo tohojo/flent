@@ -272,8 +272,6 @@ class TimeseriesAggregator(Aggregator):
 
         results.meta('T0', datetime.utcfromtimestamp(t_0))
 
-        time_labels = []
-
         for s in range(steps):
             time_label = self.step*s
             t = t_0 + self.step*s

@@ -558,7 +558,6 @@ class Plotter(object):
                 # Otherwise, each call will shrink the axis.
                 if not hasattr(a, 'orig_width'):
                     a.orig_width = a.get_position().width
-                ax_width = a.get_window_extent().width
                 box = a.get_position()
                 a.set_position([box.x0, box.y0, (a.orig_width - legend_width/canvas_width), box.height])
             self.figure.canvas.draw()
