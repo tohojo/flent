@@ -313,14 +313,14 @@ test_group = optparse.OptionGroup(parser, "Test configuration",
                                   "These options affect the behaviour of the test being run "
                                   "and have no effect when parsing input files.")
 test_group.add_option("-H", "--host", action="append", type="string", dest="HOSTS", metavar='HOST',
-                  help="Host to connect to for tests. For tests that support it, multiple hosts "
-                  "can be specified by supplying this option multiple times. Hosts can also be "
-                  "specified as unqualified arguments; this parameter guarantees that the "
-                  "argument be interpreted as a host name (rather than being subject to "
-                  "auto-detection between input files, hostnames and test names).")
+                      help="Host to connect to for tests. For tests that support it, multiple hosts "
+                      "can be specified by supplying this option multiple times. Hosts can also be "
+                      "specified as unqualified arguments; this parameter guarantees that the "
+                      "argument be interpreted as a host name (rather than being subject to "
+                      "auto-detection between input files, hostnames and test names).")
 test_group.add_option("--local-bind", action="append", type="string", dest="LOCAL_BIND", metavar='IP',
-                  help="Local hostname or IP address to bind to (for test tools that support this). "
-                  "Can be specified multiple times to get different local bind address per host.")
+                      help="Local hostname or IP address to bind to (for test tools that support this). "
+                      "Can be specified multiple times to get different local bind address per host.")
 test_group.add_option("--remote-host", action="update", type="keyval_int", dest="REMOTE_HOSTS", metavar='idx=HOSTNAME',
                       help="A remote hostname to connect to when starting a test. The idx is the runner "
                       "index, which is assigned sequentially by the number of *runners* (which is *not* "
@@ -329,27 +329,27 @@ test_group.add_option("--remote-host", action="update", type="keyval_int", dest=
                       "runner command, so it relies on the same binaries being in the same places on "
                       "both machines, and won't work for all runners. Can be specified multiple times.")
 test_group.add_option("-l", "--length", action="store", type="int", dest="LENGTH",
-                  help="Base test length (some tests may add some time to this).")
+                      help="Base test length (some tests may add some time to this).")
 test_group.add_option("-s", "--step-size", action="store", type="float", dest="STEP_SIZE",
-                  help="Measurement data point step size.")
+                      help="Measurement data point step size.")
 test_group.add_option("-d", "--delay", action="store", type="int", dest="DELAY",
-                  help="Number of seconds to delay parts of test (such as bandwidth "
-                  "loaders).")
+                      help="Number of seconds to delay parts of test (such as bandwidth "
+                      "loaders).")
 test_group.add_option("-4", "--ipv4", action="store_const", const=4, dest="IP_VERSION",
-                  help="Use IPv4 for tests (some tests may ignore this).")
+                      help="Use IPv4 for tests (some tests may ignore this).")
 test_group.add_option("-6", "--ipv6", action="store_const", const=6, dest="IP_VERSION",
-                  help="Use IPv6 for tests (some tests may ignore this).")
+                      help="Use IPv6 for tests (some tests may ignore this).")
 test_group.add_option("--socket-timeout", action="store", type=int, dest="SOCKET_TIMEOUT",
-                  help="Socket timeout (in seconds) used for UDP delay measurement, to prevent "
-                  "stalls on packet loss. Only enabled if the installed netperf version is "
-                  "detected to support this (requires SVN version of netperf). "
-                  "Default value: %d seconds. Set to 0 to disable." % DEFAULT_SETTINGS['SOCKET_TIMEOUT'])
+                      help="Socket timeout (in seconds) used for UDP delay measurement, to prevent "
+                      "stalls on packet loss. Only enabled if the installed netperf version is "
+                      "detected to support this (requires SVN version of netperf). "
+                      "Default value: %d seconds. Set to 0 to disable." % DEFAULT_SETTINGS['SOCKET_TIMEOUT'])
 test_group.add_option("--test-parameter", action="update", type="keyval", dest="TEST_PARAMETERS", metavar='key=value',
-                  help="Arbitrary test parameter in key=value format. "
-                  "Key will be case folded to lower case. Some test configurations may "
-                  "alter behaviour based on values passed as test parameters. Additionally, "
-                  "the values are stored with the results metadata, and so can be used for "
-                  "arbitrary resultset categorisation. Can be specified multiple times.")
+                      help="Arbitrary test parameter in key=value format. "
+                      "Key will be case folded to lower case. Some test configurations may "
+                      "alter behaviour based on values passed as test parameters. Additionally, "
+                      "the values are stored with the results metadata, and so can be used for "
+                      "arbitrary resultset categorisation. Can be specified multiple times.")
 test_group.add_option("--swap-up-down", action="store_true", dest="SWAP_UPDOWN",
                       help="Swap upstream and downstream directions for data transfer. This means "
                       "that 'upload' will become 'download' and vice versa. Works by exchanging "
@@ -362,60 +362,60 @@ plot_group = optparse.OptionGroup(parser, "Plot configuration",
                                   "plot output and only make sense combined with -f plot.")
 
 plot_group.add_option("-z", "--zero-y", action="store_true", dest="ZERO_Y",
-                  help="Always start y axis of plot at zero, instead of auto-scaling the "
-                  "axis (also disables log scales). Auto-scaling is still enabled for the "
-                  "upper bound.")
+                      help="Always start y axis of plot at zero, instead of auto-scaling the "
+                      "axis (also disables log scales). Auto-scaling is still enabled for the "
+                      "upper bound.")
 plot_group.add_option("--bounds-x", action="append", dest="BOUNDS_X", type='float_pair',
-                  help="Specify bounds of the plot X axis. If specifying one number, that will become "
-                  "the upper bound. Specify two numbers separated by a comma to specify both "
-                  "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
-                  "Can be specified twice, corresponding to figures with multiple axes.")
+                      help="Specify bounds of the plot X axis. If specifying one number, that will become "
+                      "the upper bound. Specify two numbers separated by a comma to specify both "
+                      "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
+                      "Can be specified twice, corresponding to figures with multiple axes.")
 plot_group.add_option("--bounds-y", action="append", dest="BOUNDS_Y", type='float_pair',
-                  help="Specify bounds of the plot Y axis. If specifying one number, that will become "
-                  "the upper bound. Specify two numbers separated by a comma to specify both "
-                  "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
-                  "Can be specified twice, corresponding to figures with multiple axes.")
+                      help="Specify bounds of the plot Y axis. If specifying one number, that will become "
+                      "the upper bound. Specify two numbers separated by a comma to specify both "
+                      "upper and lower bounds. To specify just the lower bound, add a comma afterwards. "
+                      "Can be specified twice, corresponding to figures with multiple axes.")
 plot_group.add_option("--label-x", action="append", dest="LABEL_X",
-                  help="Override the X axis label. "
-                  "Can be specified twice, corresponding to figures with multiple axes.")
+                      help="Override the X axis label. "
+                      "Can be specified twice, corresponding to figures with multiple axes.")
 plot_group.add_option("--label-y", action="append", dest="LABEL_Y",
-                  help="Override the Y axis label. "
-                  "Can be specified twice, corresponding to figures with multiple axes.")
+                      help="Override the Y axis label. "
+                      "Can be specified twice, corresponding to figures with multiple axes.")
 plot_group.add_option("--colours", action="store", dest="COLOURS",
-                  help="Comma-separated list of colours to be used for the plot colour cycle.")
+                      help="Comma-separated list of colours to be used for the plot colour cycle.")
 plot_group.add_option("-I", "--invert-latency-y", action="store_true", dest="INVERT_Y",
-                  help="Invert the y-axis for latency data series (making plots show 'better values "
-                  "upwards').")
+                      help="Invert the y-axis for latency data series (making plots show 'better values "
+                      "upwards').")
 plot_group.add_option("--log-scale", action="store_true", dest="LOG_SCALE",
-                  help="Use logarithmic scale on plots.")
+                      help="Use logarithmic scale on plots.")
 plot_group.add_option("--norm-factor", action="append", type='float', dest="NORM_FACTORS", metavar="FACTOR",
-                  help="Factor to normalise data by. I.e. divide all data points by this value. "
-                  "Can be specified multiple times, in which case each value corresponds to a "
-                  "data series.")
+                      help="Factor to normalise data by. I.e. divide all data points by this value. "
+                      "Can be specified multiple times, in which case each value corresponds to a "
+                      "data series.")
 plot_group.add_option("--scale-data", action="append", type="string", dest="SCALE_DATA",
-                  help="Additional data files to consider when scaling the plot axes "
-                  "(for plotting several plots with identical axes). Note, this displays "
-                  "only the first data set, but with axis scaling taking into account the "
-                  "additional data sets. Can be supplied multiple times; see also --scale-mode.")
+                      help="Additional data files to consider when scaling the plot axes "
+                      "(for plotting several plots with identical axes). Note, this displays "
+                      "only the first data set, but with axis scaling taking into account the "
+                      "additional data sets. Can be supplied multiple times; see also --scale-mode.")
 plot_group.add_option("-S", "--scale-mode", action="store_true", dest="SCALE_MODE",
-                  help="Treat file names (except for the first one) passed as unqualified "
-                  "arguments as if passed as --scale-data (default as if passed as --input).")
+                      help="Treat file names (except for the first one) passed as unqualified "
+                      "arguments as if passed as --scale-data (default as if passed as --input).")
 plot_group.add_option("--concatenate", action="store_true", dest="CONCATENATE",
-                  help="Concatenate multiple result sets into one data series.")
+                      help="Concatenate multiple result sets into one data series.")
 plot_group.add_option("--absolute-time", action="store_true", dest="ABSOLUTE_TIME",
-                  help="Plot data points with absolute UNIX time on the x-axis.")
+                      help="Plot data points with absolute UNIX time on the x-axis.")
 plot_group.add_option("--subplot-combine", action="store_true", dest="SUBPLOT_COMBINE",
-                  help="When plotting multiple data series, plot each one on a separate subplot "
-                  "instead of combining them into one plot (not supported for all plot types).")
+                      help="When plotting multiple data series, plot each one on a separate subplot "
+                      "instead of combining them into one plot (not supported for all plot types).")
 plot_group.add_option("--no-print-n", action="store_false", dest="COMBINE_PRINT_N",
-                  help="Do not print the number of data points on combined plots.")
+                      help="Do not print the number of data points on combined plots.")
 plot_group.add_option("--no-annotation", action="store_false", dest="ANNOTATE",
-                  help="Exclude annotation with hostnames, time and test length from plots.")
+                      help="Exclude annotation with hostnames, time and test length from plots.")
 plot_group.add_option("--no-title", action="store_false", dest="PRINT_TITLE",
-                  help="Exclude title from plots.")
+                      help="Exclude title from plots.")
 plot_group.add_option("--override-title", action="store", type='string', dest="OVERRIDE_TITLE",
-                  metavar="TITLE", help="Override plot title with this string. This parameter takes "
-                  "precedence over --no-title.")
+                      metavar="TITLE", help="Override plot title with this string. This parameter takes "
+                      "precedence over --no-title.")
 plot_group.add_option("--override-label", action="append", type='string', dest="OVERRIDE_LABELS",
                       metavar="LABEL", help="Override dataset label. Must be specified multiple times "
                       "corresponding to the datasets being overridden.")
@@ -424,46 +424,46 @@ plot_group.add_option("--split-group", action="append", type='string', dest="SPL
                       "times to define the new groups. The value of each option is the group name. This "
                       "only works for box plots.")
 plot_group.add_option("--no-markers", action="store_false", dest="USE_MARKERS",
-                  help="Don't use line markers to differentiate data series on plots.")
+                      help="Don't use line markers to differentiate data series on plots.")
 plot_group.add_option("--no-legend", action="store_false", dest="PRINT_LEGEND",
-                  help="Exclude legend from plots.")
+                      help="Exclude legend from plots.")
 plot_group.add_option("--horizontal-legend", action="store_true", dest="HORIZONTAL_LEGEND",
-                  help="Place a horizontal legend below the plot instead of a vertical one next to it. "
-                  "Doesn't work well if there are too many items in the legend, obviously.")
+                      help="Place a horizontal legend below the plot instead of a vertical one next to it. "
+                      "Doesn't work well if there are too many items in the legend, obviously.")
 plot_group.add_option("--legend-title", action="store", dest="LEGEND_TITLE",
-                  help="Override legend title on plot.")
+                      help="Override legend title on plot.")
 plot_group.add_option("--legend-placement", action="store", dest="LEGEND_PLACEMENT",
-                  help="Control legend placement. Enabling this option will place the legend inside "
+                      help="Control legend placement. Enabling this option will place the legend inside "
                       "the plot at the specified location. Use 'best' to let matplotlib decide.")
 plot_group.add_option("--legend-columns", action="store", type=int, dest="LEGEND_COLUMNS",
                   help="Set the number of columns in the legend.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
-                  help="Filter legend labels by removing the longest common substring from all entries.")
+                      help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",
-                  help="Filter out supplied regular expression from legend names. Can be specified "
-                  "multiple times, in which case the regular expressions will be filtered in the order "
-                  "specified.")
+                      help="Filter out supplied regular expression from legend names. Can be specified "
+                      "multiple times, in which case the regular expressions will be filtered in the order "
+                      "specified.")
 plot_group.add_option("--filter-series", action="append", dest="FILTER_SERIES", metavar="SERIES",
-                  help="Filter out specified series from plot. Can be specified multiple times.")
+                      help="Filter out specified series from plot. Can be specified multiple times.")
 plot_group.add_option("--skip-missing-series", action="store_true", dest="SKIP_MISSING",
-                  help="Skip missing series entirely from plots. Only works for bar plots.")
+                      help="Skip missing series entirely from plots. Only works for bar plots.")
 plot_group.add_option("--replace-legend", action="update", type="keyval", dest="REPLACE_LEGEND", metavar="src=dest",
-                  help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
+                      help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
 plot_group.add_option("--figure-width", action="store", type='float', dest="FIG_WIDTH",
-                  help="Figure width in inches. Used when saving plots to file and for default size of "
-                  "the interactive plot window.")
+                      help="Figure width in inches. Used when saving plots to file and for default size of "
+                      "the interactive plot window.")
 plot_group.add_option("--figure-height", action="store", type='float', dest="FIG_HEIGHT",
-                  help="Figure height in inches. Used when saving plots to file and for default size of "
-                  "the interactive plot window.")
+                      help="Figure height in inches. Used when saving plots to file and for default size of "
+                      "the interactive plot window.")
 plot_group.add_option("--figure-dpi", action="store", type='float', dest="FIG_DPI",
-                  help="Figure DPI. Used when saving plots to raster format files.")
+                      help="Figure DPI. Used when saving plots to raster format files.")
 plot_group.add_option("--figure-note", action="store", type='string', dest="FIG_NOTE",
-                  help="Figure note. Will be added to the bottom-left corner of the figure.")
+                      help="Figure note. Will be added to the bottom-left corner of the figure.")
 plot_group.add_option("--no-matplotlibrc", action="store_false", dest="LOAD_MATPLOTLIBRC",
-                  help="Don't use included matplotlib styles. Use this if you have configured "
+                      help="Don't use included matplotlib styles. Use this if you have configured "
                       "custom matplotlib styles that you want Flent to use.")
 plot_group.add_option("--no-hover-highlight", action="store_false", dest="HOVER_HIGHLIGHT",
-                  help="Don't highlight data series on hover in interactive plot views. Use this if "
+                      help="Don't highlight data series on hover in interactive plot views. Use this if "
                       "redrawing is too slow, or the highlighting is undesired for other reasons.")
 parser.add_option_group(plot_group)
 
@@ -520,15 +520,15 @@ parser.add_option_group(tool_group)
 
 misc_group = optparse.OptionGroup(parser, "Misc and debugging options")
 misc_group.add_option("-L", "--log-file", action="store", type="string", dest="LOG_FILE",
-                  help="Write debug log (test program output) to log file.")
+                      help="Write debug log (test program output) to log file.")
 misc_group.add_option('--list-tests', action='store_true', dest="LIST_TESTS",
-                  help="List available tests and exit.")
+                      help="List available tests and exit.")
 misc_group.add_option('--list-plots', action='store_true', dest="LIST_PLOTS",
-                  help="List available plots for selected test and exit.")
+                      help="List available plots for selected test and exit.")
 misc_group.add_option("-V", "--version", action="callback", callback=version,
-                  help="Show flent version information and exit.")
+                      help="Show flent version information and exit.")
 misc_group.add_option("--debug-error", action="store_true", dest="DEBUG_ERROR",
-                  help="Debug errors: Don't catch unhandled exceptions.")
+                      help="Debug errors: Don't catch unhandled exceptions.")
 parser.add_option_group(misc_group)
 
 
