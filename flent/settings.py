@@ -685,8 +685,8 @@ class Settings(optparse.Values, object):
     def update_implications(self):
         # If run with no args and no controlling TTY, launch the GUI by default
         if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
-          and len(sys.argv) < 2:
-          self.GUI = True
+           and len(sys.argv) < 2:
+            self.GUI = True
         # Passing --new-gui-instance on the command line implies --gui, but setting
         # it in the rc file does not. When set here, before the rc file is loaded,
         # this has the desired effect.
