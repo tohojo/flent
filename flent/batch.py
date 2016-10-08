@@ -488,9 +488,6 @@ class BatchRunner(object):
                     r.set_label(settings.OVERRIDE_LABELS[i])
                 results.append(r)
 
-        if settings.GUI:
-            load_gui(settings)
-
         settings.update(results[0].meta())
         settings.load_test(informational=True)
 
