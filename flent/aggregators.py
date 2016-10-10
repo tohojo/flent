@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import collections
 import io
 import math
 import pprint
@@ -31,14 +32,12 @@ from datetime import datetime
 from threading import Event
 
 from flent import runners, transformers
-
 from flent.util import classname
 
-import collections
 
 def new(settings):
     cname = classname(settings.AGGREGATOR, "Aggregator")
-    if not cname in globals():
+    if cname not in globals():
         raise RuntimeError("Aggregator not found: '%s'" % settings.AGGREGATOR)
     try:
         agg = globals()[cname](settings)
@@ -52,8 +51,10 @@ def new(settings):
 class GracefulShutdown(Exception):
     pass
 
+
 def handle_usr1(signal, frame):
     raise GracefulShutdown()
+
 
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
@@ -75,9 +76,11 @@ class Aggregator(object):
         instance = dict(config)
 
         if name in self.instances:
-            raise RuntimeError("Duplicate runner name: '%s' (probably unsupported duplicate parameters or hosts)" % name)
+            raise RuntimeError("Duplicate runner name: '%s' "
+                               "(probably unsupported duplicate "
+                               "parameters or hosts)" % name)
 
-        if not 'delay' in instance:
+        if 'delay' not in instance:
             instance['delay'] = 0
 
         idx = self.runner_counter
@@ -102,15 +105,15 @@ class Aggregator(object):
 
         self.instances[name] = instance
 
-    def aggregate(self):
+    def aggregate(self, results):
         raise NotImplementedError()
 
     def create_watchdog(self, name, instance):
         watchdog = runners.get('timer')("Timeout watchdog for '%s'" % name, None,
-                                        start_event = instance['start_event'],
-                                        kill_event = instance['kill_event'],
-                                        finish_event = Event(),
-                                        timeout = instance['kill_timeout'])
+                                        start_event=instance['start_event'],
+                                        kill_event=instance['kill_event'],
+                                        finish_event=Event(),
+                                        timeout=instance['kill_timeout'])
         instance['kill_event'] = watchdog.finish_event
         return watchdog
 
@@ -126,12 +129,12 @@ class Aggregator(object):
         metadata = {'series': {}, 'test_parameters': {}}
         raw_values = {}
         try:
-            for n,i in list(self.instances.items()):
+            for n, i in list(self.instances.items()):
                 watchdog = None
                 if 'run_after' in i:
-                    i['start_event'] = self.instances[i['run_after']]['finish_event']
+                    i['start_event'] = self.instances[i['run_after']]['finish_event']  # noqa: E251
                 if 'kill_after' in i:
-                    i['kill_event'] = self.instances[i['kill_after']]['finish_event']
+                    i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E251
                 if 'kill_timeout' in i and i['kill_timeout']:
                     watchdog = self.create_watchdog(n, i)
                 self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
@@ -140,26 +143,30 @@ class Aggregator(object):
                     self.threads[watchdog.name] = watchdog
                     watchdog.start()
             shutting_down = False
-            for n,t in list(self.threads.items()):
+            for n, t in list(self.threads.items()):
                 while t.isAlive():
                     try:
                         t.join(1)
                     except GracefulShutdown:
                         if not shutting_down:
-                            sys.stderr.write("SIGUSR1 received; initiating graceful shutdown. "
-                                             "This may take a while...\n")
+                            sys.stderr.write(
+                                "SIGUSR1 received; initiating graceful shutdown. "
+                                "This may take a while...\n")
                             self.kill_runners(graceful=True)
                             shutting_down = True
                         else:
-                            sys.stderr.write("Already initiated graceful shutdown. Patience, please...\n")
-                self._log(n,t)
+                            sys.stderr.write(
+                                "Already initiated graceful shutdown. "
+                                "Patience, please...\n")
+                self._log(n, t)
 
                 metadata['series'][n] = t.metadata
                 if 'transformers' in self.instances[n]:
                     for tr in self.instances[n]['transformers']:
                         for k in t.transformed_metadata:
                             try:
-                                metadata['series'][n][k] = tr(metadata['series'][n][k])
+                                metadata['series'][n][k] = tr(
+                                    metadata['series'][n][k])
                             except:
                                 pass
                 if t.test_parameters:
@@ -178,9 +185,10 @@ class Aggregator(object):
                     if not t.result:
                         self.failed_runners += 1
                     for k in t.result.keys():
-                        key = "%s::%s" % (n,k)
+                        key = "%s::%s" % (n, k)
                         result[key] = t.result[k]
-                        if key in self.instances and 'transformers' in self.instances[key]:
+                        if key in self.instances and \
+                           'transformers' in self.instances[key]:
                             for tr in self.instances[key]['transformers']:
                                 result[key] = tr(result[key])
                 else:
@@ -202,7 +210,7 @@ class Aggregator(object):
                 formatted = formatted.decode()
             self.logfile.write(formatted)
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-        return result,metadata,raw_values
+        return result, metadata, raw_values
 
     def kill_runners(self, graceful=False):
         for t in list(self.threads.values()):
@@ -216,12 +224,15 @@ class Aggregator(object):
     def _log(self, name, runner):
         if self.logfile is None:
             return
-        self.logfile.write("Runner: %s - %s\n" % (name, runner.__class__.__name__))
-        self.logfile.write("Command: %s\nReturncode: %d\n" % (runner.command, runner.returncode))
+        self.logfile.write("Runner: %s - %s\n" % (name,
+                                                  runner.__class__.__name__))
+        self.logfile.write("Command: %s\nReturncode: %d\n" % (runner.command,
+                                                              runner.returncode))
         self.logfile.write("Program stdout:\n")
         self.logfile.write("  " + "\n  ".join(runner.out.splitlines()) + "\n")
         self.logfile.write("Program stderr:\n")
         self.logfile.write("  " + "\n  ".join(runner.err.splitlines()) + "\n")
+
 
 class IterationAggregator(Aggregator):
     """Iteration aggregator. Runs the jobs multiple times and aggregates the
@@ -233,7 +244,7 @@ class IterationAggregator(Aggregator):
 
     def aggregate(self, results):
         for i in range(self.iterations):
-            data,metadata,raw_values = self.collect()
+            data, metadata, raw_values = self.collect()
             results.meta('SERIES_META', metadata['series'])
             results.meta('FAILED_RUNNERS', self.failed_runners)
             results.raw_values = raw_values
@@ -241,6 +252,7 @@ class IterationAggregator(Aggregator):
                 results.create_series(data.keys())
             results.append_datapoint(i, data)
         return results
+
 
 class TimeseriesAggregator(Aggregator):
     """Time series aggregator. Runs the jobs (which are all assumed to output a
@@ -255,9 +267,10 @@ class TimeseriesAggregator(Aggregator):
         self.max_distance = self.step * 5.0
 
     def aggregate(self, results):
-        measurements,metadata,raw_values = self.collect()
+        measurements, metadata, raw_values = self.collect()
         if not measurements:
-            raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
+            raise RuntimeError("No data to aggregate. Run with -L and check log "
+                               "file to investigate.")
         results.meta('SERIES_META', metadata['series'])
         results.meta('TEST_PARAMETERS').update(metadata['test_parameters'])
         results.meta('FAILED_RUNNERS', self.failed_runners)
@@ -267,10 +280,13 @@ class TimeseriesAggregator(Aggregator):
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step
         # size
-        first_times = [i[0][0] for i in list(measurements.values()) if i and i[0]]
-        last_times = [i[-1][0] for i in list(measurements.values()) if i and i[-1]]
+        first_times = [i[0][0] for i in
+                       list(measurements.values()) if i and i[0]]
+        last_times = [i[-1][0] for i in
+                      list(measurements.values()) if i and i[-1]]
         if not (first_times and last_times):
-            raise RuntimeError("No data to aggregate. Run with -L and check log file to investigate.")
+            raise RuntimeError("No data to aggregate. Run with -L and check log "
+                               "file to investigate.")
         t_0 = min(first_times)
         t_max = max(last_times)
         steps = int(math.ceil((t_max-t_0)/self.step))
@@ -287,7 +303,7 @@ class TimeseriesAggregator(Aggregator):
             result = {}
             # n is the name of this measurement (from the config), r is the list
             # of measurement pairs (time,value)
-            for n,r in list(measurements.items()):
+            for n, r in list(measurements.items()):
                 max_dist = self.max_distance
                 last = False
                 if not r:
@@ -298,31 +314,33 @@ class TimeseriesAggregator(Aggregator):
                 for i in range(len(r)):
                     if r[i][0] > t:
                         if i > 0:
-                            t_prev,v_prev = r[i-1]
+                            t_prev, v_prev = r[i-1]
                         else:
                             # minimum interpolation distance on first entry to
                             # avoid multiple interpolations to the same value
                             max_dist = self.step*0.5
-                        t_next,v_next = r[i]
+                        t_next, v_next = r[i]
                         break
                 if t_next is None:
-                    t_next,v_next = r[-1]
+                    t_next, v_next = r[-1]
                     last = True
                 if abs(t-t_next) <= max_dist:
                     if t_prev is None:
-                        # The first/last data point for this measurement is after the
-                        # current t. Don't interpolate, just use the value.
-                        if last and results.last_datapoint(n) in (v_next,None):
+                        # The first/last data point for this measurement is
+                        # after the current t. Don't interpolate, just use the
+                        # value.
+                        if last and results.last_datapoint(n) in (v_next, None):
                             # Avoid repeating last interpolation
                             result[n] = None
                         else:
                             result[n] = v_next
                     else:
-                        # We found the previous and next values; interpolate between
-                        # them. We assume that the rate of change dv/dt is constant
-                        # in the interval, and so can be calculated as
-                        # (v_next-v_prev)/(t_next-t_prev). Then the value v_t at t
-                        # can be calculated as v_t=v_prev + dv/dt*(t-t_prev)
+                        # We found the previous and next values; interpolate
+                        # between them. We assume that the rate of change dv/dt
+                        # is constant in the interval, and so can be calculated
+                        # as (v_next-v_prev)/(t_next-t_prev). Then the value v_t
+                        # at t can be calculated as v_t=v_prev +
+                        # dv/dt*(t-t_prev)
 
                         dv_dt = (v_next-v_prev)/(t_next-t_prev)
                         result[n] = v_prev + dv_dt*(t-t_prev)
