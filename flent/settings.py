@@ -1,27 +1,26 @@
-## -*- coding: utf-8 -*-
-##
-## settings.py
-##
-## Author:   Toke Høiland-Jørgensen (toke@toke.dk)
-## Date:     25 November 2012
-## Copyright (c) 2012-2015, Toke Høiland-Jørgensen
-##
-## This program is free software: you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation, either version 3 of the License, or
-## (at your option) any later version.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+#
+# settings.py
+#
+# Author:   Toke Høiland-Jørgensen (toke@toke.dk)
+# Date:     25 November 2012
+# Copyright (c) 2012-2016, Toke Høiland-Jørgensen
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import collections
 import optparse
 import os
 import socket
@@ -181,12 +180,16 @@ CONFIG_TYPES = {
 
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
+
 def version(*args):
-    print("Flent v%s.\nRunning on Python %s." %(VERSION, sys.version.replace("\n", " ")))
+    print("Flent v%s.\nRunning on Python %s." % (VERSION,
+                                                 sys.version.replace("\n",
+                                                                     " ")))
     try:
         import matplotlib
         import numpy
-        print("Using matplotlib version %s on numpy %s." % (matplotlib.__version__, numpy.__version__))
+        print("Using matplotlib version %s on numpy %s."
+              % (matplotlib.__version__, numpy.__version__))
     except ImportError:
         print("No matplotlib found. Plots won't be available.")
     try:
@@ -197,28 +200,31 @@ def version(*args):
     sys.exit(0)
 
 
-
 def check_float_pair(option, opt, value):
     try:
-        if not "," in value:
+        if "," not in value:
             return (None, float(value))
-        a,b = [s.strip() for s in value.split(",", 1)]
+        a, b = [s.strip() for s in value.split(",", 1)]
         return (float(a) if a else None,
                 float(b) if b else None)
     except ValueError:
         raise optparse.OptionValueError("Invalid pair value: %s" % value)
 
+
 def check_keyval(option, opt, value):
-    if not '=' in value:
-        raise optparse.OptionValueError("Invalid value '%s' (missing =) for option %s." % (value,opt))
-    k,v = value.split('=', 1)
-    return {k:v}
+    if '=' not in value:
+        raise optparse.OptionValueError(
+            "Invalid value '%s' (missing =) for option %s." % (value, opt))
+    k, v = value.split('=', 1)
+    return {k: v}
+
 
 def check_keyval_int(option, opt, value):
     try:
-        return {int(k):v for k,v in check_keyval(option, opt, value).items()}
+        return {int(k): v for k, v in check_keyval(option, opt, value).items()}
     except ValueError:
-        raise optparse.OptionValueError("Keys must be integers for option %s." % opt)
+        raise optparse.OptionValueError("Keys must be integers for option %s."
+                                        % opt)
 
 
 class ExtendedOption(optparse.Option):
@@ -226,7 +232,7 @@ class ExtendedOption(optparse.Option):
     STORE_ACTIONS = optparse.Option.STORE_ACTIONS + ("update",)
     TYPED_ACTIONS = optparse.Option.TYPED_ACTIONS + ("update",)
     ALWAYS_TYPED_ACTIONS = optparse.Option.ALWAYS_TYPED_ACTIONS + ("update",)
-    TYPES = optparse.Option.TYPES + ("float_pair","keyval","keyval_int")
+    TYPES = optparse.Option.TYPES + ("float_pair", "keyval", "keyval_int")
     TYPE_CHECKER = copy(optparse.Option.TYPE_CHECKER)
     TYPE_CHECKER['float_pair'] = check_float_pair
     TYPE_CHECKER['keyval'] = check_keyval
@@ -236,13 +242,14 @@ class ExtendedOption(optparse.Option):
         if action == 'update':
             values.ensure_value(dest, {}).update(value)
         else:
-            optparse.Option.take_action(self, action, dest, opt, value, values, parser)
+            optparse.Option.take_action(self, action, dest, opt, value,
+                                        values, parser)
 
 
-
-parser = optparse.OptionParser(description='Wrapper to run concurrent netperf-style tests.',
-                               usage="Usage: %prog [options] <host|test|input file ...> ",
-                               option_class=ExtendedOption)
+parser = optparse.OptionParser(
+    description='Wrapper to run concurrent netperf-style tests.',
+    usage="Usage: %prog [options] <host|test|input file ...> ",
+    option_class=ExtendedOption)
 
 parser.add_option("-o", "--output", action="store", type="string", dest="OUTPUT",
                   help="File to write processed output to (default standard out).")
@@ -536,16 +543,16 @@ misc_group.add_option("--debug-error", action="store_true", dest="DEBUG_ERROR",
 parser.add_option_group(misc_group)
 
 
-
 class Settings(optparse.Values, object):
 
     FLENT_VERSION = VERSION
 
     def __init__(self, defs):
 
-        # Copy everything from defaults to make sure the defaults are not modified.
+        # Copy everything from defaults to make sure the defaults are not
+        # modified.
         defaults = {}
-        for k,v in defs.items():
+        for k, v in defs.items():
             defaults[k] = deepcopy(v)
         optparse.Values.__init__(self, defaults)
 
@@ -563,7 +570,8 @@ class Settings(optparse.Values, object):
     def load_rcfile(self):
         if self.RCFILE == DEFAULT_SETTINGS['RCFILE'] and \
            not os.path.exists(self.RCFILE) and os.path.exists(OLD_RCFILE):
-            sys.stderr.write("Warning: Old rcfile found at %s, please rename to %s.\n" \
+            sys.stderr.write("Warning: Old rcfile found at %s, "
+                             "please rename to %s.\n"
                              % (OLD_RCFILE, self.RCFILE))
             self.RCFILE = OLD_RCFILE
         if os.path.exists(self.RCFILE):
@@ -583,9 +591,10 @@ class Settings(optparse.Values, object):
 
     def load_rcvalues(self, items, override=False):
 
-        for k,v in items:
+        for k, v in items:
             k = k.upper()
-            if k in CONFIG_TYPES and (override or getattr(self,k) == DEFAULT_SETTINGS[k]):
+            if k in CONFIG_TYPES and (override or
+                                      getattr(self, k) == DEFAULT_SETTINGS[k]):
                 if CONFIG_TYPES[k] == 'str':
                     setattr(self, k, v)
                 elif CONFIG_TYPES[k] == 'int':
@@ -595,9 +604,13 @@ class Settings(optparse.Values, object):
                 elif CONFIG_TYPES[k] == 'list':
                     setattr(self, k, [i.strip() for i in v.split(",")])
                 elif CONFIG_TYPES[k] == 'dict':
-                    setattr(self, k, {k.strip():v.strip() for k,v in [i.split("=",1) for i in v.split(';') if '=' in i]})
+                    setattr(self, k, {k.strip(): v.strip() for k, v in
+                                      [i.split("=", 1) for i in v.split(';')
+                                       if '=' in i]})
                 elif CONFIG_TYPES[k] == 'dict_int':
-                    setattr(self, k, {int(k):v.strip() for k,v in [i.split("=",1) for i in v.split(';') if '=' in i]})
+                    setattr(self, k, {int(k): v.strip() for k, v in
+                                      [i.split("=", 1) for i in v.split(';')
+                                       if '=' in i]})
                 elif CONFIG_TYPES[k] == 'bool':
                     if type(v) == bool:
                         setattr(self, k, v)
@@ -611,7 +624,7 @@ class Settings(optparse.Values, object):
 
     def load_test(self, test_name=None, informational=False):
         if test_name is not None:
-            self.NAME=test_name
+            self.NAME = test_name
         if self.HOSTS:
             self.HOST = self.HOSTS[0]
         if hasattr(self, 'TOTAL_LENGTH'):
@@ -629,32 +642,30 @@ class Settings(optparse.Values, object):
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")
         s = test_env.execute(filename)
 
-        for k,v in list(s.items()):
-             if k == k.upper():
-                 setattr(self, k, v)
+        for k, v in list(s.items()):
+            if k == k.upper():
+                setattr(self, k, v)
 
         if 'DEFAULTS' in s:
-            for k,v in list(s['DEFAULTS'].items()):
+            for k, v in list(s['DEFAULTS'].items()):
                 if not hasattr(self, k):
                     setattr(self, k, v)
-
-
 
     def compute_missing_results(self, results):
         if "FROM_COMBINER" in results.meta():
             return
         for dname, dvals in self.DATA_SETS.items():
-            if not dname in results:
+            if dname not in results:
                 runner = runners.get(dvals['runner'])
                 if issubclass(runner, runners.ComputingRunner):
                     try:
-                        runner = runner(name=dname, settings=settings, post=True, **dvals)
+                        runner = runner(name=dname, settings=settings,
+                                        post=True, **dvals)
                         runner.result(results)
                     except Exception as e:
-                        sys.stderr.write("Unable to compute missing data series '%s': '%s'.\n" % (dname, e))
+                        sys.stderr.write("Unable to compute missing data "
+                                         "series '%s': '%s'.\n" % (dname, e))
                         raise
-
-
 
     def lookup_hosts(self):
         """If no explicit IP version is set, do a hostname lookup and try to"""
@@ -665,7 +676,8 @@ class Settings(optparse.Values, object):
                 if hostname[0] == socket.AF_INET6:
                     version = 6
             except socket.gaierror as e:
-                raise RuntimeError("Hostname lookup failed for host %s: %s" % (h,e))
+                raise RuntimeError("Hostname lookup failed for host %s: %s"
+                                   % (h, e))
 
         if self.IP_VERSION is None:
             self.IP_VERSION = version
@@ -677,7 +689,7 @@ class Settings(optparse.Values, object):
         object.__setattr__(self, k, v)
 
     def update(self, values):
-        for k,v in list(values.items()):
+        for k, v in list(values.items()):
             setattr(self, k, v)
 
     def items(self):
@@ -688,12 +700,12 @@ class Settings(optparse.Values, object):
 
     def update_implications(self):
         # If run with no args and no controlling TTY, launch the GUI by default
-        if not sys.stdin.isatty() and not sys.stdout.isatty() and not sys.stderr.isatty() \
-           and len(sys.argv) < 2:
+        if not sys.stdin.isatty() and not sys.stdout.isatty() and \
+           not sys.stderr.isatty() and len(sys.argv) < 2:
             self.GUI = True
-        # Passing --new-gui-instance on the command line implies --gui, but setting
-        # it in the rc file does not. When set here, before the rc file is loaded,
-        # this has the desired effect.
+        # Passing --new-gui-instance on the command line implies --gui, but
+        # setting it in the rc file does not. When set here, before the rc file
+        # is loaded, this has the desired effect.
         elif self.NEW_GUI_INSTANCE:
             self.GUI = True
 
@@ -720,7 +732,7 @@ class Settings(optparse.Values, object):
         if len(self.LOCAL_BIND) == 1 and len(self.HOSTS) > 1:
             self.LOCAL_BIND *= len(self.HOSTS)
 
-        for k,v in self.BATCH_OVERRIDE.items():
+        for k, v in self.BATCH_OVERRIDE.items():
             if not hasattr(v, 'lower'):
                 continue
             if v.lower() in ('no', 'false', '0'):
@@ -731,12 +743,14 @@ class Settings(optparse.Values, object):
 
 settings = Settings(DEFAULT_SETTINGS)
 
+
 def load_gui(settings):
     from flent import gui
-    gui.run_gui(settings) # does not return
+    gui.run_gui(settings)  # does not return
+
 
 def load(argv):
-    (dummy,args) = parser.parse_args(argv, values=settings)
+    (dummy, args) = parser.parse_args(argv, values=settings)
 
     if hasattr(settings, 'LIST_TESTS') and settings.LIST_TESTS:
         list_tests()
@@ -771,23 +785,27 @@ def load(argv):
 
     return settings
 
+
 def get_tests():
     tests = []
     settings = Settings(DEFAULT_SETTINGS)
-    for t in sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH) if i.endswith('.conf')]):
+    for t in sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH)
+                     if i.endswith('.conf')]):
         settings.update(DEFAULT_SETTINGS)
         settings.load_test(t, informational=True)
-        tests.append((t,settings.DESCRIPTION))
+        tests.append((t, settings.DESCRIPTION))
     return tests
+
 
 def list_tests():
     tests = get_tests()
     sys.stderr.write('Available tests:\n')
     max_len = max([len(t[0]) for t in tests])
-    for t,desc in tests:
+    for t, desc in tests:
         desc = desc.replace("\n", "\n"+" "*(max_len+6))
         sys.stderr.write(("  %-"+str(max_len)+"s :  %s\n") % (t, desc))
     sys.exit(0)
+
 
 def list_plots():
     plots = list(settings.PLOTS.keys())
@@ -798,5 +816,6 @@ def list_plots():
     sys.stderr.write("Available plots for test '%s':\n" % settings.NAME)
     max_len = str(max([len(p) for p in plots]))
     for p in plots:
-        sys.stderr.write(("  %-"+max_len+"s :  %s\n") % (p, settings.PLOTS[p]['description']))
+        sys.stderr.write(("  %-"+max_len+"s :  %s\n")
+                         % (p, settings.PLOTS[p]['description']))
     sys.exit(0)
