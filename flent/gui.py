@@ -1154,9 +1154,6 @@ class OpenFilesView(QTableView):
             self.model().activate(idx.row(), True)
         act_opn = QAction("&Open in new tab", menu, triggered=opn)
 
-        def cls():
-            self.close_file(idx.row())
-        act_cls = QAction("&Close file", menu, triggered=cls)
         sep = QAction(menu)
         sep.setSeparator(True)
         menu.addActions([act_opn, sep])
