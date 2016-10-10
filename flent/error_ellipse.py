@@ -75,8 +75,7 @@ if __name__ == '__main__':
     # -- Example usage -----------------------
     # Generate some random, correlated data
     points = np.random.multivariate_normal(
-            mean=(1, 1), cov=[[0.4, 9], [9, 10]], size=1000
-            )
+        mean=(1, 1), cov=[[0.4, 9], [9, 10]], size=1000)
     # Plot the raw points...
     x, y = points.T
     plt.plot(x, y, 'ro')

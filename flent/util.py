@@ -24,7 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import bz2
 import gzip
 import io
-import math
 import os
 import re
 import socket
@@ -48,22 +47,26 @@ try:
 except ImportError:
     import ConfigParser as configparser
 
+
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
     (OrgTable) for class names."""
     return ''.join(x.capitalize() for x in s.split("_"))
 
+
 def classname(s, suffix=''):
-    return uscore_to_camel(s)+suffix
+    return uscore_to_camel(s) + suffix
+
 
 def format_date(dt, fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False):
     if utc:
-        return dt.strftime(fmt+"Z")
+        return dt.strftime(fmt + "Z")
     # The datetime object is already UTC, so use gmtime rather than mktime to
     # get the timestamp from which to compute the UTC offset.
     ts = timegm(dt.timetuple()) + dt.microsecond / 1000000.0
     offset = datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)
-    return (dt+offset).strftime(fmt)
+    return (dt + offset).strftime(fmt)
+
 
 def parse_date(timestring):
     try:
@@ -79,7 +82,8 @@ def parse_date(timestring):
         # object.
         ts = time.mktime(dt.timetuple())
         offset = datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)
-        return dt-offset
+        return dt - offset
+
 
 def clean_path(path, allow_dirs=False):
     if allow_dirs:
@@ -93,7 +97,7 @@ def long_substr(data, prefix_only=False):
     Optionally limit search to prefixes only.
 
     Brute force approach (i.e. not very efficient...).
-    Based on https://stackoverflow.com/questions/2892931/longest-common-substring-from-more-than-two-strings-python"""
+    Based on https://stackoverflow.com/questions/2892931/longest-common-substring-from-more-than-two-strings-python"""  # noqa: E501
     substr = ''
     if len(data) > 1 and len(data[0]) > 0:
         if prefix_only:
@@ -101,39 +105,43 @@ def long_substr(data, prefix_only=False):
         else:
             start_pos = range(len(data[0]))
         for i in start_pos:
-            for j in range(len(data[0])-i+1):
-                if j > len(substr) and all(data[0][i:i+j] in x for x in data):
-                    substr = data[0][i:i+j]
+            for j in range(len(data[0]) - i + 1):
+                if j > len(substr) and all(data[0][i:i + j] in x for x in data):
+                    substr = data[0][i:i + j]
     return substr
 
 
 # Calculate discrete cdf function using bisect_left.
 def cum_prob(data, val, size):
-    return bisect_left(data, val)/size
+    return bisect_left(data, val) / size
 
 # from http://code.activestate.com/recipes/66472/
-def frange(limit1, limit2 = None, increment = 1.):
-  """
-  Range function that accepts floats (and integers).
 
-  Usage:
-  frange(-2, 2, 0.1)
-  frange(10)
-  frange(10, increment = 0.5)
 
-  The returned value is an iterator.  Use list(frange) for a list.
-  """
+def frange(limit1, limit2=None, increment=1.):
+    """
+    Range function that accepts floats (and integers).
 
-  if limit2 is None:
-    limit2, limit1 = limit1, 0.
-  else:
-    limit1 = float(limit1)
+    Usage:
+    frange(-2, 2, 0.1)
+    frange(10)
+    frange(10, increment = 0.5)
 
-  count = int(ceil((limit2 - limit1)/increment))
-  return (limit1 + n*increment for n in range(count))
+    The returned value is an iterator.  Use list(frange) for a list.
+    """
+
+    if limit2 is None:
+        limit2, limit1 = limit1, 0.
+    else:
+        limit1 = float(limit1)
+
+    count = int(ceil((limit2 - limit1) / increment))
+    return (limit1 + n * increment for n in range(count))
+
 
 def is_executable(filename):
     return os.path.isfile(filename) and os.access(filename, os.X_OK)
+
 
 def which(executable, fail=False):
     pathname, filename = os.path.split(executable)
@@ -150,16 +158,18 @@ def which(executable, fail=False):
         raise RuntimeError("No %s binary found in PATH." % executable)
     return None
 
+
 def path_components(path):
     folders = []
     while path and path != "/":
         path, folder = os.path.split(path)
 
         if folder:
-            folders.insert(0,folder)
+            folders.insert(0, folder)
     if path == "/":
-        folders.insert(0,path)
+        folders.insert(0, path)
     return folders
+
 
 def lookup_host(hostname, version=None):
     if version == 4:
@@ -175,21 +185,24 @@ def lookup_host(hostname, version=None):
 
     return hostnames[0]
 
-# In Python 2.6, the GzipFile object does not have a 'closed' property, which makes
-# the io module blow up when trying to close it. This tidbit tries to detect that
-# and substitute a subclass that does have the property, while not touching
-# anything if the property is already present.
+# In Python 2.6, the GzipFile object does not have a 'closed' property, which
+# makes the io module blow up when trying to close it. This tidbit tries to
+# detect that and substitute a subclass that does have the property, while not
+# touching anything if the property is already present.
 if hasattr(gzip.GzipFile, "closed"):
     _gzip_open = gzip.open
 else:
     class GzipFile(gzip.GzipFile):
+
         def get_closed(self):
             return self.fileobj is None
         # Setter needed for python3.1-compatibility
+
         def set_closed(self, closed):
             self._closed = closed
         closed = property(get_closed, set_closed)
     _gzip_open = GzipFile
+
 
 def gzip_open(filename, mode="rb"):
     """Compatibility layer for gzip to work in Python 3.1 and 3.2."""
@@ -200,8 +213,8 @@ def gzip_open(filename, mode="rb"):
     binary_file = _gzip_open(filename, mode)
 
     if wrap_text:
-        # monkey-patching required to make gzip object compatible with TextIOWrapper
-        # in Python 3.1.
+        # monkey-patching required to make gzip object compatible with
+        # TextIOWrapper in Python 3.1.
         if not hasattr(binary_file, "readable"):
             def readable():
                 return binary_file.mode == gzip.READ
@@ -225,12 +238,16 @@ if hasattr(bz2, 'open'):
 else:
     # compatibility with io.TextIOWrapper for Python 2
     class bz2file(bz2.BZ2File):
+
         def readable(self):
             return 'r' in self.mode
+
         def writable(self):
             return 'w' in self.mode
+
         def seekable(self):
             return True
+
         def flush(self):
             pass
 
@@ -244,6 +261,7 @@ else:
 
 
 class DefaultConfigParser(configparser.ConfigParser):
+
     class _NoDefault(object):
         pass
 
@@ -251,7 +269,7 @@ class DefaultConfigParser(configparser.ConfigParser):
         try:
             return configparser.ConfigParser.get(self, section, option)
         except configparser.NoOptionError:
-            if default==self._NoDefault:
+            if default == self._NoDefault:
                 raise
             else:
                 return default
@@ -260,7 +278,7 @@ class DefaultConfigParser(configparser.ConfigParser):
         try:
             return configparser.ConfigParser.getint(self, section, option)
         except configparser.NoOptionError:
-            if default==self._NoDefault:
+            if default == self._NoDefault:
                 raise
             else:
                 return default
@@ -269,7 +287,7 @@ class DefaultConfigParser(configparser.ConfigParser):
         try:
             return configparser.ConfigParser.getfloat(self, section, option)
         except configparser.NoOptionError:
-            if default==self._NoDefault:
+            if default == self._NoDefault:
                 raise
             else:
                 return default
@@ -278,7 +296,7 @@ class DefaultConfigParser(configparser.ConfigParser):
         try:
             return configparser.ConfigParser.getboolean(self, section, option)
         except configparser.NoOptionError:
-            if default==self._NoDefault:
+            if default == self._NoDefault:
                 raise
             else:
                 return default
@@ -303,24 +321,25 @@ class Glob(object):
         return [x for x in values if fnmatch(x, pattern) and x not in exclude]
 
     def __iter__(self):
-        return iter((self,)) # allow list(g) to return [g]
+        return iter((self,))  # allow list(g) to return [g]
 
     @classmethod
     def filter_dict(cls, d, args=None):
         # Expand glob patterns in parameters. Go through all items in the
         # dictionary looking for subkeys that is a Glob instance or a list
         # that has a Glob instance in it.
-        for k,v in list(d.items()):
+        for k, v in list(d.items()):
             for g_k in list(v.keys()):
                 try:
-                    v[g_k] = cls.expand_list(v[g_k], list(d.keys()), [k], args=args)
+                    v[g_k] = cls.expand_list(
+                        v[g_k], list(d.keys()), [k], args=args)
                 except TypeError:
                     continue
         return d
 
     @classmethod
     def expand_list(cls, l, values, exclude=None, args=None):
-        l = list(l) # copy list, turns lone Glob objects into [obj]
+        l = list(l)  # copy list, turns lone Glob objects into [obj]
         new_l = []
         if exclude is None:
             exclude = []
@@ -353,12 +372,11 @@ def mos_score(T, loss):
 
     # Parameters
     Ta = T
-    Tr = 2*T
-    Ppl = loss * 100 # in percent
-
+    Tr = 2 * T
+    Ppl = loss * 100  # in percent
 
     # Defaults
-    mT = 100 # Table 1
+    mT = 100  # Table 1
 
     # From Table 3:
     WEPL = 110
@@ -367,48 +385,46 @@ def mos_score(T, loss):
     SLR = 8
 
     # Constants calculated from the Table 3 defaults:
-    No = -61.17921438624169 # (7-3)
-    Ro = 15 - (1.5*(SLR+No)) # (7-2)
-    Is = 1.4135680813438616 # (7-8)
+    No = -61.17921438624169  # (7-3)
+    Ro = 15 - (1.5 * (SLR + No))  # (7-2)
+    Is = 1.4135680813438616  # (7-8)
 
-
-    Rle = 10.5*(WEPL+7)*pow(Tr+1,-0.25) # (7-26)
+    Rle = 10.5 * (WEPL + 7) * pow(Tr + 1, -0.25)  # (7-26)
     if Ta == 0:
         X = 0
     else:
-        X = log10(Ta/mT)/log10(2) # (7-28)
+        X = log10(Ta / mT) / log10(2)  # (7-28)
 
     if Ta <= 100:
         Idd = 0
     else:
-        Idd = 25*((1+X**6)**(1/6) - 3 * (1+(X/3)**6)**1/6+2) # (7-27)
+        Idd = 25 * ((1 + X**6)**(1 / 6) - 3 *
+                    (1 + (X / 3)**6)**1 / 6 + 2)  # (7-27)
 
-    Idle = (Ro - Rle)/2 + sqrt((Ro-Rle)**2/4 + 169) # (7-25)
+    Idle = (Ro - Rle) / 2 + sqrt((Ro - Rle)**2 / 4 + 169)  # (7-25)
 
-    TERV = TELR - 40 * log10((1+T/10) / (1+T/150))+6 * exp(-0.3*T**2) # (7-22)
-    Roe = -1.5 * (No - RLR) # (7-20)
-    Re = 80 + 2.5*(TERV - 14) # (7-21)
-
-
+    TERV = TELR - 40 * log10((1 + T / 10) / (1 + T / 150)) + \
+        6 * exp(-0.3 * T**2)  # (7-22)
+    Roe = -1.5 * (No - RLR)  # (7-20)
+    Re = 80 + 2.5 * (TERV - 14)  # (7-21)
 
     if T < 1:
         Idte = 0
     else:
-        Idte = ((Roe - Re)/2 + sqrt((Roe - Re)**2/4 + 100) - 1) * (1 - exp(-T)) # (7-19)
+        Idte = ((Roe - Re) / 2 + sqrt((Roe - Re)**2 / 4 + 100) - 1) * \
+            (1 - exp(-T))  # (7-19)
 
+    Id = Idte + Idle + Idd  # (7-18)
 
-    Id = Idte+Idle+Idd # (7-18)
+    Ieeff = 95 * (Ppl / (Ppl + 1))  # (7-29) with BurstR = Bpl = 1
 
-
-    Ieeff = 95*(Ppl/(Ppl+1)) # (7-29) with BurstR = Bpl = 1
-
-    R = Ro-Is-Id-Ieeff
+    R = Ro - Is - Id - Ieeff
 
     if R < 0:
         MOS = 1
     elif R > 100:
         MOS = 4.5
     else:
-        MOS = 1 + 0.035 * R + R * (R - 60) * (100 - R) * 7 * 10**-6 # (B-4)
+        MOS = 1 + 0.035 * R + R * (R - 60) * (100 - R) * 7 * 10**-6  # (B-4)
 
     return MOS

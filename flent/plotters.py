@@ -35,9 +35,9 @@ from collections import OrderedDict
 try:
     import matplotlib
     import numpy
-    HAS_MATPLOTLIB=True
+    HAS_MATPLOTLIB = True
 except ImportError:
-    HAS_MATPLOTLIB=False
+    HAS_MATPLOTLIB = False
 
 PLOT_KWARGS = (
     'alpha',
@@ -63,15 +63,16 @@ PLOT_KWARGS = (
     'solid_joinstyle',
     'visible',
     'zorder'
-    )
+)
 
 LINESTYLES = ['-', '--']
-MARKERS    = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
-COLOURS    = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666"]
-DASHES     = [[2,4],
-              [8,4,2,4],
-              ]
-STYLES     = []
+MARKERS = ['o', '^', 's', 'v', 'D', '*', '<', '>', 'x', '+']
+COLOURS = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a",
+           "#66a61e", "#e6ab02", "#a6761d", "#666666"]
+DASHES = [[2, 4],
+          [8, 4, 2, 4],
+          ]
+STYLES = []
 
 MATPLOTLIB_STYLES = {'axes.axisbelow': True,
                      'axes.edgecolor': 'white',
@@ -105,7 +106,9 @@ MATPLOTLIB_STYLES = {'axes.axisbelow': True,
 
 def init_matplotlib(output, use_markers, load_rc):
     if not HAS_MATPLOTLIB:
-        raise RuntimeError("Unable to plot -- matplotlib is missing! Please install it if you want plots.")
+        raise RuntimeError(
+            "Unable to plot -- matplotlib is missing! "
+            "Please install it if you want plots.")
     global pyplot, COLOURS
     if output != "-":
         if output.endswith('.svg') or output.endswith('.svgz'):
@@ -117,7 +120,8 @@ def init_matplotlib(output, use_markers, load_rc):
         elif output.endswith('.png'):
             matplotlib.use('agg')
         else:
-            raise RuntimeError("Unrecognised file format for output '%s'" % output)
+            raise RuntimeError(
+                "Unrecognised file format for output '%s'" % output)
 
     from matplotlib import pyplot
 
@@ -136,21 +140,22 @@ def init_matplotlib(output, use_markers, load_rc):
     elif 'axes.prop_cycle' in matplotlib.rcParams:
         c = matplotlib.rcParams['axes.prop_cycle']
         if 'color' in c.keys:
-            COLOURS=c.by_key()['color']
+            COLOURS = c.by_key()['color']
     else:
         COLOURS = matplotlib.rcParams['axes.color_cycle']
+
 
 def get_plotconfig(settings, plot=None):
     if plot is None:
         plot = settings.PLOT
-    if not plot in settings.PLOTS:
+    if plot not in settings.PLOTS:
         raise RuntimeError("Unable to find plot configuration '%s'." % plot)
     config = settings.PLOTS[plot].copy()
     config['plot_name'] = plot
     if 'parent' in config:
         parent_config = settings.PLOTS[config['parent']].copy()
         parent_config.update(config)
-        config=parent_config
+        config = parent_config
 
     if 'subplots' in config:
         subplots = OrderedDict()
@@ -159,16 +164,18 @@ def get_plotconfig(settings, plot=None):
             if 'parent' in cfg:
                 parent = settings.PLOTS[cfg['parent']].copy()
                 parent.update(cfg)
-                cfg=parent
+                cfg = parent
             subplots[s] = cfg
         config['subplots'] = subplots
     return config
 
+
 def get_plotter(plot_type):
     cname = classname(plot_type, "Plotter")
-    if not cname in globals():
+    if cname not in globals():
         raise RuntimeError("Plotter not found: '%s'" % plot_type)
     return globals()[cname]
+
 
 def new(settings, plotter=None, **kwargs):
     if plotter is None:
@@ -220,7 +227,8 @@ def new(settings, plotter=None, **kwargs):
     except Exception as e:
         raise RuntimeError("Error loading plotter: %s." % e)
 
-def lines_equal(a,b):
+
+def lines_equal(a, b):
     """Compare two matplotlib line segments by line style, marker, colour and label.
     Used to match legend items to data items on the axes."""
     # A null marker can be the string 'None' for some reason, to check for
@@ -229,12 +237,12 @@ def lines_equal(a,b):
         a.get_linestyle() == b.get_linestyle() and \
         a.get_color() == b.get_color()
 
+
 class Plotter(object):
     open_mode = "wb"
     inverted_units = ('ms')
     can_subplot_combine = False
     can_highlight = False
-
 
     def __init__(self,
                  plot_config,
@@ -351,14 +359,13 @@ class Plotter(object):
             except Exception:
                 pass
 
-
     def init(self, config=None, axis=None):
         if config is not None:
             self.config = config
         self.configs = [self.config]
 
     def expand_plot_config(self, config, data):
-        if not 'series' in config:
+        if 'series' not in config:
             return config
         new_series = []
         for s in config['series']:
@@ -375,7 +382,8 @@ class Plotter(object):
             else:
                 new_series.append(s)
         if self.filter_series:
-            new_series = [s for s in new_series if not s['data'] in self.filter_series]
+            new_series = [s for s in new_series if not s[
+                'data'] in self.filter_series]
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
@@ -393,12 +401,14 @@ class Plotter(object):
         styles = cycle(self.styles)
         colours = cycle(self.colours)
         labels = self._filter_labels([r.label() for r in results])
-        for l,r in zip(labels,results):
+        for l, r in zip(labels, results):
             style = next(styles).copy()
             if (config and 'series' in config and len(config['series']) == 1) or \
-                ('series' in self.config and len(self.config['series']) == 1) or always_colour:
+               ('series' in self.config and len(self.config['series']) == 1) or \
+               always_colour:
                 style['color'] = next(colours)
-            self._plot(r, config=config, axis=axis, postfix=" - "+l, extra_kwargs=style, extra_scale_data=results)
+            self._plot(r, config=config, axis=axis, postfix=" - " + l,
+                       extra_kwargs=style, extra_scale_data=results)
 
     def save(self, results):
 
@@ -415,13 +425,13 @@ class Plotter(object):
         artists += all_legends + self._annotate_plot(skip_title)
         self.legends.extend(all_legends)
 
-
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
         # Otherwise, the filename is passed to matplotlib, which selects an
         # appropriate output format based on the file name.
         if self.output == "-":
-            self.callbacks.append(self.figure.canvas.mpl_connect('resize_event', self.size_legends))
+            self.callbacks.append(self.figure.canvas.mpl_connect(
+                'resize_event', self.size_legends))
             self.size_legends()
             if not self.gui:
                 self.plt.show()
@@ -429,9 +439,11 @@ class Plotter(object):
             try:
                 save_args = self.build_tight_layout(artists)
                 if self.plt.get_backend() == 'pdf':
-                    self.save_pdf(self.output, results[0].meta('DATA_FILENAME'), save_args)
+                    self.save_pdf(self.output, results[0].meta(
+                        'DATA_FILENAME'), save_args)
                 else:
-                    self.figure.savefig(self.output, dpi=self.fig_dpi, **save_args)
+                    self.figure.savefig(
+                        self.output, dpi=self.fig_dpi, **save_args)
             except IOError as e:
                 raise RuntimeError("Unable to save output plot: %s" % e)
 
@@ -440,20 +452,24 @@ class Plotter(object):
         self.highlight_widths = {}
         self.hovered = set()
         for a in self.data_artists:
-            self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth()*2)
+            self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth() * 2)
 
     def connect_interactive(self):
         try:
-            if self.interactive_callback or not self.can_highlight or not self.figure.canvas.supports_blit \
+            if self.interactive_callback \
+               or not self.can_highlight \
+               or not self.figure.canvas.supports_blit \
                or not hasattr(self.figure.canvas, "copy_from_bbox"):
                 return
         except AttributeError:
             # Old versions of matplotlib doesn't have the supports_blit attribute
             return
         self.init_interactive()
-        self.interactive_callback = self.figure.canvas.mpl_connect("motion_notify_event", self.on_move)
+        self.interactive_callback = self.figure.canvas.mpl_connect(
+            "motion_notify_event", self.on_move)
         self.callbacks.append(self.interactive_callback)
-        self.callbacks.append(self.figure.canvas.mpl_connect("draw_event", self.clear_bg_cache))
+        self.callbacks.append(self.figure.canvas.mpl_connect(
+            "draw_event", self.clear_bg_cache))
 
     def disconnect_callbacks(self):
         for c in self.callbacks:
@@ -463,10 +479,10 @@ class Plotter(object):
     def on_move(self, event):
         hovered = set()
         for leg in self.legends:
-            for l,t in zip(leg.get_lines(), leg.get_texts()):
+            for l, t in zip(leg.get_lines(), leg.get_texts()):
                 if l.contains(event)[0] or t.contains(event)[0]:
                     for a in self.data_artists:
-                        if lines_equal(a,l):
+                        if lines_equal(a, l):
                             hovered.add(a)
         if not hovered:
             for a in self.data_artists:
@@ -475,16 +491,15 @@ class Plotter(object):
 
         self.update_axes(hovered)
 
-
     def update_axes(self, hovered):
         bboxes = set()
 
-        for ax in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+        for ax in reduce(lambda x, y: x + y, [i['axes'] for i in self.configs]):
             # If we don't have a background cache this is the first time we are
             # called after a redraw, so no modifications to artists have been
             # made. Hence, we just cache the background now.
             bboxes.add(ax.bbox)
-            if not ax in self.bg_cache:
+            if ax not in self.bg_cache:
                 self.bg_cache[ax] = self.figure.canvas.copy_from_bbox(ax.bbox)
             else:
                 self.figure.canvas.restore_region(self.bg_cache[ax])
@@ -509,35 +524,42 @@ class Plotter(object):
             self.figure.savefig(pdf, dpi=self.fig_dpi, **save_args)
 
     def build_tight_layout(self, artists):
-        rect = [0,0,1,1]
+        rect = [0, 0, 1, 1]
         args = None
         try:
             # Some plot configurations are incompatible with tight_layout; this
             # test is from matplotlib's tight_layout() in figure.py
             from matplotlib.tight_layout import get_subplotspec_list
-            if not None in get_subplotspec_list(self.figure.axes):
+            if None not in get_subplotspec_list(self.figure.axes):
                 self.figure.savefig(io.BytesIO())
                 renderer = self.figure._cachedRenderer
                 fig_bbox = self.figure.get_tightbbox(renderer)
                 if self.legends and not self.legend_placement:
                     if self.horizontal_legend:
-                        legend_height = max([l.get_window_extent().height for l in self.legends])/self.figure.dpi
-                        rect[1] = legend_height/fig_bbox.height
+                        legend_height = max(
+                            [l.get_window_extent().height
+                             for l in self.legends]) / self.figure.dpi
+                        rect[1] = legend_height / fig_bbox.height
                     else:
-                        legend_width = max([l.get_window_extent().width for l in self.legends])/self.figure.dpi
-                        rect[2] = max(0.5,1-legend_width/fig_bbox.width)
+                        legend_width = max(
+                            [l.get_window_extent().width
+                             for l in self.legends]) / self.figure.dpi
+                        rect[2] = max(0.5, 1 - legend_width / fig_bbox.width)
 
                 if self.annotation_obj:
-                    annotation_height = self.annotation_obj.get_window_extent(renderer).height/self.figure.dpi
-                    rect[1] = max(rect[1], annotation_height/fig_bbox.height)
+                    annotation_height = self.annotation_obj.get_window_extent(
+                        renderer).height / self.figure.dpi
+                    rect[1] = max(rect[1], annotation_height / fig_bbox.height)
 
                 if self.note_obj:
-                    note_height = self.note_obj.get_window_extent(renderer).height/self.figure.dpi
-                    rect[1] = max(rect[1], note_height/fig_bbox.height)
+                    note_height = self.note_obj.get_window_extent(
+                        renderer).height / self.figure.dpi
+                    rect[1] = max(rect[1], note_height / fig_bbox.height)
 
                 if self.title_obj:
-                    title_height = self.title_obj.get_window_extent(renderer).height/self.figure.dpi
-                    rect[3] = 1-title_height/fig_bbox.height
+                    title_height = self.title_obj.get_window_extent(
+                        renderer).height / self.figure.dpi
+                    rect[3] = 1 - title_height / fig_bbox.height
 
                 self.figure.tight_layout(pad=0.5, rect=rect)
                 args = {}
@@ -551,24 +573,32 @@ class Plotter(object):
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
-        if self.print_legend and not self.horizontal_legend and not self.legend_placement and self.legends:
-            self.figure.canvas.draw() # Legend width is not set before it's drawn
-            legend_width = max([l.get_window_extent().width for l in self.legends])
+        if self.print_legend \
+           and not self.horizontal_legend \
+           and not self.legend_placement \
+           and self.legends:
+            self.figure.canvas.draw()  # Legend width is not set before it's drawn
+            legend_width = max(
+                [l.get_window_extent().width for l in self.legends])
             canvas_width = self.figure.canvas.get_width_height()[0]
-            for a in reduce(lambda x,y:x+y, [i['axes'] for i in self.configs]):
+            for a in reduce(lambda x, y: x + y,
+                            [i['axes'] for i in self.configs]):
                 # Save the original width of the axis (in the interval [0..1])
                 # and use that as a base to scale the axis on subsequent calls.
                 # Otherwise, each call will shrink the axis.
                 if not hasattr(a, 'orig_width'):
                     a.orig_width = a.get_position().width
                 box = a.get_position()
-                a.set_position([box.x0, box.y0, (a.orig_width - legend_width/canvas_width), box.height])
+                a.set_position(
+                    [box.x0,
+                     box.y0,
+                     (a.orig_width - legend_width / canvas_width),
+                     box.height])
             self.figure.canvas.draw()
-
 
     def _annotate_plot(self, skip_title=False):
         titles = []
-        title_y=1
+        title_y = 1
         if self.override_title:
             self.title_obj = self.figure.suptitle(self.override_title,
                                                   fontsize=14, y=title_y)
@@ -580,39 +610,45 @@ class Plotter(object):
                 plot_title += "\n" + self.config['description']
             if self.metadata['TITLE'] and not skip_title:
                 plot_title += "\n" + self.metadata['TITLE']
-            if 'description' in self.config and self.metadata['TITLE'] and not skip_title:
-                title_y=1.00
-            self.title_obj = self.figure.suptitle(plot_title, fontsize=14, y=title_y)
+            if 'description' in self.config \
+               and self.metadata['TITLE'] \
+               and not skip_title:
+                title_y = 1.00
+            self.title_obj = self.figure.suptitle(
+                plot_title, fontsize=14, y=title_y)
             titles.append(self.title_obj)
             self.title = plot_title
         else:
-                self.title_obj = None
+            self.title_obj = None
 
         if self.annotate:
-            annotation_string = "Local/remote: %s/%s - Time: %s - Length/step: %ds/%.2fs" % (
-                self.metadata['LOCAL_HOST'], self.metadata['HOST'],
-                format_date(self.metadata['TIME']),
-                self.metadata['LENGTH'], self.metadata['STEP_SIZE'])
+            annotation_string = "Local/remote: %s/%s - " \
+                                "Time: %s - Length/step: %ds/%.2fs" % (
+                                    self.metadata['LOCAL_HOST'],
+                                    self.metadata['HOST'],
+                                    format_date(self.metadata['TIME']),
+                                    self.metadata['LENGTH'],
+                                    self.metadata['STEP_SIZE'])
             self.annotation_obj = self.figure.text(0.5, 0.0, annotation_string,
-                             horizontalalignment='center',
-                             verticalalignment='bottom',
-                             fontsize=8)
+                                                   horizontalalignment='center',
+                                                   verticalalignment='bottom',
+                                                   fontsize=8)
         else:
             self.annotation_obj = None
 
         if self.fig_note:
             self.note_obj = self.figure.text(0.0, 0.0, self.fig_note,
-                                           horizontalalignment='left',
-                                           verticalalignment='bottom',
-                                           fontsize=8)
+                                             horizontalalignment='left',
+                                             verticalalignment='bottom',
+                                             fontsize=8)
             titles.append(self.note_obj)
         else:
             self.note_obj = None
         return titles
 
     def _filter_labels(self, labels):
-        for s,d in self.replace_legend.items():
-            labels = [l.replace(s,d) for l in labels]
+        for s, d in self.replace_legend.items():
+            labels = [l.replace(s, d) for l in labels]
         for r in self.filter_regexp:
             labels = [re.sub(r, "", l) for l in labels]
         if self.filter_legend and labels:
@@ -640,7 +676,7 @@ class Plotter(object):
         # Each axis has a set of handles/labels for the legend; combine them
         # into one list of handles/labels for displaying one legend that holds
         # all plot lines
-        handles, labels = reduce(lambda x,y:(x[0]+y[0], x[1]+y[1]),
+        handles, labels = reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]),
                                  [a.get_legend_handles_labels() for a in axes])
         if not labels:
             return []
@@ -652,7 +688,6 @@ class Plotter(object):
             kwargs['title'] = self.legend_title
         elif 'legend_title' in config:
             kwargs['title'] = config['legend_title']
-
 
         if len(axes) > 1:
             offset_x = 1.11
@@ -673,11 +708,11 @@ class Plotter(object):
             ncol = 1
             loc = 'upper left'
         l = axes[0].legend(handles, labels,
-                                bbox_to_anchor=bbox,
-                                loc=loc, borderaxespad=0.,
-                                prop={'size':'small'},
-                                ncol=self.legend_columns or ncol,
-                                **kwargs)
+                           bbox_to_anchor=bbox,
+                           loc=loc, borderaxespad=0.,
+                           prop={'size': 'small'},
+                           ncol=self.legend_columns or ncol,
+                           **kwargs)
 
         # Work around a bug in older versions of matplotlib where the
         # legend.get_window_extent method does not take any arguments, leading
@@ -686,7 +721,7 @@ class Plotter(object):
         # Simply check for either the right number of args, or a vararg
         # specification, and if they are not present, attempt to monkey-patch
         # the method if it does not accept any arguments.
-        a,v,_,_ = inspect.getargspec(l.get_window_extent)
+        a, v, _, _ = inspect.getargspec(l.get_window_extent)
         if len(a) < 2 or v is None:
             def get_window_extent(*args, **kwargs):
                 return l.legendPatch.get_window_extent(*args, **kwargs)
@@ -708,19 +743,19 @@ class Plotter(object):
 
         # Leave 1 percent of the axis range as extra space, so the outermost
         # points are not smudged by the axis lines.
-        space = (top_percentile - btm_percentile)*0.01
+        space = (top_percentile - btm_percentile) * 0.01
         top_scale = top_percentile + space
         btm_scale = btm_percentile - space
         if self.zero_y:
             # When y is set at zero, set space at the top to be one percent room
             # of the *axis* range, not the data range (this may be a big
             # difference if the data range is small).
-            top_scale = top_percentile*1.01
+            top_scale = top_percentile * 1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
             if self.log_scale:
                 axis.set_yscale('log')
-                axis.set_ylim(ymin=max(0,btm_scale), ymax=top_scale)
+                axis.set_ylim(ymin=max(0, btm_scale), ymax=top_scale)
             else:
                 axis.set_ylim(ymin=btm_scale, ymax=top_scale)
 
@@ -739,8 +774,9 @@ class Plotter(object):
             return max(lst)
         elif q < 0 or q > 100:
             raise ValueError("Invalid percentile: %s" % q)
-        idx = int(len(lst) * (q/100.0))
+        idx = int(len(lst) * (q / 100.0))
         return self.np.sort(lst)[idx]
+
 
 class CombineManyPlotter(object):
 
@@ -755,8 +791,12 @@ class CombineManyPlotter(object):
                                  filter_regexps=self.filter_regexp,
                                  filter_series=self.filter_series,
                                  save_dir=self.combine_save_dir)
-        super(CombineManyPlotter,self).plot(combiner(results, config), config, axis,
-                                            connect_interactive=connect_interactive)
+        super(CombineManyPlotter, self).plot(
+            combiner(results, config),
+            config,
+            axis,
+            connect_interactive=connect_interactive)
+
 
 class TimeseriesPlotter(Plotter):
     can_subplot_combine = True
@@ -771,7 +811,8 @@ class TimeseriesPlotter(Plotter):
             config = self.config
 
         if 'dual_axes' in config and config['dual_axes']:
-            second_axis = self.figure.add_axes(axis.get_position(), sharex=axis, frameon=False)
+            second_axis = self.figure.add_axes(
+                axis.get_position(), sharex=axis, frameon=False)
             second_axis.yaxis.tick_right()
             axis.yaxis.tick_left()
             second_axis.yaxis.set_label_position('right')
@@ -779,14 +820,14 @@ class TimeseriesPlotter(Plotter):
             second_axis.xaxis.set_visible(False)
             axis.grid(False)
             second_axis.grid(False)
-            config['axes'] = [axis,second_axis]
+            config['axes'] = [axis, second_axis]
         else:
             config['axes'] = [axis]
 
         for a in config['axes']:
             a.minorticks_on()
 
-        unit = [None]*len(config['axes'])
+        unit = [None] * len(config['axes'])
         for s in config['series']:
             if 'axis' in s and s['axis'] == 2:
                 a = 1
@@ -794,11 +835,12 @@ class TimeseriesPlotter(Plotter):
                 a = 0
             s_unit = self.data_config[s['data']]['units']
             if unit[a] is not None and s_unit != unit[a]:
-                raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
+                raise RuntimeError(
+                    "Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
             unit[a] = s_unit
 
         axis.set_xlabel(self.label_x[0] if self.label_x else 'Time (s)')
-        for i,u in enumerate(unit):
+        for i, u in enumerate(unit):
             if 'axis_labels' in config and config['axis_labels'][i]:
                 l = config['axis_labels'][i]
             else:
@@ -809,15 +851,14 @@ class TimeseriesPlotter(Plotter):
                 l = "Normalised %s" % l
 
             if self.label_y:
-                l = self.label_y[min(i, len(self.label_y)-1)]
+                l = self.label_y[min(i, len(self.label_y) - 1)]
 
             config['axes'][i].set_ylabel(l)
 
+        config['units'] = unit
 
-        config['units'] =  unit
-
-
-    def _plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}, extra_scale_data=[]):
+    def _plot(self, results, config=None, axis=None, postfix="",
+              extra_kwargs={}, extra_scale_data=[]):
         if axis is None:
             axis = self.figure.gca()
         if config is None:
@@ -827,9 +868,10 @@ class TimeseriesPlotter(Plotter):
 
         xlim = axis.get_xlim()
         axis.set_xlim(
-            min(results.x_values+[xlim[0]]) if xlim[0] > 0 else min(results.x_values),
-            max(results.x_values+[self.metadata['TOTAL_LENGTH'], xlim[1]])
-            )
+            min(results.x_values + [xlim[0]]
+                ) if xlim[0] > 0 else min(results.x_values),
+            max(results.x_values + [self.metadata['TOTAL_LENGTH'], xlim[1]])
+        )
 
         data = []
         for i in range(len(config['axes'])):
@@ -844,7 +886,7 @@ class TimeseriesPlotter(Plotter):
             if not s['data'] in results.series_names:
                 continue
             if 'smoothing' in s:
-                smooth=s['smoothing']
+                smooth = s['smoothing']
             else:
                 smooth = False
             kwargs = {}
@@ -853,9 +895,9 @@ class TimeseriesPlotter(Plotter):
                     kwargs[k] = s[k]
 
             if 'label' in kwargs:
-                kwargs['label']+=postfix
+                kwargs['label'] += postfix
 
-            if not 'color' in kwargs:
+            if 'color' not in kwargs:
                 kwargs['color'] = next(colours)
 
             kwargs.update(extra_kwargs)
@@ -871,43 +913,48 @@ class TimeseriesPlotter(Plotter):
                 del kwargs['color']
                 y_values = self.np.array(y_values, dtype=float)
 
-                config['axes'][a].fill_between(results.x_values, sums, y_values+sums, **kwargs)
+                config['axes'][a].fill_between(
+                    results.x_values, sums, y_values + sums, **kwargs)
                 sums += y_values
             else:
                 data[a] += y_values
-                for r in self.scale_data+extra_scale_data:
+                for r in self.scale_data + extra_scale_data:
                     data[a] += r.series(s['data'], smooth)
                 self.data_artists.extend(config['axes'][a].plot(results.x_values,
                                                                 y_values,
-                                                                    **kwargs))
+                                                                **kwargs))
 
         if 'scaling' in config:
-            btm,top = config['scaling']
+            btm, top = config['scaling']
         else:
-            btm,top = 0,100
+            btm, top = 0, 100
 
         for a in range(len(config['axes'])):
             if data[a]:
-                self._do_scaling(config['axes'][a], data[a], btm, top, config['units'][a])
+                self._do_scaling(config['axes'][a], data[
+                                 a], btm, top, config['units'][a])
 
             # Handle cut-off data sets. If the x-axis difference between the
             # largest data point and the TOTAL_LENGTH from settings, scale to
             # the data values, but round to nearest 10 above that value.
             try:
-                max_xdata = max([l.get_xdata()[-1] for l in config['axes'][a].get_lines()])
+                max_xdata = max([l.get_xdata()[-1]
+                                 for l in config['axes'][a].get_lines()])
                 if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
-                    config['axes'][a].set_xlim(right=(max_xdata+(10-max_xdata%10)))
+                    config['axes'][a].set_xlim(
+                        right=(max_xdata + (10 - max_xdata % 10)))
             except ValueError:
                 pass
 
-
-        for a,b in zip(config['axes'], self.bounds_x):
+        for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
-        for a,b in zip(config['axes'], self.bounds_y):
+        for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
+
 
 class TimeseriesCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
     pass
+
 
 class BoxPlotter(TimeseriesPlotter):
 
@@ -930,7 +977,7 @@ class BoxPlotter(TimeseriesPlotter):
     def plot(self, results, config=None, axis=None, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
-        return self._plot(results,config,axis)
+        return self._plot(results, config, axis)
 
     def _plot(self, results, config=None, axis=None):
         if config is None:
@@ -946,12 +993,14 @@ class BoxPlotter(TimeseriesPlotter):
 
         if self.split_groups:
             if len(results) % len(self.split_groups) > 0:
-                raise RuntimeError("Split groups only works when the number of results is divisible by the number of groups.")
+                raise RuntimeError(
+                    "Split groups only works when the number of results "
+                    "is divisible by the number of groups.")
             split_results = []
             series = []
-            group_size = len(results)//len(self.split_groups)
-            for i,g in enumerate(self.split_groups):
-                split_results.append(results[i*group_size:(i+1)*group_size])
+            group_size = len(results) // len(self.split_groups)
+            for i, g in enumerate(self.split_groups):
+                split_results.append(results[i * group_size:(i + 1) * group_size])
                 for s in config['series']:
                     ns = s.copy()
                     ns['label'] = g
@@ -962,14 +1011,15 @@ class BoxPlotter(TimeseriesPlotter):
             series = config['series']
 
         # The median lines are red, so filter out red from the list of colours
-        colours = list(islice(cycle([c for c in self.colours if c != 'r']), group_size))
+        colours = list(
+            islice(cycle([c for c in self.colours if c != 'r']), group_size))
 
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
             norms = None
 
-        for i,s in enumerate(series):
+        for i, s in enumerate(series):
             if split_results:
                 results = split_results[i]
             if 'axis' in s and s['axis'] == 2:
@@ -981,7 +1031,7 @@ class BoxPlotter(TimeseriesPlotter):
             for r in results:
                 d = [d for d in r.series(s['data']) if d is not None]
                 if norms is not None:
-                    d = [di/norms[i] for di in d]
+                    d = [di / norms[i] for di in d]
                 all_data[a].extend(d)
                 if not d:
                     data.append([0.0])
@@ -993,38 +1043,40 @@ class BoxPlotter(TimeseriesPlotter):
             else:
                 ticklabels.append(i)
 
-            positions = range(pos,pos+group_size)
+            positions = range(pos, pos + group_size)
             ticks.append(self.np.mean(positions))
 
             bp = config['axes'][a].boxplot(data,
                                            positions=positions)
-            for j,r in enumerate(results):
+            for j, r in enumerate(results):
                 self.plt.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
-                    bp['caps'][j*2].set_label(r.label())
+                    bp['caps'][j * 2].set_label(r.label())
                 if len(bp['fliers']) == group_size:
                     self.plt.setp([bp['fliers'][j]], markeredgecolor=colours[j])
-                    keys = 'caps','whiskers'
+                    keys = 'caps', 'whiskers'
                 else:
-                    keys = 'caps','whiskers','fliers'
+                    keys = 'caps', 'whiskers', 'fliers'
                 for k in keys:
                     if bp[k]:
-                        self.plt.setp(bp[k][j*2], color=colours[j])
-                        self.plt.setp(bp[k][j*2+1], color=colours[j])
+                        self.plt.setp(bp[k][j * 2], color=colours[j])
+                        self.plt.setp(bp[k][j * 2 + 1], color=colours[j])
 
+            config['axes'][a].axvline(
+                x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
+            pos += group_size + 1
+        for i, a in enumerate(config['axes']):
+            self._do_scaling(a, all_data[i], 0, 100, config[
+                             'units'][i], allow_log=False)
 
-            config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
-            pos += group_size+1
-        for i,a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, config['units'][i], allow_log=False)
-
-        for a,b in zip(config['axes'], self.bounds_y):
+        for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
         axis.set_xticklabels(self._filter_labels(ticklabels))
-        axis.set_xlim(0,pos-1)
+        axis.set_xlim(0, pos - 1)
+
 
 class BoxCombinePlotter(CombineManyPlotter, BoxPlotter):
     pass
@@ -1036,7 +1088,7 @@ class BarPlotter(BoxPlotter):
     _max_label_length = 30
 
     def init(self, config=None, axis=None):
-        BoxPlotter.init(self,config,axis)
+        BoxPlotter.init(self, config, axis)
 
     def _plot(self, results, config=None, axis=None):
         if config is None:
@@ -1053,11 +1105,15 @@ class BarPlotter(BoxPlotter):
         errcol = 'k'
         width = 1.0
 
-        # The error bars lines are black, so filter out black from the list of colours
-        colours = list(islice(cycle([c for c in self.colours if c != errcol]), len(config['series'])))
+        # The error bars lines are black, so filter out black from the list of
+        # colours
+        colours = list(
+            islice(cycle([c for c in self.colours if c != errcol]),
+                   len(config['series'])))
 
         labels = self._filter_labels([r.label() for r in results])
-        series_labels = self._filter_labels([s['label'] for s in config['series']])
+        series_labels = self._filter_labels(
+            [s['label'] for s in config['series']])
         texts = []
 
         if self.norm_factors:
@@ -1065,7 +1121,7 @@ class BarPlotter(BoxPlotter):
         else:
             norms = None
 
-        for i,s in enumerate(config['series']):
+        for i, s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
@@ -1076,7 +1132,7 @@ class BarPlotter(BoxPlotter):
             for r in results:
                 dp = [d for d in r.series(s['data']) if d is not None]
                 if norms is not None:
-                    dp = [d/norms[i] for d in dp]
+                    dp = [d / norms[i] for d in dp]
                 if not dp and not self.skip_missing:
                     data.append(0.0)
                     errors.append(0.0)
@@ -1085,46 +1141,53 @@ class BarPlotter(BoxPlotter):
                     dp = self.np.array(dp)
                     data.append(dp.mean())
                     errors.append(dp.std())
-                    all_data[a].append(data[-1]+errors[-1])
-                    all_data[a].append(data[-1]-errors[-1])
+                    all_data[a].append(data[-1] + errors[-1])
+                    all_data[a].append(data[-1] - errors[-1])
 
             group_size = len(data)
 
-            positions = [p-width/2.0 for p in range(pos,pos+group_size)]
-            ticks.extend(list(range(pos,pos+group_size)))
+            positions = [p - width / 2.0 for p in range(pos, pos + group_size)]
+            ticks.extend(list(range(pos, pos + group_size)))
             ticklabels.extend(labels)
             if config.get('colour_by', 'groups') == 'groups':
                 colour = colours[i]
             else:
                 colour = self.colours[:len(data)]
 
-            bp = config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol, color=colour,
-                                       alpha=0.75, width=width, align='edge')
+            config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol,
+                                  color=colour, alpha=0.75, width=width,
+                                  align='edge')
             if len(config['series']) > 1 or self.print_title:
-                texts.append(config['axes'][0].text(pos+group_size/2.0-0.5, 14, series_labels[i], ha='center'))
+                texts.append(config['axes'][0].text(
+                    pos + group_size / 2.0 - 0.5,
+                    14,
+                    series_labels[i],
+                    ha='center'))
 
-            config['axes'][a].axvline(x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
-            pos += group_size+1
+            config['axes'][a].axvline(
+                x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
+            pos += group_size + 1
 
-        for a,b in zip(config['axes'], self.bounds_y):
+        for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
-        min_y,max_y = config['axes'][0].get_ylim()
+        min_y, max_y = config['axes'][0].get_ylim()
 
         for t in texts:
-            x,y = t.get_position()
-            t.set_position((x, max_y+abs(max_y-min_y)*0.01))
+            x, y = t.get_position()
+            t.set_position((x, max_y + abs(max_y - min_y) * 0.01))
 
-        for i,l in enumerate(ticklabels):
+        for i, l in enumerate(ticklabels):
             if len(l) > self._max_label_length:
-                ticklabels[i] = l[:self._max_label_length]+"..."
+                ticklabels[i] = l[:self._max_label_length] + "..."
 
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
         axis.set_xticklabels(ticklabels, rotation=90, ha='center')
-        axis.set_xlim(0,pos-1)
+        axis.set_xlim(0, pos - 1)
 
         self.artists.extend(texts)
+
 
 class BarCombinePlotter(CombineManyPlotter, BarPlotter):
     pass
@@ -1145,7 +1208,8 @@ class CdfPlotter(Plotter):
         for s in config['series']:
             s_unit = self.data_config[s['data']]['units']
             if unit is not None and s_unit != unit:
-                raise RuntimeError("Plot axis unit mismatch: %s/%s" % (unit, s_unit))
+                raise RuntimeError(
+                    "Plot axis unit mismatch: %s/%s" % (unit, s_unit))
             unit = s_unit
 
         if 'axis_labels' in config and config['axis_labels'][0]:
@@ -1153,13 +1217,14 @@ class CdfPlotter(Plotter):
         else:
             axis.set_xlabel(unit)
         axis.set_ylabel('Cumulative probability')
-        axis.set_ylim(0,1)
+        axis.set_ylim(0, 1)
         axis.minorticks_on()
         config['axes'] = [axis]
         self.medians = []
         self.min_vals = []
 
-    def _plot(self, results, config=None, axis=None, postfix="", extra_kwargs={}, extra_scale_data=[]):
+    def _plot(self, results, config=None, axis=None, postfix="",
+              extra_kwargs={}, extra_scale_data=[]):
         if config is None:
             config = self.config
         if axis is None:
@@ -1178,8 +1243,9 @@ class CdfPlotter(Plotter):
                 # cut off values from the beginning and end before doing the
                 # plot; for e.g. pings that run long than the streams, we don't
                 # want the unloaded ping values
-                start,end = config['cutoff']
-                end = int((self.metadata['TOTAL_LENGTH'] - end) / self.metadata['STEP_SIZE'])
+                start, end = config['cutoff']
+                end = int((self.metadata['TOTAL_LENGTH'] -
+                           end) / self.metadata['STEP_SIZE'])
                 start = int(start / self.metadata['STEP_SIZE'])
                 if end == 0:
                     end = None
@@ -1190,45 +1256,45 @@ class CdfPlotter(Plotter):
             if d:
                 self.medians.append(self.np.median(d))
                 self.min_vals.append(min(d))
-                max_value = max([max_value]+d)
+                max_value = max([max_value] + d)
 
                 for r in self.scale_data + extra_scale_data:
                     d_s = [x for x in r.series(s['data']) if x is not None]
                     if d_s:
-                        max_value = max([max_value]+d_s)
-
-
+                        max_value = max([max_value] + d_s)
 
         if max_value > 10:
-            max_value += 10-(max_value%10) # round up to nearest value divisible by 10
+            # round up to nearest value divisible by 10
+            max_value += 10 - (max_value % 10)
         axis.set_xlim(right=max_value)
 
-        for i,s in enumerate(config['series']):
+        for i, s in enumerate(config['series']):
             if not data[i]:
                 continue
             max_val = max(data[i])
             min_val = min(data[i])
-            step = (max_val-min_val)/1000.0 if min_val != max_val else 1.0
-            x_values = list(frange(min_val-2*step, max_val+2*step, step))
+            step = (max_val - min_val) / 1000.0 if min_val != max_val else 1.0
+            x_values = list(frange(min_val - 2 * step, max_val + 2 * step, step))
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
                     kwargs[k] = s[k]
             if 'label' in kwargs:
-                kwargs['label']+=postfix
-            if not 'color' in kwargs:
+                kwargs['label'] += postfix
+            if 'color' not in kwargs:
                 kwargs['color'] = next(colours)
             kwargs.update(extra_kwargs)
             y_values = [cum_prob(data[i], point, sizes[i]) for point in x_values]
             if 1.0 in y_values:
-                idx_1 = y_values.index(1.0)+1
+                idx_1 = y_values.index(1.0) + 1
             else:
                 idx_1 = len(y_values)
             idx_0 = 0
-            while y_values[idx_0+1] == 0.0:
-                idx_0 +=1
+            while y_values[idx_0 + 1] == 0.0:
+                idx_0 += 1
 
-            x_vals, y_vals = self._filter_dup_vals(x_values[idx_0:idx_1], y_values[idx_0:idx_1])
+            x_vals, y_vals = self._filter_dup_vals(
+                x_values[idx_0:idx_1], y_values[idx_0:idx_1])
             self.data_artists.extend(axis.plot(x_vals,
                                                y_vals,
                                                **kwargs))
@@ -1238,31 +1304,37 @@ class CdfPlotter(Plotter):
         elif self.min_vals:
             min_val = min(self.min_vals)
             if min_val > 10:
-                min_val -= min_val%10 # nearest value divisible by 10
+                min_val -= min_val % 10  # nearest value divisible by 10
             if min_val > 100:
-                min_val -= min_val%100
+                min_val -= min_val % 100
             axis.set_xlim(left=min_val)
 
         if self.log_scale:
             # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
 
-        for a,b in zip(config['axes'], self.bounds_x):
+        for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
 
     def _filter_dup_vals(self, x_vals, y_vals):
-        """Filter out series of identical y-vals, also removing the corresponding x-vals.
+        """Filter out series of identical y-vals, also removing the corresponding
+        x-vals.
 
-        Lowers the amount of plotted points and avoids strings of markers on CDFs."""
+        Lowers the amount of plotted points and avoids strings of markers on
+        CDFs.
+
+        """
         x_vals = list(x_vals)
         y_vals = list(y_vals)
         i = 0
-        while i < len(x_vals)-2:
-            while i < len(y_vals)-2 and y_vals[i] == y_vals[i+1] and y_vals[i] == y_vals[i+2]:
-                del x_vals[i+1]
-                del y_vals[i+1]
-            i +=1
-        return x_vals,y_vals
+        while i < len(x_vals) - 2:
+            while i < len(y_vals) - 2 \
+                  and y_vals[i] == y_vals[i + 1] \
+                  and y_vals[i] == y_vals[i + 2]:
+                del x_vals[i + 1]
+                del y_vals[i + 1]
+            i += 1
+        return x_vals, y_vals
 
 
 class CdfCombinePlotter(CombineManyPlotter, CdfPlotter):
@@ -1295,19 +1367,19 @@ class QqPlotter(Plotter):
         series = self.config['series'][0]
         axis = self.config['axes'][0]
 
-        x_values,y_values = self._equal_length(results[0].series(series['data']), results[1].series(series['data']))
+        x_values, y_values = self._equal_length(results[0].series(
+            series['data']), results[1].series(series['data']))
 
         axis.plot(x_values, y_values, 'r.', label=series['label'])
 
         max_val = max(x_values.max(), y_values.max())
-        axis.plot([0,max_val], [0,max_val], 'b-', label="Ref (x=y)")
+        axis.plot([0, max_val], [0, max_val], 'b-', label="Ref (x=y)")
 
         axis.set_xlabel(results[0].label())
         axis.set_ylabel(results[1].label())
 
-        axis.set_xlim(min(x_values)*0.99, max(x_values)*1.01)
-        axis.set_ylim(min(y_values)*0.99, max(y_values)*1.01)
-
+        axis.set_xlim(min(x_values) * 0.99, max(x_values) * 1.01)
+        axis.set_ylim(min(y_values) * 0.99, max(y_values) * 1.01)
 
     def _equal_length(self, x, y):
         x_values = self.np.sort([r for r in x if r is not None])
@@ -1335,16 +1407,17 @@ class QqPlotter(Plotter):
         # data points in the shorter data set.
         if len(x_values) < len(y_values):
             y_values = self.np.interp(self.np.linspace(0, len(y_values),
-                                                       num=len(x_values), endpoint=False),
+                                                       num=len(x_values),
+                                                       endpoint=False),
                                       range(len(y_values)), y_values)
 
         elif len(y_values) < len(x_values):
             x_values = self.np.interp(self.np.linspace(0, len(x_values),
-                                                       num=len(y_values), endpoint=False),
+                                                       num=len(y_values),
+                                                       endpoint=False),
                                       range(len(x_values)), x_values)
 
         return x_values, y_values
-
 
 
 class EllipsisPlotter(Plotter):
@@ -1364,26 +1437,28 @@ class EllipsisPlotter(Plotter):
             config = self.config
 
         if len(config['series']) < 2:
-            raise RuntimeError("Can't do ellipsis plots with less than two series.")
+            raise RuntimeError(
+                "Can't do ellipsis plots with less than two series.")
 
         axis.minorticks_on()
         config['axes'] = [axis]
 
-        for i,a in enumerate(['x','y']):
+        for i, a in enumerate(['x', 'y']):
             unit = self.data_config[config['series'][i]['data']]['units']
             if self.invert_y and unit in self.inverted_units:
-                config['invert_'+a] = True
+                config['invert_' + a] = True
             else:
-                config['invert_'+a] = False
+                config['invert_' + a] = False
             if 'axis_labels' in config and config['axis_labels'][i]:
-                getattr(axis, 'set_'+a+'label')(config['axis_labels'][i])
+                getattr(axis, 'set_' + a + 'label')(config['axis_labels'][i])
             else:
-                getattr(axis, 'set_'+a+'label')(self.data_config[config['series'][i]['data']]['units'])
+                getattr(
+                    axis, 'set_' + a + 'label')(
+                        self.data_config[config['series'][i]['data']]['units'])
 
-
-
-    def _plot(self, results, config=None, axis=None, extra_kwargs={}, postfix="", **kwargs):
-        self.xvals, self.yvals = [],[]
+    def _plot(self, results, config=None, axis=None, extra_kwargs={},
+              postfix="", **kwargs):
+        self.xvals, self.yvals = [], []
         if config is None:
             config = self.config
         if axis is None:
@@ -1400,40 +1475,44 @@ class EllipsisPlotter(Plotter):
         x_values = results.series(series[0]['data'])
 
         for s in series[1:]:
-            data = [i for i in zip(x_values, results.series(s['data'])) if i[0] is not None and i[1] is not None]
+            data = [i for i in zip(x_values, results.series(s['data'])) if i[
+                0] is not None and i[1] is not None]
             if len(data) < 2:
-                points = self.np.array(data*2)
+                points = self.np.array(data * 2)
             else:
                 points = self.np.array(data)
-            x_values,y_values = zip(*data)
+            x_values, y_values = zip(*data)
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
             med = self.np.median(points, axis=0)
-            self.xvals.append(el.center[0]-el.width/2)
-            self.xvals.append(el.center[0]+el.width/2)
-            self.yvals.append(el.center[1]-el.height/2)
-            self.yvals.append(el.center[1]+el.height/2)
+            self.xvals.append(el.center[0] - el.width / 2)
+            self.xvals.append(el.center[0] + el.width / 2)
+            self.yvals.append(el.center[1] - el.height / 2)
+            self.yvals.append(el.center[1] + el.height / 2)
             self.xvals.append(med[0])
             self.yvals.append(med[1])
             axis.plot(*med, marker='o', linestyle=" ", **carg)
-            axis.annotate(label, med, ha='center', annotation_clip=True, xytext=(0,8), textcoords='offset points')
+            axis.annotate(label, med, ha='center', annotation_clip=True,
+                          xytext=(0, 8), textcoords='offset points')
 
         if self.zero_y:
             self.xvals.append(0.0)
             self.yvals.append(0.0)
-        axis.set_xlim(max(min(self.xvals)*0.99,0), max(self.xvals)*1.1)
-        axis.set_ylim(max(min(self.yvals)*0.99,0), max(self.yvals)*1.1)
+        axis.set_xlim(max(min(self.xvals) * 0.99, 0), max(self.xvals) * 1.1)
+        axis.set_ylim(max(min(self.yvals) * 0.99, 0), max(self.yvals) * 1.1)
         if config['invert_x']:
             axis.invert_xaxis()
         if config['invert_y']:
             axis.invert_yaxis()
 
-        for a,b in zip(config['axes'], self.bounds_x):
+        for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
-        for a,b in zip(config['axes'], self.bounds_y):
+        for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
+
 
 class EllipsisCombinePlotter(CombineManyPlotter, EllipsisPlotter):
     pass
+
 
 class MetaPlotter(Plotter):
 
@@ -1457,47 +1536,50 @@ class MetaPlotter(Plotter):
             subplot_params = [{}] * len(config['subplots'])
 
         if config.get('share_axis', True):
-            sharex=ax
+            sharex = ax
         else:
             sharex = None
-        for i,(subplot,cfg) in enumerate(config['subplots'].items()):
+        for i, (subplot, cfg) in enumerate(config['subplots'].items()):
             if config.get('orientation', 'vertical') == 'vertical':
                 rows = len(config['subplots'])
                 cols = 1
             else:
                 cols = len(config['subplots'])
                 rows = 1
-            axis = self.figure.add_subplot(rows, cols,i+1, sharex=sharex, **subplot_params[i])
+            axis = self.figure.add_subplot(
+                rows, cols, i + 1, sharex=sharex, **subplot_params[i])
             cfg['axes'] = [axis]
             cfg = self.expand_plot_config(cfg, self.data_config)
             self.configs.append(cfg)
             plotter = get_plotter(cfg['type'])(cfg, self.data_config,
                                                figure=self.figure, **self._kwargs)
-            plotter.init(cfg,axis)
-            self.subplots.append((plotter,axis))
-            if i < len(config['subplots'])-1:
+            plotter.init(cfg, axis)
+            self.subplots.append((plotter, axis))
+            if i < len(config['subplots']) - 1:
                 axis.set_xlabel("")
 
     def plot(self, results):
         if self.metadata is None:
             self.metadata = results[0].meta()
-        for s,ax in self.subplots:
+        for s, ax in self.subplots:
             s.plot(results, connect_interactive=False)
             s.legends.extend(s.do_legend())
             self.legends.extend(s.legends)
             s.init_interactive()
         self.connect_interactive()
 
-
     def get_can_highlight(self):
-        return self._can_highlight and all([s.can_highlight for s,ax in self.subplots])
+        return self._can_highlight and all([s.can_highlight
+                                            for s, ax in self.subplots])
+
     def set_can_highlight(self, v):
         self._can_highlight = v
-    can_highlight = property(get_can_highlight,set_can_highlight)
+    can_highlight = property(get_can_highlight, set_can_highlight)
 
     def on_move(self, event):
-        for s,ax in self.subplots:
-            if ax.in_axes(event) or any([l.contains(event)[0] for l in s.legends]):
+        for s, ax in self.subplots:
+            if ax.in_axes(event) or any([l.contains(event)[0]
+                                         for l in s.legends]):
                 s.on_move(event)
             else:
                 # If the event did not fit this axes, we may have just left it,
@@ -1505,17 +1587,18 @@ class MetaPlotter(Plotter):
                 # highlights.
                 s.update_axes(set())
 
-
     def clear_bg_cache(self, evt=None):
-        for s,ax in self.subplots:
+        for s, ax in self.subplots:
             s.clear_bg_cache()
 
     def disconnect_callbacks(self):
         Plotter.disconnect_callbacks(self)
-        for s,ax in self.subplots:
+        for s, ax in self.subplots:
             s.disconnect_callbacks()
 
+
 class SubplotCombinePlotter(MetaPlotter):
+
     def init(self, config=None):
         pass
 
@@ -1525,13 +1608,14 @@ class SubplotCombinePlotter(MetaPlotter):
         for i in range(number):
             config['subplots'][str(i)] = config.copy()
         if not get_plotter(config['type']).can_subplot_combine:
-            raise RuntimeError("This plot type does not work with --subplot-combine.")
+            raise RuntimeError(
+                "This plot type does not work with --subplot-combine.")
         MetaPlotter.init(self, config)
 
     def plot(self, results, connect_interactive=True):
         if self.metadata is None:
             self.metadata = results[0].meta()
         self._init(len(results))
-        for s,r in zip(self.subplots, results):
+        for s, r in zip(self.subplots, results):
             s.plot([r])
             self.legends.extend(s.do_legend())

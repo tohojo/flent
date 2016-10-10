@@ -36,6 +36,12 @@ except ImportError:
 
 from itertools import chain
 
+from flent.build_info import DATA_DIR, VERSION
+from flent.resultset import ResultSet
+from flent.formatters import PlotFormatter
+from flent.settings import get_tests
+from flent import util, batch, resultset
+
 mswindows = (sys.platform == "win32")
 
 # Python 2/3 compatibility
@@ -45,42 +51,52 @@ except NameError:
     unicode = str
 
 try:
-    from PyQt4 import QtCore, QtGui, QtNetwork, uic
-    from PyQt4.QtGui import *
-    from PyQt4.QtCore import *
+    from PyQt4 import QtGui, uic
+
+    from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
+        QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
+        QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
+        QApplication, QStringListModel
+
+    from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
+        QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
+        QAbstractItemModel, QAbstractTableModel, QModelIndex
+
+    from PyQt4.QtNetwork import QLocalSocket, QLocalServer
 except ImportError:
+    raise
     raise RuntimeError("PyQt4 must be installed to use the GUI.")
 
 try:
     import matplotlib
     matplotlib.use("Agg")
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
+        as FigureCanvas
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
+        as NavigationToolbar
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
+
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
 # doesn't work with double extensions. So just include the deprecated extensions
 # in the default ones on Mac.
 if hasattr(QtGui, "qt_mac_set_native_menubar"):
-    FILE_SELECTOR_STRING = "Flent data files (*.flent *.flnt *.flent.gz *.flent.bz2 *.json.gz)"
+    FILE_SELECTOR_STRING = "Flent data files " \
+                           "(*.flent *.flnt *.flent.gz *.flent.bz2 *.json.gz)"
 else:
     FILE_SELECTOR_STRING = "Flent data files (*.flent *.flent.gz *.flent.bz2);;" \
-                           "Flent data files - deprecated extensions (*.flnt *.json.gz)"
+                           "Flent data files - " \
+                           "deprecated extensions (*.flnt *.json.gz)"
 FILE_SELECTOR_STRING += ";;All files (*.*)"
 
-
-from flent.build_info import DATA_DIR,VERSION
-from flent.resultset import ResultSet
-from flent.formatters import PlotFormatter
-from flent.settings import get_tests
-from flent import util, batch, resultset
 
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "flent-socket-"
 SOCKET_DIR = tempfile.gettempdir()
 
 __all__ = ['run_gui']
+
 
 def run_gui(settings):
     if check_running(settings):
@@ -96,6 +112,7 @@ def run_gui(settings):
     mainwindow.show()
     return app.exec_()
 
+
 def check_running(settings):
     """Check for a valid socket of an already running instance, and if so,
     connect to it and send the input file names."""
@@ -108,18 +125,24 @@ def check_running(settings):
             try:
                 pid = int(f.split("-")[-1])
                 os.kill(pid, 0)
-                sys.stderr.write("Found a running instance with pid %d. Trying to connect... " % pid)
-                # Signal handler did not raise an error, so the pid is running. Try to connect
-                sock = QtNetwork.QLocalSocket()
-                sock.connectToServer(os.path.join(SOCKET_DIR, f), QIODevice.WriteOnly)
+                sys.stderr.write(
+                    "Found a running instance with pid %d. "
+                    "Trying to connect... " % pid)
+                # Signal handler did not raise an error, so the pid is running.
+                # Try to connect
+                sock = QLocalSocket()
+                sock.connectToServer(os.path.join(
+                    SOCKET_DIR, f), QIODevice.WriteOnly)
                 if not sock.waitForConnected(1000):
                     continue
 
-                # Encode the filenames as a QStringList and pass them over the socket
+                # Encode the filenames as a QStringList and pass them over the
+                # socket
                 block = QByteArray()
                 stream = QDataStream(block, QIODevice.WriteOnly)
                 stream.setVersion(QDataStream.Qt_4_0)
-                stream.writeQStringList([os.path.abspath(f) for f in settings.INPUT])
+                stream.writeQStringList([os.path.abspath(f)
+                                         for f in settings.INPUT])
                 sock.write(block)
                 ret = sock.waitForBytesWritten(1000)
                 sock.disconnectFromServer()
@@ -138,6 +161,7 @@ def check_running(settings):
                 pass
     return False
 
+
 def get_ui_class(filename):
     """Helper method to dynamically load a .ui file, construct a class
     inheriting from the ui class and the associated base class, and return
@@ -151,6 +175,7 @@ def get_ui_class(filename):
         raise RuntimeError("While loading ui file '%s': %s" % (filename, e))
 
     class C(ui, base):
+
         def __init__(self, *args):
             base.__init__(self, *args)
             self.setupUi(self)
@@ -165,7 +190,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.last_dir = os.getcwd()
         self.defer_load = self.settings.INPUT
 
-        self.setWindowTitle("Flent GUI v%s"%VERSION)
+        self.setWindowTitle("Flent GUI v%s" % VERSION)
 
         self.actionNewTab.triggered.connect(self.add_tab)
         self.actionOpen.triggered.connect(self.on_open)
@@ -199,7 +224,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
         self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
-        self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT is None or self.settings.HOVER_HIGHLIGHT)
+        self.checkHighlight.setChecked(
+            self.settings.HOVER_HIGHLIGHT is None
+            or self.settings.HOVER_HIGHLIGHT)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
@@ -212,7 +239,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkFilterLegend.toggled.connect(self.update_checkboxes)
         self.checkHighlight.toggled.connect(self.update_checkboxes)
 
-        self.tabifyDockWidget(self.openFilesDock,self.metadataDock)
+        self.tabifyDockWidget(self.openFilesDock, self.metadataDock)
         self.openFilesDock.raise_()
         self.open_files = OpenFilesModel(self)
         self.openFilesView = OpenFilesView(self.openFilesDock)
@@ -226,10 +253,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.expandButton.clicked.connect(self.metadataView.expandAll)
 
         # Start IPC socket server on name corresponding to pid
-        self.server = QtNetwork.QLocalServer()
+        self.server = QLocalServer()
         self.sockets = []
         self.server.newConnection.connect(self.new_connection)
-        self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %(SOCKET_NAME_PREFIX, os.getpid())))
+        self.server.listen(os.path.join(SOCKET_DIR, "%s%d" %
+                                        (SOCKET_NAME_PREFIX, os.getpid())))
 
         self.read_settings()
 
@@ -237,6 +265,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if 'savefig.directory' in matplotlib.rcParams:
             return matplotlib.rcParams['savefig.directory']
         return self._last_dir
+
     def set_last_dir(self, value):
         if 'savefig.directory' in matplotlib.rcParams:
             matplotlib.rcParams['savefig.directory'] = value
@@ -289,10 +318,13 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
+
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
+
     def open_files_visibility(self):
         self.actionOpenFiles.setChecked(not self.openFilesDock.isHidden())
+
     def metadata_column_resize(self):
         self.metadataView.resizeColumnToContents(0)
 
@@ -411,18 +443,17 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def warn_nomatch(self):
         QMessageBox.warning(self, "No matching datasets found",
-                           "Could not find any datasets with a matching test name to add.")
-
+                            "Could not find any datasets with a "
+                            "matching test name to add.")
 
     def show(self):
         super(MainWindow, self).show()
 
-        # Deferring loading until here means the window has been created and a busy
-        # cursor can be shown.
+        # Deferring loading until here means the window has been created and a
+        # busy cursor can be shown.
         if self.defer_load:
             self.load_files(self.defer_load)
             self.defer_load = None
-
 
     def shorten_tabs(self):
         """Try to shorten tab labels by filtering out common substrings.
@@ -448,7 +479,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         substr = util.long_substr(titles)
         prefix = util.long_substr(titles, prefix_only=True)
-        for i,t,lt in zip(indexes,titles,long_titles):
+        for i, t, lt in zip(indexes, titles, long_titles):
             if len(substr) > 0:
                 text = t.replace(substr, "...")
             if len(prefix) > 0 and prefix != substr:
@@ -458,10 +489,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.viewArea.setTabText(i, text)
             self.viewArea.setTabToolTip(i, lt)
 
-
     def close_tab(self, idx=None):
         self.busy_start()
-        if idx in (None,False):
+        if idx in (None, False):
             idx = self.viewArea.currentIndex()
         widget = self.viewArea.widget(idx)
         if widget is not None:
@@ -560,10 +590,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 if isinstance(e, RuntimeError):
                     err = "%s" % e
                 else:
-                    typ,val,tra = sys.exc_info()
-                    err = "".join(traceback.format_exception_only(typ,val))
+                    typ, val, tra = sys.exc_info()
+                    err = "".join(traceback.format_exception_only(typ, val))
                 QMessageBox.warning(self, "Error loading file",
-                                    "Error while loading data file:\n\n%s\n\nSkipping. Full traceback output to console." % err)
+                                    "Error while loading data file:\n\n%s\n\n"
+                                    "Skipping. Full traceback output to console."
+                                    % err)
                 continue
 
             widget.change_plot(current_plot)
@@ -581,7 +613,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         dialog = NewTestDialog(self, self.settings)
         dialog.exec_()
 
+
 class NewTestDialog(get_ui_class("newtestdialog.ui")):
+
     def __init__(self, parent, settings):
         super(NewTestDialog, self).__init__(parent)
         self.settings = settings.copy()
@@ -590,13 +624,15 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
         tests = get_tests()
         max_len = max([len(t[0]) for t in tests])
-        for t,desc in tests:
+        for t, desc in tests:
             desc = desc.replace("\n", " ")
-            self.testName.addItem(("%-"+str(max_len)+"s :  %s") % (t, desc), t)
+            self.testName.addItem(
+                ("%-" + str(max_len) + "s :  %s") % (t, desc), t)
         self.testName.setCurrentIndex(self.testName.findData(self.settings.NAME))
         self.hostName.setText(self.settings.HOST or "")
         self.testTitle.setText(self.settings.TITLE or "")
-        self.outputDir.setText(os.path.realpath(self.settings.DATA_DIR or os.getcwd()))
+        self.outputDir.setText(os.path.realpath(
+            self.settings.DATA_DIR or os.getcwd()))
         self.testLength.setValue(self.settings.LENGTH)
         self.extendedMetadata.setChecked(self.settings.EXTENDED_METADATA)
 
@@ -609,7 +645,8 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.monitor_timer.timeout.connect(self.update_progress)
 
     def select_output_dir(self):
-        directory = QFileDialog.getExistingDirectory(self, "Select output directory",
+        directory = QFileDialog.getExistingDirectory(self,
+                                                     "Select output directory",
                                                      self.outputDir.text())
         if directory:
             self.outputDir.setText(directory)
@@ -620,7 +657,8 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         path = self.outputDir.text()
         if not test or not host:
             QMessageBox.critical(self, "Error running test",
-                                 "You must select a test to run and a hostname to connect to.")
+                                 "You must select a test to run and a "
+                                 "hostname to connect to.")
             return
         if not os.path.isdir(path):
             QMessageBox.critical(self, "Error running test",
@@ -640,7 +678,6 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         res = resultset.new(self.settings)
         self.settings.DATA_FILENAME = res.dump_filename
 
-
         self.total_time = self.settings.TOTAL_LENGTH
         self.start_time = time.time()
 
@@ -653,8 +690,8 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
     def update_progress(self):
 
-        p,s = os.waitpid(self.pid, os.WNOHANG)
-        if (p,s) == (0,0):
+        p, s = os.waitpid(self.pid, os.WNOHANG)
+        if (p, s) == (0, 0):
             elapsed = time.time() - self.start_time
             self.progressBar.setValue(100 * elapsed / self.total_time)
         else:
@@ -662,10 +699,9 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             self.runButton.setEnabled(True)
             self.progressBar.setValue(0)
             self.monitor_timer.stop()
-            self.parent().load_files([os.path.join(self.settings.DATA_DIR, self.settings.DATA_FILENAME)])
-
-
-
+            self.parent().load_files(
+                [os.path.join(self.settings.DATA_DIR,
+                              self.settings.DATA_FILENAME)])
 
 
 class PlotModel(QStringListModel):
@@ -677,7 +713,7 @@ class PlotModel(QStringListModel):
         self.keys = list(self.settings.PLOTS.keys())
 
         strings = []
-        for k,v in self.settings.PLOTS.items():
+        for k, v in self.settings.PLOTS.items():
             strings.append("%s (%s)" % (k, v['description']))
         self.setStringList(strings)
 
@@ -701,7 +737,7 @@ class TreeItem(object):
                 self.children.append(TreeItem(self, "", v))
         elif isinstance(value, dict):
             self.value = ""
-            for k,v in sorted(value.items()):
+            for k, v in sorted(value.items()):
                 self.children.append(TreeItem(self, k, v))
         else:
             self.value = value
@@ -727,13 +763,13 @@ class MetadataModel(QAbstractItemModel):
             return len(parent.internalPointer())
         return len(self.root)
 
-    def headerData(self, section, orientation, role = Qt.DisplayRole):
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
         if orientation == Qt.Vertical or role != Qt.DisplayRole:
             return None
         return self.header_names[section]
 
-    def data(self, idx, role = Qt.DisplayRole):
-        if not role in (Qt.DisplayRole, Qt.StatusTipRole, Qt.ToolTipRole):
+    def data(self, idx, role=Qt.DisplayRole):
+        if role not in (Qt.DisplayRole, Qt.StatusTipRole, Qt.ToolTipRole):
             return None
 
         item = idx.internalPointer()
@@ -749,7 +785,7 @@ class MetadataModel(QAbstractItemModel):
 
     def parent(self, idx):
         item = idx.internalPointer()
-        if item is None or item.parent in (None,self.root):
+        if item is None or item.parent in (None, self.root):
             return QModelIndex()
         parent = item.parent
         row = parent.parent.children.index(parent)
@@ -763,6 +799,7 @@ class MetadataModel(QAbstractItemModel):
 
 
 class MetadataView(QTreeView):
+
     def __init__(self, parent, openFilesView):
         super(MetadataView, self).__init__(parent)
         self.setAlternatingRowColors(True)
@@ -775,20 +812,25 @@ class MetadataView(QTreeView):
     def contextMenuEvent(self, event):
         idx = self.indexAt(event.pos())
         menu = QMenu()
+
         def pin():
             self.add_pin(idx)
         act_pin = QAction("&Pin expanded", menu, triggered=pin)
+
         def col():
             self.add_open_files_col(idx)
         act_col = QAction("&Add open files column", menu, triggered=col)
-        menu.addActions([act_pin,act_col])
+        menu.addActions([act_pin, act_col])
         menu.exec_(event.globalPos())
         event.accept()
 
     def get_metadata_path(self, idx):
         path = []
         while idx.isValid():
-            name = self.model().data(self.model().index(idx.row(), 0, idx.parent()), Qt.DisplayRole)
+            name = self.model().data(self.model().index(idx.row(),
+                                                        0,
+                                                        idx.parent()),
+                                     Qt.DisplayRole)
             path.insert(0, name or idx.row())
             idx = idx.parent()
 
@@ -803,7 +845,8 @@ class MetadataView(QTreeView):
 
     def add_open_files_col(self, idx):
         path = self.get_metadata_path(idx)
-        self.openFilesView.horizontalHeader().add_column(None, ":".join(map(str,path)))
+        self.openFilesView.horizontalHeader().add_column(None,
+                                                         ":".join(map(str, path)))
 
     def setModel(self, model):
         super(MetadataView, self).setModel(model)
@@ -819,15 +862,20 @@ class MetadataView(QTreeView):
                     if isinstance(n, int):
                         idx = self.model().index(n, 0, parent)
                     else:
-                        idx = self.model().match(self.model().index(0,0,parent), Qt.DisplayRole, n)[0]
+                        idx = self.model().match(self.model().index(
+                            0, 0, parent), Qt.DisplayRole, n)[0]
                     self.setExpanded(idx, True)
                     parent = idx
                 except IndexError:
-                    sys.stderr.write("Could not find pinned entry '%s'.\n" % ":".join(map(str,pin)))
+                    sys.stderr.write(
+                        "Could not find pinned entry '%s'.\n"
+                        % ":".join(map(str, pin)))
                     break
                 except Exception as e:
-                    sys.stderr.write("Restoring pin '%s' failed: %s.\n" % (":".join(map(str,pin)), e))
+                    sys.stderr.write("Restoring pin '%s' failed: %s.\n" %
+                                     (":".join(map(str, pin)), e))
                     break
+
 
 class ResultsetStore(object):
 
@@ -850,8 +898,8 @@ class ResultsetStore(object):
         offset = 0
         for k in self._order:
             v = self._store[k]
-            if idx < len(v)+offset:
-                return v[idx-offset]
+            if idx < len(v) + offset:
+                return v[idx - offset]
             offset += len(v)
         raise IndexError()
 
@@ -859,6 +907,7 @@ class ResultsetStore(object):
         if key is None:
             key = self._sort_key
             reverse = self._sort_rev
+
         def get_key(itm):
             try:
                 return itm.meta(key)
@@ -867,7 +916,7 @@ class ResultsetStore(object):
         if only:
             only.sort(key=get_key, reverse=reverse)
         else:
-            self._sort_key, self._sort_rev = key,reverse
+            self._sort_key, self._sort_rev = key, reverse
             for v in self._store.values():
                 v.sort(key=get_key, reverse=reverse)
 
@@ -891,7 +940,7 @@ class OpenFilesModel(QAbstractTableModel):
         QAbstractTableModel.__init__(self, parent)
         self._parent = parent
         self.open_files = ResultsetStore()
-        self.columns = [(None,'Act'),
+        self.columns = [(None, 'Act'),
                         ('DATA_FILENAME', 'Filename'),
                         ('TITLE', 'Title')]
         self.active_widget = None
@@ -909,11 +958,13 @@ class OpenFilesModel(QAbstractTableModel):
         except:
             return
         if len(cols) > len(self.columns):
-            self.beginInsertColumns(QModelIndex(), len(self.columns), len(cols)-1)
+            self.beginInsertColumns(
+                QModelIndex(), len(self.columns), len(cols) - 1)
             self.columns = cols
             self.endInsertColumns()
         elif len(cols) < len(self.columns):
-            self.beginRemoveColumns(QModelIndex(), len(cols), len(self.columns)-1)
+            self.beginRemoveColumns(
+                QModelIndex(), len(cols), len(self.columns) - 1)
             self.columns = cols
             self.endRemoveColumns()
         else:
@@ -945,8 +996,8 @@ class OpenFilesModel(QAbstractTableModel):
 
     def update(self):
         self.update_order()
-        self.dataChanged.emit(self.index(0,0), self.index(len(self.open_files),
-                                                          len(self.columns)))
+        self.dataChanged.emit(self.index(0, 0), self.index(len(self.open_files),
+                                                           len(self.columns)))
 
     def activate(self, idx, new_tab=False):
         if new_tab or not self.has_widget or self.ctrl_pressed:
@@ -971,7 +1022,8 @@ class OpenFilesModel(QAbstractTableModel):
     def add_file(self, r):
         if r in self.open_files:
             return
-        self.beginInsertRows(QModelIndex(), len(self.open_files), len(self.open_files))
+        self.beginInsertRows(QModelIndex(), len(
+            self.open_files), len(self.open_files))
         self.open_files.append(r)
         self.endInsertRows()
         self.update()
@@ -990,9 +1042,12 @@ class OpenFilesModel(QAbstractTableModel):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self.columns[section][1]
         if role == Qt.DisplayRole and orientation == Qt.Vertical:
-            return section+1
-        if role == Qt.ToolTipRole and orientation == Qt.Horizontal and section > 0:
-            return "Metadata path: %s.\nRight click to add or remove columns." % self.columns[section][0]
+            return section + 1
+        if role == Qt.ToolTipRole and \
+           orientation == Qt.Horizontal and \
+           section > 0:
+            return "Metadata path: %s.\nRight click to add or remove columns." \
+                % self.columns[section][0]
         if role == Qt.TextAlignmentRole:
             return Qt.AlignLeft | Qt.AlignVCenter
 
@@ -1000,9 +1055,11 @@ class OpenFilesModel(QAbstractTableModel):
         flags = super(OpenFilesModel, self).flags(idx)
         if idx.column() == 0:
             flags |= Qt.ItemIsUserCheckable
-        if (self.has_widget and \
-           self.active_widget.results.meta("NAME") != self.open_files[idx.row()].meta("NAME"))\
-           or (self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0):
+        if (self.has_widget and
+            self.active_widget.results.meta("NAME") !=
+            self.open_files[idx.row()].meta("NAME"))\
+           or (self.is_primary(idx.row()) and
+               len(self.active_widget.extra_results) == 0):
             flags &= ~Qt.ItemIsEnabled
         return flags
 
@@ -1015,13 +1072,13 @@ class OpenFilesModel(QAbstractTableModel):
     def removeColumn(self, col, parent):
         if col == 0:
             return False
-        self.beginRemoveColumns(parent,col,col)
-        self.columns[col:col+1] = []
+        self.beginRemoveColumns(parent, col, col)
+        self.columns[col:col + 1] = []
         self.endRemoveColumns()
 
     def add_column(self, pos, path, name):
-        self.beginInsertColumns(QModelIndex(),pos,pos)
-        self.columns.insert(pos, (path,name))
+        self.beginInsertColumns(QModelIndex(), pos, pos)
+        self.columns.insert(pos, (path, name))
         self.endInsertColumns()
 
     def data(self, idx, role=Qt.DisplayRole):
@@ -1036,14 +1093,15 @@ class OpenFilesModel(QAbstractTableModel):
         if role == Qt.ToolTipRole:
             if not self.has_widget:
                 return "Click to open in new tab."
-            elif self.is_primary(idx.row()) and len(self.active_widget.extra_results) == 0:
+            elif self.is_primary(idx.row()) and len(
+                    self.active_widget.extra_results) == 0:
                 return "Can't deselect last item. Ctrl+click to open in new tab."
             elif self.flags(idx) & Qt.ItemIsEnabled:
                 return "Click to select/deselect. Ctrl+click to open in new tab."
             else:
                 return "Ctrl+click to open in new tab."
         if role == Qt.TextAlignmentRole:
-            return Qt.AlignLeft|Qt.AlignVCenter
+            return Qt.AlignLeft | Qt.AlignVCenter
         if role == Qt.DisplayRole:
             return self.get_metadata(idx.row(), self.columns[idx.column()][0])
         if role == Qt.FontRole:
@@ -1059,6 +1117,7 @@ class OpenFilesModel(QAbstractTableModel):
         self.open_files.sort(key, (order == Qt.DescendingOrder))
         self.update()
 
+
 class OpenFilesView(QTableView):
 
     def __init__(self, parent):
@@ -1068,7 +1127,7 @@ class OpenFilesView(QTableView):
         self.setAlternatingRowColors(True)
 
         self.setSortingEnabled(True)
-        self.sortByColumn(1,Qt.AscendingOrder)
+        self.sortByColumn(1, Qt.AscendingOrder)
 
         self.setHorizontalHeader(OpenFilesHeader(self))
 
@@ -1090,18 +1149,22 @@ class OpenFilesView(QTableView):
     def contextMenuEvent(self, event):
         idx = self.indexAt(event.pos())
         menu = QMenu()
+
         def opn():
             self.model().activate(idx.row(), True)
         act_opn = QAction("&Open in new tab", menu, triggered=opn)
+
         def cls():
             self.close_file(idx.row())
         act_cls = QAction("&Close file", menu, triggered=cls)
         sep = QAction(menu)
         sep.setSeparator(True)
-        menu.addActions([act_opn,sep])
-        menu.addActions(self.horizontalHeader().column_actions(idx.column(), menu))
+        menu.addActions([act_opn, sep])
+        menu.addActions(self.horizontalHeader(
+        ).column_actions(idx.column(), menu))
         menu.exec_(event.globalPos())
         event.accept()
+
 
 class OpenFilesHeader(QHeaderView):
 
@@ -1117,7 +1180,8 @@ class OpenFilesHeader(QHeaderView):
             def rem():
                 self._parent.remove_column(col)
             name = self.model().headerData(col, Qt.Horizontal, Qt.DisplayRole)
-            actions.append(QAction("&Remove column '%s'" % name, parent, triggered=rem))
+            actions.append(QAction("&Remove column '%s'" %
+                                   name, parent, triggered=rem))
 
         def add():
             self.add_column(col)
@@ -1132,10 +1196,10 @@ class OpenFilesHeader(QHeaderView):
         if not dialog.exec_() or not dialog.get_path():
             return
         vis_old = self.visualIndex(col)
-        self.model().add_column(col+1, dialog.get_path(), dialog.get_name())
-        vis_new = self.visualIndex(col+1)
-        self.moveSection(vis_new,vis_old+1)
-        self._parent.resizeColumnToContents(col+1)
+        self.model().add_column(col + 1, dialog.get_path(), dialog.get_name())
+        vis_new = self.visualIndex(col + 1)
+        self.moveSection(vis_new, vis_old + 1)
+        self._parent.resizeColumnToContents(col + 1)
 
     def contextMenuEvent(self, event):
         idx = self.logicalIndexAt(event.pos())
@@ -1144,7 +1208,9 @@ class OpenFilesHeader(QHeaderView):
         menu.exec_(event.globalPos())
         event.accept()
 
+
 class AddColumnDialog(get_ui_class("addcolumn.ui")):
+
     def __init__(self, parent, path=None):
         super(AddColumnDialog, self).__init__(parent)
 
@@ -1170,14 +1236,19 @@ class AddColumnDialog(get_ui_class("addcolumn.ui")):
     def get_name(self):
         return unicode(self.columnNameEdit.text())
 
+
 class UpdateDisabler(object):
+
     def __init__(self, widget):
         self.widget = widget
+
     def __enter__(self):
         self.widget.setUpdatesEnabled(False)
+
     def __exit__(self, *ignored):
         self.widget.setUpdatesEnabled(True)
         self.widget.update()
+
 
 class ResultWidget(get_ui_class("resultwidget.ui")):
 
@@ -1216,10 +1287,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             if isinstance(e, RuntimeError):
                 err = "%s" % e
             else:
-                typ,val,tra = sys.exc_info()
-                err = "".join(traceback.format_exception_only(typ,val))
+                typ, val, tra = sys.exc_info()
+                err = "".join(traceback.format_exception_only(typ, val))
             QMessageBox.warning(self, "Error loading plot",
-                                "Error while loading plot:\n\n%s\nFalling back to default plot. Full traceback output to console." % err)
+                                "Error while loading plot:\n\n%s\n"
+                                "Falling back to default plot. "
+                                "Full traceback output to console." % err)
 
             self.settings.PLOT = self.settings.DEFAULTS['PLOT']
             self.formatter = PlotFormatter(self.settings)
@@ -1235,8 +1308,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
         self.plotModel = PlotModel(self, self.settings)
         self.plotSelectionModel = QItemSelectionModel(self.plotModel)
-        self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
-                                                QItemSelectionModel.SelectCurrent)
+        self.plotSelectionModel.setCurrentIndex(
+            self.plotModel.index_of(self.settings.PLOT),
+            QItemSelectionModel.SelectCurrent)
         self.plotSelectionModel.currentChanged.connect(self.change_plot)
 
         self.metadataModel = MetadataModel(self, self.results.meta())
@@ -1244,10 +1318,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
         if self.settings.TITLE:
             self.title = "%s - %s" % (self.settings.NAME, self.settings.TITLE)
-            self.long_title = "%s - %s" % (self.title, util.format_date(self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
+            self.long_title = "%s - %s" % (self.title, util.format_date(
+                self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
         else:
             self.title = "%s - %s" % (self.settings.NAME,
-                                      util.format_date(self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
+                                      util.format_date(self.settings.TIME,
+                                                       fmt="%Y-%m-%d %H:%M:%S"))
             self.long_title = self.title
 
         if self.settings.GUI_NO_DEFER:
@@ -1296,7 +1372,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         return False
 
     def remove_extra(self, resultset):
-        if not resultset in self.extra_results:
+        if resultset not in self.extra_results:
             if resultset == self.results and self.extra_results:
                 self.results = self.extra_results.pop(0)
                 self.update()
@@ -1315,6 +1391,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         # Check for attribute to not crash on a matplotlib version that does not
         # have the save action.
         return hasattr(self.toolbar, 'save_figure')
+
     def save_plot(self):
         if self.can_save:
             self.toolbar.save_figure()
@@ -1385,8 +1462,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         plot_name = unicode(plot_name)
         if plot_name != self.settings.PLOT and plot_name in self.settings.PLOTS:
             self.settings.PLOT = plot_name
-            self.plotSelectionModel.setCurrentIndex(self.plotModel.index_of(self.settings.PLOT),
-                                                    QItemSelectionModel.SelectCurrent)
+            self.plotSelectionModel.setCurrentIndex(
+                self.plotModel.index_of(self.settings.PLOT),
+                QItemSelectionModel.SelectCurrent)
             self.plot_changed.emit(self.settings.NAME, self.settings.PLOT)
             self.update()
             return True
@@ -1403,7 +1481,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def update(self, redraw=True):
         self.dirty = True
-        if redraw and ((self.isVisible() and self.updatesEnabled()) or self.settings.GUI_NO_DEFER):
+        if redraw and ((self.isVisible() and self.updatesEnabled())
+                       or self.settings.GUI_NO_DEFER):
             self.redraw()
 
     def activate(self):
@@ -1418,7 +1497,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         # Simulate a mouse move event when the widget is activated. This ensures
         # that the interactive plot highlight will get updated correctly.
         pt = self.canvas.mapFromGlobal(QCursor.pos())
-        evt = QMouseEvent(QEvent.MouseMove, pt, Qt.NoButton, Qt.NoButton, Qt.NoModifier)
+        evt = QMouseEvent(QEvent.MouseMove, pt, Qt.NoButton,
+                          Qt.NoButton, Qt.NoModifier)
         self.canvas.mouseMoveEvent(evt)
 
     def redraw(self):
@@ -1437,9 +1517,11 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.dirty = False
         except Exception as e:
             traceback.print_exc()
-            typ,val,tra = sys.exc_info()
-            err = "".join(traceback.format_exception_only(typ,val))
+            typ, val, tra = sys.exc_info()
+            err = "".join(traceback.format_exception_only(typ, val))
             QMessageBox.warning(self, "Error plotting",
-                                "Unhandled exception while plotting:\n\n%s\nAborting. Full traceback output to console." % err)
+                                "Unhandled exception while plotting:\n\n%s\n"
+                                "Aborting. Full traceback output to console."
+                                % err)
         finally:
             self.update_end.emit()

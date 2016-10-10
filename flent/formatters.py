@@ -31,9 +31,10 @@ from flent.util import classname
 from flent import plotters
 from functools import reduce
 
+
 def new(settings):
     formatter_name = classname(settings.FORMAT, 'Formatter')
-    if not formatter_name in globals():
+    if formatter_name not in globals():
         raise RuntimeError("Formatter not found: '%s'." % settings.FORMAT)
     try:
         return globals()[formatter_name](settings)
@@ -57,19 +58,20 @@ class Formatter(object):
         else:
             # This logic is there to ensure that:
             # 1. If there is no write access, fail before running the tests.
-            # 2. If the file exists, do not open (and hence overwrite it) until after the
-            #    tests have run.
+            # 2. If the file exists, do not open (and hence overwrite it) until
+            #    after the tests have run.
             if os.path.exists(output):
-                # os.access doesn't work on non-existant files on FreeBSD; so only do the
-                # access check on existing files (to avoid overwriting them before the tests
-                # have completed).
+                # os.access doesn't work on non-existant files on FreeBSD; so
+                # only do the access check on existing files (to avoid
+                # overwriting them before the tests have completed).
                 if not os.access(output, os.W_OK):
-                    raise RuntimeError("No write permission for output file '%s'" % output)
+                    raise RuntimeError(
+                        "No write permission for output file '%s'" % output)
                 else:
                     self.output = output
             else:
-                # If the file doesn't exist, just try to open it immediately; that'll error out
-                # if access is denied.
+                # If the file doesn't exist, just try to open it immediately;
+                # that'll error out if access is denied.
                 try:
                     self.output = io.open(output, self.open_mode)
                 except IOError as e:
@@ -93,7 +95,9 @@ class Formatter(object):
 
     def format(self, results):
         if results[0].dump_filename is not None:
-            sys.stderr.write("No output formatter selected.\nTest data is in %s (use with -i to format).\n" % results[0].dump_filename)
+            sys.stderr.write(
+                "No output formatter selected.\nTest data is in %s "
+                "(use with -i to format).\n" % results[0].dump_filename)
 
     def write(self, string):
         try:
@@ -101,21 +105,27 @@ class Formatter(object):
         except BrokenPipeError:
             pass
 
+
 class NullFormatter(Formatter):
+
     def check_output(self, output):
         pass
+
     def format(self, results):
         pass
+
     def __del__(self):
         pass
 
 DefaultFormatter = Formatter
 
+
 class TableFormatter(Formatter):
 
     def get_header(self, results):
         name = results[0].meta("NAME")
-        keys = list(set(reduce(lambda x,y:x+y, [r.series_names for r in results])))
+        keys = list(
+            set(reduce(lambda x, y: x + y, [r.series_names for r in results])))
         header_row = [name]
 
         if len(results) > 1:
@@ -128,12 +138,15 @@ class TableFormatter(Formatter):
     def combine_results(self, results):
         """Generator to combine several result sets into one list of rows, by
         concatenating them."""
-        keys = list(set(reduce(lambda x,y:x+y, [r.series_names for r in results])))
+        keys = list(
+            set(reduce(lambda x, y: x + y, [r.series_names for r in results])))
         for row in list(zip(*[list(r.zipped(keys)) for r in results])):
             out_row = [row[0][0]]
             for r in row:
                 if r[0] != out_row[0]:
-                    raise RuntimeError("x-value mismatch: %s/%s. Incompatible data sets?" % (out_row[0], r[0]))
+                    raise RuntimeError(
+                        "x-value mismatch: %s/%s. Incompatible data sets?"
+                        % (out_row[0], r[0]))
                 out_row += r[1:]
             yield out_row
 
@@ -152,7 +165,7 @@ class OrgTableFormatter(TableFormatter):
             return
         header_row = self.get_header(results)
         self.write("| " + " | ".join(header_row) + " |\n")
-        self.write("|-" + "-+-".join(["-"*len(i) for i in header_row]) + "-|\n")
+        self.write("|-" + "-+-".join(["-" * len(i) for i in header_row]) + "-|\n")
 
         def format_item(item):
             if isinstance(item, float):
@@ -163,7 +176,6 @@ class OrgTableFormatter(TableFormatter):
             self.write("| ")
             self.write(" | ".join(map(format_item, row)))
             self.write(" |\n")
-
 
 
 class CsvFormatter(TableFormatter):
@@ -190,6 +202,7 @@ class CsvFormatter(TableFormatter):
         except BrokenPipeError:
             return
 
+
 class StatsFormatter(Formatter):
 
     def __init__(self, settings):
@@ -198,12 +211,14 @@ class StatsFormatter(Formatter):
             import numpy
             self.np = numpy
         except ImportError:
-            raise RuntimeError("Stats formatter requires numpy, which seems to be missing. Please install it and try again.")
+            raise RuntimeError(
+                "Stats formatter requires numpy, which seems to be missing. "
+                "Please install it and try again.")
 
     def format(self, results):
         self.open_output()
         self.write("Warning: Totals are computed as cumulative sum * step size,\n"
-                          "so spurious values wreck havoc with the results.\n")
+                   "so spurious values wreck havoc with the results.\n")
         for r in results:
             self.write("Results %s" % r.meta('TIME'))
             if r.meta('TITLE'):
@@ -220,8 +235,9 @@ class StatsFormatter(Formatter):
                 units = self.settings.DATA_SETS[s]['units']
                 self.write("  Data points: %d\n" % len(d))
                 if units != "ms":
-                    self.write("  Total:       %f %s\n" % (cs[-1]*r.meta('STEP_SIZE'),
-                                                               units.replace("/s", "")))
+                    self.write("  Total:       %f %s\n" % (
+                        cs[-1] * r.meta('STEP_SIZE'),
+                        units.replace("/s", "")))
                 self.write("  Mean:        %f %s\n" % (self.np.mean(d), units))
                 self.write("  Median:      %f %s\n" % (self.np.median(d), units))
                 self.write("  Min:         %f %s\n" % (self.np.min(d), units))
@@ -241,7 +257,6 @@ class PlotFormatter(Formatter):
         self.figure = None
         self.plotter = None
         self.init_plots()
-
 
     def init_plots(self):
         if self.figure is None:
@@ -272,7 +287,8 @@ class PlotFormatter(Formatter):
             self.plotter.disconnect_callbacks()
             self.figure.clear()
             self.plotter = self.plotters.new(self.settings,
-                                             plotter=self.plotters.get_plotter("subplot_combine"),
+                                             plotter=self.plotters.get_plotter(
+                                                 "subplot_combine"),
                                              figure=self.figure)
             self.plotter.init()
         self.plotter.plot(results)
@@ -283,4 +299,5 @@ class MetadataFormatter(Formatter):
 
     def format(self, results):
         self.open_output()
-        self.write(json.dumps([r.serialise_metadata() for r in results], indent=4) + "\n")
+        self.write(json.dumps([r.serialise_metadata()
+                               for r in results], indent=4) + "\n")

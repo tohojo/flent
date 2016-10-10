@@ -35,8 +35,6 @@ import tempfile
 import threading
 import time
 
-mswindows = (sys.platform == "win32")
-
 from datetime import datetime
 from calendar import timegm
 from threading import Event
@@ -45,13 +43,15 @@ from flent import util
 from flent.build_info import DATA_DIR
 from flent.util import classname, ENCODING, Glob
 
+mswindows = (sys.platform == "win32")
+
 try:
     from defusedxml.xmlrpc import monkey_patch
     monkey_patch()
     del monkey_patch
-    XML_DEFUSED=True
+    XML_DEFUSED = True
 except ImportError:
-    XML_DEFUSED=False
+    XML_DEFUSED = False
 
 try:
     # python 2
@@ -62,7 +62,8 @@ except ImportError:
 
 if mswindows:
     def _handle_exitstatus(sts):
-        raise NotImplementedError("Subprocess management currently doesn't work on Windows")
+        raise NotImplementedError(
+            "Subprocess management currently doesn't work on Windows")
 else:
     # helper function from subprocess module
     def _handle_exitstatus(sts, _WIFSIGNALED=os.WIFSIGNALED,
@@ -81,15 +82,17 @@ else:
 
 def get(name):
     cname = classname(name, "Runner")
-    if not cname in globals():
+    if cname not in globals():
         raise RuntimeError("Runner not found: '%s'" % name)
     return globals()[cname]
+
 
 class RunnerBase(object):
 
     transformed_metadata = []
 
-    def __init__(self, name, settings, idx=None, start_event=None, finish_event=None, kill_event=None, **kwargs):
+    def __init__(self, name, settings, idx=None, start_event=None,
+                 finish_event=None, kill_event=None, **kwargs):
         self.name = name
         self.settings = settings
         self.idx = idx
@@ -111,12 +114,16 @@ class RunnerBase(object):
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
         pass
+
     def join(self):
         pass
+
     def isAlive(self):
         return False
+
     def kill(self, graceful=False):
         pass
+
 
 class TimerRunner(threading.Thread, RunnerBase):
 
@@ -135,6 +142,7 @@ class TimerRunner(threading.Thread, RunnerBase):
 
     def kill(self, graceful=False):
         self.kill_event.set()
+
 
 class FileMonitorRunner(threading.Thread, RunnerBase):
 
@@ -162,7 +170,8 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
 
             # Add an extra interval to comparison to avoid getting one too few
             # samples due to small time differences.
-            while current_time < start_time + self.length + self.interval and not self.kill_event.is_set():
+            while (current_time < start_time + self.length + self.interval
+                   and not self.kill_event.is_set()):
                 try:
                     with open(self.filename, 'r') as fp:
                         val = fp.read()
@@ -174,7 +183,8 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
                         val = val.strip()
                     self.raw_values.append({'t': current_time, 'val': val})
                 except IOError as e:
-                    self.err += "Error opening file {}: {}\n".format(self.filename, e)
+                    self.err += "Error opening file {}: {}\n".format(
+                        self.filename, e)
                 finally:
                     self.kill_event.wait(self.interval)
                     current_time = time.time()
@@ -182,13 +192,16 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
                 self.result = result
             else:
                 self.returncode = 1
-                sys.stderr.write("Unable to produce any valid data from file '%s'. Errors:\n" % self.filename)
+                sys.stderr.write(
+                    "Unable to produce any valid data from file '%s'. Errors:\n"
+                    % self.filename)
                 sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
 
         self.finish_event.set()
 
     def kill(self, graceful=False):
         self.kill_event.set()
+
 
 class ProcessRunner(threading.Thread, RunnerBase):
     """Default process runner for any process."""
@@ -204,7 +217,9 @@ class ProcessRunner(threading.Thread, RunnerBase):
         # remote hosts. I.e. the same binaries must exist in the same places.
         if remote_host:
             if not self.supports_remote:
-                raise RuntimeError("%s (idx %d) does not support running on remote hosts." % (self.__class__.__name__, self.idx))
+                raise RuntimeError(
+                    "%s (idx %d) does not support running on remote hosts." % (
+                        self.__class__.__name__, self.idx))
             command = "ssh %s '%s'" % (remote_host, command)
             self.metadata['REMOTE_HOST'] = remote_host
 
@@ -232,11 +247,15 @@ class ProcessRunner(threading.Thread, RunnerBase):
         # Use named temporary files to avoid errors on double-delete when
         # running on Windows/cygwin.
         try:
-            self.stdout = tempfile.NamedTemporaryFile(prefix="flent-", delete=False)
-            self.stderr = tempfile.NamedTemporaryFile(prefix="flent-", delete=False)
+            self.stdout = tempfile.NamedTemporaryFile(
+                prefix="flent-", delete=False)
+            self.stderr = tempfile.NamedTemporaryFile(
+                prefix="flent-", delete=False)
         except OSError as e:
             if e.errno == 24:
-                raise RuntimeError("Unable to create temporary files because too many files are open. Try increasing ulimit.")
+                raise RuntimeError(
+                    "Unable to create temporary files because too many "
+                    "files are open. Try increasing ulimit.")
             else:
                 raise RuntimeError("Unable to create temporary files: %s" % e)
 
@@ -297,7 +316,9 @@ class ProcessRunner(threading.Thread, RunnerBase):
 
     def start(self):
         if mswindows:
-            raise RuntimeError("Process management currently doesn't work on Windows, so running tests is not possible.")
+            raise RuntimeError(
+                "Process management currently doesn't work on Windows, "
+                "so running tests is not possible.")
         self.fork()
         threading.Thread.start(self)
 
@@ -317,14 +338,14 @@ class ProcessRunner(threading.Thread, RunnerBase):
             pid, sts = os.waitpid(self.pid, 0)
         else:
             pid, sts = os.waitpid(self.pid, os.WNOHANG)
-            while (pid,sts) == (0,0):
+            while (pid, sts) == (0, 0):
                 self.kill_event.wait(1)
                 if self.kill_event.is_set():
                     try:
                         os.kill(self.pid, signal.SIGTERM)
                     except OSError:
                         pass
-                pid,sts = os.waitpid(self.pid, os.WNOHANG)
+                pid, sts = os.waitpid(self.pid, os.WNOHANG)
 
         self.finish_event.set()
         self.returncode = _handle_exitstatus(sts)
@@ -339,8 +360,8 @@ class ProcessRunner(threading.Thread, RunnerBase):
         self.stdout.seek(0)
         self.out += self.stdout.read().decode(ENCODING)
         try:
-            # Close and remove the temporary file. This might fail, but we're going
-            # to assume that is okay.
+            # Close and remove the temporary file. This might fail, but we're
+            # going to assume that is okay.
             filename = self.stdout.name
             self.stdout.close()
             os.unlink(filename)
@@ -357,7 +378,9 @@ class ProcessRunner(threading.Thread, RunnerBase):
             pass
 
         if self.returncode and not self.silent:
-            sys.stderr.write("Warning: Program exited non-zero (%d).\nCommand: %s\n" % (self.returncode, self.command))
+            sys.stderr.write(
+                "Warning: Program exited non-zero (%d).\nCommand: %s\n"
+                % (self.returncode, self.command))
             sys.stderr.write("Program output:\n")
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
             sys.stderr.write("  " + "\n  ".join(self.out.splitlines()) + "\n")
@@ -368,8 +391,9 @@ class ProcessRunner(threading.Thread, RunnerBase):
                              "Data series: %s\n"
                              "Runner: %s\n"
                              "Command: %s\n"
-                             "Standard error output:\n" % (self.name, self.__class__.__name__, self.command)
-            )
+                             "Standard error output:\n" % (
+                                 self.name, self.__class__.__name__, self.command)
+                             )
             sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
 
     def parse(self, output):
@@ -380,10 +404,13 @@ class ProcessRunner(threading.Thread, RunnerBase):
 
 DefaultRunner = ProcessRunner
 
+
 class SilentProcessRunner(ProcessRunner):
     silent = True
+
     def parse(self, output):
         return None
+
 
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
@@ -395,31 +422,40 @@ class DitgRunner(ProcessRunner):
             control_host = kwargs['control_host']
         else:
             control_host = self.settings.CONTROL_HOST or self.settings.HOST
-        self.proxy = xmlrpc.ServerProxy("http://%s:%s" % (control_host,
-                                                          self.settings.DITG_CONTROL_PORT),
+        self.proxy = xmlrpc.ServerProxy("http://%s:%s"
+                                        % (control_host,
+                                           self.settings.DITG_CONTROL_PORT),
                                         allow_none=True)
         self.ditg_secret = self.settings.DITG_CONTROL_SECRET
         self.duration = duration
         self.interval = interval
 
-
     def start(self):
         try:
-            interval = int(self.interval*1000)
-            hm = hmac.new(self.ditg_secret.encode('UTF-8'), digestmod=hashlib.sha256)
+            interval = int(self.interval * 1000)
+            hm = hmac.new(self.ditg_secret.encode(
+                'UTF-8'), digestmod=hashlib.sha256)
             hm.update(str(self.duration).encode('UTF-8'))
             hm.update(str(interval).encode('UTF-8'))
-            params = self.proxy.request_new_test(self.duration, interval, hm.hexdigest(), True)
+            params = self.proxy.request_new_test(
+                self.duration, interval, hm.hexdigest(), True)
             if params['status'] != 'OK':
                 if 'message' in params:
-                    raise RuntimeError("Unable to request D-ITG test. Control server reported error: %s" % params['message'])
+                    raise RuntimeError(
+                        "Unable to request D-ITG test. "
+                        "Control server reported error: %s" % params['message'])
                 else:
-                    raise RuntimeError("Unable to request D-ITG test. Control server reported an unspecified error.")
+                    raise RuntimeError(
+                        "Unable to request D-ITG test. "
+                        "Control server reported an unspecified error.")
             self.test_id = params['test_id']
             self.out += "Test ID: %s\n" % self.test_id
         except (xmlrpc.Fault, socket.error) as e:
-            raise RuntimeError("Error while requesting D-ITG test: '%s'. Is the control server listening (see man page)?" % e)
-        self.command = self.command.format(signal_port = params['port'], dest_port=params['port']+1)
+            raise RuntimeError(
+                "Error while requesting D-ITG test: '%s'. "
+                "Is the control server listening (see man page)?" % e)
+        self.command = self.command.format(
+            signal_port=params['port'], dest_port=params['port'] + 1)
         self.args = shlex.split(self.command)
         ProcessRunner.start(self)
 
@@ -441,9 +477,12 @@ class DitgRunner(ProcessRunner):
                 time.sleep(1)
             if res['status'] != 'OK':
                 if 'message' in res:
-                    self.err += "Error while getting results. Control server reported error: %s.\n" % res['message']
+                    self.err += "Error while getting results. " \
+                                "Control server reported error: %s.\n" \
+                                % res['message']
                 else:
-                    self.err += "Error while getting results. Control server reported unknown error.\n"
+                    self.err += "Error while getting results. " \
+                                "Control server reported unknown error.\n"
         except xmlrpc.Fault as e:
             self.err += "Error while getting results: %s.\n" % e
 
@@ -451,7 +490,7 @@ class DitgRunner(ProcessRunner):
         # sometimes it runs amok and outputs megabytes of erroneous data. So, if
         # the length of the data is more than ten times the expected value,
         # abort rather than try to process the data.
-        if len(data) > (self.duration/self.interval) * 500:
+        if len(data) > (self.duration / self.interval) * 500:
             self.err += "D-ITG output too much data (%d bytes).\n" % len(data)
             return results
 
@@ -463,8 +502,8 @@ class DitgRunner(ProcessRunner):
                 continue
             parts = [float(i) for i in line.split()]
             timestamp = parts.pop(0) + utc_offset
-            for i,n in enumerate(('bitrate', 'delay', 'jitter', 'loss')):
-                if not n in results:
+            for i, n in enumerate(('bitrate', 'delay', 'jitter', 'loss')):
+                if n not in results:
                     results[n] = []
                 results[n].append([timestamp, parts[i]])
 
@@ -478,8 +517,8 @@ class DitgRunner(ProcessRunner):
             vals = dict(zip(parts[::2], parts[1::2]))
             times = {}
             for v in ('txTime', 'rxTime'):
-                t,microsec = vals[v].split(".")
-                h,m,s = t.split(":")
+                t, microsec = vals[v].split(".")
+                h, m, s = t.split(":")
                 # FIXME: This is definitely going to break if a test is run
                 # around midnight
                 dt = datetime.utcnow().replace(hour=int(h),
@@ -496,6 +535,7 @@ class DitgRunner(ProcessRunner):
             })
 
         self.raw_values = raw_values
+
 
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
@@ -531,14 +571,15 @@ class NetperfDemoRunner(ProcessRunner):
 
                 if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
                     result.append([time, value])
-                    avg_dur = alpha * avg_dur + (1.0-alpha) * dur
+                    avg_dur = alpha * avg_dur + (1.0 - alpha) * dur
         self.raw_values = raw_values
         try:
             self.metadata['MEAN_VALUE'] = float(lines[-1])
-        except (ValueError,IndexError):
+        except (ValueError, IndexError):
             pass
 
         return result
+
 
 class RegexpRunner(ProcessRunner):
 
@@ -568,40 +609,47 @@ class RegexpRunner(ProcessRunner):
             for regexp in cls.regexes:
                 match = regexp.match(line)
                 if match:
-                    result.append([float(match.group('t')), float(match.group('val'))])
+                    result.append([float(match.group('t')),
+                                   float(match.group('val'))])
                     rw = match.groupdict()
-                    for k,v in rw.items():
+                    for k, v in rw.items():
                         try:
                             rw[k] = float(v)
                         except ValueError:
                             pass
                     raw_values.append(rw)
-                    break # only match one regexp per line
+                    break  # only match one regexp per line
             for regexp in cls.metadata_regexes:
                 match = regexp.match(line)
                 if match:
-                    for k,v in match.groupdict().items():
+                    for k, v in match.groupdict().items():
                         try:
                             metadata[k] = float(v)
                         except ValueError:
                             metadata[k] = v
         return result, raw_values, metadata
 
+
 class PingRunner(RegexpRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
 
     # For some reason some versions of ping output icmp_req and others icmp_seq
     # for sequence numbers.
-    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\](?:.*icmp_.eq=(?P<seq>[0-9]+))?.*time=(?P<val>[0-9]+(?:\.[0-9]+)?) ms$'),
-               re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*:(?: \[(?P<seq>[0-9]+)\])?.*, (?P<val>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
+    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\]'
+                          r'(?:.*icmp_.eq=(?P<seq>[0-9]+))?'
+                          r'.*time=(?P<val>[0-9]+(?:\.[0-9]+)?) ms$'),
+               re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*:'
+                          r'(?: \[(?P<seq>[0-9]+)\])?.*, '
+                          r'(?P<val>[0-9]+(?:\.[0-9]+)?) ms \(.*\)$')]
     metadata_regexes = [re.compile(r'^.*min/avg/max(?:/mdev)? = '
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
-    transformed_metadata = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
+    transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
     @classmethod
-    def find_binary(cls, ip_version, interval, length, host, marking=None, local_bind=None):
+    def find_binary(cls, ip_version, interval, length, host,
+                    marking=None, local_bind=None):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
@@ -611,70 +659,81 @@ class PingRunner(RegexpRunner):
         else:
             suffix = ""
 
-
-        fping = util.which('fping'+suffix)
-        ping = util.which('ping'+suffix)
+        fping = util.which('fping' + suffix)
+        ping = util.which('ping' + suffix)
 
         if fping is not None:
             proc = subprocess.Popen([fping, '-h'],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            out,err = proc.communicate()
+            out, err = proc.communicate()
             # check for presence of timestamp option
             if "print timestamp before each output line" in str(out):
-                return "{binary} -D -p {interval:.0f} -c {count:.0f} {marking} {local_bind} {host}".format(
-                    binary=fping,
-                    interval=interval * 1000, # fping expects interval in milliseconds
-                    # since there's no timeout parameter for fping, calculate a total number
-                    # of pings to send
-                    count=length // interval + 1,
-                    marking="-O {0}".format(marking) if marking else "",
-                    local_bind="-I {0}".format(local_bind) if local_bind else "",
-                    host=host)
+                return "{binary} -D -p {interval:.0f} -c {count:.0f} " \
+                    "{marking} {local_bind} {host}".format(
+                        binary=fping,
+                        interval=interval * 1000,  # fping expects interval in ms
+                        # since there's no timeout parameter for fping,
+                        # calculate a total number of pings to send
+                        count=length // interval + 1,
+                        marking="-O {0}".format(marking) if marking else "",
+                        local_bind=("-I {0}".format(local_bind)
+                                    if local_bind else ""),
+                        host=host)
             elif "must run as root?" in str(err):
-                sys.stderr.write("Found fping but it seems to be missing permissions (no SUID?). Not using.\n")
+                sys.stderr.write(
+                    "Found fping but it seems to be missing "
+                    "permissions (no SUID?). Not using.\n")
 
         if ping is not None:
-            # Ping can't handle hostnames for the -I parameter, so do a lookup first.
+            # Ping can't handle hostnames for the -I parameter, so do a lookup
+            # first.
             if local_bind:
-                local_bind=util.lookup_host(local_bind, ip_version)[4][0]
+                local_bind = util.lookup_host(local_bind, ip_version)[4][0]
 
             # Try parsing the output of 'ping' and complain if no data is
             # returned from the parser. This should pick up e.g. the ping on OSX
-            # not having a -D option and allow us to supply a better error message.
+            # not having a -D option and allow us to supply a better error
+            # message.
             proc = subprocess.Popen([ping, '-D', '-n', '-c', '1', 'localhost'],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            out,err = proc.communicate()
+            out, err = proc.communicate()
             if hasattr(out, 'decode'):
                 out = out.decode(ENCODING)
             if not cls._parse(out)[0]:
-                raise RuntimeError("Cannot parse output of the system ping binary ({ping}). "
-                                   "Please install fping v3.5+.".format(ping=ping))
+                raise RuntimeError(
+                    "Cannot parse output of the system ping binary ({ping}). "
+                    "Please install fping v3.5+.".format(ping=ping))
 
-            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} {local_bind} {host}".format(
-                binary=ping,
-                interval=max(0.2, interval),
-                length=length,
-                marking="-Q {0}".format(marking) if marking else "",
-                local_bind="-I {0}".format(local_bind) if local_bind else "",
-                host=host)
+            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} " \
+                "{local_bind} {host}".format(
+                    binary=ping,
+                    interval=max(0.2, interval),
+                    length=length,
+                    marking="-Q {0}".format(marking) if marking else "",
+                    local_bind="-I {0}".format(local_bind) if local_bind else "",
+                    host=host)
 
         raise RuntimeError("No suitable ping tool found.")
 
+
 class HttpGetterRunner(RegexpRunner):
 
-    regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\].*in (?P<val>[0-9]+(?:\.[0-9]+)?) seconds.$')]
+    regexes = [re.compile(
+        r'^\[(?P<t>[0-9]+\.[0-9]+)\].*in (?P<val>[0-9]+(?:\.[0-9]+)?) seconds.$')]
     metadata_regexes = [re.compile(r'^.*min/avg/max(?:/mdev)? = '
                                    r'(?P<MIN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
-    transformed_metadata = ('MEAN_VALUE','MIN_VALUE','MAX_VALUE')
+    transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
+
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
     transformed_metadata = ('MEAN_VALUE',)
+
     def __init__(self, **kwargs):
         if 'udp' in kwargs:
             self.udp = kwargs['udp']
@@ -688,7 +747,7 @@ class IperfCsvRunner(ProcessRunner):
         raw_values = []
         lines = output.strip().split("\n")
         dest = None
-        for line in lines[:-1]: # The last line is an average over the whole test
+        for line in lines[:-1]:  # The last line is an average over the whole test
             parts = line.split(",")
             if len(parts) < 9:
                 continue
@@ -704,9 +763,9 @@ class IperfCsvRunner(ProcessRunner):
             # only support this format.
 
             try:
-                sec,mil = timestamp.split(".")
+                sec, mil = timestamp.split(".")
                 dt = datetime.strptime(sec, "%Y%m%d%H%M%S")
-                timestamp = time.mktime(dt.timetuple())+float(mil)/1000
+                timestamp = time.mktime(dt.timetuple()) + float(mil) / 1000
                 val = float(bandwidth)
                 result.append([timestamp, val])
                 raw_values.append({'t': timestamp, 'val': val})
@@ -722,47 +781,54 @@ class IperfCsvRunner(ProcessRunner):
                 self.metadata['MEAN_VALUE'] = float(parts[8])
             else:
                 self.metadata['MEAN_VALUE'] = None
-        except (ValueError,IndexError):
+        except (ValueError, IndexError):
             pass
         return result
 
     @classmethod
-    def find_binary(cls, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False, bw=None):
+    def find_binary(cls, host, interval, length, ip_version, local_bind=None,
+                    no_delay=False, udp=False, bw=None):
         iperf = util.which('iperf')
 
         if iperf is not None:
             proc = subprocess.Popen([iperf, '-h'],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            out,err = proc.communicate()
+            out, err = proc.communicate()
 
             if "--enhancedreports" in str(err):
                 if udp:
                     udp_args = "--udp --bandwidth {}".format(bw if bw else "100M")
                 else:
                     udp_args = ""
-                return "{binary} --enhancedreports --reportstyle C --format m --client {host} --time {length} --interval {interval} " \
+                return "{binary} --enhancedreports --reportstyle C --format m " \
+                    "--client {host} --time {length} --interval {interval} " \
                     "{local_bind} {no_delay} {udp} {ip6}".format(
                         host=host,
                         binary=iperf,
                         length=length,
                         interval=interval,
-                        ip6="--ipv6_domain" if ip_version == 6 else "", # --help output is wrong
-                        local_bind="--bind {0}".format(local_bind) if local_bind else "",
+                        # --help output is wrong
+                        ip6="--ipv6_domain" if ip_version == 6 else "",
+                        local_bind="--bind {0}".format(
+                            local_bind) if local_bind else "",
                         no_delay="--nodelay" if no_delay else "",
                         udp=udp_args)
             else:
-                sys.stderr.write("Found iperf binary, but it does not have an --enhancedreport option. Not using.\n")
+                sys.stderr.write(
+                    "Found iperf binary, but it does not have "
+                    "an --enhancedreport option. Not using.\n")
 
         raise RuntimeError("No suitable Iperf binary found.")
+
 
 class TcRunner(ProcessRunner):
     """Runner for iterated `tc -s qdisc`. Expects iterations to be separated by
     '\n---\n and a timestamp to be present in the form 'Time: xxxxxx.xxx' (e.g.
     the output of `date '+Time: %s.%N'`)."""
 
-    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
-    split_re  = re.compile(r"^qdisc ", re.MULTILINE)
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    split_re = re.compile(r"^qdisc ", re.MULTILINE)
     qdisc_res = [
         re.compile(r"Sent (?P<sent_bytes>\d+) bytes (?P<sent_pkts>\d+) pkt "
                    r"\(dropped (?P<dropped>\d+), "
@@ -798,12 +864,13 @@ class TcRunner(ProcessRunner):
                    r"dropped (?P<dropped_pie>\d+) "
                    r"maxq (?P<maxq>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+)"),
-        ]
+    ]
 
     cake_tin_re = r"(Tin \d|Bulk|Best Effort|Video|Voice)"
-    cake_alltins_re = re.compile(r"(\s*"+cake_tin_re+r")+")
+    cake_alltins_re = re.compile(r"(\s*" + cake_tin_re + r")+")
     cake_1tin_re = re.compile(cake_tin_re)
-    cake_keys = ["av_delay", "sp_delay", "pkts", "bytes", "drops", "marks", "sp_flows", "bk_flows", "max_len"]
+    cake_keys = ["av_delay", "sp_delay", "pkts", "bytes",
+                 "drops", "marks", "sp_flows", "bk_flows", "max_len"]
 
     # Normalise time values (seconds, ms, us) to milliseconds and bit values
     # (bit, Kbit, Mbit) to bits
@@ -811,15 +878,15 @@ class TcRunner(ProcessRunner):
         if v is None:
             return None
         elif v.endswith("us"):
-            return float(v[:-2])/1000
+            return float(v[:-2]) / 1000
         elif v.endswith("ms"):
             return float(v[:-2])
         elif v.endswith("s"):
-            return float(v[:-1])*1000
+            return float(v[:-1]) * 1000
         elif v.endswith("Kbit"):
-            return float(v[:-4])*1000
+            return float(v[:-4]) * 1000
         elif v.endswith("Mbit"):
-            return float(v[:-4])*10**6
+            return float(v[:-4]) * 10**6
         elif v.endswith("bit"):
             return float(v[:-3])
         else:
@@ -836,7 +903,8 @@ class TcRunner(ProcessRunner):
             # one). If so, discard the root qdisc and sum the rest.
             qdiscs = self.split_re.split(part)
             if len(qdiscs) > 2:
-                part = "qdisc ".join([i for i in qdiscs if not 'root' in i])
+                part = "qdisc ".join([i for i in qdiscs
+                                      if 'root' not in i])
 
             matches = {}
             timestamp = self.time_re.search(part)
@@ -852,9 +920,9 @@ class TcRunner(ProcessRunner):
                 # values for the qdiscs are summed for the result (discarding
                 # what should be the root qdisc as per above).
                 while m is not None:
-                    for k,v in list(m.groupdict().items()):
+                    for k, v in list(m.groupdict().items()):
                         v = self.parse_val(v)
-                        if not k in matches or not isinstance(v,float):
+                        if k not in matches or not isinstance(v, float):
                             matches[k] = v
                         else:
                             matches[k] += v
@@ -865,24 +933,28 @@ class TcRunner(ProcessRunner):
                 tins = self.cake_1tin_re.findall(m.group(0))
                 start = m.end()
                 for key in self.cake_keys:
-                    m = re.search("^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (key, len(tins)), part[start:], re.IGNORECASE|re.MULTILINE)
+                    m = re.search("^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (
+                        key, len(tins)), part[start:],
+                                  re.IGNORECASE | re.MULTILINE)
                     if m:
                         k = "cake_%s" % key
-                        matches[k] = dict(zip(tins, map(self.parse_val, m.group(0).split()[1:])))
+                        matches[k] = dict(
+                            zip(tins, map(self.parse_val,
+                                          m.group(0).split()[1:])))
 
             # The cake stats, being multi-dimensional, is not actually plottable
             # yet. For now, add in an 'ecn_marks' key that is the sum of all
             # cake tins, for comparability with other qdiscs
-            if "cake_marks" in matches and not "ecn_mark" in matches:
+            if "cake_marks" in matches and "ecn_mark" not in matches:
                 matches['ecn_mark'] = sum(matches['cake_marks'].values())
 
-            for k,v in matches.items():
-                if not isinstance(v,float):
+            for k, v in matches.items():
+                if not isinstance(v, float):
                     continue
-                if not k in results:
-                    results[k] = [[timestamp,v]]
+                if k not in results:
+                    results[k] = [[timestamp, v]]
                 else:
-                    results[k].append([timestamp,v])
+                    results[k].append([timestamp, v])
             matches['t'] = timestamp
             self.raw_values.append(matches)
         return results
@@ -898,16 +970,20 @@ class TcRunner(ProcessRunner):
             raise RuntimeError("TC stats requires a Bash shell.")
 
         if interface is None:
-            sys.stderr.write("Warning: No interface given for tc runner. Defaulting to 'eth0'.\n")
-            interface='eth0'
+            sys.stderr.write(
+                "Warning: No interface given for tc runner. "
+                "Defaulting to 'eth0'.\n")
+            interface = 'eth0'
 
-        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f} -H {host}".format(
-            bash=bash,
-            script=script,
-            interface=interface,
-            interval=interval,
-            count=length // interval + 1,
-            host=host)
+        return "{bash} {script} -i {interface} -I {interval:.2f} " \
+            "-c {count:.0f} -H {host}".format(
+                bash=bash,
+                script=script,
+                interface=interface,
+                interval=interval,
+                count=length // interval + 1,
+                host=host)
+
 
 class CpuStatsRunner(ProcessRunner):
     """Runner for getting CPU usage stats from /proc/stat. Expects iterations to be
@@ -915,8 +991,8 @@ class CpuStatsRunner(ProcessRunner):
     xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
 
     """
-    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
-    value_re   = re.compile(r"^\d+ \d+ (?P<load>\d+\.\d+)$", re.MULTILINE)
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    value_re = re.compile(r"^\d+ \d+ (?P<load>\d+\.\d+)$", re.MULTILINE)
 
     def parse(self, output):
         results = {}
@@ -934,20 +1010,20 @@ class CpuStatsRunner(ProcessRunner):
                 continue
             matches = {}
 
-            for k,v in list(value.groupdict().items()):
+            for k, v in list(value.groupdict().items()):
                 v = float(v)
-                if not k in matches:
+                if k not in matches:
                     matches[k] = v
                 else:
                     matches[k] += v
 
-            for k,v in matches.items():
-                if not isinstance(v,float):
+            for k, v in matches.items():
+                if not isinstance(v, float):
                     continue
-                if not k in results:
-                    results[k] = [[timestamp,v]]
+                if k not in results:
+                    results[k] = [[timestamp, v]]
                 else:
-                    results[k].append([timestamp,v])
+                    results[k].append([timestamp, v])
             matches['t'] = timestamp
             self.raw_values.append(matches)
         return results
@@ -962,12 +1038,14 @@ class CpuStatsRunner(ProcessRunner):
         if not bash:
             raise RuntimeError("CPU stats requires a Bash shell.")
 
-        return "{bash} {script} -I {interval:.2f} -c {count:.0f} -H {host}".format(
-            bash=bash,
-            script=script,
-            interval=interval,
-            count=length // interval + 1,
-            host=host)
+        return "{bash} {script} -I {interval:.2f} " \
+            "-c {count:.0f} -H {host}".format(
+                bash=bash,
+                script=script,
+                interval=interval,
+                count=length // interval + 1,
+                host=host)
+
 
 class WifiStatsRunner(ProcessRunner):
     """Runner for getting WiFi debug stats from /sys/kernel/debug. Expects
@@ -975,15 +1053,18 @@ class WifiStatsRunner(ProcessRunner):
     form 'Time: xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
 
     """
-    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
-    station_re   = re.compile(r"^Station: (?P<mac>(?:[0-9a-f]{2}:){5}[0-9a-f]{2})\n", re.MULTILINE)
-    airtime_re   = re.compile(r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    station_re = re.compile(
+        r"^Station: (?P<mac>(?:[0-9a-f]{2}:){5}[0-9a-f]{2})\n", re.MULTILINE)
+    airtime_re = re.compile(
+        r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
 
     def __init__(self, **kwargs):
         if 'stations' in kwargs:
-            if kwargs['stations'] in (["all"],["ALL"]):
+            if kwargs['stations'] in (["all"], ["ALL"]):
                 self.stations = []
-                self.all_stations = False # disabled as it doesn't work properly yet
+                # disabled as it doesn't work properly yet
+                self.all_stations = False
             else:
                 self.stations = kwargs['stations']
                 self.all_stations = False
@@ -1007,8 +1088,8 @@ class WifiStatsRunner(ProcessRunner):
             station_parts = self.station_re.split(part)[1:]
             stations = {}
 
-            for s,v in zip(station_parts[::2], station_parts[1::2]):
-                if not s in self.stations:
+            for s, v in zip(station_parts[::2], station_parts[1::2]):
+                if s not in self.stations:
                     if self.all_stations:
                         self.stations.append(s)
                     else:
@@ -1024,30 +1105,29 @@ class WifiStatsRunner(ProcessRunner):
                 # For now, just parse the average aggregation size, which is the
                 # last field of each csv line output.
                 if rcs > -1:
-                    nl = v.find("\n", rcs+10)
+                    nl = v.find("\n", rcs + 10)
                     if nl > -1:
-                        line = v[rcs+10:nl]
+                        line = v[rcs + 10:nl]
                         sv['avg_aggr_size'] = float(line.split(",")[-1])
                 stations[s] = sv
 
                 # Flatten for results array
-                for k,v in sv.items():
-                    if not isinstance(v,float):
+                for k, v in sv.items():
+                    if not isinstance(v, float):
                         continue
-                    rk = "::".join([k,s])
-                    if not rk in results:
-                        results[rk] = [[timestamp,v]]
+                    rk = "::".join([k, s])
+                    if rk not in results:
+                        results[rk] = [[timestamp, v]]
                     else:
-                        results[rk].append([timestamp,v])
+                        results[rk].append([timestamp, v])
 
-
-            for k,v in matches.items():
-                if not isinstance(v,float):
+            for k, v in matches.items():
+                if not isinstance(v, float):
                     continue
-                if not k in results:
-                    results[k] = [[timestamp,v]]
+                if k not in results:
+                    results[k] = [[timestamp, v]]
                 else:
-                    results[k].append([timestamp,v])
+                    results[k].append([timestamp, v])
             matches['t'] = timestamp
             matches['stations'] = stations
             self.raw_values.append(matches)
@@ -1066,13 +1146,14 @@ class WifiStatsRunner(ProcessRunner):
         if not bash:
             raise RuntimeError("WiFi stats requires a Bash shell.")
 
-        return "{bash} {script} -i {interface} -I {interval:.2f} -c {count:.0f} -H {host}".format(
-            bash=bash,
-            script=script,
-            interface=interface,
-            interval=interval,
-            count=length // interval + 1,
-            host=host)
+        return "{bash} {script} -i {interface} -I {interval:.2f} " \
+            "-c {count:.0f} -H {host}".format(
+                bash=bash,
+                script=script,
+                interface=interface,
+                interval=interval,
+                count=length // interval + 1,
+                host=host)
 
 
 class NetstatRunner(ProcessRunner):
@@ -1081,9 +1162,10 @@ class NetstatRunner(ProcessRunner):
     form 'Time: xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
 
     """
-    time_re   = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
-    tcpext_header_re   = re.compile(r"^TcpExt: (?P<header>[A-Z][0-9a-zA-Z ]+)\n", re.MULTILINE)
-    tcpext_data_re   = re.compile(r"^TcpExt: (?P<data>[0-9 ]+)\n", re.MULTILINE)
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    tcpext_header_re = re.compile(
+        r"^TcpExt: (?P<header>[A-Z][0-9a-zA-Z ]+)\n", re.MULTILINE)
+    tcpext_data_re = re.compile(r"^TcpExt: (?P<data>[0-9 ]+)\n", re.MULTILINE)
 
     def parse(self, output):
         results = {}
@@ -1108,13 +1190,13 @@ class NetstatRunner(ProcessRunner):
 
             matches = dict(zip(h, [float(i) for i in d]))
 
-            for k,v in matches.items():
-                if not isinstance(v,float):
+            for k, v in matches.items():
+                if not isinstance(v, float):
                     continue
-                if not k in results:
-                    results[k] = [[timestamp,v]]
+                if k not in results:
+                    results[k] = [[timestamp, v]]
                 else:
-                    results[k].append([timestamp,v])
+                    results[k].append([timestamp, v])
             matches['t'] = timestamp
             self.raw_values.append(matches)
         return results
@@ -1129,21 +1211,24 @@ class NetstatRunner(ProcessRunner):
         if not bash:
             raise RuntimeError("Capturing netstat requires a Bash shell.")
 
-        return "{bash} {script} -I {interval:.2f} -c {count:.0f} -H {host}".format(
-            bash=bash,
-            script=script,
-            interval=interval,
-            count=length // interval + 1,
-            host=host)
+        return "{bash} {script} -I {interval:.2f} -c {count:.0f} " \
+            "-H {host}".format(
+                bash=bash,
+                script=script,
+                interval=interval,
+                count=length // interval + 1,
+                host=host)
 
 
 class NullRunner(RunnerBase):
     pass
 
+
 class ComputingRunner(RunnerBase):
     command = "Computed"
     supported_meta = ['MEAN_VALUE']
     copied_meta = ['UNITS']
+
     def __init__(self, apply_to=None, post=False, **kwargs):
         RunnerBase.__init__(self, **kwargs)
         if apply_to is None:
@@ -1157,7 +1242,7 @@ class ComputingRunner(RunnerBase):
             return res
 
         new_res = []
-        keys = Glob.expand_list(self.keys,res.series_names,[self.name])
+        keys = Glob.expand_list(self.keys, res.series_names, [self.name])
 
         for r in res.zipped(keys):
             values = [v for v in r[1:] if v is not None]
@@ -1198,31 +1283,39 @@ class ComputingRunner(RunnerBase):
         Default implementation returns None."""
         return None
 
+
 class AverageRunner(ComputingRunner):
     command = "Average (computed)"
-    def compute(self,values):
-        return math.fsum(values)/len(values)
+
+    def compute(self, values):
+        return math.fsum(values) / len(values)
+
 
 class SmoothAverageRunner(ComputingRunner):
     command = "Smooth average (computed)"
+
     def __init__(self, smooth_steps=5, **kwargs):
         ComputingRunner.__init__(self, **kwargs)
         self._smooth_steps = smooth_steps
         self._avg_values = []
 
     def compute(self, values):
-        self._avg_values.append(math.fsum(values)/len(values))
+        self._avg_values.append(math.fsum(values) / len(values))
         while len(self._avg_values) > self._smooth_steps:
             self._avg_values.pop(0)
-        return math.fsum(self._avg_values)/len(self._avg_values)
+        return math.fsum(self._avg_values) / len(self._avg_values)
+
 
 class SumRunner(ComputingRunner):
     command = "Sum (computed)"
-    def compute(self,values):
+
+    def compute(self, values):
         return math.fsum(values)
+
 
 class DiffMinRunner(ComputingRunner):
     command = "Diff from min (computed)"
+
     def result(self, res):
         if not self.keys:
             return res
@@ -1231,18 +1324,22 @@ class DiffMinRunner(ComputingRunner):
 
         data = [i for i in res[key] if i is not None]
         if not data:
-            res.add_result(self.name, [None]*len(res[key]))
+            res.add_result(self.name, [None] * len(res[key]))
         else:
             min_val = min(data)
-            res.add_result(self.name, [i-min_val if i is not None else None for i in res[key]])
+            res.add_result(
+                self.name, [i - min_val if i is not None else None
+                            for i in res[key]])
         return res
+
 
 class FairnessRunner(ComputingRunner):
     command = "Fairness (computed)"
-    def compute(self,values):
+
+    def compute(self, values):
         if not len(values):
             return None
         valsum = math.fsum([x**2 for x in values])
         if not valsum:
             return None
-        return math.fsum(values)**2/(len(values)*valsum)
+        return math.fsum(values)**2 / (len(values) * valsum)

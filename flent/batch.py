@@ -260,7 +260,7 @@ class BatchRunner(object):
             settings.BATCH_NAME,
             batch['batch_time'],
             batch.get('filename_extra', "%s-%s" % (argset, rep))
-            )
+        )
         return clean_path(filename)
 
     def expand_argsets(self, batch, argsets, batch_time, batch_name,
@@ -315,7 +315,7 @@ class BatchRunner(object):
                     argset.extend(matches)
                 argsets.append(argset)
 
-        reps = range(1, int(batch.get('repetitions', 1))+1)
+        reps = range(1, int(batch.get('repetitions', 1)) + 1)
         argsets.append(reps)
 
         return argsets
@@ -327,7 +327,7 @@ class BatchRunner(object):
         batch.update(self.settings.BATCH_OVERRIDE)
 
         if batch.get('abstract', False) or batch.get('disabled', False):
-            return (0,0)  # noqa: E231
+            return (0, 0)
 
         total_time = 0
         n = 0
@@ -398,9 +398,9 @@ class BatchRunner(object):
 
             if settings.BATCH_RESUME is not None:
                 if os.path.commonprefix(
-                        [os.path.abspath(output_path),
-                         os.path.abspath(settings.BATCH_RESUME)]) \
-                         != os.path.abspath(settings.BATCH_RESUME):
+                    [os.path.abspath(output_path),
+                     os.path.abspath(settings.BATCH_RESUME)]) \
+                        != os.path.abspath(settings.BATCH_RESUME):
                     raise RuntimeError("Batch-specified output path is not a "
                                        "subdirectory of resume path. Bailing.")
                 if os.path.exists(os.path.join(output_path, "%s%s"

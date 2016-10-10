@@ -29,7 +29,7 @@ import sys
 
 # Convert SIGTERM into SIGINT to apply the same shutdown logic.
 def handle_sigterm(sig, frame):
-        os.kill(os.getpid(), signal.SIGINT)
+    os.kill(os.getpid(), signal.SIGINT)
 
 
 def run_flent(gui=False):

@@ -130,7 +130,7 @@ DEFAULT_SETTINGS = {
     'HTTP_GETTER_TIMEOUT': None,
     'HTTP_GETTER_WORKERS': 4,
     'DEBUG_ERROR': False,
-    }
+}
 
 CONFIG_TYPES = {
     'HOSTS': 'list',
@@ -176,7 +176,7 @@ CONFIG_TYPES = {
     'HTTP_GETTER_TIMEOUT': 'int',
     'HTTP_GETTER_WORKERS': 'int',
     'DEBUG_ERROR': 'bool',
-    }
+}
 
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
@@ -447,7 +447,7 @@ plot_group.add_option("--legend-placement", action="store", dest="LEGEND_PLACEME
                       help="Control legend placement. Enabling this option will place the legend inside "
                       "the plot at the specified location. Use 'best' to let matplotlib decide.")
 plot_group.add_option("--legend-columns", action="store", type=int, dest="LEGEND_COLUMNS",
-                  help="Set the number of columns in the legend.")
+                      help="Set the number of columns in the legend.")
 plot_group.add_option("--filter-legend", action="store_true", dest="FILTER_LEGEND",
                       help="Filter legend labels by removing the longest common substring from all entries.")
 plot_group.add_option("--filter-regexp", action="append", dest="FILTER_REGEXP", metavar="REGEXP",
@@ -489,7 +489,6 @@ combine_group.add_option("--combine-save-dir", action="store", type='string', de
                          "to DIRNAME. This can then be used for subsequent plotting to avoid having to "
                          "load all the source data files again on each plot.")
 parser.add_option_group(combine_group)
-
 
 
 tool_group = optparse.OptionGroup(parser, "Test tool-related options")
@@ -802,8 +801,8 @@ def list_tests():
     sys.stderr.write('Available tests:\n')
     max_len = max([len(t[0]) for t in tests])
     for t, desc in tests:
-        desc = desc.replace("\n", "\n"+" "*(max_len+6))
-        sys.stderr.write(("  %-"+str(max_len)+"s :  %s\n") % (t, desc))
+        desc = desc.replace("\n", "\n" + " " * (max_len + 6))
+        sys.stderr.write(("  %-" + str(max_len) + "s :  %s\n") % (t, desc))
     sys.exit(0)
 
 
@@ -816,6 +815,6 @@ def list_plots():
     sys.stderr.write("Available plots for test '%s':\n" % settings.NAME)
     max_len = str(max([len(p) for p in plots]))
     for p in plots:
-        sys.stderr.write(("  %-"+max_len+"s :  %s\n")
+        sys.stderr.write(("  %-" + max_len + "s :  %s\n")
                          % (p, settings.PLOTS[p]['description']))
     sys.exit(0)

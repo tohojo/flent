@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+
 def transform_results(results, func):
     """Transform a list of (timestamp,value) pairs by applying a function to the
     value."""
@@ -34,28 +35,32 @@ def transform_results(results, func):
         return func(results)
     return results
 
+
 def rr_to_ms(results):
     """Transforms a transactions/second netperf RR measurement into ping times
     in milliseconds."""
     def safe_divide(x):
         if x == 0:
             return None
-        return 1000.0/x
+        return 1000.0 / x
     return transform_results(results, safe_divide)
 
+
 def s_to_ms(results):
-    return transform_results(results, lambda x: x*1000.0)
+    return transform_results(results, lambda x: x * 1000.0)
+
 
 def bits_to_mbits(results):
-    return transform_results(results, lambda x: x/1000000.0)
+    return transform_results(results, lambda x: x / 1000000.0)
+
 
 def cumulative_to_events(results):
     """Transform cumulative counter values into the increasing events."""
     try:
         current = results[0][1]
         res = []
-        for t,v in results:
-            res.append((t,v-current))
+        for t, v in results:
+            res.append((t, v - current))
             current = v
         return res
     except (TypeError, IndexError):

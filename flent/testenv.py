@@ -37,6 +37,7 @@ except ImportError:
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
 
+
 class _no_default():
     pass
 
@@ -51,6 +52,7 @@ def finder(fn):
         ret = fn(self, *args, **kwargs)
         return ret
     return decorated
+
 
 class TestEnvironment(object):
 
@@ -73,7 +75,7 @@ class TestEnvironment(object):
             'get_test_parameter': self.get_test_parameter,
             'try_test_parameters': self.try_test_parameters,
             'parse_int': self.parse_int,
-            })
+        })
         self.informational = informational
         self.netperf = None
         self.itgsend = None
@@ -91,20 +93,25 @@ class TestEnvironment(object):
                 self.env['HOSTS'] = self.orig_hosts
             return self.expand_duplicates(self.env)
         except (IOError, SyntaxError) as e:
-            raise RuntimeError("Unable to read test config file '%s': '%s'." % (filename, e))
+            raise RuntimeError(
+                "Unable to read test config file '%s': '%s'." % (filename, e))
 
     def expand_duplicates(self, env):
         new_data_sets = []
-        if not 'DATA_SETS' in env:
+        if 'DATA_SETS' not in env:
             return env
-        for k,v in env['DATA_SETS'].items():
+        for k, v in env['DATA_SETS'].items():
             try:
                 for i in range(int(v['duplicates'])):
-                    new_data_sets.append(("%s::%d" % (k, i+1), dict(v, id=str(i+1), duplicates=None)))
+                    new_data_sets.append(
+                        ("%s::%d" % (k, i + 1), dict(v,
+                                                     id=str(i + 1),
+                                                     duplicates=None)))
             except (KeyError, TypeError):
-                new_data_sets.append((k,v))
+                new_data_sets.append((k, v))
             except ValueError:
-                raise RuntimeError("Invalid number of duplicates: %s" % v['duplicates'])
+                raise RuntimeError(
+                    "Invalid number of duplicates: %s" % v['duplicates'])
             env['DATA_SETS'] = OrderedDict(new_data_sets)
         return env
 
@@ -142,30 +149,37 @@ class TestEnvironment(object):
             raise RuntimeError("Invalid integer value: %s" % val)
 
     @finder
-    def find_ping(self, ip_version, interval, length, host, marking=None, local_bind=None):
+    def find_ping(self, ip_version, interval, length, host,
+                  marking=None, local_bind=None):
         """Find a suitable ping."""
         if local_bind is None:
-            local_bind = self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else None
+            local_bind = self.env['LOCAL_BIND'][
+                0] if self.env['LOCAL_BIND'] else None
 
         # Main code moved to the PingRunner class to be able to take advantage
         # of the parser code there.
-        return runners.PingRunner.find_binary(ip_version, interval, length,
-                                              host, marking=marking, local_bind=local_bind)
+        return runners.PingRunner.find_binary(ip_version, interval, length, host,
+                                              marking=marking,
+                                              local_bind=local_bind)
 
     @finder
-    def find_iperf(self, host, interval, length, ip_version, local_bind=None, no_delay=False, udp=False, bw=None):
+    def find_iperf(self, host, interval, length, ip_version, local_bind=None,
+                   no_delay=False, udp=False, bw=None):
         """Find a suitable iperf."""
         if local_bind is None:
-            local_bind = self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else None
+            local_bind = self.env['LOCAL_BIND'][
+                0] if self.env['LOCAL_BIND'] else None
 
         # Main code moved to the PingRunner class to be able to take advantage
         # of the parser code there.
-        return runners.IperfCsvRunner.find_binary(host, interval, length, ip_version, udp=udp, bw=bw,
+        return runners.IperfCsvRunner.find_binary(host, interval, length,
+                                                  ip_version, udp=udp, bw=bw,
                                                   local_bind=local_bind)
 
     @finder
     def find_netperf(self, test, length, host, **args):
-        """Find a suitable netperf executable, and test for the required capabilities."""
+        """Find a suitable netperf executable, and test for the required
+        capabilities."""
 
         if self.netperf is None:
             netperf = util.which('netperf', fail=True)
@@ -178,28 +192,34 @@ class TestEnvironment(object):
             # of having netperf attempt a connection to localhost, which can
             # stall, so we kill the process almost immediately.
 
-            proc = subprocess.Popen([netperf, '-l', '1', '-D', '-0.2', '--', '-e', '1'],
+            proc = subprocess.Popen([netperf, '-l', '1', '-D', '-0.2',
+                                     '--', '-e', '1'],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            time.sleep(0.1) # should be enough time for netperf to output any error messages
+            # should be enough time for netperf to output any error messages
+            time.sleep(0.1)
             proc.kill()
-            out,err = proc.communicate()
+            out, err = proc.communicate()
             if "Demo Mode not configured" in str(out):
                 raise RuntimeError("%s does not support demo mode." % netperf)
 
             if "invalid option -- '0'" in str(err):
-                raise RuntimeError("%s does not support accurate intermediate time reporting. You need netperf v2.6.0 or newer." % netperf)
+                raise RuntimeError(
+                    "%s does not support accurate intermediate time reporting. "
+                    "You need netperf v2.6.0 or newer." % netperf)
 
             self.netperf = {'executable': netperf, "-e": False}
 
-            if not "netperf: invalid option -- 'e'" in str(err):
+            if "netperf: invalid option -- 'e'" not in str(err):
                 self.netperf['-e'] = True
 
         args.setdefault('ip_version', self.env['IP_VERSION'])
         args.setdefault('interval', self.env['STEP_SIZE'])
         args.setdefault('control_host', self.env['CONTROL_HOST'] or host)
-        args.setdefault('local_bind', self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else "")
-        args.setdefault('control_local_bind', self.env['CONTROL_LOCAL_BIND'] or args['local_bind'])
+        args.setdefault('local_bind', self.env['LOCAL_BIND'][
+                        0] if self.env['LOCAL_BIND'] else "")
+        args.setdefault('control_local_bind', self.env[
+                        'CONTROL_LOCAL_BIND'] or args['local_bind'])
         args.setdefault('extra_args', "")
         args.setdefault('extra_test_args', "")
         args.setdefault('format', "")
@@ -213,10 +233,9 @@ class TestEnvironment(object):
                 test = 'TCP_STREAM'
 
         args.update({'binary': self.netperf['executable'],
-                       'host': host,
-                       'test': test,
-                       'length': length})
-
+                     'host': host,
+                     'test': test,
+                     'length': length})
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -230,15 +249,17 @@ class TestEnvironment(object):
         elif test in ("TCP_STREAM", "TCP_MAERTS", "omni"):
             args['format'] = "-f m"
 
-        return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} -H {control_host} -t {test} " \
-               "-l {length:d} {format} {control_local_bind} {extra_args} -- {socket_timeout} {local_bind} -H {host} " \
-               "{extra_test_args}".format(**args)
+        return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
+            "-H {control_host} -t {test} -l {length:d} {format} " \
+            "{control_local_bind} {extra_args} -- {socket_timeout} " \
+            "{local_bind} -H {host} {extra_test_args}".format(**args)
 
     @finder
     def find_itgsend(self, test_args, length, host, local_bind=None):
 
         if local_bind is None:
-            local_bind = self.env['LOCAL_BIND'][0] if self.env['LOCAL_BIND'] else None
+            local_bind = self.env['LOCAL_BIND'][
+                0] if self.env['LOCAL_BIND'] else None
 
         if self.itgsend is None:
             self.itgsend = util.which("ITGSend", fail=True)
@@ -246,18 +267,20 @@ class TestEnvironment(object):
         # We put placeholders in the command string to be filled out by string
         # format expansion by the runner once it has communicated with the control
         # server and obtained the port values.
-        return "{binary} -Sdp {{signal_port}} -t {length} {local_bind} -a {dest_host} -rp {{dest_port}} {args}".format(
-            binary=self.itgsend,
-            length=int(length*1000),
-            dest_host=host,
-            local_bind="-sa {0} -Ssa {0}".format(local_bind) if local_bind else "",
-            args=test_args)
+        return "{binary} -Sdp {{signal_port}} -t {length} {local_bind} " \
+            "-a {dest_host} -rp {{dest_port}} {args}".format(
+                binary=self.itgsend,
+                length=int(length * 1000),
+                dest_host=host,
+                local_bind="-sa {0} -Ssa {0}".format(
+                    local_bind) if local_bind else "",
+                args=test_args)
 
     @finder
-    def find_http_getter(self, interval, length, workers = None, ip_version = None,
-                         dns_servers = None, url_file = None, timeout = None):
+    def find_http_getter(self, interval, length, workers=None, ip_version=None,
+                         dns_servers=None, url_file=None, timeout=None):
 
-        args = "-i %d -l %d" % (int(interval*1000.0), length)
+        args = "-i %d -l %d" % (int(interval * 1000.0), length)
 
         if url_file is None:
             url_file = self.env['HTTP_GETTER_URLLIST']
@@ -327,15 +350,18 @@ class TestEnvironment(object):
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
             if self.informational:
-                self.env['HOSTS'] = ['dummy']*count
-            elif 'DEFAULTS' in self.env and 'HOSTS' in self.env['DEFAULTS'] and self.env['DEFAULTS']['HOSTS']:
+                self.env['HOSTS'] = ['dummy'] * count
+            elif 'DEFAULTS' in self.env and 'HOSTS' in self.env['DEFAULTS'] \
+                 and self.env['DEFAULTS']['HOSTS']:
                 # If a default HOSTS list is set, populate the HOSTS list with
                 # values from this list, repeating as necessary up to count
                 def_hosts = self.env['DEFAULTS']['HOSTS']
                 host_c = len(self.env['HOSTS'])
-                missing_c = count-host_c
-                self.env['HOSTS'].extend((def_hosts * (missing_c//len(def_hosts)+1))[:missing_c])
+                missing_c = count - host_c
+                self.env['HOSTS'].extend(
+                    (def_hosts * (missing_c // len(def_hosts) + 1))[:missing_c])
                 if not self.env['HOST']:
                     self.env['HOST'] = self.env['HOSTS'][0]
             else:
-                raise RuntimeError("Need %d hosts, only %d specified" % (count, len(self.env['HOSTS'])))
+                raise RuntimeError("Need %d hosts, only %d specified" %
+                                   (count, len(self.env['HOSTS'])))

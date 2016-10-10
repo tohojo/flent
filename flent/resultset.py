@@ -37,7 +37,7 @@ from collections import OrderedDict
 from flent.util import gzip_open, bz2_open, parse_date, format_date
 
 # Controls pretty-printing of json dumps
-JSON_INDENT=2
+JSON_INDENT = 2
 
 __all__ = ['new', 'load']
 
@@ -63,11 +63,11 @@ RECORDED_SETTINGS = (
     "HTTP_GETTER_URLLIST",
     "HTTP_GETTER_DNS",
     "HTTP_GETTER_WORKERS",
-    )
+)
 
-FILEFORMAT_VERSION=3
+FILEFORMAT_VERSION = 3
 SUFFIX = '.flent.gz'
-MAX_FILENAME_LEN=250 # most filesystems have 255 as their limit
+MAX_FILENAME_LEN = 250  # most filesystems have 255 as their limit
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
@@ -75,16 +75,20 @@ TIME_SETTINGS = ("TIME", "BATCH_TIME", "T0")
 
 _EMPTY = object()
 
+
 def new(settings):
     d = {}
     for a in RECORDED_SETTINGS:
-        d[a] = deepcopy(getattr(settings,a,None))
+        d[a] = deepcopy(getattr(settings, a, None))
     return ResultSet(**d)
+
 
 def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
+
 class ResultSet(object):
+
     def __init__(self, SUFFIX=SUFFIX, **kwargs):
         self._x_values = []
         self._results = OrderedDict()
@@ -95,11 +99,12 @@ class ResultSet(object):
         self.metadata = kwargs
         self.SUFFIX = SUFFIX
         self.t0 = None
-        if not 'TIME' in self.metadata or self.metadata['TIME'] is None:
+        if 'TIME' not in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.utcnow()
-        if not 'NAME' in self.metadata or self.metadata['NAME'] is None:
+        if 'NAME' not in self.metadata or self.metadata['NAME'] is None:
             raise RuntimeError("Missing name for resultset")
-        if not 'DATA_FILENAME' in self.metadata or self.metadata['DATA_FILENAME'] is None:
+        if 'DATA_FILENAME' not in self.metadata \
+           or self.metadata['DATA_FILENAME'] is None:
             self.metadata['DATA_FILENAME'] = self.dump_filename
         if not self.metadata['DATA_FILENAME'].endswith(self.SUFFIX):
             self.metadata['DATA_FILENAME'] += self.SUFFIX
@@ -127,18 +132,20 @@ class ResultSet(object):
                     except ValueError:
                         data = data[k]
                 return data
-            except (KeyError,IndexError,TypeError):
+            except (KeyError, IndexError, TypeError):
                 raise KeyError
         return self.metadata
 
     def label(self):
-        return self._label or self.metadata["TITLE"] or format_date(self.metadata["TIME"])
+        return self._label or self.metadata["TITLE"] \
+            or format_date(self.metadata["TIME"])
 
     def set_label(self, label):
         self._label = label
 
     def get_x_values(self):
         return self._x_values
+
     def set_x_values(self, x_values):
         assert not self._x_values
         self._x_values = list(x_values)
@@ -187,7 +194,7 @@ class ResultSet(object):
             # When concatenating using absolute values, insert an empty data
             # point midway between the data series, to prevent the lines for
             # each distinct data series from being joined together.
-            xnext = (self.x_values[-1] + res.x_values[0])/2.0
+            xnext = (self.x_values[-1] + res.x_values[0]) / 2.0
             self.append_datapoint(xnext, zip(res.series_names, repeat(None)))
         else:
             x0 = self.x_values[-1] + self.meta("STEP_SIZE")
@@ -203,29 +210,32 @@ class ResultSet(object):
         return data[-1]
 
     def series(self, name, smooth=None):
-        if not name in self._results:
-            sys.stderr.write("Warning: Missing data points for series '%s'\n" % name)
-            return [None]*len(self.x_values)
+        if name not in self._results:
+            sys.stderr.write(
+                "Warning: Missing data points for series '%s'\n" % name)
+            return [None] * len(self.x_values)
         if smooth:
             return self.smoothed(self._results[name], smooth)
         return self._results[name]
 
     def _calculate_t0(self):
-        self.t0 = timegm(self.metadata['T0'].timetuple()) + self.metadata['T0'].microsecond / 1000000.0
+        self.t0 = timegm(self.metadata['T0'].timetuple(
+        )) + self.metadata['T0'].microsecond / 1000000.0
 
     def raw_series(self, name, smooth=None, absolute=False):
-        if not name in self.raw_values:
-            sys.stderr.write("Warning: Missing data points for series '%s'\n" % name)
-            return ([],[])
+        if name not in self.raw_values:
+            sys.stderr.write(
+                "Warning: Missing data points for series '%s'\n" % name)
+            return ([], [])
         if self.t0 is None:
             self._calculate_t0()
         x_values, y_values = [], []
         for i in self.raw_values[name]:
-            x_values.append(i['t'] if absolute else i['t']-self.t0)
+            x_values.append(i['t'] if absolute else i['t'] - self.t0)
             y_values.append(i['val'])
         if smooth:
             y_values = self.smoothed(y_values, smooth)
-        return x_values,y_values
+        return x_values, y_values
 
     def __getitem__(self, name):
         return self.series(name)
@@ -236,15 +246,14 @@ class ResultSet(object):
     def smoothed(self, res, amount):
         smooth_res = []
         for i in range(len(res)):
-            s = int(max(0,i-amount/2))
-            e = int(min(len(res),i+amount/2))
+            s = int(max(0, i - amount / 2))
+            e = int(min(len(res), i + amount / 2))
             window = [j for j in res[s:e] if j is not None]
             if window and res[i] is not None:
-                smooth_res.append(math.fsum(window)/len(window))
+                smooth_res.append(math.fsum(window) / len(window))
             else:
                 smooth_res.append(None)
         return smooth_res
-
 
     @property
     def series_names(self):
@@ -274,7 +283,8 @@ class ResultSet(object):
         return self._loaded_from.__hash__()
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) and self.__hash__() == other.__hash__()
+        return isinstance(other, self.__class__) \
+            and self.__hash__() == other.__hash__()
 
     def serialise_metadata(self):
         metadata = self.metadata.copy()
@@ -291,7 +301,7 @@ class ResultSet(object):
             'x_values': self._x_values,
             'results': self._results,
             'raw_values': self._raw_values,
-            }
+        }
 
     @property
     def empty(self):
@@ -331,13 +341,18 @@ class ResultSet(object):
             return self._filename
         if 'TITLE' in self.metadata and self.metadata['TITLE']:
             name = "%s-%s.%%s%s" % (self.metadata['NAME'],
-                                         format_date(self.metadata['TIME']).replace(":", ""),
-                                         self.SUFFIX)
+                                    format_date(self.metadata['TIME']).replace(
+                                        ":", ""),
+                                    self.SUFFIX)
             title_len = MAX_FILENAME_LEN - len(name) + 2
-            return name % re.sub("[^A-Za-z0-9]", "_", self.metadata['TITLE'])[:title_len]
+            return name % re.sub("[^A-Za-z0-9]", "_",
+                                 self.metadata['TITLE'])[:title_len]
 
         else:
-            return "%s-%s%s" % (self.metadata['NAME'], format_date(self.metadata['TIME']).replace(":", ""), self.SUFFIX)
+            return "%s-%s%s" % (self.metadata['NAME'],
+                                format_date(self.metadata['TIME']).replace(":",
+                                                                           ""),
+                                self.SUFFIX)
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
@@ -358,16 +373,18 @@ class ResultSet(object):
     def unserialise(cls, obj, absolute=False, SUFFIX=SUFFIX):
         try:
             version = int(obj['version'])
-        except (KeyError,ValueError):
+        except (KeyError, ValueError):
             version = 1
 
         if version > FILEFORMAT_VERSION:
-            raise RuntimeError("File format version %d is too new. Please upgrade your version of Flent" % version)
+            raise RuntimeError(
+                "File format version %d is too new. "
+                "Please upgrade your version of Flent" % version)
         if version < FILEFORMAT_VERSION:
             obj = cls.unserialise_compat(version, obj, absolute)
         metadata = dict(obj['metadata'])
 
-        if not 'TOTAL_LENGTH' in metadata or metadata['TOTAL_LENGTH'] is None:
+        if 'TOTAL_LENGTH' not in metadata or metadata['TOTAL_LENGTH'] is None:
             metadata['TOTAL_LENGTH'] = max(obj['x_values'])
 
         for t in TIME_SETTINGS:
@@ -377,12 +394,12 @@ class ResultSet(object):
         if absolute:
             t0 = metadata.get('T0', metadata.get('TIME'))
             x0 = timegm(t0.timetuple()) + t0.microsecond / 1000000.0
-            rset.x_values = [x+x0 for x in obj['x_values']]
+            rset.x_values = [x + x0 for x in obj['x_values']]
             rset._absolute = True
         else:
             rset.x_values = obj['x_values']
-        for k,v in list(obj['results'].items()):
-            rset.add_result(k,v)
+        for k, v in list(obj['results'].items()):
+            rset.add_result(k, v)
         rset.raw_values = obj['raw_values']
         return rset
 
@@ -391,7 +408,7 @@ class ResultSet(object):
         if version == 1:
             obj['raw_values'] = {}
             if 'SERIES_META' in obj['metadata']:
-                obj['raw_values'] = dict([(k,v['RAW_VALUES']) for k,v in
+                obj['raw_values'] = dict([(k, v['RAW_VALUES']) for k, v in
                                           obj['metadata']['SERIES_META'].items()
                                           if 'RAW_VALUES' in v])
             if not obj['raw_values']:
@@ -400,15 +417,18 @@ class ResultSet(object):
                 # always some data available as raw values, to facilitate
                 # relying on their presence in future code.
 
-                t0 = parse_date(obj['metadata'].get('T0', obj['metadata'].get('TIME')))
+                t0 = parse_date(obj['metadata'].get(
+                    'T0', obj['metadata'].get('TIME')))
                 x0 = timegm(t0.timetuple()) + t0.microsecond / 1000000.0
                 for name in obj['results'].keys():
-                    obj['raw_values'][name] = [{'t': x0+x, 'val': r} for x,r in
-                                               zip(obj['x_values'], obj['results'][name])]
+                    obj['raw_values'][name] = [{'t': x0 + x, 'val': r} for x, r in
+                                               zip(obj['x_values'],
+                                                   obj['results'][name])]
                 obj['metadata']['FAKE_RAW_VALUES'] = True
 
             if 'NETPERF_WRAPPER_VERSION' in obj['metadata']:
-                obj['metadata']['FLENT_VERSION'] = obj['metadata']['NETPERF_WRAPPER_VERSION']
+                obj['metadata']['FLENT_VERSION'] = obj[
+                    'metadata']['NETPERF_WRAPPER_VERSION']
                 del obj['metadata']['NETPERF_WRAPPER_VERSION']
 
         return obj
@@ -417,15 +437,16 @@ class ResultSet(object):
     def load(cls, fp, absolute=False):
         if hasattr(fp, 'name'):
             filename = fp.name
-            name,ext = os.path.splitext(filename)
+            name, ext = os.path.splitext(filename)
             if ext in ('.gz', '.bz2'):
-                ext = os.path.splitext(name)[1]+ext
+                ext = os.path.splitext(name)[1] + ext
         else:
-            filename,ext = None,SUFFIX
+            filename, ext = None, SUFFIX
         try:
             obj = cls.unserialise(json.load(fp), absolute, SUFFIX=ext)
         except ValueError as e:
-            raise RuntimeError("Unable to load JSON from '%s': %s." % (filename,e))
+            raise RuntimeError(
+                "Unable to load JSON from '%s': %s." % (filename, e))
         return obj
 
     @classmethod

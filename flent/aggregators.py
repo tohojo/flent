@@ -289,13 +289,13 @@ class TimeseriesAggregator(Aggregator):
                                "file to investigate.")
         t_0 = min(first_times)
         t_max = max(last_times)
-        steps = int(math.ceil((t_max-t_0)/self.step))
+        steps = int(math.ceil((t_max - t_0) / self.step))
 
         results.meta('T0', datetime.utcfromtimestamp(t_0))
 
         for s in range(steps):
-            time_label = self.step*s
-            t = t_0 + self.step*s
+            time_label = self.step * s
+            t = t_0 + self.step * s
 
             # for each step we need to find the interpolated measurement value
             # at time t by interpolating between the nearest measurements before
@@ -314,17 +314,17 @@ class TimeseriesAggregator(Aggregator):
                 for i in range(len(r)):
                     if r[i][0] > t:
                         if i > 0:
-                            t_prev, v_prev = r[i-1]
+                            t_prev, v_prev = r[i - 1]
                         else:
                             # minimum interpolation distance on first entry to
                             # avoid multiple interpolations to the same value
-                            max_dist = self.step*0.5
+                            max_dist = self.step * 0.5
                         t_next, v_next = r[i]
                         break
                 if t_next is None:
                     t_next, v_next = r[-1]
                     last = True
-                if abs(t-t_next) <= max_dist:
+                if abs(t - t_next) <= max_dist:
                     if t_prev is None:
                         # The first/last data point for this measurement is
                         # after the current t. Don't interpolate, just use the
@@ -342,8 +342,8 @@ class TimeseriesAggregator(Aggregator):
                         # at t can be calculated as v_t=v_prev +
                         # dv/dt*(t-t_prev)
 
-                        dv_dt = (v_next-v_prev)/(t_next-t_prev)
-                        result[n] = v_prev + dv_dt*(t-t_prev)
+                        dv_dt = (v_next - v_prev) / (t_next - t_prev)
+                        result[n] = v_prev + dv_dt * (t - t_prev)
                 else:
                     # Interpolation distance is too long; don't use the value.
                     result[n] = None
