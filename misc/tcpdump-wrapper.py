@@ -19,24 +19,36 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import signal, sys, os, optparse, subprocess, shutil, time, socket
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import optparse
+import os
+import shutil
+import socket
+import subprocess
+import sys
+import time
 
 try:
     MAXFD = os.sysconf("SC_OPEN_MAX")
 except:
     MAXFD = 256
 
-DEFAULT_IFACE='eth1'
-DEFAULT_SIZE=128
-DEFAULT_DEST_DIR="/home/data"
-CAPTURE_DIR="/tmp"
+DEFAULT_IFACE = 'eth1'
+DEFAULT_SIZE = 128
+DEFAULT_DEST_DIR = "/home/data"
+CAPTURE_DIR = "/tmp"
 
-parser = optparse.OptionParser(description="Wrapper to start/stop tcpdump.",
-                               usage="Usage: %prog [options] <start|stop> <filename>")
+parser = optparse.OptionParser(
+    description="Wrapper to start/stop tcpdump.",
+    usage="Usage: %prog [options] <start|stop> <filename>")
 
-parser.add_option('-i', '--interface', action='store', type="string", dest='INTERFACE', default=DEFAULT_IFACE)
-parser.add_option('-s', '--size', action='store', type="int", dest='SIZE', default=DEFAULT_SIZE)
-parser.add_option('-d', '--dest-dir', action='store', type="string", dest='DEST_DIR', default=DEFAULT_DEST_DIR)
+parser.add_option('-i', '--interface', action='store',
+                  type="string", dest='INTERFACE', default=DEFAULT_IFACE)
+parser.add_option('-s', '--size', action='store', type="int",
+                  dest='SIZE', default=DEFAULT_SIZE)
+parser.add_option('-d', '--dest-dir', action='store',
+                  type="string", dest='DEST_DIR', default=DEFAULT_DEST_DIR)
 
 
 def start_tcpdump(filename, iface=DEFAULT_IFACE, size=DEFAULT_SIZE):
@@ -44,7 +56,8 @@ def start_tcpdump(filename, iface=DEFAULT_IFACE, size=DEFAULT_SIZE):
     if os.path.exists(pidfile):
         sys.stderr.write("Pidfile already exists: %s.\n" % pidfile)
         sys.exit(1)
-    args = ['sudo', 'tcpdump', '-n', '-i', iface, '-s', str(size), '-w', os.path.join(CAPTURE_DIR, "%s.cap" % filename)]
+    args = ['sudo', 'tcpdump', '-n', '-i', iface, '-s',
+            str(size), '-w', os.path.join(CAPTURE_DIR, "%s.cap" % filename)]
     pid = os.fork()
     if pid:
         with open(pidfile, "w") as fp:
@@ -60,6 +73,7 @@ def start_tcpdump(filename, iface=DEFAULT_IFACE, size=DEFAULT_SIZE):
         os.closerange(3, MAXFD)
         prog = args[0]
         os.execvp(prog, args)
+
 
 def stop_tcpdump(filename, dest_dir=DEFAULT_DEST_DIR):
     pidfile = os.path.join(CAPTURE_DIR, "%s.pid" % filename)
@@ -81,7 +95,8 @@ def stop_tcpdump(filename, dest_dir=DEFAULT_DEST_DIR):
         sys.stderr.write("Unable to kill: %s.\n" % e)
 
     if os.path.exists(dest_data) or os.path.exists(dest_log):
-        sys.stderr.write("Destination data or log file already exists. Not copying.\n")
+        sys.stderr.write(
+            "Destination data or log file already exists. Not copying.\n")
         sys.exit(1)
 
     if not os.path.exists(dest_dir):
@@ -96,23 +111,23 @@ def stop_tcpdump(filename, dest_dir=DEFAULT_DEST_DIR):
     shutil.copyfile(logfile, dest_log)
     try:
         if os.path.exists(datafile):
-            subprocess.check_call("gzip -c %s > %s" % (datafile, dest_data), shell=True)
+            subprocess.check_call("gzip -c %s > %s" %
+                                  (datafile, dest_data), shell=True)
     except subprocess.CalledProcessError as e:
         sys.stderr.write("Unable to compress data file: %s.\n" % e)
 
     try:
-        subprocess.check_call("sudo rm -f %s %s" % (datafile, logfile), shell=True)
+        subprocess.check_call("sudo rm -f %s %s" %
+                              (datafile, logfile), shell=True)
     except subprocess.CalledProcessError as e:
         sys.stderr.write("Unable to remove data and log files: %s.\n" % e)
 
 
-
-
 if __name__ == "__main__":
-    options,args = parser.parse_args()
+    options, args = parser.parse_args()
     if len(args) != 2:
         parser.error("Need action and filename.")
-    action,filename = args
+    action, filename = args
 
     filename = "%s.%s" % (filename, socket.gethostname())
 

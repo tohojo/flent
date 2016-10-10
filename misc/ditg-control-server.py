@@ -21,8 +21,21 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, optparse, subprocess, time, tempfile, shutil, json
-import random, string, signal, traceback, time, hmac, hashlib, calendar
+import calendar
+import hashlib
+import hmac
+import json
+import optparse
+import os
+import random
+import shutil
+import signal
+import string
+import subprocess
+import sys
+import tempfile
+import time
+import traceback
 
 from datetime import datetime
 
@@ -30,9 +43,9 @@ try:
     from defusedxml.xmlrpc import monkey_patch
     monkey_patch()
     del monkey_patch
-    XML_DEFUSED=True
+    XML_DEFUSED = True
 except ImportError:
-    XML_DEFUSED=False
+    XML_DEFUSED = False
 
 try:
     # python 2
@@ -48,37 +61,49 @@ except:
 
 ALPHABET = list(string.ascii_lowercase) + list(string.digits)
 
+
 class AlarmException(Exception):
     pass
 
 
-parser = optparse.OptionParser(description="Control server for D-ITG receive component session negotiation.")
+parser = optparse.OptionParser(
+    description="Control server for D-ITG receive component session negotiation.")
 
-parser.add_option('--insecure-xml', action='store_true', dest='INSECURE_XML', default=False,
-                  help="Run even though the defusedxml module is unavailable. WARNING: Will leave "
-                  "the server open to entity expansion attacks!")
-parser.add_option('-a', '--address', action='store', type='string', dest='BIND_ADDRESS',
-                  default='localhost', help="Address to bind to. Default: localhost.")
-parser.add_option('-p', '--port', action='store', type='int', dest='BIND_PORT', default='8000',
-                  help="Bind port. Default: 8000.")
-parser.add_option('-A', '--itg-address', action='store', type='string', dest='ITG_ADDRESS',
-                  default=None, help="Address to bind ITGRecv to. Default: Same as --address.")
-parser.add_option('-s', '--start-port', action='store', type='int', dest='START_PORT',
-                  default=9000, help="Start port for ITGRecv control socket binds (default 9000).")
-parser.add_option('-t', '--max-test-time', action='store', type='int', dest='MAX_TEST_TIME',
-                  default=7200, help="Maximum test time allowed. Default 7200 seconds (two hours).")
-parser.add_option('-m', '--max-instances', action='store', type='int', dest='MAX_INSTANCES',
-                  default=100, help="Maximum number of running instances before new requests are denied (default 100).")
+parser.add_option('--insecure-xml', action='store_true', dest='INSECURE_XML',
+                  default=False,
+                  help="Run even though the defusedxml module is unavailable. "
+                  "WARNING: Will leave the server open to entity expansion "
+                  "attacks!")
+parser.add_option('-a', '--address', action='store', type='string',
+                  dest='BIND_ADDRESS', default='localhost',
+                  help="Address to bind to. Default: localhost.")
+parser.add_option('-p', '--port', action='store', type='int', dest='BIND_PORT',
+                  default='8000', help="Bind port. Default: 8000.")
+parser.add_option('-A', '--itg-address', action='store', type='string',
+                  dest='ITG_ADDRESS', default=None,
+                  help="Address to bind ITGRecv to. Default: Same as --address.")
+parser.add_option('-s', '--start-port', action='store', type='int',
+                  dest='START_PORT', default=9000, help="Start port for ITGRecv "
+                  "control socket binds (default 9000).")
+parser.add_option('-t', '--max-test-time', action='store', type='int',
+                  dest='MAX_TEST_TIME', default=7200, help="Maximum test time "
+                  "allowed. Default 7200 seconds (two hours).")
+parser.add_option('-m', '--max-instances', action='store', type='int',
+                  dest='MAX_INSTANCES', default=100,
+                  help="Maximum number of running instances before new requests "
+                  "are denied (default 100).")
 parser.add_option('-S', '--secret', action='store', type='string', dest='SECRET',
-                  default="", help="Secret for request authentication. Default: ''.")
+                  default="", help="Secret for request authentication. "
+                  "Default: ''.")
 parser.add_option('--debug', action='store_true', dest='DEBUG',
-                  default=False,  help="Debug mode: Don't delete temporary files.")
+                  default=False, help="Debug mode: Don't delete temporary files.")
+
 
 class DITGManager(object):
     datafile_pattern = "%s.json"
 
-    def __init__(self, bind_address, start_port, max_test_time, max_instances, secret,
-                 debug=False):
+    def __init__(self, bind_address, start_port, max_test_time, max_instances,
+                 secret, debug=False):
         self.working_dir = tempfile.mkdtemp(prefix='ditgman-')
         self.seen = {}
         self.children = []
@@ -108,42 +133,50 @@ class DITGManager(object):
 
         data: The output of ITGDec -c with the interval requested at initiation.
 
-        utc_offset: UTC timestamp which the time values in the return data is offset by.
+        utc_offset: UTC timestamp which the time values in the return data is
+        offset by.
+
         """
         self._collect_garbage()
         test_id = str(test_id)
         if len(test_id) != self.id_length:
-            return {'status': 'Error', 'message': "Invalid test id: '%s'." % test_id}
+            return {'status': 'Error',
+                    'message': "Invalid test id: '%s'." % test_id}
         for c in test_id:
-            if not c in ALPHABET:
-                return {'status': 'Error', 'message': "Invalid test id: '%s'." % test_id}
-        filename = os.path.join(self.working_dir,  self.datafile_pattern % test_id)
+            if c not in ALPHABET:
+                return {'status': 'Error',
+                        'message': "Invalid test id: '%s'." % test_id}
+        filename = os.path.join(
+            self.working_dir, self.datafile_pattern % test_id)
         if not os.path.exists(filename):
-            return {'status': 'Error', 'message': "Data for test ID '%s' not found." % test_id}
+            return {'status': 'Error',
+                    'message': "Data for test ID '%s' not found." % test_id}
         with open(filename, 'rt') as fp:
             data = json.load(fp)
             return data
 
-    def request_new_test(self, duration, interval, hmac_hex, raw_data = False):
+    def request_new_test(self, duration, interval, hmac_hex, raw_data=False):
         """Request a new test instance.
 
-        This will allocate a new ITGRecv instance and parse the log file it produces.
-        The results of this can then be retrieved with get_test_results() after the
-        test has run.
+        This will allocate a new ITGRecv instance and parse the log file it
+        produces. The results of this can then be retrieved with
+        get_test_results() after the test has run.
 
         The parameters are:
 
-        duration: Requested test duration in seconds. The ITGRecv instance will be killed
-                  after this time has passed (+ a grace period of five seconds).
+        duration: Requested test duration in seconds. The ITGRecv instance will
+                  be killed after this time has passed (+ a grace period of five
+                  seconds).
 
-        interval: The requested interval for data points, in milliseconds (passed to ITGDec).
+        interval: The requested interval for data points, in milliseconds
+                  (passed to ITGDec).
 
-        hmac_hex: A hexadecimal HMAC-SHA256 of the two other parameters computed by
-                  concatenating their ASCII representations. The HMAC secret is configured
-                  by the operator of the control server instance.
+        hmac_hex: A hexadecimal HMAC-SHA256 of the two other parameters computed
+                  by concatenating their ASCII representations. The HMAC secret
+                  is configured by the operator of the control server instance.
 
-        raw_data: Whether to store and return the raw text log from ITGDec (i.e. the output of
-                  ITGDec -l)
+        raw_data: Whether to store and return the raw text log from ITGDec (i.e.
+                  the output of ITGDec -l)
 
         The return value is a dictionary with the following keys:
 
@@ -151,11 +184,12 @@ class DITGManager(object):
 
         message: Set if status is 'Error'; contains an error message.
 
-        test_id: The assigned test ID, to be passed to get_test_results() after the duration
-                 has expired.
+        test_id: The assigned test ID, to be passed to get_test_results() after
+                 the duration has expired.
 
-        port:    The control server port of the ITGRecv instance. The sender is expected to
-                 use port+1 for the data connection.
+        port: The control server port of the ITGRecv instance. The sender is
+              expected to use port+1 for the data connection.
+
         """
         self._collect_garbage()
         duration = int(duration)
@@ -166,20 +200,24 @@ class DITGManager(object):
         if hmac.hexdigest() != hmac_hex:
             return {'status': 'Error', 'message': "HMAC authentication failure."}
         if duration <= 0 or interval <= 0:
-            return {'status': 'Error', 'message': "Duration and interval must be positive integers."}
+            return {'status': 'Error',
+                    'message': "Duration and interval must be positive integers."}
         if duration > self.max_test_time:
-            return {'status': 'Error', 'message': "Maximum test time of %d seconds exceeded." % self.max_test_time}
-        if interval > duration*1000:
+            return {'status': 'Error',
+                    'message': "Maximum test time of %d seconds exceeded."
+                    % self.max_test_time}
+        if interval > duration * 1000:
             return {'status': 'Error', 'message': "Interval must be <= duration."}
         if len(self.children) >= self.max_instances:
-            return {'status': 'Error', 'message': "Too many concurrent instances running. Try again later."}
+            return {'status': 'Error',
+                    'message': "Too many concurrent instances running. "
+                    "Try again later."}
 
         test_id = "".join(random.sample(ALPHABET, self.id_length))
         # Need one port for control, one for data (if the data stream is TCP).
         port = self.current_port
         self.current_port += 2
         return self._spawn_receiver(test_id, duration, interval, port, raw_data)
-
 
     def _clean_fork(self, output=None):
         pipe_r, pipe_w = os.pipe()
@@ -228,7 +266,8 @@ class DITGManager(object):
         pipe, child = self._clean_fork(stdout)
         if child:
             try:
-                ret = self._run_receiver(test_id, duration, interval, port, pipe, raw_data)
+                ret = self._run_receiver(
+                    test_id, duration, interval, port, pipe, raw_data)
             except Exception as e:
                 traceback.print_exc()
                 ret = {'status': 'Error', 'message': str(e)}
@@ -253,8 +292,6 @@ class DITGManager(object):
             finally:
                 os.close(pipe)
 
-
-
     def _run_receiver(self, test_id, duration, interval, port, pipe, raw_data):
         logfile = '%s.log' % test_id
         txtlog = '%s.log.txt' % test_id
@@ -270,7 +307,8 @@ class DITGManager(object):
                                      '-a', self.bind_address,
                                      '-Sp', str(port)])
 
-        # Signal back to the parent whether or not we successfully spawned the receiver.
+        # Signal back to the parent whether or not we successfully spawned the
+        # receiver.
         except OSError as e:
             os.write(pipe, str(e).encode())
         else:
@@ -278,9 +316,11 @@ class DITGManager(object):
             try:
                 w = os.waitpid(proc.pid, os.WNOHANG)
             except OSError as e:
-                w = (0,str(e))
-            if w != (0,0):
-                ret = {'status': 'Error', 'message': 'ITGRecv exited immediately with code %s.' % w[1]}
+                w = (0, str(e))
+            if w != (0, 0):
+                ret = {'status': 'Error',
+                       'message': 'ITGRecv exited immediately with code %s.'
+                       % w[1]}
                 os.write(pipe, ret['message'].encode())
             else:
                 self.children.append(proc.pid)
@@ -318,7 +358,8 @@ class DITGManager(object):
                 # output is not useful to diagnose that anyway.
                 ret = {'status': 'Error', 'message': 'Empty data set.'}
 
-            # Read start of text log file to get timestamp of first received packet
+            # Read start of text log file to get timestamp of first received
+            # packet
             with open(txtlog, 'rt') as fp:
                 if raw_data:
                     ret['raw'] = fp.read()
@@ -328,12 +369,13 @@ class DITGManager(object):
                 try:
                     idx_s = data.index('rxTime>') + len('rxTime>')
                     idx_e = data.index('Size>')
-                    t,microsec = data[idx_s:idx_e].split(".")
-                    h,m,s = t.split(":")
+                    t, microsec = data[idx_s:idx_e].split(".")
+                    h, m, s = t.split(":")
                     now = time.gmtime()
-                    ret['utc_offset'] = calendar.timegm((now[0], now[1], now[2],
-                                                         int(h), int(m), int(s),
-                                                         now[6], now[7], now[8])) + int(microsec) / 10**6
+                    ret['utc_offset'] = calendar.timegm(
+                        (now[0], now[1], now[2],
+                         int(h), int(m), int(s),
+                         now[6], now[7], now[8])) + int(microsec) / 10**6
                 except Exception as e:
                     ret['utc_offset'] = None
 
@@ -343,11 +385,10 @@ class DITGManager(object):
             for f in logfile, txtlog, outfile:
                 self._unlink(f)
 
-
     def _collect_garbage(self, *args):
         for p in self.children:
             try:
-                if os.waitpid(p, os.WNOHANG) != (0,0):
+                if os.waitpid(p, os.WNOHANG) != (0, 0):
                     self.children.remove(p)
             except OSError:
                 self.children.remove(p)
@@ -395,23 +436,26 @@ class DITGManager(object):
 
 
 def run():
-    options,args = parser.parse_args()
+    options, args = parser.parse_args()
     if not XML_DEFUSED and not options.INSECURE_XML:
-        sys.stderr.write("XML EXPANSION ATTACK VULNERABILITY DETECTED. ABORTING!\n"
-                         "Run with --insecure-xml to run anyway (will leave the server vulnerable!)\n")
+        sys.stderr.write(
+            "XML EXPANSION ATTACK VULNERABILITY DETECTED. ABORTING!\n"
+            "Run with --insecure-xml to run anyway (will leave the server "
+            "vulnerable!)\n")
         sys.exit(1)
 
-    server = SimpleXMLRPCServer((options.BIND_ADDRESS, options.BIND_PORT), allow_none=True)
-    manager = DITGManager(bind_address = options.ITG_ADDRESS or options.BIND_ADDRESS,
-                          start_port = options.START_PORT,
-                          max_test_time = options.MAX_TEST_TIME,
-                          max_instances = options.MAX_INSTANCES,
-                          secret = options.SECRET,
-                          debug = options.DEBUG,)
+    server = SimpleXMLRPCServer(
+        (options.BIND_ADDRESS, options.BIND_PORT), allow_none=True)
+    manager = DITGManager(
+        bind_address=options.ITG_ADDRESS or options.BIND_ADDRESS,
+        start_port=options.START_PORT,
+        max_test_time=options.MAX_TEST_TIME,
+        max_instances=options.MAX_INSTANCES,
+        secret=options.SECRET,
+        debug=options.DEBUG,)
     server.register_instance(manager)
     server.register_introspection_functions()
     server.serve_forever()
-
 
 
 if __name__ == "__main__":

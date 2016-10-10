@@ -25,6 +25,7 @@ import unittest
 
 from flent import util
 
+
 class TestSmallUtilFunctions(unittest.TestCase):
 
     def test_uscore_to_camel(self):
@@ -33,7 +34,8 @@ class TestSmallUtilFunctions(unittest.TestCase):
     def test_classname(self):
         self.assertEqual(util.classname('test_class'), 'TestClass')
 
-        self.assertEqual(util.classname('test_class', 'Suffix'), 'TestClassSuffix')
+        self.assertEqual(util.classname(
+            'test_class', 'Suffix'), 'TestClassSuffix')
 
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestSmallUtilFunctions)

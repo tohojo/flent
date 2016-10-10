@@ -19,6 +19,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import json
+import os
+import re
+import select
+import shlex
+import subprocess
+import sys
+
 try:
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
     from SocketServer import ForkingMixIn
@@ -26,17 +36,17 @@ except ImportError:
     from http.server import HTTPServer, BaseHTTPRequestHandler
     from socketserver import ForkingMixIn
 
-import json, os, sys, time, select, shlex, subprocess, re
-
 tests = [{'name': 'test',
           'args': {'ipver': 'IP version (4 or 6)'},
           'exec': './test-exec.sh ${ipver}'}]
 
-class TestWebServer(ForkingMixIn,HTTPServer):
+
+class TestWebServer(ForkingMixIn, HTTPServer):
     pass
 
+
 class TestWebService(BaseHTTPRequestHandler):
-    _INTERP_REGEX =  re.compile(r"(^|[^$])(\$\{([^}]+)\})")
+    _INTERP_REGEX = re.compile(r"(^|[^$])(\$\{([^}]+)\})")
     _MAX_INTERP = 1000
 
     def respond(self, obj):
@@ -105,10 +115,10 @@ class TestWebService(BaseHTTPRequestHandler):
             m = self._INTERP_REGEX.search(string)
             i += 1
             if i > self._MAX_INTERP:
-                self.send_error(500, "Too many interpolations performed for exec string.")
+                self.send_error(
+                    500, "Too many interpolations performed for exec string.")
                 return None
         return string.replace("$$", "$")
-
 
     def handle_test(self, test, req):
         cmdline = self.interpolate(test['exec'], req)
@@ -128,7 +138,6 @@ class TestWebService(BaseHTTPRequestHandler):
             req = self.parse_input()
             if req:
                 self.handle_test(test, req)
-
 
 
 if __name__ == "__main__":

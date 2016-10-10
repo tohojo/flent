@@ -22,11 +22,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
-import os
 
 from flent import runners
 
-CAKE_1TIN="""qdisc cake 800c: dev ifb4eth0.3 root refcnt 2 bandwidth 250Mbit besteffort flows rtt 100.0ms raw
+CAKE_1TIN = """qdisc cake 800c: dev ifb4eth0.3 root refcnt 2 bandwidth 250Mbit besteffort flows rtt 100.0ms raw
  Sent 69962090646 bytes 73766402 pkt (dropped 95, overlimits 54359263 requeues 0)
  backlog 0b 0p requeues 0
  memory used: 4148544b of 12500000b
@@ -51,7 +50,7 @@ CAKE_1TIN="""qdisc cake 800c: dev ifb4eth0.3 root refcnt 2 bandwidth 250Mbit bes
 Time: 1475345872.910729727
 """
 
-CAKE_3TINS="""qdisc cake 8011: dev eth0.3 root refcnt 2 bandwidth 100Mbit diffserv4 flows rtt 100.0ms raw
+CAKE_3TINS = """qdisc cake 8011: dev eth0.3 root refcnt 2 bandwidth 100Mbit diffserv4 flows rtt 100.0ms raw
  Sent 1018642 bytes 1280 pkt (dropped 0, overlimits 268 requeues 0)
  backlog 0b 0p requeues 0
  memory used: 16576b of 5000000b
@@ -79,6 +78,7 @@ Time: 1475345872.910729727
 QDISC_KEYS = ['backlog_bytes', 'backlog_pkts', 'backlog_requeues', 'dropped',
               'overlimits', 'requeues', 'sent_bytes', 'sent_pkts']
 
+
 class TestParsers(unittest.TestCase):
 
     def check_res_keys(self, keys, res, raw_keys, raw):
@@ -90,7 +90,8 @@ class TestParsers(unittest.TestCase):
 
     def new_runner(self, name):
         r = runners.get(name)
-        return r(name='test', settings=object(), command='test', delay=0, remote_host=None)
+        return r(name='test', settings=object(), command='test',
+                 delay=0, remote_host=None)
 
     def test_cake_parser(self):
         raw_keys = ["cake_%s" % k for k in runners.TcRunner.cake_keys]
@@ -98,6 +99,7 @@ class TestParsers(unittest.TestCase):
         for data in (CAKE_1TIN, CAKE_3TINS):
             r = self.new_runner("tc")
             res = r.parse(data)
-            self.check_res_keys(QDISC_KEYS + ['ecn_mark'], res, raw_keys, r.raw_values)
+            self.check_res_keys(
+                QDISC_KEYS + ['ecn_mark'], res, raw_keys, r.raw_values)
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestParsers)

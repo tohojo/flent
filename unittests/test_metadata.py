@@ -26,6 +26,7 @@ import os
 
 from flent import metadata
 
+
 class TestMetadataFunctions(unittest.TestCase):
 
     def test_get_sysctls(self):

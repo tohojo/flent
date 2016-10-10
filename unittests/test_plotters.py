@@ -21,12 +21,13 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import unittest
+import itertools
 import os
+import shutil
 import sys
 import tempfile
-import shutil
-import itertools
+import unittest
+
 from unittest.util import strclass
 from distutils.version import LooseVersion
 
@@ -47,9 +48,9 @@ try:
     from tblib import pickling_support
     from six import reraise
     pickling_support.install()
-    HAS_TBLIB=True
+    HAS_TBLIB = True
 except ImportError:
-    HAS_TBLIB=False
+    HAS_TBLIB = False
 
 from flent import plotters, resultset, formatters
 from flent.settings import settings
@@ -61,7 +62,8 @@ else:
 
 MATPLOTLIB_RC_VALUES = {
     'axes.axisbelow': True,
-    'axes.color_cycle': ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'],
+    'axes.color_cycle': ['#1b9e77', '#d95f02', '#7570b3', '#e7298a',
+                         '#66a61e', '#e6ab02', '#a6761d', '#666666'],
     'axes.edgecolor': 'white',
     'axes.facecolor': '#EAEAF2',
     'axes.grid': True,
@@ -90,6 +92,7 @@ MATPLOTLIB_RC_VALUES = {
     'ytick.minor.size': 0,
 }
 
+
 def prefork(method):
     def new_method(*args, **kwargs):
         pipe_r, pipe_w = os.pipe()
@@ -98,7 +101,8 @@ def prefork(method):
             os.close(pipe_w)
             os.waitpid(pid, 0)
             res = pickle.loads(os.read(pipe_r, 65535))
-            if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1], Exception):
+            if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1],
+                                                                   Exception):
                 reraise(*res)
             if isinstance(res, Exception):
                 raise res
@@ -113,11 +117,9 @@ def prefork(method):
                     os.write(pipe_w, pickle.dumps(sys.exc_info()))
                 else:
                     os.write(pipe_w, pickle.dumps(e))
-                os.write(pipe_w, test)
             finally:
                 os._exit(0)
     return new_method
-
 
 
 class TestPlottersInit(unittest.TestCase):
@@ -130,10 +132,10 @@ class TestPlottersInit(unittest.TestCase):
         if not plotters.HAS_MATPLOTLIB:
             self.skipTest('no matplotlib available')
 
-
     @mock.patch.object(plotters, 'HAS_MATPLOTLIB', False)
     def test_init_fail(self):
-        self.assertRaises(RuntimeError, plotters.init_matplotlib, None, None, None)
+        self.assertRaises(
+            RuntimeError, plotters.init_matplotlib, None, None, None)
 
     @prefork
     def test_init_svg(self):
@@ -162,8 +164,8 @@ class TestPlottersInit(unittest.TestCase):
     @prefork
     def test_init_styles(self):
         plotters.init_matplotlib('test.svg', True, False)
-        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES)+\
-                         len(plotters.DASHES)+len(plotters.MARKERS))
+        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES) +
+                         len(plotters.DASHES) + len(plotters.MARKERS))
         for ls in plotters.LINESTYLES:
             self.assertIn(dict(linestyle=ls), plotters.STYLES)
         for d in plotters.DASHES:
@@ -174,12 +176,13 @@ class TestPlottersInit(unittest.TestCase):
     @prefork
     def test_init_styles_nomarkers(self):
         plotters.init_matplotlib('test.svg', False, False)
-        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES)+\
+        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES) +
                          len(plotters.DASHES))
         for ls in plotters.LINESTYLES:
             self.assertIn(dict(linestyle=ls), plotters.STYLES)
         for d in plotters.DASHES:
             self.assertIn(dict(dashes=d), plotters.STYLES)
+
 
 @unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
 class TestPlotters(unittest.TestCase):
@@ -262,7 +265,7 @@ class TestPlotters(unittest.TestCase):
         plotters.init_matplotlib('test.svg', True, True)
         self.create_plotter(plotters.SubplotCombinePlotter)
 
-from pprint import pprint
+
 class TestPlotting(unittest.TestCase):
 
     def __init__(self, filename, fmt):
@@ -279,7 +282,8 @@ class TestPlotting(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def __str__(self):
-        return "%s of %s (%s)" % (self.fmt, os.path.basename(self.filename), strclass(self.__class__))
+        return "%s of %s (%s)" % (self.fmt, os.path.basename(self.filename),
+                                  strclass(self.__class__))
 
     @prefork
     def runTest(self):
@@ -287,11 +291,12 @@ class TestPlotting(unittest.TestCase):
         self.settings.update(r.meta())
         self.settings.load_test(informational=True)
         self.settings.compute_missing_results(r)
-        self.settings.FORMAT='plot'
+        self.settings.FORMAT = 'plot'
 
         for p in self.settings.PLOTS.keys():
             self.settings.PLOT = p
-            self.settings.OUTPUT = os.path.join(self.output_dir, "%s.%s" % (p,self.fmt))
+            self.settings.OUTPUT = os.path.join(
+                self.output_dir, "%s.%s" % (p, self.fmt))
             formatter = formatters.new(self.settings)
             formatter.format([r])
 
@@ -299,12 +304,12 @@ class TestPlotting(unittest.TestCase):
 dirname = os.path.join(os.path.dirname(__file__), "test_data")
 output_formats = ['svg', 'pdf', 'png']
 plot_suite = unittest.TestSuite()
-for fname,fmt in itertools.product(os.listdir(dirname), output_formats):
+for fname, fmt in itertools.product(os.listdir(dirname), output_formats):
     if not fname.endswith(resultset.SUFFIX):
         continue
-    plot_suite.addTest(TestPlotting(os.path.join(dirname,fname), fmt))
+    plot_suite.addTest(TestPlotting(os.path.join(dirname, fname), fmt))
 
 
-
-test_suite = unittest.TestSuite([unittest.TestLoader().loadTestsFromTestCase(TestPlottersInit),
-                                 unittest.TestLoader().loadTestsFromTestCase(TestPlotters)])
+test_suite = unittest.TestSuite(
+    [unittest.TestLoader().loadTestsFromTestCase(TestPlottersInit),
+     unittest.TestLoader().loadTestsFromTestCase(TestPlotters)])

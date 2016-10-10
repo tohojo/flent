@@ -33,6 +33,6 @@ test_suite = unittest.TestSuite([test_util.test_suite,
                                  test_parsers.test_suite,
                                  test_plotters.test_suite,
                                  test_tests.test_suite,
-])
+                                 ])
 
 all_tests = unittest.TestSuite([test_suite, test_plotters.plot_suite])

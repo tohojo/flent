@@ -19,8 +19,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import threading, subprocess, csv, time, copy, readline, json
+import copy
+import csv
+import json
+import subprocess
+import threading
+import time
 
 iperf_cols = [
     'timestamp',
@@ -37,14 +43,15 @@ iperf_cols = [
     'datagrams',
     'error_percent',
     'out_of_order',
-    ]
+]
 
 TIMEOUT = 10.0
 
+
 class IperfReader(csv.DictReader):
+
     def __init__(self, csvfile):
         csv.DictReader.__init__(self, csvfile, fieldnames=iperf_cols)
-
 
 
 def line_iterator(fp):
@@ -82,10 +89,10 @@ class Monitor(threading.Thread):
     def run(self):
 
         prog = subprocess.Popen(['iperf', '-s', '-u', '-i', '0.5', '-y', 'c'],
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                        stderr=None,
-                        universal_newlines=True)
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=None,
+                                universal_newlines=True)
         prog.stdin.close()
         reader = IperfReader(line_iterator(prog.stdout))
 
@@ -94,7 +101,7 @@ class Monitor(threading.Thread):
 
     def handle_record(self, record):
         parts = record['time_interval'].split("-")
-        length = float(parts[1])-float(parts[0])
+        length = float(parts[1]) - float(parts[0])
 
         # too long interval, this is a summary record
         if length > 2:
@@ -103,7 +110,7 @@ class Monitor(threading.Thread):
         r_id = record['transfer_id']
 
         self._lock.acquire()
-        if not r_id in self._test_data:
+        if r_id not in self._test_data:
             self._test_data[r_id] = TestData(r_id)
         self._test_data[r_id].add_record(record)
         self._lock.release()
@@ -112,7 +119,7 @@ class Monitor(threading.Thread):
 
     def collect_garbage(self):
         self._lock.acquire()
-        for k,v in list(self._test_data.items()):
+        for k, v in list(self._test_data.items()):
             if v.expired():
                 del self._test_data[k]
         self._lock.release()

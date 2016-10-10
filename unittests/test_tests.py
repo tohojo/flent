@@ -21,22 +21,24 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import unittest
 import os
-import sys
+import unittest
 
-from flent.testenv import TestEnvironment, TEST_PATH
+from flent.testenv import TEST_PATH
 from flent.settings import settings
+
 
 class TestTests(unittest.TestCase):
 
     def setUp(self):
-        self.tests = sorted([os.path.splitext(i)[0] \
-                             for i in os.listdir(TEST_PATH) if i.endswith('.conf')])
+        self.tests = sorted([os.path.splitext(i)[0]
+                             for i in os.listdir(TEST_PATH)
+                             if i.endswith('.conf')])
         self.settings = settings.copy()
 
     def test_load_tests(self):
         for t in self.tests:
             self.settings.load_test(t, informational=True)
 
-test_suite = unittest.TestSuite([unittest.TestLoader().loadTestsFromTestCase(TestTests)])
+test_suite = unittest.TestSuite(
+    [unittest.TestLoader().loadTestsFromTestCase(TestTests)])
