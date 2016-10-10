@@ -50,16 +50,17 @@ from flent.settings import CONFIG_TYPES
 try:
     basestring
 except NameError:
-    basestring=str
+    basestring = str
+
 
 def new(settings):
     return BatchRunner(settings)
 
+
 class BatchRunner(object):
 
-    _INTERP_REGEX =  re.compile(r"(^|[^$])(\$\{([^}]+)\})")
+    _INTERP_REGEX = re.compile(r"(^|[^$])(\$\{([^}]+)\})")
     _MAX_INTERP = 1000
-
 
     def __init__(self, settings):
         self.args = OrderedDict()
@@ -74,7 +75,6 @@ class BatchRunner(object):
         for f in settings.BATCH_FILES:
             self.read(f)
 
-
     def read(self, filename):
         parser = RawConfigParser(dict_type=OrderedDict)
         read = parser.read(filename)
@@ -82,7 +82,7 @@ class BatchRunner(object):
             raise RuntimeError("Unable to read batch file: %s." % filename)
 
         for s in parser.sections():
-            typ,nam = s.split("::")
+            typ, nam = s.split("::")
             if typ.lower() == 'arg':
                 self.args[nam.lower()] = OrderedDict(parser.items(s))
             elif typ.lower() == 'batch':
@@ -100,14 +100,16 @@ class BatchRunner(object):
                 # Expand inheritance
                 if 'inherits' in vals:
                     if not vals['inherits'] in obj:
-                        raise RuntimeError("%s inherits from non-existent parent %s." % (name, vals['inherits']))
+                        raise RuntimeError(
+                            "%s inherits from non-existent parent %s."
+                            % (name, vals['inherits']))
                     obj[name] = self.inherit(obj[vals['inherits']], vals)
 
                 # Parse boolean options
-                for k,v in obj[name].items():
-                    if isinstance(v, basestring) and v.lower() in ('yes', 'true', 'on'):
+                for k, v in obj[name].items():
+                    if isinstance(v, basestring) and v.lower() in ('yes', 'true', 'on'):  # noqa: E501
                         obj[name][k] = True
-                    elif isinstance(v, basestring) and v.lower() in ('no', 'false', 'off'):
+                    elif isinstance(v, basestring) and v.lower() in ('no', 'false', 'off'):  # noqa: E501
                         obj[name][k] = False
 
     def inherit(self, parent, child):
@@ -155,20 +157,22 @@ class BatchRunner(object):
             m = self._INTERP_REGEX.search(ret)
             i += 1
             if i > self._MAX_INTERP:
-                raise RuntimeError("Cyclic interpolation (more than %d expansions performed)." % self._MAX_INTERP)
+                raise RuntimeError(
+                    "Cyclic interpolation (more than %d expansions performed)."
+                    % self._MAX_INTERP)
 
         return ret.replace("$$", "$")
 
     def apply_args(self, values, args={}, settings=None):
         new = OrderedDict(args)
         new.update(values)
-        for k,v in new.items():
+        for k, v in new.items():
             new[k] = self.interpolate(v, new, settings)
 
         return new
 
     def commands_for(self, batch, settings=None):
-        if not 'commands' in batch:
+        if 'commands' not in batch:
             return []
         cmdnames = [i.strip() for i in batch['commands'].split(',')]
         commands = OrderedDict()
@@ -177,8 +181,9 @@ class BatchRunner(object):
             c = cmdnames.pop(0)
             if not c or c in commands:
                 continue
-            if not c in self.commands:
-                raise RuntimeError("Can't find command '%s' when expanding batch command." % c)
+            if c not in self.commands:
+                raise RuntimeError("Can't find command '%s' when expanding "
+                                   "batch command." % c)
             cmd = self.apply_args(self.commands[c], batch, settings)
 
             # Don't include disabled commands
@@ -187,7 +192,8 @@ class BatchRunner(object):
 
             # Commands can specify extra commands to run; expand those, use the
             # dictionary to prevent duplicates
-            extra = [i.strip() for i in cmd.get('extra_commands', '').split(',') if i.strip()]
+            extra = [i.strip() for i in cmd.get('extra_commands', '').split(',')
+                     if i.strip()]
             for e in reversed(extra):
                 cmdnames.insert(0, e)
             commands[c] = cmd
@@ -210,24 +216,27 @@ class BatchRunner(object):
             return
         if command['type'] in ('pre', 'post'):
             try:
-                res = subprocess.check_output(cmd, universal_newlines=True, shell=True,
+                res = subprocess.check_output(cmd, universal_newlines=True,
+                                              shell=True,
                                               stderr=subprocess.STDOUT)
                 self.log("%s: %s" % (cmd, res))
             except subprocess.CalledProcessError as e:
                 if command.get('essential', False):
                     raise RuntimeError("Essential command '%s' failed. "
-                                       "Return code: %s.\nOutput:\n %s." % (cmd, e.returncode,
-                                                                            "\n ".join(e.output.splitlines())))
+                                       "Return code: %s.\nOutput:\n %s."
+                                       % (cmd, e.returncode,
+                                          "\n ".join(e.output.splitlines())))
                 else:
-                    self.log("%s err(%d): %s" % (cmd, e.returncode,
-                                                  "\n ".join(e.output.splitlines())))
+                    self.log("%s err(%d): %s"
+                             % (cmd, e.returncode,
+                                "\n ".join(e.output.splitlines())))
         elif command['type'] in ('monitor',):
             proc = subprocess.Popen(cmd, universal_newlines=True, shell=True,
-                                              stderr=subprocess.STDOUT)
-            self.children.append((proc,command.get('kill', False)))
+                                    stderr=subprocess.STDOUT)
+            self.children.append((proc, command.get('kill', False)))
 
     def kill_children(self, force=False):
-        for proc,kill in self.children:
+        for proc, kill in self.children:
             if kill or force:
                 proc.terminate()
             else:
@@ -246,7 +255,6 @@ class BatchRunner(object):
                     if not essential_only:
                         raise
 
-
     def gen_filename(self, settings, batch, argset, rep):
         filename = "batch-%s-%s-%s" % (
             settings.BATCH_NAME,
@@ -256,14 +264,14 @@ class BatchRunner(object):
         return clean_path(filename)
 
     def expand_argsets(self, batch, argsets, batch_time, batch_name,
-                       print_status = True):
+                       print_status=True):
 
         for argset in itertools.product(*argsets):
             rep = argset[-1]
             argset = argset[:-1]
             settings = self.settings.copy()
             if print_status:
-                sys.stderr.write(" args:%s rep:%02d" % (",".join(argset),rep))
+                sys.stderr.write(" args:%s rep:%02d" % (",".join(argset), rep))
                 if settings.BATCH_DRY:
                     sys.stderr.write(" (dry run)")
                 sys.stderr.write(".\n")
@@ -273,16 +281,17 @@ class BatchRunner(object):
             settings.TIME = datetime.utcnow()
 
             expand_vars = {'repetition': "%02d" % rep,
-                           'batch_time': format_date(settings.BATCH_TIME, fmt="%Y-%m-%dT%H%M%S")}
+                           'batch_time': format_date(settings.BATCH_TIME,
+                                                     fmt="%Y-%m-%dT%H%M%S")}
 
             for arg in argset:
-                if not arg in self.args:
+                if arg not in self.args:
                     raise RuntimeError("Invalid arg: '%s'." % arg)
                 expand_vars.update(self.args[arg])
 
             b = self.apply_args(batch, expand_vars, settings)
 
-            if not 'test_name' in b:
+            if 'test_name' not in b:
                 raise RuntimeError("Missing test name.")
 
             settings.load_rcvalues(b.items(), override=True)
@@ -300,39 +309,39 @@ class BatchRunner(object):
                 argset = []
                 for a in batch[k].split(','):
                     a = a.strip().lower()
-                    matches = [arg for arg in self.args if fnmatch(arg,a)]
+                    matches = [arg for arg in self.args if fnmatch(arg, a)]
                     if not matches:
                         raise RuntimeError("No matches for arg: '%s'." % a)
                     argset.extend(matches)
                 argsets.append(argset)
 
-        reps = range(1,int(batch.get('repetitions', 1))+1)
+        reps = range(1, int(batch.get('repetitions', 1))+1)
         argsets.append(reps)
 
         return argsets
 
     def get_batch_runtime(self, batch_name):
-        if not batch_name in self.batches:
+        if batch_name not in self.batches:
             raise RuntimeError("Can't find batch '%s' to run." % batch_name)
         batch = self.batches[batch_name].copy()
         batch.update(self.settings.BATCH_OVERRIDE)
 
         if batch.get('abstract', False) or batch.get('disabled', False):
-            return (0,0)
+            return (0,0)  # noqa: E231
 
         total_time = 0
         n = 0
         argsets = self.get_argsets(batch)
 
-        for _,s in self.expand_argsets(batch, argsets, self.settings.TIME, batch_name, False):
+        for _, s in self.expand_argsets(batch, argsets, self.settings.TIME,
+                                        batch_name, False):
             total_time += s.TOTAL_LENGTH + int(batch.get('pause', 0))
             n += 1
 
         return total_time, n
 
-
     def run_batch(self, batch_name):
-        if not batch_name in self.batches:
+        if batch_name not in self.batches:
             raise RuntimeError("Can't find batch '%s' to run." % batch_name)
         batch = self.batches[batch_name].copy()
         batch.update(self.settings.BATCH_OVERRIDE)
@@ -350,10 +359,12 @@ class BatchRunner(object):
         pause = int(batch.get('pause', 0))
 
         batch_time = None
-        if self.settings.BATCH_RESUME is not None and os.path.isdir(self.settings.BATCH_RESUME):
+        if self.settings.BATCH_RESUME is not None and \
+           os.path.isdir(self.settings.BATCH_RESUME):
             # We're resuming a batch run. Try to find a data file we can get the
             # original batch run time from.
-            for dirpath, dirnames, filenames in os.walk(self.settings.BATCH_RESUME):
+            for dirpath, dirnames, filenames in os.walk(
+                    self.settings.BATCH_RESUME):
                 datafiles = [f for f in filenames if f.endswith(resultset.SUFFIX)]
                 if datafiles:
                     f = datafiles[0]
@@ -361,20 +372,24 @@ class BatchRunner(object):
                     batch_time = r.meta("BATCH_TIME")
                     try:
                         self.settings.BATCH_UUID = r.meta("BATCH_UUID")
-                        sys.stderr.write(" Using previous UUID %s.\n" % self.settings.BATCH_UUID)
+                        sys.stderr.write(" Using previous UUID %s.\n"
+                                         % self.settings.BATCH_UUID)
                     except KeyError:
                         pass
                     break
             if batch_time is None:
-                raise RuntimeError("No data files found in resume directory %s." % self.settings.BATCH_RESUME)
+                raise RuntimeError("No data files found in resume directory %s."
+                                   % self.settings.BATCH_RESUME)
         elif self.settings.BATCH_RESUME:
-            raise RuntimeError("Batch resume directory %s doesn't exist!\n" % self.settings.BATCH_RESUME)
+            raise RuntimeError("Batch resume directory %s doesn't exist!\n"
+                               % self.settings.BATCH_RESUME)
         else:
             batch_time = self.settings.TIME
 
         filenames_seen = set()
 
-        for b,settings in self.expand_argsets(batch, argsets, batch_time, batch_name):
+        for b, settings in self.expand_argsets(batch, argsets,
+                                               batch_time, batch_name):
 
             if 'output_path' in b:
                 output_path = clean_path(b['output_path'], allow_dirs=True)
@@ -382,10 +397,15 @@ class BatchRunner(object):
                 output_path = settings.DATA_DIR
 
             if settings.BATCH_RESUME is not None:
-                if os.path.commonprefix([os.path.abspath(output_path),
-                                         os.path.abspath(settings.BATCH_RESUME)]) != os.path.abspath(settings.BATCH_RESUME):
-                    raise RuntimeError("Batch-specified output path is not a subdirectory of resume path. Bailing.")
-                if os.path.exists(os.path.join(output_path, "%s%s" % (settings.DATA_FILENAME, resultset.SUFFIX))):
+                if os.path.commonprefix(
+                        [os.path.abspath(output_path),
+                         os.path.abspath(settings.BATCH_RESUME)]) \
+                         != os.path.abspath(settings.BATCH_RESUME):
+                    raise RuntimeError("Batch-specified output path is not a "
+                                       "subdirectory of resume path. Bailing.")
+                if os.path.exists(os.path.join(output_path, "%s%s"
+                                               % (settings.DATA_FILENAME,
+                                                  resultset.SUFFIX))):
                     sys.stderr.write("  Previous result exists, skipping.\n")
                     continue
 
@@ -395,16 +415,22 @@ class BatchRunner(object):
                 try:
                     os.makedirs(output_path)
                 except OSError as e:
-                    raise RuntimeError("Unable to create output path '%s': %s." % (output_path,e))
+                    raise RuntimeError("Unable to create output path '%s': %s."
+                                       % (output_path, e))
 
             commands = self.commands_for(b, settings)
             if not settings.BATCH_DRY:
-                self.log_fd = io.open(os.path.join(output_path,"%s.log" % settings.DATA_FILENAME), "at")
+                self.log_fd = io.open(os.path.join(output_path, "%s.log"
+                                                   % settings.DATA_FILENAME),
+                                      "at")
             if b.get('debug_log', False):
-                settings.LOG_FILE = os.path.join(output_path,"%s.debug.log" % settings.DATA_FILENAME)
+                settings.LOG_FILE = os.path.join(output_path,
+                                                 "%s.debug.log" %
+                                                 settings.DATA_FILENAME)
 
             if settings.DATA_FILENAME in filenames_seen:
-                sys.stderr.write("  Warning: Filename already seen in this run: %s\n" % settings.DATA_FILENAME)
+                sys.stderr.write("  Warning: Filename already seen in "
+                                 "this run: %s\n" % settings.DATA_FILENAME)
             filenames_seen.add(settings.DATA_FILENAME)
 
             self.run_commands(commands, 'pre')
@@ -412,10 +438,12 @@ class BatchRunner(object):
             try:
                 if settings.BATCH_VERBOSE:
                     if settings.BATCH_DRY:
-                        sys.stderr.write("  Would run test '%s'.\n" % settings.NAME)
+                        sys.stderr.write("  Would run test '%s'.\n"
+                                         % settings.NAME)
                     else:
                         sys.stderr.write("  Running test '%s'.\n" % settings.NAME)
-                    sys.stderr.write("   data_filename=%s\n" % settings.DATA_FILENAME)
+                    sys.stderr.write("   data_filename=%s\n"
+                                     % settings.DATA_FILENAME)
                     for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
                         if k in b:
                             sys.stderr.write("   %s=%s\n" % (k, b[k]))
@@ -429,7 +457,8 @@ class BatchRunner(object):
                 raise
             except:
                 self.run_commands(commands, 'post', essential_only=True)
-                sys.stderr.write("  Error running test: %s\n" % "  ".join(traceback.format_exception_only(*sys.exc_info()[:2])))
+                sys.stderr.write("  Error running test: %s\n" % "  ".join(
+                    traceback.format_exception_only(*sys.exc_info()[:2])))
                 if settings.DEBUG_ERROR:
                     traceback.print_exc()
             else:
@@ -437,7 +466,11 @@ class BatchRunner(object):
                     self.run_commands(commands, 'post')
                 except:
                     self.run_commands(commands, 'post', essential_only=True)
-                    sys.stderr.write("  Error running post-commands: %s\n" % "  ".join(traceback.format_exception_only(*sys.exc_info()[:2])))
+                    sys.stderr.write("  Error running post-commands: %s\n"
+                                     % "  ".join(
+                                         traceback.format_exception_only(
+                                             *sys.exc_info()[:2])))
+
                     if settings.DEBUG_ERROR:
                         traceback.print_exc()
             finally:
@@ -450,7 +483,6 @@ class BatchRunner(object):
                 sys.stderr.write("  Would sleep for %d seconds.\n" % pause)
             elif not settings.BATCH_DRY:
                 time.sleep(pause)
-
 
     def log(self, text):
         if self.log_fd is not None:
@@ -485,10 +517,13 @@ class BatchRunner(object):
         settings = settings.copy()
         results = []
         test_name = None
-        for i,filename in enumerate(settings.INPUT):
+        for i, filename in enumerate(settings.INPUT):
             r = resultset.load(filename, settings.ABSOLUTE_TIME)
-            if test_name is not None and test_name != r.meta("NAME") and not settings.GUI:
-                sys.stderr.write("Warning: result sets are not from the same test (found %s/%s).\n" % (test_name, r.meta("NAME")))
+            if test_name is not None and test_name != r.meta("NAME") and \
+               not settings.GUI:
+                sys.stderr.write("Warning: result sets are not from the same "
+                                 "test (found %s/%s).\n" % (test_name,
+                                                            r.meta("NAME")))
             test_name = r.meta("NAME")
             if results and settings.CONCATENATE:
                 results[0].concatenate(r)
@@ -522,8 +557,12 @@ class BatchRunner(object):
         elif self.settings.BATCH_NAMES:
             start_time = self.settings.TIME
             self.settings.BATCH_UUID = str(uuid.uuid4())
-            sys.stderr.write("Started batch run %s at %s.\n" % (self.settings.BATCH_UUID, format_date(start_time, fmt="%Y-%m-%d %H:%M:%S")))
-            if len(self.settings.BATCH_NAMES) == 1 and self.settings.BATCH_NAMES[0] == 'ALL':
+            sys.stderr.write("Started batch run %s at %s.\n"
+                             % (self.settings.BATCH_UUID,
+                                format_date(start_time, fmt="%Y-%m-%d %H:%M:%S")))
+
+            if len(self.settings.BATCH_NAMES) == 1 and \
+               self.settings.BATCH_NAMES[0] == 'ALL':
                 sys.stderr.write("Running all batches.\n")
                 batches = self.batches.keys()
             else:
@@ -531,7 +570,8 @@ class BatchRunner(object):
             runtimes = [self.get_batch_runtime(b) for b in batches]
             total_time, total_n = map(sum, zip(*runtimes))
             if total_time > 0:
-                sys.stderr.write("Estimated total runtime: %s (%d tests)\n" % (timedelta(seconds=total_time), total_n))
+                sys.stderr.write("Estimated total runtime: %s (%d tests)\n"
+                                 % (timedelta(seconds=total_time), total_n))
             for b in batches:
                 try:
                     sys.stderr.write("Running batch '%s'.\n" % b)
@@ -541,11 +581,13 @@ class BatchRunner(object):
                 except Exception as e:
                     if self.settings.DEBUG_ERROR:
                         raise
-                    raise RuntimeError("Error while running batch '%s': %r." % (b, e))
+                    raise RuntimeError("Error while running batch '%s': %r."
+                                       % (b, e))
             end_time = datetime.utcnow()
-            sys.stderr.write("Ended batch sequence at %s. %s %d tests in %s.\n" % (format_date(end_time, fmt="%Y-%m-%d %H:%M:%S"),
-                                                                                   "Ran" if not self.settings.BATCH_DRY else 'Would have run',
-                                                                                   self.tests_run, (end_time - start_time)))
+            sys.stderr.write("Ended batch sequence at %s. %s %d tests in %s.\n"
+                             % (format_date(end_time, fmt="%Y-%m-%d %H:%M:%S"),
+                                "Ran" if not self.settings.BATCH_DRY else 'Would have run',  # noqa: E501
+                                self.tests_run, (end_time - start_time)))
             return True
         else:
             return self.run_test(self.settings, self.settings.DATA_DIR, True)
@@ -560,7 +602,7 @@ class BatchRunner(object):
 
     def p(self):
         for t in 'args', 'batches', 'commands':
-            print("%s:\n%s\n"% (t, pprint.pformat(getattr(self, t))))
+            print("%s:\n%s\n" % (t, pprint.pformat(getattr(self, t))))
 
 
 if __name__ == "__main__":
