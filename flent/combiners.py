@@ -246,8 +246,8 @@ class GroupsPointsCombiner(Combiner):
             cutoff = config.get('cutoff', None)
             if cutoff is not None:
                 res.x_values = [x for x in x_values
-                                if x >= cutoff[0]
-                                and x <= max(x_values) - cutoff[1]]
+                                if x >= cutoff[0] and
+                                x <= max(x_values) - cutoff[1]]
             else:
                 res.x_values = x_values
             for s in config['series']:

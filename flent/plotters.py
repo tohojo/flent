@@ -1328,9 +1328,9 @@ class CdfPlotter(Plotter):
         y_vals = list(y_vals)
         i = 0
         while i < len(x_vals) - 2:
-            while i < len(y_vals) - 2 \
-                  and y_vals[i] == y_vals[i + 1] \
-                  and y_vals[i] == y_vals[i + 2]:
+            while (i < len(y_vals) - 2 and
+                   y_vals[i] == y_vals[i + 1] and
+                   y_vals[i] == y_vals[i + 2]):
                 del x_vals[i + 1]
                 del y_vals[i + 1]
             i += 1

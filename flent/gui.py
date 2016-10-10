@@ -225,8 +225,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
         self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
         self.checkHighlight.setChecked(
-            self.settings.HOVER_HIGHLIGHT is None
-            or self.settings.HOVER_HIGHLIGHT)
+            self.settings.HOVER_HIGHLIGHT is None or
+            self.settings.HOVER_HIGHLIGHT)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
@@ -1481,8 +1481,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def update(self, redraw=True):
         self.dirty = True
-        if redraw and ((self.isVisible() and self.updatesEnabled())
-                       or self.settings.GUI_NO_DEFER):
+        if redraw and ((self.isVisible() and self.updatesEnabled()) or
+                       self.settings.GUI_NO_DEFER):
             self.redraw()
 
     def activate(self):

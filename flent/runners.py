@@ -170,8 +170,8 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
 
             # Add an extra interval to comparison to avoid getting one too few
             # samples due to small time differences.
-            while (current_time < start_time + self.length + self.interval
-                   and not self.kill_event.is_set()):
+            while (current_time < start_time + self.length + self.interval and
+                   not self.kill_event.is_set()):
                 try:
                     with open(self.filename, 'r') as fp:
                         val = fp.read()
@@ -933,9 +933,11 @@ class TcRunner(ProcessRunner):
                 tins = self.cake_1tin_re.findall(m.group(0))
                 start = m.end()
                 for key in self.cake_keys:
-                    m = re.search("^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (
-                        key, len(tins)), part[start:],
-                                  re.IGNORECASE | re.MULTILINE)
+                    m = re.search(
+                        "^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (key,
+                                                                   len(tins)),
+                        part[start:],
+                        re.IGNORECASE | re.MULTILINE)
                     if m:
                         k = "cake_%s" % key
                         matches[k] = dict(

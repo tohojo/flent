@@ -245,8 +245,8 @@ class BatchRunner(object):
 
     def run_commands(self, commands, ctype, essential_only=False):
         for c in commands:
-            if c['type'] == ctype and (not essential_only
-                                       or c.get('essential', False)):
+            if c['type'] == ctype and (not essential_only or
+                                       c.get('essential', False)):
                 try:
                     self.run_command(c)
                 except:
