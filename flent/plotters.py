@@ -873,6 +873,11 @@ class TimeseriesPlotter(Plotter):
             max(results.x_values + [self.metadata['TOTAL_LENGTH'], xlim[1]])
         )
 
+        if self.norm_factors:
+            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
+        else:
+            norms = None
+
         data = []
         for i in range(len(config['axes'])):
             data.append([])
@@ -882,7 +887,7 @@ class TimeseriesPlotter(Plotter):
         if stack:
             sums = self.np.zeros(len(results.x_values))
 
-        for s in config['series']:
+        for i, s in enumerate(config['series']):
             if not s['data'] in results.series_names:
                 continue
             if 'smoothing' in s:
@@ -903,6 +908,9 @@ class TimeseriesPlotter(Plotter):
             kwargs.update(extra_kwargs)
 
             y_values = results.series(s['data'], smooth)
+            if norms is not None:
+                y_values = [y / norms[i] if y is not None else None
+                            for y in y_values]
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
