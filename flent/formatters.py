@@ -117,8 +117,6 @@ class NullFormatter(Formatter):
     def __del__(self):
         pass
 
-DefaultFormatter = Formatter
-
 
 class TableFormatter(Formatter):
 
@@ -244,6 +242,69 @@ class StatsFormatter(Formatter):
                 self.write("  Max:         %f %s\n" % (self.np.max(d), units))
                 self.write("  Std dev:     %f\n" % (self.np.std(d)))
                 self.write("  Variance:    %f\n" % (self.np.var(d)))
+
+
+class SummaryFormatter(Formatter):
+
+    COL_WIDTH = 12
+
+    def __init__(self, settings):
+        Formatter.__init__(self, settings)
+        try:
+            import numpy
+            self.np = numpy
+        except ImportError:
+            self.np = None
+
+    def format(self, results):
+        self.open_output()
+        for r in results:
+            self.write("Summary of %s test run " % r.meta('NAME'))
+            if r.meta('TITLE'):
+                self.write("'%s' (at %s)" % (r.meta('TITLE'), r.meta("TIME")))
+            else:
+                self.write("at %s" % r.meta("TIME"))
+            self.write(":\n\n")
+
+            m = r.meta().get("SERIES_META", {})
+
+            txtlen = max([len(n) for n in r.series_names])
+
+            self.write("{spc:{txtlen}s} {avg:>{width}s} / {med:>{width}s}\n".format(
+                spc="", avg="avg", med="median", txtlen=txtlen + 3, width=self.COL_WIDTH))
+
+            for s in sorted(r.series_names):
+                self.write((" %-" + str(txtlen) + "s : ") % s)
+                d = [i for i in r.series(s) if i]
+
+                median = mean = None
+
+                if s in m and 'MEAN_VALUE' in m[s]:
+                    mean = m[s]['MEAN_VALUE']
+                elif not d:
+                    self.write("No data.\n")
+                    continue
+
+                units = self.settings.DATA_SETS[s]['units']
+
+                if d and self.np is not None:
+                    mean = self.np.mean(d) if not mean else mean
+                    median = self.np.median(d)
+                elif d:
+                    mean = sum(d) / len(d) if not mean else mean
+                    median = sorted(d)[len(d) // 2]
+
+                if mean:
+                    self.write("{0:{width}.2f} / ".format(mean, width=self.COL_WIDTH))
+                else:
+                    self.write("{0:>{width}} /".format("N/A", width=self.COL_WIDTH))
+
+                if median:
+                    self.write("{0:{width}.2f} {1}\n".format(mean, units, width=self.COL_WIDTH))
+                else:
+                    self.write("{0:>{width}} {1}\n".format("N/A", units, width=self.COL_WIDTH))
+
+DefaultFormatter = SummaryFormatter
 
 
 class PlotFormatter(Formatter):
