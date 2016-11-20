@@ -272,8 +272,8 @@ class SummaryFormatter(Formatter):
             unit_len = max((len(s['units']) for s in self.settings.DATA_SETS.values()))
 
             self.write("{spc:{txtlen}s} {avg:>{width}s} /"
-                       " {med:>{width}s} {loss:>{lwidth}s}\n".format(
-                           spc="", avg="avg", med="median", loss="loss",
+                       " {med:>{width}s} {datapoints:>{lwidth}s}\n".format(
+                           spc="", avg="avg", med="median", datapoints="# data pts",
                            txtlen=txtlen + 3, width=self.COL_WIDTH,
                            lwidth=self.COL_WIDTH + unit_len))
 
@@ -281,7 +281,7 @@ class SummaryFormatter(Formatter):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
                 d = [i for i in r.series(s) if i]
 
-                median = mean = loss = None
+                median = mean = None
 
                 if s in m and 'MEAN_VALUE' in m[s]:
                     mean = m[s]['MEAN_VALUE']
@@ -290,15 +290,6 @@ class SummaryFormatter(Formatter):
                     continue
 
                 units = self.settings.DATA_SETS[s]['units']
-
-                total_len = len(d)
-                d = list(filter(None, d))
-                raw = r.raw_values.get(s)
-
-                if raw and 'seq' in raw[0]:
-                    loss = 1 - (raw[-1]['seq'] - (raw[0]['seq'] - 1)) / len(raw)
-                else:
-                    loss = 1 - len(d) / total_len
 
                 if d and self.np is not None:
                     mean = self.np.mean(d) if not mean else mean
@@ -313,13 +304,13 @@ class SummaryFormatter(Formatter):
                     self.write("{0:>{width}} /".format("N/A", width=self.COL_WIDTH))
 
                 if median:
-                    self.write("{0:{width}.2f} {1}".format(mean, units, width=self.COL_WIDTH))
+                    self.write("{0:{width}.2f} {1}".format(median, units, width=self.COL_WIDTH))
                 else:
                     self.write("{0:>{width}} {1}".format("N/A", units, width=self.COL_WIDTH))
 
-                self.write("{0:{width}.2f} %\n".format(loss * 100,
-                                                       width=(self.COL_WIDTH +
-                                                              unit_len - len(units))))
+                self.write("{0:{width}d}\n".format(len(d),
+                                                   width=(self.COL_WIDTH +
+                                                          unit_len - len(units))))
 
 DefaultFormatter = SummaryFormatter
 
