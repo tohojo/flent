@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "October 03, 2016" "0.15.0-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "December 02, 2016" "0.15.0-git" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -819,6 +819,22 @@ The \fBping_local_binds\fP variable sets local IP address(es) to bind to for
 the extra ping flows. If specified, it must contain the same number of local
 addresses as the number of ping hosts. The same local address can be
 specified multiple times, however.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B voip_host
+.UNINDENT
+.INDENT 0.0
+.TP
+.B voip_local_bind
+.UNINDENT
+.INDENT 0.0
+.TP
+.B voip_control_host
+Similar to the ping variants above, these parameters specify a hostname that
+will receive a VoIP test. However, unlike the ping parameters, only one
+hostname can be specified for VoIP tests, and that end\-host needs to have
+D\-ITG (and the control server) running.
 .UNINDENT
 .INDENT 0.0
 .TP

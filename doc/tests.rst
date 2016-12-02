@@ -99,6 +99,15 @@ behave. These are:
    addresses as the number of ping hosts. The same local address can be
    specified multiple times, however.
 
+.. envvar:: voip_host
+.. envvar:: voip_local_bind
+.. envvar:: voip_control_host
+
+   Similar to the ping variants above, these parameters specify a hostname that
+   will receive a VoIP test. However, unlike the ping parameters, only one
+   hostname can be specified for VoIP tests, and that end-host needs to have
+   D-ITG (and the control server) running.
+
 .. envvar:: control_hosts
 
    Hostnames to use for the control connections for the ``rtt_fair_var*`` tests.
