@@ -266,7 +266,10 @@ class SummaryFormatter(Formatter):
                 self.write("at %s" % r.meta("TIME"))
             self.write(":\n\n")
 
-            m = r.meta().get("SERIES_META", {})
+            if 'FROM_COMBINER' in r.meta():
+                m = {}
+            else:
+                m = r.meta().get("SERIES_META", {})
 
             txtlen = max([len(n) for n in r.series_names])
             unit_len = max((len(s['units']) for s in self.settings.DATA_SETS.values()))
