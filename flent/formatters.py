@@ -274,7 +274,7 @@ class SummaryFormatter(Formatter):
             txtlen = max([len(n) for n in r.series_names])
             unit_len = max((len(s['units']) for s in self.settings.DATA_SETS.values()))
 
-            self.write("{spc:{txtlen}s} {avg:>{width}s} /"
+            self.write("{spc:{txtlen}s} {avg:>{width}s}"
                        " {med:>{width}s} {datapoints:>{lwidth}s}\n".format(
                            spc="", avg="avg", med="median", datapoints="# data pts",
                            txtlen=txtlen + 3, width=self.COL_WIDTH,
@@ -302,9 +302,9 @@ class SummaryFormatter(Formatter):
                     median = sorted(d)[len(d) // 2]
 
                 if mean:
-                    self.write("{0:{width}.2f} / ".format(mean, width=self.COL_WIDTH))
+                    self.write("{0:{width}.2f} ".format(mean, width=self.COL_WIDTH))
                 else:
-                    self.write("{0:>{width}} /".format("N/A", width=self.COL_WIDTH))
+                    self.write("{0:>{width}}".format("N/A", width=self.COL_WIDTH))
 
                 if median:
                     self.write("{0:{width}.2f} {1}".format(median, units, width=self.COL_WIDTH))
