@@ -707,7 +707,7 @@ class Settings(argparse.Namespace):
         if self.REMOTE_METADATA:
             self.EXTENDED_METADATA = True
 
-        if hasattr(self, 'PLOT'):
+        if self.PLOT is not None:
             self.FORMAT = 'plot'
 
         if self.BATCH_REPS is not None:
