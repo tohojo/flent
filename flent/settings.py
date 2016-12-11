@@ -186,6 +186,7 @@ CONFIG_TYPES = {
 
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
+
 class Version(argparse.Action):
 
     def __call__(*args):
@@ -205,6 +206,15 @@ class Version(argparse.Action):
         except ImportError:
             print("No PyQt4. GUI won't work.")
         sys.exit(0)
+
+
+class Update(argparse.Action):
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if hasattr(namespace, self.dest):
+            getattr(namespace, self.dest).update(values)
+        else:
+            setattr(namespace, self.dest, values)
 
 
 def float_pair(value):
@@ -232,19 +242,8 @@ def keyval_int(value):
     except ValueError:
         raise argparse.ArgumentTypeError("Keys must be integers.")
 
-class Update(argparse.Action):
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        print(values)
-        if hasattr(namespace, self.dest):
-            getattr(namespace, self.dest).update(values)
-        else:
-            setattr(namespace, self.dest, values)
-
 
 parser = argparse.ArgumentParser(description='The FLExible Network Tester.')
-#    usage="Usage: %prog [options] <host|test|input file ...> ",
-#    option_class=ExtendedOption)
 
 parser.add_argument("-o", "--output", action="store", type=unicode, dest="OUTPUT",
                     help="File to write processed output to (default standard out).")
