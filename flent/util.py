@@ -527,3 +527,9 @@ class ArgParser(argparse.ArgumentParser):
             if action.dest == dest:
                 return isinstance(action, argparse._AppendAction)
         return False
+
+    def __contains__(self, dest):
+        for action in self._actions:
+            if action.dest == dest:
+                return True
+        return False

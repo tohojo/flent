@@ -41,10 +41,9 @@ try:
 except ImportError:
     from ConfigParser import RawConfigParser
 
-from flent import aggregators, formatters, resultset
+from flent import aggregators, formatters, resultset, settings
 from flent.metadata import record_extended_metadata, record_postrun_metadata
 from flent.util import clean_path, format_date
-from flent.settings import CONFIG_TYPES
 
 # Python2/3 compatibility
 try:
@@ -444,8 +443,8 @@ class BatchRunner(object):
                         sys.stderr.write("  Running test '%s'.\n" % settings.NAME)
                     sys.stderr.write("   data_filename=%s\n"
                                      % settings.DATA_FILENAME)
-                    for k in sorted([i.lower() for i in CONFIG_TYPES.keys()]):
-                        if k in b:
+                    for k in sorted(b.keys()):
+                        if k in settings.parser:
                             sys.stderr.write("   %s=%s\n" % (k, b[k]))
 
                 if settings.BATCH_DRY:
