@@ -21,13 +21,14 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import argparse
 import inspect
 import io
 import re
 
 from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
-    Glob, Update, float_pair, keyval
+    Glob, Update, float_pair, keyval, ArgParam
 from flent.build_info import VERSION
 from functools import reduce
 from itertools import cycle, islice
@@ -426,47 +427,13 @@ def new(settings, plotter=None, **kwargs):
     if plotter is None:
         plotter = get_plotter(get_plotconfig(settings)['type'])
     try:
+        kwargs.update(vars(settings))
         return plotter(
             plot_config=get_plotconfig(settings),
             data_config=settings.DATA_SETS,
             output=settings.OUTPUT,
-
-            fig_width=settings.FIG_WIDTH,
-            fig_height=settings.FIG_HEIGHT,
-            fig_dpi=settings.FIG_DPI,
-            fig_note=settings.FIG_NOTE,
             gui=settings.GUI,
-
-            norm_factors=settings.NORM_FACTORS,
-            invert_y=settings.INVERT_Y,
-            zero_y=settings.ZERO_Y,
-            bounds_x=settings.BOUNDS_X,
-            bounds_y=settings.BOUNDS_Y,
-            label_x=settings.LABEL_X,
-            label_y=settings.LABEL_Y,
-            colours=settings.COLOURS,
-            log_scale=settings.LOG_SCALE,
-            scale_data=settings.SCALE_DATA,
-
-            print_legend=settings.PRINT_LEGEND,
-            filter_legend=settings.FILTER_LEGEND,
-            legend_title=settings.LEGEND_TITLE,
-            legend_placement=settings.LEGEND_PLACEMENT,
-            legend_columns=settings.LEGEND_COLUMNS,
-            horizontal_legend=settings.HORIZONTAL_LEGEND,
-            replace_legend=settings.REPLACE_LEGEND,
-            filter_regexp=settings.FILTER_REGEXP,
-            filter_series=settings.FILTER_SERIES,
-            skip_missing=settings.SKIP_MISSING,
-            print_title=settings.PRINT_TITLE,
-            override_title=settings.OVERRIDE_TITLE,
-            override_group_by=settings.OVERRIDE_GROUP_BY,
-            split_groups=settings.SPLIT_GROUPS,
-            combine_save_dir=settings.COMBINE_SAVE_DIR,
-            annotate=settings.ANNOTATE,
             description=settings.DESCRIPTION,
-            combine_print_n=settings.COMBINE_PRINT_N,
-            hover_highlight=settings.HOVER_HIGHLIGHT,
 
             **kwargs)
     except Exception as e:
@@ -483,63 +450,29 @@ def lines_equal(a, b):
         a.get_color() == b.get_color()
 
 
-class Plotter(object):
+class Plotter(ArgParam):
     open_mode = "wb"
     inverted_units = ('ms')
     can_subplot_combine = False
     can_highlight = False
 
+    params = add_plotting_args(argparse.ArgumentParser())
+
     def __init__(self,
                  plot_config,
                  data_config,
                  output="-",
-
-                 fig_width=None,
-                 fig_height=None,
-                 fig_dpi=None,
-                 fig_note=None,
                  gui=False,
-
-                 norm_factors=None,
-                 invert_y=False,
-                 zero_y=False,
-                 bounds_x=None,
-                 bounds_y=None,
-                 label_x=None,
-                 label_y=None,
-                 log_scale=False,
-                 scale_data=None,
-                 colours=None,
-
-                 print_legend=True,
-                 filter_legend=False,
-                 legend_title=None,
-                 legend_placement=None,
-                 legend_columns=None,
-                 horizontal_legend=False,
-                 replace_legend=None,
-                 filter_regexp=None,
-                 filter_series=None,
-                 skip_missing=False,
-
-                 print_title=True,
-                 override_title='',
-                 override_group_by=None,
-                 split_groups=None,
-                 combine_save_dir=None,
-                 annotate=True,
                  description='',
-                 combine_print_n=False,
-                 hover_highlight=None,
-
-                 figure=None):
+                 figure=None,
+                 **kwargs):
+        super(Plotter, self).__init__(**kwargs)
 
         self.disable_cleanup = False
         self.title = None
         self.output = output
         self.plt = pyplot
         self.np = numpy
-        self.colours = colours.split(",") if colours else COLOURS
         self.styles = STYLES
         self.legends = []
         self.artists = []
@@ -547,53 +480,27 @@ class Plotter(object):
         self.metadata = None
         self.callbacks = []
 
-        self.interactive_callback = None
-        if hover_highlight is not None:
-            self.can_highlight = hover_highlight
-
-        self.fig_dpi = fig_dpi
-        self.fig_note = fig_note
         self.gui = gui
+        self.description=description
 
-        self.norm_factors = norm_factors if norm_factors is not None else []
-        self.invert_y = invert_y
-        self.zero_y = zero_y
-        self.bounds_x = bounds_x if bounds_x is not None else []
-        self.bounds_y = bounds_y if bounds_y is not None else []
-        self.label_x = label_x if label_x is not None else []
-        self.label_y = label_y if label_y is not None else []
-        self.log_scale = log_scale
-        self.scale_data = scale_data if scale_data is not None else []
+        if self.colours:
+            self.colours = self.colours.split(",")
+        else:
+            self.colours = COLOURS
 
-        self.print_legend = print_legend
-        self.filter_legend = filter_legend
-        self.legend_title = legend_title
-        self.legend_placement = legend_placement
-        self.legend_columns = legend_columns
-        self.horizontal_legend = horizontal_legend
-        self.replace_legend = replace_legend if replace_legend is not None else {}
-        self.filter_regexp = filter_regexp if filter_regexp is not None else []
-        self.filter_series = filter_series if filter_series is not None else []
-        self.skip_missing = skip_missing
-
-        self.print_title = print_title
-        self.override_title = override_title
-        self.override_group_by = override_group_by
-        self.split_groups = split_groups
-        self.combine_save_dir = combine_save_dir
-        self.annotate = annotate
-        self.description = description
-        self.combine_print_n = combine_print_n
+        self.interactive_callback = None
+        if self.hover_highlight is not None:
+            self.can_highlight = self.hover_highlight
 
         self.config = self.expand_plot_config(plot_config, data_config)
         self.data_config = data_config
 
         if figure is None:
             self.figure = self.plt.figure()
-            if fig_width is not None:
-                self.figure.set_figwidth(fig_width)
-            if fig_height is not None:
-                self.figure.set_figheight(fig_height)
+            if self.fig_width is not None:
+                self.figure.set_figwidth(self.fig_width)
+            if self.fig_height is not None:
+                self.figure.set_figheight(self.fig_height)
         else:
             self.figure = figure
 

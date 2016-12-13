@@ -486,5 +486,15 @@ class ArgParam(object):
     """A class that takes an argparser and sets object properties from
     the argparser-defined parameters."""
 
-    def __init__(self, args, **kwargs):
-        pass
+    params = None
+
+    def __init__(self, **kwargs):
+        if self.params:
+            for a in self.params._actions:
+                dest = a.dest.lower()
+                if dest in kwargs:
+                    setattr(self, dest, kwargs[dest])
+                elif a.dest in kwargs:
+                    setattr(self, dest, kwargs[a.dest])
+                else:
+                    setattr(self, dest, a.default)
