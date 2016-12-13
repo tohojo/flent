@@ -140,7 +140,8 @@ class Version(FuncAction):
 
 class ListTests(FuncAction):
 
-    def get_tests(self, parser, settings):
+    @classmethod
+    def get_tests(cls, settings):
         tests = []
         for t in sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH)
                          if i.endswith('.conf')]):
@@ -149,7 +150,7 @@ class ListTests(FuncAction):
         return tests
 
     def __call__(self, parser, namespace, values, option_string=None):
-        tests = self.get_tests(parser, namespace)
+        tests = self.get_tests(namespace)
         sys.stderr.write('Available tests:\n')
         max_len = max([len(t[0]) for t in tests])
         for t, desc in tests:

@@ -39,7 +39,7 @@ from itertools import chain
 from flent.build_info import DATA_DIR, VERSION
 from flent.resultset import ResultSet
 from flent.formatters import PlotFormatter
-from flent.settings import get_tests
+from flent.settings import ListTests
 from flent import util, batch, resultset
 
 mswindows = (sys.platform == "win32")
@@ -622,7 +622,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.settings.INPUT = []
         self.settings.GUI = False
 
-        tests = get_tests()
+        tests = ListTests.get_tests(settings)
         max_len = max([len(t[0]) for t in tests])
         for t, desc in tests:
             desc = desc.replace("\n", " ")
