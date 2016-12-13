@@ -600,12 +600,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                     % err)
                 continue
 
-            widget.change_plot(current_plot)
             if set_last_dir:
                 self.last_dir = os.path.dirname(unicode(f))
 
         if widget is not None:
             widget.update()
+            widget.change_plot(current_plot)
             self.activate_tab(self.viewArea.indexOf(widget))
         self.openFilesView.resizeColumnsToContents()
         self.shorten_tabs()
@@ -1460,6 +1460,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         return self.settings.HOVER_HIGHLIGHT
 
     def change_plot(self, plot_name):
+        if not self.formatter:
+            return
         if isinstance(plot_name, QModelIndex):
             plot_name = self.plotModel.name_of(plot_name)
         plot_name = unicode(plot_name)
