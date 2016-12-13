@@ -37,6 +37,8 @@ except ImportError:
 
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
+from flent.util import FuncAction, Update, keyval, keyval_int
+from flent.plotters import add_plotting_args
 from flent import util, resultset, runners
 
 # Python 2/3 compatibility
@@ -107,16 +109,6 @@ CONFIG_TYPES = {
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 
-class FuncAction(argparse.Action):
-
-    def __init__(self, option_strings, dest, help=None):
-        super(FuncAction, self).__init__(option_strings,
-                                         dest,
-                                         nargs=0,
-                                         required=False,
-                                         help=help)
-
-
 class Version(FuncAction):
 
     def __call__(*args):
@@ -157,45 +149,6 @@ class ListTests(FuncAction):
             desc = desc.replace("\n", "\n" + " " * (max_len + 6))
             sys.stderr.write(("  %-" + str(max_len) + "s :  %s\n") % (t, desc))
         sys.exit(0)
-
-
-class Update(argparse.Action):
-
-    def __init__(self, *args, **kwargs):
-        if 'default' not in kwargs:
-            kwargs['default'] = {}
-        super(Update, self).__init__(*args, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not hasattr(namespace, self.dest):
-            setattr(namespace, self.dest, self.default)
-        getattr(namespace, self.dest).update(values)
-
-
-def float_pair(value):
-    try:
-        if "," not in value:
-            return (None, float(value))
-        a, b = [s.strip() for s in value.split(",", 1)]
-        return (float(a) if a else None,
-                float(b) if b else None)
-    except ValueError:
-        raise argparse.ArgumentTypeError("Invalid pair value: %s" % value)
-
-
-def keyval(value):
-    if '=' not in value:
-        raise argparse.ArgumentTypeError(
-            "Invalid value '%s' (missing =)" % value)
-    k, v = value.split('=', 1)
-    return {k: v}
-
-
-def keyval_int(value):
-    try:
-        return {int(k): v for k, v in keyval(value).items()}
-    except ValueError:
-        raise argparse.ArgumentTypeError("Keys must be integers.")
 
 
 parser = argparse.ArgumentParser(description='The FLExible Network Tester.')
@@ -424,232 +377,7 @@ plot_group = parser.add_argument_group(
     "These options are used to configure the appearance of "
     "plot output and only make sense combined with -f plot.")
 
-plot_group.add_argument(
-    "-z", "--zero-y",
-    action="store_true", dest="ZERO_Y",
-    help="Always start y axis of plot at zero, instead of auto-scaling the "
-    "axis (also disables log scales). Auto-scaling is still enabled for the "
-    "upper bound.")
-
-plot_group.add_argument(
-    "--bounds-x",
-    action="append", dest="BOUNDS_X", type=float_pair, default=[],
-    help="Specify bounds of the plot X axis. If specifying one number, that will "
-    "become the upper bound. Specify two numbers separated by a comma to specify "
-    "both upper and lower bounds. To specify just the lower bound, add a comma "
-    "afterwards. Can be specified twice, corresponding to figures with multiple "
-    "axes.")
-
-plot_group.add_argument(
-    "--bounds-y",
-    action="append", dest="BOUNDS_Y", type=float_pair, default=[],
-    help="Specify bounds of the plot Y axis. If specifying one number, that will "
-    "become the upper bound. Specify two numbers separated by a comma to specify "
-    "both upper and lower bounds. To specify just the lower bound, add a comma "
-    "afterwards. Can be specified twice, corresponding to figures with multiple "
-    "axes.")
-
-plot_group.add_argument(
-    "--label-x",
-    action="append", dest="LABEL_X", default=[],
-    help="Override the X axis label. "
-    "Can be specified twice, corresponding to figures with multiple axes.")
-
-plot_group.add_argument(
-    "--label-y",
-    action="append", dest="LABEL_Y", default=[],
-    help="Override the Y axis label. "
-    "Can be specified twice, corresponding to figures with multiple axes.")
-
-plot_group.add_argument(
-    "--colours",
-    action="store", dest="COLOURS",
-    help="Comma-separated list of colours to be used for the plot colour "
-    "cycle.")
-
-plot_group.add_argument(
-    "-I", "--invert-latency-y",
-    action="store_true", dest="INVERT_Y",
-    help="Invert the y-axis for latency data series (making plots show 'better' "
-    "values upwards).")
-
-plot_group.add_argument(
-    "--log-scale",
-    action="store_true", dest="LOG_SCALE",
-    help="Use logarithmic scale on plots.")
-
-plot_group.add_argument(
-    "--norm-factor",
-    action="append", type=float, dest="NORM_FACTORS", metavar="FACTOR",
-    default=[], help="Factor to normalise data by. I.e. divide all data points "
-    "by this value. Can be specified multiple times, in which case each value "
-    "corresponds to a data series.")
-
-plot_group.add_argument(
-    "--scale-data",
-    action="append", type=unicode, dest="SCALE_DATA", default=[],
-    help="Additional data files to consider when scaling the plot axes "
-    "(for plotting several plots with identical axes). Note, this displays "
-    "only the first data set, but with axis scaling taking into account the "
-    "additional data sets. Can be supplied multiple times; see also "
-    "--scale-mode.")
-
-plot_group.add_argument(
-    "-S", "--scale-mode",
-    action="store_true", dest="SCALE_MODE",
-    help="Treat file names (except for the first one) passed as unqualified "
-    "arguments as if passed as --scale-data (default as if passed as --input).")
-
-plot_group.add_argument(
-    "--concatenate",
-    action="store_true", dest="CONCATENATE",
-    help="Concatenate multiple result sets into one data series.")
-
-plot_group.add_argument(
-    "--absolute-time",
-    action="store_true", dest="ABSOLUTE_TIME",
-    help="Plot data points with absolute Unix time on the x-axis.")
-
-plot_group.add_argument(
-    "--subplot-combine",
-    action="store_true", dest="SUBPLOT_COMBINE",
-    help="When plotting multiple data series, plot each one on a separate "
-    "subplot instead of combining them into one plot (not supported for all "
-    "plot types).")
-
-plot_group.add_argument(
-    "--no-print-n",
-    action="store_false", dest="COMBINE_PRINT_N",
-    help="Do not print the number of data points on combined plots.")
-
-plot_group.add_argument(
-    "--no-annotation",
-    action="store_false", dest="ANNOTATE",
-    help="Exclude annotation with hostnames, time and test length from plots.")
-
-plot_group.add_argument(
-    "--no-title",
-    action="store_false", dest="PRINT_TITLE",
-    help="Exclude title from plots.")
-
-plot_group.add_argument(
-    "--override-title",
-    action="store", type=unicode, dest="OVERRIDE_TITLE", metavar="TITLE",
-    help="Override plot title with this string. This parameter takes "
-    "precedence over --no-title.")
-
-plot_group.add_argument(
-    "--override-label",
-    action="append", type=unicode, dest="OVERRIDE_LABELS", metavar="LABEL",
-    default=[],
-    help="Override dataset label. Must be specified multiple times "
-    "corresponding to the datasets being overridden.")
-
-plot_group.add_argument(
-    "--split-group",
-    action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
-    metavar="LABEL",
-    help="Split data sets into groups. Specify this option multiple "
-    "times to define the new groups. The value of each option is the group name. "
-    "This only works for box plots.")
-
-plot_group.add_argument(
-    "--no-markers",
-    action="store_false", dest="USE_MARKERS",
-    help="Don't use line markers to differentiate data series on plots.")
-
-plot_group.add_argument(
-    "--no-legend",
-    action="store_false", dest="PRINT_LEGEND",
-    help="Exclude legend from plots.")
-
-plot_group.add_argument(
-    "--horizontal-legend",
-    action="store_true", dest="HORIZONTAL_LEGEND",
-    help="Place a horizontal legend below the plot instead of a vertical one "
-    "next to it. Doesn't work well if there are too many items in the legend.")
-
-plot_group.add_argument(
-    "--legend-title",
-    action="store", dest="LEGEND_TITLE",
-    help="Override legend title on plot.")
-
-plot_group.add_argument(
-    "--legend-placement",
-    action="store", dest="LEGEND_PLACEMENT",
-    help="Control legend placement. Enabling this option will place the legend "
-    "inside the plot at the specified location. Use 'best' to let matplotlib "
-    "decide.")
-
-plot_group.add_argument(
-    "--legend-columns",
-    action="store", type=int, dest="LEGEND_COLUMNS",
-    help="Set the number of columns in the legend.")
-
-plot_group.add_argument(
-    "--filter-legend",
-    action="store_true", dest="FILTER_LEGEND",
-    help="Filter legend labels by removing the longest common substring from "
-    "all entries.")
-
-plot_group.add_argument(
-    "--filter-regexp",
-    action="append", dest="FILTER_REGEXP", metavar="REGEXP", default=[],
-    help="Filter out supplied regular expression from legend names. Can be "
-    "specified multiple times, in which case the regular expressions will be "
-    "filtered in the order specified.")
-
-plot_group.add_argument(
-    "--filter-series",
-    action="append", dest="FILTER_SERIES", metavar="SERIES", default=[],
-    help="Filter out specified series from plot. Can be specified multiple "
-    "times.")
-
-plot_group.add_argument(
-    "--skip-missing-series",
-    action="store_true", dest="SKIP_MISSING",
-    help="Skip missing series entirely from plots. Only works for bar plots.")
-
-plot_group.add_argument(
-    "--replace-legend",
-    action=Update, type=keyval, dest="REPLACE_LEGEND", metavar="src=dest",
-    default=OrderedDict(),
-    help="Replace 'src' with 'dst' in legends. Can be specified multiple times.")
-
-plot_group.add_argument(
-    "--figure-width", "--fig-width",
-    action="store", type=float, dest="FIG_WIDTH",
-    help="Figure width in inches. Used when saving plots to file and for default "
-    "size of the interactive plot window.")
-
-plot_group.add_argument(
-    "--figure-height", "--fig-height",
-    action="store", type=float, dest="FIG_HEIGHT",
-    help="Figure height in inches. Used when saving plots to file and for "
-    "default size of the interactive plot window.")
-
-plot_group.add_argument(
-    "--figure-dpi", "--fig-dpi",
-    action="store", type=float, dest="FIG_DPI",
-    help="Figure DPI. Used when saving plots to raster format files.")
-
-plot_group.add_argument(
-    "--figure-note", "--fig-note",
-    action="store", type=unicode, dest="FIG_NOTE",
-    help="Figure note. Will be added to the bottom-left corner of the figure.")
-
-plot_group.add_argument(
-    "--no-matplotlibrc",
-    action="store_false", dest="LOAD_MATPLOTLIBRC",
-    help="Don't use included matplotlib styles. Use this if you have configured "
-    "custom matplotlib styles that you want Flent to use.")
-
-plot_group.add_argument(
-    "--no-hover-highlight",
-    action="store_false", dest="HOVER_HIGHLIGHT", default=None,
-    help="Don't highlight data series on hover in interactive plot views. Use "
-    "this if redrawing is too slow, or the highlighting is undesired for other "
-    "reasons.")
+add_plotting_args(plot_group)
 
 combine_group = parser.add_argument_group(
     "Data combination configuration",

@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import argparse
 import bz2
 import gzip
 import io
@@ -428,3 +429,62 @@ def mos_score(T, loss):
         MOS = 1 + 0.035 * R + R * (R - 60) * (100 - R) * 7 * 10**-6  # (B-4)
 
     return MOS
+
+
+# Argparse stuff
+
+class FuncAction(argparse.Action):
+
+    def __init__(self, option_strings, dest, help=None):
+        super(FuncAction, self).__init__(option_strings,
+                                         dest,
+                                         nargs=0,
+                                         required=False,
+                                         help=help)
+
+
+class Update(argparse.Action):
+
+    def __init__(self, *args, **kwargs):
+        if 'default' not in kwargs:
+            kwargs['default'] = {}
+        super(Update, self).__init__(*args, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if not hasattr(namespace, self.dest):
+            setattr(namespace, self.dest, self.default)
+        getattr(namespace, self.dest).update(values)
+
+
+def float_pair(value):
+    try:
+        if "," not in value:
+            return (None, float(value))
+        a, b = [s.strip() for s in value.split(",", 1)]
+        return (float(a) if a else None,
+                float(b) if b else None)
+    except ValueError:
+        raise argparse.ArgumentTypeError("Invalid pair value: %s" % value)
+
+
+def keyval(value):
+    if '=' not in value:
+        raise argparse.ArgumentTypeError(
+            "Invalid value '%s' (missing =)" % value)
+    k, v = value.split('=', 1)
+    return {k: v}
+
+
+def keyval_int(value):
+    try:
+        return {int(k): v for k, v in keyval(value).items()}
+    except ValueError:
+        raise argparse.ArgumentTypeError("Keys must be integers.")
+
+
+class ArgParam(object):
+    """A class that takes an argparser and sets object properties from
+    the argparser-defined parameters."""
+
+    def __init__(self, args, **kwargs):
+        pass
