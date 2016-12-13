@@ -534,7 +534,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def busy_end(self):
         QApplication.restoreOverrideCursor()
 
-    def activate_tab(self, idx=None):
+    def activate_tab(self, idx=None, redraw=True):
         if idx is None:
             return
         widget = self.viewArea.widget(idx)
@@ -551,7 +551,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save)
         widget.activate()
-        widget.redraw()
+        if redraw:
+            widget.redraw()
         self.open_files.set_active_widget(widget)
 
     def update_plots(self, testname, plotname):
@@ -583,7 +584,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 if widget is None or widget.is_active:
                     widget = self.add_tab()
                 widget.load_results(f)
-                self.activate_tab(self.viewArea.indexOf(widget))
+                self.activate_tab(self.viewArea.indexOf(widget),
+                                  redraw=self.settings.GUI_NO_DEFER)
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -1277,6 +1279,9 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def init_formatter(self):
 
+        if not self.results:
+            return
+
         try:
             self.formatter = PlotFormatter(self.settings)
         except Exception as e:
@@ -1313,16 +1318,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.metadataModel = MetadataModel(self, self.results.meta())
         self.metadataSelectionModel = QItemSelectionModel(self.metadataModel)
 
-        if self.settings.TITLE:
-            self.title = "%s - %s" % (self.settings.NAME, self.settings.TITLE)
-            self.long_title = "%s - %s" % (self.title, util.format_date(
-                self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
-        else:
-            self.title = "%s - %s" % (self.settings.NAME,
-                                      util.format_date(self.settings.TIME,
-                                                       fmt="%Y-%m-%d %H:%M:%S"))
-            self.long_title = self.title
-
         if self.settings.GUI_NO_DEFER:
             self.redraw()
 
@@ -1337,7 +1332,17 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.settings.update(self.results.meta())
         self.settings.load_test(informational=True)
         self.settings.compute_missing_results(self.results)
-        self.init_formatter()
+
+        if self.settings.TITLE:
+            self.title = "%s - %s" % (self.settings.NAME, self.settings.TITLE)
+            self.long_title = "%s - %s" % (self.title, util.format_date(
+                self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
+        else:
+            self.title = "%s - %s" % (self.settings.NAME,
+                                      util.format_date(self.settings.TIME,
+                                                       fmt="%Y-%m-%d %H:%M:%S"))
+            self.long_title = self.title
+
         return True
 
     def disconnect_all(self):
@@ -1502,6 +1507,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if not self.dirty or not self.is_active:
             return
         self.update_start.emit()
+        if not self.formatter:
+            self.init_formatter()
         try:
             self.formatter.init_plots()
             if self.settings.SCALE_MODE:
