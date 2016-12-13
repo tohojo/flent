@@ -584,8 +584,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 if widget is None or widget.is_active:
                     widget = self.add_tab()
                 widget.load_results(f)
-                self.activate_tab(self.viewArea.indexOf(widget),
-                                  redraw=self.settings.GUI_NO_DEFER)
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -606,6 +604,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         if widget is not None:
             widget.update()
+            self.activate_tab(self.viewArea.indexOf(widget),
+                              redraw=self.settings.GUI_NO_DEFER)
         self.openFilesView.resizeColumnsToContents()
         self.shorten_tabs()
         self.metadata_column_resize()
