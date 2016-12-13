@@ -53,7 +53,8 @@ except ImportError:
     HAS_TBLIB = False
 
 from flent import plotters, resultset, formatters
-from flent.settings import settings
+from flent.settings import parser, Settings, DEFAULT_SETTINGS
+settings = parser.parse_args(namespace=Settings(DEFAULT_SETTINGS))
 
 if hasattr(plotters, 'matplotlib'):
     matplotlib_version = LooseVersion(plotters.matplotlib.__version__)

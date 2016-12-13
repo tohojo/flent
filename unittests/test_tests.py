@@ -25,7 +25,8 @@ import os
 import unittest
 
 from flent.testenv import TEST_PATH
-from flent.settings import settings
+from flent.settings import parser, Settings, DEFAULT_SETTINGS
+settings = parser.parse_args(namespace=Settings(DEFAULT_SETTINGS))
 
 
 class TestTests(unittest.TestCase):
