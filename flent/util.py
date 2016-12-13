@@ -482,6 +482,13 @@ def keyval_int(value):
         raise argparse.ArgumentTypeError("Keys must be integers.")
 
 
+def comma_list(value):
+    try:
+        return value.split(",")
+    except ValueError:
+        raise argparse.ArgumentTypeError("Unable to split into list.")
+
+
 class ArgParam(object):
     """A class that takes an argparser and sets object properties from
     the argparser-defined parameters."""

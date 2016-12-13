@@ -28,7 +28,7 @@ import re
 
 from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
-    Glob, Update, float_pair, keyval, ArgParam
+    Glob, Update, float_pair, keyval, comma_list, ArgParam
 from flent.build_info import VERSION
 from functools import reduce
 from itertools import cycle, islice
@@ -227,7 +227,7 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--colours",
-        action="store", dest="COLOURS",
+        action="store", dest="COLOURS", type=comma_list, default=COLOURS,
         help="Comma-separated list of colours to be used for the plot colour "
         "cycle.")
 
@@ -482,11 +482,6 @@ class Plotter(ArgParam):
 
         self.gui = gui
         self.description=description
-
-        if self.colours:
-            self.colours = self.colours.split(",")
-        else:
-            self.colours = COLOURS
 
         self.interactive_callback = None
         if self.hover_highlight is not None:
