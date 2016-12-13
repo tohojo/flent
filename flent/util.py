@@ -31,6 +31,7 @@ import socket
 import time
 
 from bisect import bisect_left
+from copy import copy
 from calendar import timegm
 from datetime import datetime
 from fnmatch import fnmatch
@@ -503,11 +504,11 @@ class ArgParam(object):
             for a in self.params._actions:
                 dest = a.dest.lower()
                 if dest in kwargs:
-                    setattr(self, dest, kwargs[dest])
+                    setattr(self, dest, copy(kwargs[dest]))
                 elif a.dest in kwargs:
-                    setattr(self, dest, kwargs[a.dest])
+                    setattr(self, dest, copy(kwargs[a.dest]))
                 else:
-                    setattr(self, dest, a.default)
+                    setattr(self, dest, copy(a.default))
 
 
 class ArgParser(argparse.ArgumentParser):

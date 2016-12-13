@@ -597,6 +597,10 @@ class Settings(argparse.Namespace):
         return Settings(self)
 
     def process_args(self):
+        if not self.INPUT:
+            self.INPUT = []
+        if not self.SCALE_DATA:
+            self.SCALE_DATA = []
         while self.args:
             a = self.args.pop(0)
             if os.path.exists(a):
