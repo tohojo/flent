@@ -659,7 +659,6 @@ def load(argv):
     # We parse the args twice - the first pass is just to get the test name and
     # the name of the rcfile to parse in order to get the defaults
     settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
-    import pprint; pprint.pprint(settings.load_rcfile())
     parser.set_defaults(**settings.load_rcfile())
 
     settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
