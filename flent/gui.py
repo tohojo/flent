@@ -910,7 +910,7 @@ class ResultsetStore(object):
 
         def get_key(itm):
             try:
-                return itm.meta(key)
+                return unicode(itm.meta(key))
             except KeyError:
                 return ''
         if only:
