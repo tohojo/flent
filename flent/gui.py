@@ -534,13 +534,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def busy_end(self):
         QApplication.restoreOverrideCursor()
 
-    def activate_tab(self, idx=None, redraw=True):
+    def activate_tab(self, idx=None):
         if idx is None:
             return
         widget = self.viewArea.widget(idx)
         if widget is None:
             self.open_files.set_active_widget(None)
             return
+
+        widget.redraw()
 
         self.plotView.setModel(widget.plotModel)
         if widget.plotSelectionModel is not None:
@@ -551,8 +553,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.update_checkboxes()
         self.actionSavePlot.setEnabled(widget.can_save)
         widget.activate()
-        if redraw:
-            widget.redraw()
         self.open_files.set_active_widget(widget)
 
     def update_plots(self, testname, plotname):
