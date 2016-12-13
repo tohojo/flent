@@ -28,7 +28,7 @@ import re
 
 from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
-    Glob, Update, float_pair, keyval, comma_list, ArgParam
+    Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
 from functools import reduce
 from itertools import cycle, islice
@@ -456,7 +456,7 @@ class Plotter(ArgParam):
     can_subplot_combine = False
     can_highlight = False
 
-    params = add_plotting_args(argparse.ArgumentParser())
+    params = add_plotting_args(ArgParser())
 
     def __init__(self,
                  plot_config,

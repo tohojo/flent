@@ -471,8 +471,11 @@ def keyval(value):
     if '=' not in value:
         raise argparse.ArgumentTypeError(
             "Invalid value '%s' (missing =)" % value)
-    k, v = value.split('=', 1)
-    return {k: v}
+    ret = {}
+    for p in value.split(";"):
+        k, v = p.split('=', 1)
+        ret.update({k: v})
+    return ret
 
 
 def keyval_int(value):
@@ -505,3 +508,22 @@ class ArgParam(object):
                     setattr(self, dest, kwargs[a.dest])
                 else:
                     setattr(self, dest, a.default)
+
+
+class ArgParser(argparse.ArgumentParser):
+
+    def get_type(self, dest):
+        for action in self._actions:
+            if action.dest == dest:
+                # Workaround because StoreConst actions don't store the action
+                # type
+                if isinstance(action, argparse._StoreConstAction):
+                    return type(action.const)
+                return action.type
+        return None
+
+    def is_list(self, dest):
+        for action in self._actions:
+            if action.dest == dest:
+                return isinstance(action, argparse._AppendAction)
+        return False

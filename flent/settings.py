@@ -37,7 +37,7 @@ except ImportError:
 
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
-from flent.util import FuncAction, Update, keyval, keyval_int
+from flent.util import FuncAction, Update, keyval, keyval_int, ArgParser
 from flent.plotters import add_plotting_args
 from flent import util, resultset, runners
 
@@ -58,52 +58,6 @@ DEFAULT_SETTINGS = {
     'TIME': datetime.utcnow(),
     'BATCH_NAME': None,
     'BATCH_UUID': None,
-}
-
-CONFIG_TYPES = {
-    'HOSTS': 'list',
-    'REMOTE_HOSTS': 'dict_int',
-    'LOCAL_BIND': 'list',
-    'STEP_SIZE': 'float',
-    'LENGTH': 'int',
-    'OUTPUT': 'str',
-    'DATA_DIR': 'str',
-    'FORMAT': 'str',
-    'TITLE': 'str',
-    'NOTE': 'str',
-    'LOG_FILE': 'str',
-    'IP_VERSION': 'int',
-    'DELAY': 'int',
-    'SOCKET_TIMEOUT': 'int',
-    'TEST_PARAMETERS': 'dict',
-    'SWAP_UPDOWN': 'bool',
-    'SCALE_MODE': 'bool',
-    'SUBPLOT_COMBINE': 'bool',
-    'COMBINE_PRINT_N': 'bool',
-    'ANNOTATE': 'bool',
-    'PRINT_TITLE': 'bool',
-    'PRINT_LEGEND': 'bool',
-    'FILTER_LEGEND': 'bool',
-    'LEGEND_TITLE': 'str',
-    'LEGEND_PLACEMENT': 'str',
-    'LEGEND_COLUMNS': 'int',
-    'ZERO_Y': 'bool',
-    'INVERT_Y': 'bool',
-    'LOG_SCALE': 'bool',
-    'EXTENDED_METADATA': 'bool',
-    'REMOTE_METADATA': 'list',
-    'CONTROL_HOST': 'str',
-    'CONTROL_LOCAL_BIND': 'str',
-    'NETPERF_CONTROL_PORT': 'int',
-    'DITG_CONTROL_PORT': 'int',
-    'DITG_CONTROL_SECRET': 'str',
-    'NEW_GUI_INSTANCE': 'bool',
-    'BATCH_FILES': 'list',
-    'HTTP_GETTER_URLLIST': 'str',
-    'HTTP_GETTER_DNS': 'str',
-    'HTTP_GETTER_TIMEOUT': 'int',
-    'HTTP_GETTER_WORKERS': 'int',
-    'DEBUG_ERROR': 'bool',
 }
 
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
@@ -151,7 +105,7 @@ class ListTests(FuncAction):
         sys.exit(0)
 
 
-parser = argparse.ArgumentParser(description='The FLExible Network Tester.')
+parser = ArgParser(description='The FLExible Network Tester.')
 
 parser.add_argument(
     "args", nargs="*", type=unicode, metavar="host|test|input_file",
@@ -506,9 +460,10 @@ class Settings(argparse.Namespace):
             self.NAME = test_name
 
     def load_rcfile(self):
+        self.process_args()
         if self.RCFILE == parser.get_default('RCFILE') and \
            not os.path.exists(self.RCFILE) and os.path.exists(OLD_RCFILE):
-            sys.stderr.write("Warning: Old rcfile found at %s, "
+            sys.stderr.write("Warning: Using old rcfile found at %s, "
                              "please rename to %s.\n"
                              % (OLD_RCFILE, self.RCFILE))
             self.RCFILE = OLD_RCFILE
@@ -524,40 +479,45 @@ class Settings(argparse.Namespace):
                 items.extend(config.items('global'))
             if self.NAME is not None and config.has_section(self.NAME):
                 items.extend(config.items(self.NAME))
-            self.load_rcvalues(items)
-        self.update_implications()
+            return self.parse_rcvalues(items)
+        return {}
 
-    def load_rcvalues(self, items, override=False):
+    def parse_rcvalues(self, items):
+
+        vals = {}
 
         for k, v in items:
             k = k.upper()
-            if k in CONFIG_TYPES and (override or
-                                      getattr(self, k) == parser.get_default(k)):
-                if CONFIG_TYPES[k] == 'str':
-                    setattr(self, k, v)
-                elif CONFIG_TYPES[k] == 'int':
-                    setattr(self, k, int(v))
-                elif CONFIG_TYPES[k] == 'float':
-                    setattr(self, k, float(v))
-                elif CONFIG_TYPES[k] == 'list':
-                    setattr(self, k, [i.strip() for i in v.split(",")])
-                elif CONFIG_TYPES[k] == 'dict':
-                    setattr(self, k, {k.strip(): v.strip() for k, v in
-                                      [i.split("=", 1) for i in v.split(';')
-                                       if '=' in i]})
-                elif CONFIG_TYPES[k] == 'dict_int':
-                    setattr(self, k, {int(k): v.strip() for k, v in
-                                      [i.split("=", 1) for i in v.split(';')
-                                       if '=' in i]})
-                elif CONFIG_TYPES[k] == 'bool':
-                    if type(v) == bool:
-                        setattr(self, k, v)
-                    elif v.lower() in ('1', 'yes', 'true', 'on'):
-                        setattr(self, k, True)
-                    elif v.lower() in ('0', 'no', 'false', 'off'):
-                        setattr(self, k, False)
-                    else:
-                        raise ValueError("Not a boolean: %s" % v)
+            t = parser.get_type(k)
+            if t == bool:
+                if type(v) == bool:
+                    vals[k] = v
+                elif v.lower() in ('1', 'yes', 'true', 'on'):
+                    vals[k] = True
+                elif v.lower() in ('0', 'no', 'false', 'off'):
+                    vals[k] = False
+                else:
+                    raise ValueError("Not a boolean: %s" % v)
+                continue
+
+            elif t:
+
+                val = t(v)
+                if isinstance(val, dict) and k in vals:
+                    vals[k].update(val)
+                elif parser.is_list(k):
+                    vals[k] = [t(i.strip()) for i in v.split(",")]
+                else:
+                    vals[k] = val
+
+        return vals
+
+    def load_rcvalues(self, vals, override=False):
+
+        for k, v in vals.items():
+            if override or getattr(self, k) == parser.get_default(k):
+                setattr(self, k, v)
+
         self.update_implications()
 
     def load_test(self, test_name=None, informational=False):
@@ -636,6 +596,17 @@ class Settings(argparse.Namespace):
     def copy(self):
         return Settings(self)
 
+    def process_args(self):
+        while self.args:
+            a = self.args.pop(0)
+            if os.path.exists(a):
+                if self.SCALE_MODE and self.INPUT:
+                    self.SCALE_DATA.append(a)
+                else:
+                    self.INPUT.append(a)
+            else:
+                self.load_test_or_host(a)
+
     def update_implications(self):
         # If run with no args and no controlling TTY, launch the GUI by default
         if not sys.stdin.isatty() and not sys.stdout.isatty() and \
@@ -685,18 +656,15 @@ def load_gui(settings):
 
 
 def load(argv):
+    # We parse the args twice - the first pass is just to get the test name and
+    # the name of the rcfile to parse in order to get the defaults
     settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
+    import pprint; pprint.pprint(settings.load_rcfile())
+    parser.set_defaults(**settings.load_rcfile())
 
-    for a in settings.args:
-        if os.path.exists(a):
-            if settings.SCALE_MODE and settings.INPUT:
-                settings.SCALE_DATA.append(a)
-            else:
-                settings.INPUT.append(a)
-        else:
-            settings.load_test_or_host(a)
-
-    settings.load_rcfile()
+    settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
+    settings.process_args()
+    settings.update_implications()
 
     if settings.SCALE_DATA:
         scale_data = []
@@ -716,6 +684,7 @@ def load(argv):
         list_plots(settings)
 
     return settings
+
 
 def list_plots(settings):
     plots = list(settings.PLOTS.keys())
