@@ -56,7 +56,7 @@ try:
     from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
         QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
-        QApplication, QStringListModel
+        QApplication, QStringListModel, QKeySequence
 
     from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -202,7 +202,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionClearExtra.triggered.connect(self.clear_extra)
         self.actionScaleOpen.triggered.connect(self.scale_open)
         self.actionNextTab.triggered.connect(self.next_tab)
+        self.actionNextTab.setShortcuts([QKeySequence("Ctrl+Tab"),
+                                         QKeySequence("Ctrl+Right")])
         self.actionPrevTab.triggered.connect(self.prev_tab)
+        self.actionPrevTab.setShortcuts([QKeySequence("Ctrl+Shift+Backtab"),
+                                         QKeySequence("Ctrl+Left")])
         self.actionRefresh.triggered.connect(self.refresh_plot)
         self.actionNewTest.triggered.connect(self.run_test)
 
