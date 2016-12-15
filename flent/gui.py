@@ -187,6 +187,7 @@ def get_ui_class(filename):
 class LoadedResultset(dict):
     pass
 
+
 def results_load_helper(filename):
     r = ResultSet.load_file(filename)
     s = new_settings()
@@ -481,8 +482,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.load_files(self.defer_load)
             self.defer_load = None
 
-        #sys.exit(0)
-
     def shorten_titles(self, titles):
         new_titles = []
         substr = util.long_substr(titles)
@@ -622,16 +621,20 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.busy_start()
         widget = self.viewArea.currentWidget()
-        idx = self.viewArea.currentIndex()
         if widget is not None:
             current_plot = widget.current_plot
+            update_tabs = True
         else:
             current_plot = None
+            update_tabs = False
 
         focus = True
 
-        results = self.worker_pool.map(results_load_helper,
-                                       map(unicode, filenames))
+        if isinstance(filenames[0], ResultSet):
+            results = filenames
+        else:
+            results = self.worker_pool.map(results_load_helper,
+                                           map(unicode, filenames))
 
         titles = self.shorten_titles([r['title'] for r in results])
 
@@ -641,6 +644,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                     widget = self.add_tab(r, t, current_plot,
                                           focus=focus)
                     focus = False
+                else:
+                    widget.load_results(r, plot=current_plot)
                 widget.redraw()
                 self.open_files.add_file(widget.results)
             except Exception as e:
@@ -661,6 +666,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.openFilesView.resizeColumnsToContents()
         self.metadata_column_resize()
+        if update_tabs:
+            self.shorten_tabs()
         self.busy_end()
 
     def run_test(self):
@@ -1392,10 +1399,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if plot:
             self.settings.PLOT = plot
 
-        if 'PLOTS' not in self.settings:
-            self.settings.load_test(informational=True)
-
         self.settings.update(self.results.meta())
+
+        if not self.settings.PLOTS:
+            self.settings.load_test(informational=True)
 
         self.title = self.results.title
         self.long_title = self.results.long_title
