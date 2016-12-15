@@ -111,6 +111,17 @@ class ResultSet(object):
         self._filename = self.metadata['DATA_FILENAME']
         self._label = None
 
+        if 'TITLE' in self.metadata and self.metadata['TITLE']:
+            self.title = "%s - %s" % (self.metadata['NAME'],
+                                      self.metadata['TITLE'])
+            self.long_title = "%s - %s" % (self.title, format_date(
+                self.metadata['TIME'], fmt="%Y-%m-%d %H:%M:%S"))
+        else:
+            self.title = "%s - %s" % (self.metadata['NAME'],
+                                      format_date(self.metadata['TIME'],
+                                                  fmt="%Y-%m-%d %H:%M:%S"))
+            self.long_title = self.title
+
     def meta(self, key=None, value=_EMPTY):
         if key:
             if value is not _EMPTY:
