@@ -56,7 +56,7 @@ try:
     from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
         QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
-        QApplication, QStringListModel, QKeySequence
+        QApplication, QStringListModel, QKeySequence, QResizeEvent
 
     from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -1620,11 +1620,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                 self.plotter.figure.set_canvas(self.canvas)
 
             self.plotter.connect_interactive()
-            self.canvas.adjustSize()
-            self.plotter.size_legends()
-            if self.canvas.isVisible():
-                evt = QEvent(QEvent.Enter)
-                self.canvas.enterEvent(evt)
+            self.canvas.resizeEvent(QResizeEvent(self.canvas.size(),
+                                                 self.canvas.size()))
 
         except Exception as e:
             traceback.print_exc()
