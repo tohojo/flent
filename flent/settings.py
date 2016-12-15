@@ -548,8 +548,11 @@ class Settings(argparse.Namespace):
             if k == k.upper():
                 setattr(self, k, v)
 
-        if 'DEFAULTS' in s:
-            for k, v in list(s['DEFAULTS'].items()):
+        self.update_defaults()
+
+    def update_defaults(self):
+        if hasattr(self, 'DEFAULTS'):
+            for k, v in list(self.DEFAULTS.items()):
                 if not hasattr(self, k) or getattr(self, k) is None:
                     setattr(self, k, v)
 
