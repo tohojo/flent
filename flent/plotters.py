@@ -611,6 +611,11 @@ class Plotter(ArgParam):
             self.highlight_widths[a] = (a.get_linewidth(), a.get_linewidth() * 2)
 
     def connect_interactive(self):
+        if not self.resize_callback:
+            self.resize_callback = self.figure.canvas.mpl_connect(
+                'resize_event', self.size_legends)
+            self.callbacks.append(self.resize_callback)
+
         try:
             if self.interactive_callback \
                or not self.can_highlight \
