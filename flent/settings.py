@@ -435,6 +435,10 @@ misc_group.add_argument(
     help="Debug errors: Don't catch unhandled exceptions.")
 
 
+def new():
+    return parser.parse_args([], namespace=Settings(DEFAULT_SETTINGS))
+
+
 class Settings(argparse.Namespace):
 
     FLENT_VERSION = VERSION
