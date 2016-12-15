@@ -35,12 +35,12 @@ except ImportError:
     import pickle
 
 from itertools import chain
+from multiprocessing import Pool
 
 from flent.build_info import DATA_DIR, VERSION
 from flent.resultset import ResultSet
-from flent.formatters import PlotFormatter
-from flent.settings import ListTests
-from flent import util, batch, resultset
+from flent.settings import ListTests, new as new_settings
+from flent import util, batch, resultset, plotters
 
 mswindows = (sys.platform == "win32")
 
@@ -101,6 +101,8 @@ __all__ = ['run_gui']
 def run_gui(settings):
     if check_running(settings):
         return 0
+
+    plotters.init_matplotlib("-", settings.USE_MARKERS, settings.LOAD_MATPLOTLIBRC)
 
     # Python does not get a chance to process SIGINT while in the Qt event loop,
     # so reset to the default signal handler which just kills the application.
@@ -182,6 +184,22 @@ def get_ui_class(filename):
     return C
 
 
+class LoadedResultset(dict):
+    pass
+
+def results_load_helper(filename):
+    r = ResultSet.load_file(filename)
+    s = new_settings()
+    s.update(r.meta())
+    s.load_test(informational=True)
+    s.compute_missing_results(r)
+    return LoadedResultset(results=r,
+                           plots=s.PLOTS,
+                           data_sets=s.DATA_SETS,
+                           defaults=s.DEFAULTS,
+                           title=r.title)
+
+
 class MainWindow(get_ui_class("mainwindow.ui")):
 
     def __init__(self, settings):
@@ -189,6 +207,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.settings = settings
         self.last_dir = os.getcwd()
         self.defer_load = self.settings.INPUT
+
+        if self.settings.HOVER_HIGHLIGHT is None:
+            self.settings.HOVER_HIGHLIGHT = True
 
         self.setWindowTitle("Flent GUI v%s" % VERSION)
 
@@ -228,9 +249,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
         self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
-        self.checkHighlight.setChecked(
-            self.settings.HOVER_HIGHLIGHT is None or
-            self.settings.HOVER_HIGHLIGHT)
+        self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
@@ -264,6 +283,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                         (SOCKET_NAME_PREFIX, os.getpid())))
 
         self.read_settings()
+
+        self.worker_pool = Pool()
 
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
@@ -459,6 +480,24 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.load_files(self.defer_load)
             self.defer_load = None
 
+        #sys.exit(0)
+
+    def shorten_titles(self, titles):
+        new_titles = []
+        substr = util.long_substr(titles)
+        prefix = util.long_substr(titles, prefix_only=True)
+
+        for t in titles:
+            if len(substr) > 0:
+                text = t.replace(substr, "...")
+            if len(prefix) > 0 and prefix != substr:
+                text = text.replace(prefix, "...").replace("......", "...")
+            if len(substr) == 0 or text == "...":
+                text = t
+            new_titles.append(text)
+
+        return new_titles
+
     def shorten_tabs(self):
         """Try to shorten tab labels by filtering out common substrings.
 
@@ -481,16 +520,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             long_titles.append(self.viewArea.widget(i).long_title)
             indexes.append(i)
 
-        substr = util.long_substr(titles)
-        prefix = util.long_substr(titles, prefix_only=True)
+        titles = self.shorten_titles(titles)
+
         for i, t, lt in zip(indexes, titles, long_titles):
-            if len(substr) > 0:
-                text = t.replace(substr, "...")
-            if len(prefix) > 0 and prefix != substr:
-                text = text.replace(prefix, "...").replace("......", "...")
-            if len(substr) == 0 or text == "...":
-                text = t
-            self.viewArea.setTabText(i, text)
+            self.viewArea.setTabText(i, t)
             self.viewArea.setTabToolTip(i, lt)
 
     def close_tab(self, idx=None):
@@ -565,31 +598,42 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
 
-    def add_tab(self):
-        widget = ResultWidget(self.viewArea, self.settings)
+    def add_tab(self, results=None, title=None, plot=None):
+        widget = ResultWidget(self.viewArea, self.settings, self.worker_pool)
         widget.update_start.connect(self.busy_start)
         widget.update_end.connect(self.busy_end)
         widget.plot_changed.connect(self.update_plots)
-        self.viewArea.addTab(widget, widget.title)
+        if results:
+            widget.load_results(results, plot)
+        if title is None:
+            title = widget.title
+        self.viewArea.addTab(widget, title)
         self.viewArea.setCurrentWidget(widget)
 
         return widget
 
     def load_files(self, filenames, set_last_dir=True):
+        if not filenames:
+            return
+
         self.busy_start()
         widget = self.viewArea.currentWidget()
+        idx = self.viewArea.currentIndex()
         if widget is not None:
             current_plot = widget.current_plot
         else:
             current_plot = None
 
-        for f in filenames:
+        results = self.worker_pool.map(results_load_helper,
+                                       map(unicode, filenames))
+
+        titles = self.shorten_titles([r['title'] for r in results])
+
+        for r, t in zip(results, titles):
             try:
                 if widget is None or widget.is_active:
-                    widget = self.add_tab()
-                widget.load_results(f)
-                if self.settings.GUI_NO_DEFER:
-                    widget.redraw()
+                    widget = self.add_tab(r, t, current_plot)
+                widget.redraw()
                 self.open_files.add_file(widget.results)
             except Exception as e:
                 traceback.print_exc()
@@ -604,15 +648,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                     % err)
                 continue
 
-            if set_last_dir:
-                self.last_dir = os.path.dirname(unicode(f))
+        if set_last_dir:
+            self.last_dir = os.path.dirname(unicode(filenames[-1]))
 
-        if widget is not None:
-            widget.update()
-            widget.change_plot(current_plot)
-            self.activate_tab(self.viewArea.indexOf(widget))
+        self.viewArea.setCurrentIndex(idx+1)
         self.openFilesView.resizeColumnsToContents()
-        self.shorten_tabs()
         self.metadata_column_resize()
         self.busy_end()
 
@@ -713,14 +753,13 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
 class PlotModel(QStringListModel):
 
-    def __init__(self, parent, settings):
+    def __init__(self, parent, plots):
         QStringListModel.__init__(self, parent)
-        self.settings = settings
 
-        self.keys = list(self.settings.PLOTS.keys())
+        self.keys = list(plots.keys())
 
         strings = []
-        for k, v in self.settings.PLOTS.items():
+        for k, v in plots.items():
             strings.append("%s (%s)" % (k, v['description']))
         self.setStringList(strings)
 
@@ -1259,9 +1298,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     update_start = pyqtSignal()
     update_end = pyqtSignal()
     plot_changed = pyqtSignal('QString', 'QString')
+    new_fig = pyqtSignal()
     default_title = "New tab"
 
-    def __init__(self, parent, settings):
+    def __init__(self, parent, settings, worker_pool):
         super(ResultWidget, self).__init__(parent)
         self.results = None
         self.settings = settings.copy()
@@ -1276,19 +1316,28 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.metadataModel = None
         self.metadataSelectionModel = None
         self.toolbar = None
-        self.formatter = None
+        self.plotter = None
+        self.canvas = None
+        self.canvas_dirty = False
+
+        self.sync = False
+
+        self.new_fig.connect(self.get_figure)
+        self.async_fig = None
+
+        self.worker_pool = worker_pool
 
     @property
     def is_active(self):
         return self.results is not None
 
-    def init_formatter(self):
+    def init_plotter(self):
 
         if not self.results:
             return
 
         try:
-            self.formatter = PlotFormatter(self.settings)
+            self.plotter = plotters.new(self.settings)
         except Exception as e:
             traceback.print_exc()
             if isinstance(e, RuntimeError):
@@ -1302,9 +1351,14 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                                 "Full traceback output to console." % err)
 
             self.settings.PLOT = self.settings.DEFAULTS['PLOT']
-            self.formatter = PlotFormatter(self.settings)
+            self.plotter = plotters.new(self.settings)
 
-        self.canvas = FigureCanvas(self.formatter.figure)
+        if self.settings.GUI_NO_DEFER:
+            self.redraw()
+
+    def init_canvas(self):
+
+        self.canvas = FigureCanvas(self.plotter.figure)
         self.canvas.setParent(self.graphDisplay)
         self.toolbar = NavigationToolbar(self.canvas, self.graphDisplay)
 
@@ -1313,7 +1367,36 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         vbl.addWidget(self.toolbar)
         self.graphDisplay.setLayout(vbl)
 
-        self.plotModel = PlotModel(self, self.settings)
+    def has(self, resultset):
+        return resultset in chain([self.results], self.extra_results)
+
+    def load_results(self, results, plot=None):
+        if isinstance(results, LoadedResultset):
+            self.results = results['results']
+            self.settings.DEFAULTS = results['defaults']
+            self.settings.DATA_SETS = results['data_sets']
+            self.settings.PLOTS = results['plots']
+            self.settings.update_defaults()
+        elif isinstance(results, ResultSet):
+            self.results = results
+        else:
+            self.results = ResultSet.load_file(unicode(results))
+            self.settings.compute_missing_results(self.results)
+
+        if plot:
+            self.settings.PLOT = plot
+
+        if 'PLOTS' not in self.settings:
+            self.settings.load_test(informational=True)
+
+        self.settings.update(self.results.meta())
+
+        self.title = self.results.title
+        self.long_title = self.results.long_title
+
+        self.init_plotter()
+
+        self.plotModel = PlotModel(self, self.settings.PLOTS)
         self.plotSelectionModel = QItemSelectionModel(self.plotModel)
         self.plotSelectionModel.setCurrentIndex(
             self.plotModel.index_of(self.settings.PLOT),
@@ -1323,31 +1406,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.metadataModel = MetadataModel(self, self.results.meta())
         self.metadataSelectionModel = QItemSelectionModel(self.metadataModel)
 
-        if self.settings.GUI_NO_DEFER:
-            self.redraw()
-
-    def has(self, resultset):
-        return resultset in chain([self.results], self.extra_results)
-
-    def load_results(self, results):
-        if isinstance(results, ResultSet):
-            self.results = results
-        else:
-            self.results = ResultSet.load_file(unicode(results))
-        self.settings.update(self.results.meta())
-        self.settings.load_test(informational=True)
-        self.settings.compute_missing_results(self.results)
-
-        if self.settings.TITLE:
-            self.title = "%s - %s" % (self.settings.NAME, self.settings.TITLE)
-            self.long_title = "%s - %s" % (self.title, util.format_date(
-                self.settings.TIME, fmt="%Y-%m-%d %H:%M:%S"))
-        else:
-            self.title = "%s - %s" % (self.settings.NAME,
-                                      util.format_date(self.settings.TIME,
-                                                       fmt="%Y-%m-%d %H:%M:%S"))
-            self.long_title = self.title
-
         return True
 
     def disconnect_all(self):
@@ -1355,8 +1413,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             s.disconnect()
 
     def disable_cleanup(self):
-        if self.formatter is not None:
-            self.formatter.disable_cleanup = True
+        if self.plotter is not None:
+            self.plotter.disable_cleanup = True
 
     def load_files(self, filenames):
         added = 0
@@ -1464,7 +1522,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         return self.settings.HOVER_HIGHLIGHT
 
     def change_plot(self, plot_name):
-        if not self.formatter:
+        if not self.plotter:
             return
         if isinstance(plot_name, QModelIndex):
             plot_name = self.plotModel.name_of(plot_name)
@@ -1495,7 +1553,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.redraw()
 
     def activate(self):
-        if not hasattr(self, "canvas"):
+        if not self.canvas:
             return
 
         try:
@@ -1513,19 +1571,53 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def redraw(self):
         if not self.dirty or not self.is_active:
             return
-        self.update_start.emit()
-        if not self.formatter:
-            self.init_formatter()
+
+        if self.settings.SCALE_MODE:
+            self.settings.SCALE_DATA = self.extra_results
+            res = [self.results]
+        else:
+            self.settings.SCALE_DATA = []
+            res = [self.results] + self.extra_results
+
+        if self.sync:
+            fig = self.worker_pool.apply(plotters.draw_worker,
+                                         (self.settings, res))
+            self.recv_fig(fig)
+        else:
+            self.async_fig = self.worker_pool.apply_async(
+                plotters.draw_worker,
+                (self.settings, res),
+                callback=self.recv_fig,
+                error_callback=self.recv_fig)
+
+        self.dirty = False
+        self.setCursor(Qt.WaitCursor)
+
+    def recv_fig(self, fig):
+        self.new_fig.emit()
+
+    def get_figure(self):
+        if not self.async_fig or not self.async_fig.ready():
+            return
+
         try:
-            self.formatter.init_plots()
-            if self.settings.SCALE_MODE:
-                self.settings.SCALE_DATA = self.extra_results
-                self.formatter.format([self.results])
+            fig = self.async_fig.get()
+
+            self.plotter = fig
+
+            if not self.canvas:
+                self.init_canvas()
             else:
-                self.settings.SCALE_DATA = []
-                self.formatter.format([self.results] + self.extra_results)
-            self.canvas.draw()
-            self.dirty = False
+                self.canvas.figure = self.plotter.figure
+                self.plotter.figure.set_canvas(self.canvas)
+
+            self.plotter.connect_interactive()
+            self.canvas.adjustSize()
+            self.plotter.size_legends()
+            if self.canvas.isVisible():
+                evt = QEvent(QEvent.Enter)
+                self.canvas.enterEvent(evt)
+
         except Exception as e:
             traceback.print_exc()
             typ, val, tra = sys.exc_info()
@@ -1535,4 +1627,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                                 "Aborting. Full traceback output to console."
                                 % err)
         finally:
-            self.update_end.emit()
+            self.async_fig = None
+            self.setCursor(Qt.ArrowCursor)
+
+    def setCursor(self, cursor):
+        super(ResultWidget, self).setCursor(cursor)
+        if self.canvas:
+            self.canvas.setCursor(cursor)
+        if self.toolbar:
+            self.toolbar.setCursor(cursor)
