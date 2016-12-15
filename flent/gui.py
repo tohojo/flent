@@ -1327,8 +1327,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.canvas = None
         self.canvas_dirty = False
 
-        self.sync = False
-
         self.new_fig.connect(self.get_figure)
         self.async_fig = None
 
@@ -1587,16 +1585,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.SCALE_DATA = []
             res = [self.results] + self.extra_results
 
-        if self.sync:
-            fig = self.worker_pool.apply(plotters.draw_worker,
-                                         (self.settings, res))
-            self.recv_fig(fig)
-        else:
-            self.async_fig = self.worker_pool.apply_async(
-                plotters.draw_worker,
-                (self.settings, res),
-                callback=self.recv_fig,
-                error_callback=self.recv_fig)
+        self.async_fig = self.worker_pool.apply_async(
+            plotters.draw_worker, (self.settings, res),
+            callback=self.recv_fig,
+            error_callback=self.recv_fig)
 
         self.dirty = False
         self.setCursor(Qt.WaitCursor)
