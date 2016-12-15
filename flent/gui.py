@@ -197,6 +197,7 @@ def results_load_helper(filename):
                            plots=s.PLOTS,
                            data_sets=s.DATA_SETS,
                            defaults=s.DEFAULTS,
+                           description=s.DESCRIPTION,
                            title=r.title)
 
 
@@ -1376,6 +1377,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.DEFAULTS = results['defaults']
             self.settings.DATA_SETS = results['data_sets']
             self.settings.PLOTS = results['plots']
+            self.settings.DESCRIPTION = results['description']
             self.settings.update_defaults()
         elif isinstance(results, ResultSet):
             self.results = results
