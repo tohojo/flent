@@ -423,7 +423,7 @@ def add_plotting_args(parser):
     return parser
 
 
-def new(settings, plotter=None, **kwargs):
+def new(settings, plotter=None, in_worker=False, **kwargs):
     if plotter is None:
         plotter = get_plotter(get_plotconfig(settings)['type'])
     try:
@@ -434,10 +434,20 @@ def new(settings, plotter=None, **kwargs):
             output=settings.OUTPUT,
             gui=settings.GUI,
             description=settings.DESCRIPTION,
+            in_worker=in_worker,
 
             **kwargs)
     except Exception as e:
         raise RuntimeError("Error loading plotter: %s." % e)
+
+
+def draw_worker(settings, results):
+    plotter = new(settings, in_worker=True)
+    plotter.init()
+    plotter.plot(results)
+    plotter.save(results)
+    plotter.disconnect_callbacks()
+    return plotter
 
 
 def lines_equal(a, b):
@@ -465,33 +475,34 @@ class Plotter(ArgParam):
                  gui=False,
                  description='',
                  figure=None,
+                 in_worker=False,
                  **kwargs):
         super(Plotter, self).__init__(**kwargs)
 
         self.disable_cleanup = False
         self.title = None
         self.output = output
-        self.plt = pyplot
-        self.np = numpy
         self.styles = STYLES
         self.legends = []
         self.artists = []
         self.data_artists = []
         self.metadata = None
         self.callbacks = []
+        self.in_worker = in_worker
 
         self.gui = gui
         self.description=description
 
-        self.interactive_callback = None
+        self.interactive_callback = self.resize_callback = None
         if self.hover_highlight is not None:
             self.can_highlight = self.hover_highlight
 
         self.config = self.expand_plot_config(plot_config, data_config)
+        self.configs = [self.config]
         self.data_config = data_config
 
         if figure is None:
-            self.figure = self.plt.figure()
+            self.figure = pyplot.figure()
             if self.fig_width is not None:
                 self.figure.set_figwidth(self.fig_width)
             if self.fig_height is not None:
@@ -502,7 +513,7 @@ class Plotter(ArgParam):
     def __del__(self):
         if not self.disable_cleanup:
             try:
-                self.plt.close(self.figure)
+                pyplot.close(self.figure)
             except Exception:
                 pass
 
@@ -577,15 +588,13 @@ class Plotter(ArgParam):
         # Otherwise, the filename is passed to matplotlib, which selects an
         # appropriate output format based on the file name.
         if self.output == "-":
-            self.callbacks.append(self.figure.canvas.mpl_connect(
-                'resize_event', self.size_legends))
             self.size_legends()
             if not self.gui:
-                self.plt.show()
+                pyplot.show()
         else:
             try:
                 save_args = self.build_tight_layout(artists)
-                if self.plt.get_backend() == 'pdf':
+                if pyplot.get_backend() == 'pdf':
                     self.save_pdf(self.output, results[0].meta(
                         'DATA_FILENAME'), save_args)
                 else:
@@ -622,6 +631,7 @@ class Plotter(ArgParam):
         for c in self.callbacks:
             self.figure.canvas.mpl_disconnect(c)
         self.callbacks = []
+        self.interactive_callback = self.resize_callback = None
 
     def on_move(self, event):
         hovered = set()
@@ -720,6 +730,12 @@ class Plotter(ArgParam):
     def size_legends(self, event=None):
         # For the interactive viewer there's no bbox_extra_artists, so we
         # need to reduce the axis sizes to make room for the legend.
+
+        if not self.resize_callback:
+            self.resize_callback = self.figure.canvas.mpl_connect(
+                'resize_event', self.size_legends)
+            self.callbacks.append(self.resize_callback)
+
         if self.print_legend \
            and not self.horizontal_legend \
            and not self.legend_placement \
@@ -869,7 +885,7 @@ class Plotter(ArgParam):
         # specification, and if they are not present, attempt to monkey-patch
         # the method if it does not accept any arguments.
         a, v, _, _ = inspect.getargspec(l.get_window_extent)
-        if len(a) < 2 or v is None:
+        if not self.in_worker and len(a) < 2 or v is None:
             def get_window_extent(*args, **kwargs):
                 return l.legendPatch.get_window_extent(*args, **kwargs)
             l.get_window_extent = get_window_extent
@@ -922,7 +938,7 @@ class Plotter(ArgParam):
         elif q < 0 or q > 100:
             raise ValueError("Invalid percentile: %s" % q)
         idx = int(len(lst) * (q / 100.0))
-        return self.np.sort(lst)[idx]
+        return numpy.sort(lst)[idx]
 
 
 class CombineManyPlotter(object):
@@ -1032,7 +1048,7 @@ class TimeseriesPlotter(Plotter):
         colours = cycle(self.colours)
 
         if stack:
-            sums = self.np.zeros(len(results.x_values))
+            sums = numpy.zeros(len(results.x_values))
 
         for i, s in enumerate(config['series']):
             if not s['data'] in results.series_names:
@@ -1066,7 +1082,7 @@ class TimeseriesPlotter(Plotter):
             if stack:
                 kwargs['facecolor'] = kwargs['color']
                 del kwargs['color']
-                y_values = self.np.array(y_values, dtype=float)
+                y_values = numpy.array(y_values, dtype=float)
 
                 config['axes'][a].fill_between(
                     results.x_values, sums, y_values + sums, **kwargs)
@@ -1199,23 +1215,23 @@ class BoxPlotter(TimeseriesPlotter):
                 ticklabels.append(i)
 
             positions = range(pos, pos + group_size)
-            ticks.append(self.np.mean(positions))
+            ticks.append(numpy.mean(positions))
 
             bp = config['axes'][a].boxplot(data,
                                            positions=positions)
             for j, r in enumerate(results):
-                self.plt.setp(bp['boxes'][j], color=colours[j])
+                pyplot.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
                     bp['caps'][j * 2].set_label(r.label())
                 if len(bp['fliers']) == group_size:
-                    self.plt.setp([bp['fliers'][j]], markeredgecolor=colours[j])
+                    pyplot.setp([bp['fliers'][j]], markeredgecolor=colours[j])
                     keys = 'caps', 'whiskers'
                 else:
                     keys = 'caps', 'whiskers', 'fliers'
                 for k in keys:
                     if bp[k]:
-                        self.plt.setp(bp[k][j * 2], color=colours[j])
-                        self.plt.setp(bp[k][j * 2 + 1], color=colours[j])
+                        pyplot.setp(bp[k][j * 2], color=colours[j])
+                        pyplot.setp(bp[k][j * 2 + 1], color=colours[j])
 
             config['axes'][a].axvline(
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
@@ -1293,7 +1309,7 @@ class BarPlotter(BoxPlotter):
                     errors.append(0.0)
                     all_data[a].append(0.0)
                 elif dp:
-                    dp = self.np.array(dp)
+                    dp = numpy.array(dp)
                     data.append(dp.mean())
                     errors.append(dp.std())
                     all_data[a].append(data[-1] + errors[-1])
@@ -1409,7 +1425,7 @@ class CdfPlotter(Plotter):
             d = sorted([x for x in s_data if x is not None])
             data.append(d)
             if d:
-                self.medians.append(self.np.median(d))
+                self.medians.append(numpy.median(d))
                 self.min_vals.append(min(d))
                 max_value = max([max_value] + d)
 
@@ -1537,8 +1553,8 @@ class QqPlotter(Plotter):
         axis.set_ylim(min(y_values) * 0.99, max(y_values) * 1.01)
 
     def _equal_length(self, x, y):
-        x_values = self.np.sort([r for r in x if r is not None])
-        y_values = self.np.sort([r for r in y if r is not None])
+        x_values = numpy.sort([r for r in x if r is not None])
+        y_values = numpy.sort([r for r in y if r is not None])
 
         # If data sets are not of equal sample size, the larger one is shrunk by
         # interpolating values into the length of the smallest data set.
@@ -1561,13 +1577,13 @@ class QqPlotter(Plotter):
         # length of the longer data set, with n being equal to the number of
         # data points in the shorter data set.
         if len(x_values) < len(y_values):
-            y_values = self.np.interp(self.np.linspace(0, len(y_values),
+            y_values = numpy.interp(numpy.linspace(0, len(y_values),
                                                        num=len(x_values),
                                                        endpoint=False),
                                       range(len(y_values)), y_values)
 
         elif len(y_values) < len(x_values):
-            x_values = self.np.interp(self.np.linspace(0, len(x_values),
+            x_values = numpy.interp(numpy.linspace(0, len(x_values),
                                                        num=len(y_values),
                                                        endpoint=False),
                                       range(len(x_values)), x_values)
@@ -1633,12 +1649,12 @@ class EllipsisPlotter(Plotter):
             data = [i for i in zip(x_values, results.series(s['data'])) if i[
                 0] is not None and i[1] is not None]
             if len(data) < 2:
-                points = self.np.array(data * 2)
+                points = numpy.array(data * 2)
             else:
-                points = self.np.array(data)
+                points = numpy.array(data)
             x_values, y_values = zip(*data)
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
-            med = self.np.median(points, axis=0)
+            med = numpy.median(points, axis=0)
             self.xvals.append(el.center[0] - el.width / 2)
             self.xvals.append(el.center[0] + el.width / 2)
             self.yvals.append(el.center[1] - el.height / 2)
