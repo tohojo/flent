@@ -599,7 +599,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
 
-    def add_tab(self, results=None, title=None, plot=None):
+    def add_tab(self, results=None, title=None, plot=None, focus=True):
         widget = ResultWidget(self.viewArea, self.settings, self.worker_pool)
         widget.update_start.connect(self.busy_start)
         widget.update_end.connect(self.busy_end)
@@ -608,8 +608,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget.load_results(results, plot)
         if title is None:
             title = widget.title
-        self.viewArea.addTab(widget, title)
-        self.viewArea.setCurrentWidget(widget)
+        idx = self.viewArea.addTab(widget, title)
+        if hasattr(widget, "long_title"):
+            self.viewArea.setTabToolTip(idx, widget.long_title)
+        if focus:
+            self.viewArea.setCurrentWidget(widget)
 
         return widget
 
@@ -625,6 +628,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         else:
             current_plot = None
 
+        focus = True
+
         results = self.worker_pool.map(results_load_helper,
                                        map(unicode, filenames))
 
@@ -633,7 +638,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for r, t in zip(results, titles):
             try:
                 if widget is None or widget.is_active:
-                    widget = self.add_tab(r, t, current_plot)
+                    widget = self.add_tab(r, t, current_plot,
+                                          focus=focus)
+                    focus = False
                 widget.redraw()
                 self.open_files.add_file(widget.results)
             except Exception as e:
@@ -652,7 +659,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if set_last_dir:
             self.last_dir = os.path.dirname(unicode(filenames[-1]))
 
-        self.viewArea.setCurrentIndex(idx+1)
         self.openFilesView.resizeColumnsToContents()
         self.metadata_column_resize()
         self.busy_end()
