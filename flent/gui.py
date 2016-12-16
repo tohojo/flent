@@ -1619,7 +1619,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                 self.plotter.figure.set_canvas(self.canvas)
 
             self.plotter.connect_interactive()
-            self.canvas.adjustSize()
             self.canvas.resizeEvent(QResizeEvent(self.canvas.size(),
                                                  self.canvas.size()))
 

@@ -745,9 +745,14 @@ class Plotter(ArgParam):
            and not self.horizontal_legend \
            and not self.legend_placement \
            and self.legends:
-            self.figure.canvas.draw()  # Legend width is not set before it's drawn
             legend_width = max(
                 [l.get_window_extent().width for l in self.legends])
+
+            if not legend_width:  # Legend width is not set before it's drawn
+                self.figure.canvas.draw()
+                legend_width = max(
+                    [l.get_window_extent().width for l in self.legends])
+
             canvas_width = self.figure.canvas.get_width_height()[0]
             for a in reduce(lambda x, y: x + y,
                             [i['axes'] for i in self.configs]):
@@ -762,7 +767,7 @@ class Plotter(ArgParam):
                      box.y0,
                      (a.orig_width - legend_width / canvas_width),
                      box.height])
-            self.figure.canvas.draw()
+            self.figure.canvas.draw_idle()
 
     def _annotate_plot(self, skip_title=False):
         titles = []
