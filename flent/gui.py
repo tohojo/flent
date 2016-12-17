@@ -361,18 +361,23 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataView.resizeColumnToContents(0)
 
     def update_checkboxes(self):
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            widget.zero_y(self.checkZeroY.isChecked())
-            widget.invert_y(self.checkInvertY.isChecked())
-            widget.log_scale(self.checkLogScale.isChecked())
-            widget.scale_mode(self.checkScaleMode.isChecked())
-            widget.subplot_combine(self.checkSubplotCombine.isChecked())
-            widget.draw_annotation(self.checkAnnotation.isChecked())
-            widget.draw_legend(self.checkLegend.isChecked())
-            widget.draw_title(self.checkTitle.isChecked())
-            widget.filter_legend(self.checkFilterLegend.isChecked())
-            widget.highlight(self.checkHighlight.isChecked())
+        for i in range(self.viewArea.count()):
+            widget = self.viewArea.widget(i)
+            if widget is not None:
+                widget.zero_y(self.checkZeroY.isChecked())
+                widget.invert_y(self.checkInvertY.isChecked())
+                widget.log_scale(self.checkLogScale.isChecked())
+                widget.scale_mode(self.checkScaleMode.isChecked())
+                widget.subplot_combine(self.checkSubplotCombine.isChecked())
+                widget.draw_annotation(self.checkAnnotation.isChecked())
+                widget.draw_legend(self.checkLegend.isChecked())
+                widget.draw_title(self.checkTitle.isChecked())
+                widget.filter_legend(self.checkFilterLegend.isChecked())
+                widget.highlight(self.checkHighlight.isChecked())
+
+        idx = self.viewArea.currentIndex()
+        if idx >= 0:
+            self.redraw_near(idx)
 
     def new_connection(self):
         sock = self.server.nextPendingConnection()
