@@ -145,6 +145,7 @@ def init_matplotlib(output, use_markers, load_rc):
 
     # Try to detect if a custom matplotlibrc is installed, and if so don't
     # load our own values.
+    matplotlib.rcParams['figure.max_open_warning'] = 0
     if load_rc:
         matplotlib.rcParams.update(MATPLOTLIB_STYLES)
     elif 'axes.prop_cycle' in matplotlib.rcParams:
