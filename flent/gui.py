@@ -1641,6 +1641,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if self.isVisible():
             self.async_timer.start()
 
+        self.plotter.disconnect_callbacks()
+
         self.dirty = False
         self.setCursor(Qt.WaitCursor)
 

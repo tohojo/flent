@@ -1701,6 +1701,7 @@ class MetaPlotter(Plotter):
     def __init__(self, plot_config, data_config, figure=None, **kwargs):
         self._kwargs = kwargs
         self._can_highlight = True
+        self.subplots = []
         Plotter.__init__(self, plot_config, data_config, figure=figure, **kwargs)
 
     def init(self, config=None):
