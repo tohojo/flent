@@ -669,7 +669,10 @@ class Plotter(ArgParam):
 
         for a in hovered:
             a.set_linewidth(self.highlight_widths[a][1])
-            a.axes.draw_artist(a)
+            try:
+                a.axes.draw_artist(a)
+            except AttributeError:
+                pass
             a.set_linewidth(self.highlight_widths[a][0])
 
         for bbox in bboxes:
