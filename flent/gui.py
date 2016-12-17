@@ -51,6 +51,16 @@ except NameError:
     unicode = str
 
 try:
+    from os import cpu_count
+except ImportError:
+    from multiprocessing import cpu_count
+
+try:
+    CPU_COUNT=cpu_count()
+except NotImplementedError:
+    CPU_COUNT=1
+
+try:
     from PyQt4 import QtGui, uic
 
     from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
@@ -613,7 +623,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.redraw_near(idx)
 
     def redraw_near(self, idx):
-        rng = (os.cpu_count() + 1) // 2
+        rng = (CPU_COUNT + 1) // 2
         for i in range(idx - rng, idx + rng + 1):
             if i < 0:
                 i += self.viewArea.count()
