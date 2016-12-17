@@ -608,9 +608,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget.metadataSelectionModel is not None:
             self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
-        self.actionSavePlot.setEnabled(widget.can_save)
+        self.update_save(widget)
         widget.activate()
         self.open_files.set_active_widget(widget)
+
+    def update_save(self, widget=None):
+        if widget is None:
+            widget = self.viewArea.currentWidget()
+        if widget:
+            self.actionSavePlot.setEnabled(widget.can_save)
 
     def update_plots(self, testname, plotname):
         for i in range(self.viewArea.count()):
@@ -635,6 +641,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget = ResultWidget(self.viewArea, self.settings, self.worker_pool)
         widget.update_start.connect(self.busy_start)
         widget.update_end.connect(self.busy_end)
+        widget.update_end.connect(self.update_save)
         widget.plot_changed.connect(self.update_plots)
         if results:
             widget.load_results(results, plot)
@@ -1694,6 +1701,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.async_fig = None
             self.async_timer.stop()
             self.setCursor(Qt.ArrowCursor)
+            self.update_end.emit()
 
     def setCursor(self, cursor):
         super(ResultWidget, self).setCursor(cursor)
