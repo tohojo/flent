@@ -1444,7 +1444,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.results = ResultSet.load_file(unicode(results))
             self.settings.compute_missing_results(self.results)
 
-        if plot:
+        if plot and plot in self.settings.PLOTS:
             self.settings.PLOT = plot
 
         self.settings.update(self.results.meta())
