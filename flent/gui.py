@@ -208,7 +208,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         super(MainWindow, self).__init__()
         self.settings = settings
         self.last_dir = os.getcwd()
+
         self.defer_load = self.settings.INPUT
+        self.load_queue = []
+        self.load_timer = QTimer(self)
+        self.load_timer.timeout.connect(self.load_one)
+        self.focus_new = False
 
         if self.settings.HOVER_HIGHLIGHT is None:
             self.settings.HOVER_HIGHLIGHT = True
@@ -610,8 +615,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         idx = self.viewArea.addTab(widget, title)
         if hasattr(widget, "long_title"):
             self.viewArea.setTabToolTip(idx, widget.long_title)
-        if focus:
+        if focus or self.focus_new:
             self.viewArea.setCurrentWidget(widget)
+            self.focus_new = False
 
         return widget
 
@@ -619,16 +625,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if not filenames:
             return
 
-        self.busy_start()
-        widget = self.viewArea.currentWidget()
-        if widget is not None:
-            current_plot = widget.current_plot
-            update_tabs = True
-        else:
-            current_plot = None
-            update_tabs = False
+        self.update_tabs = self.viewArea.currentWidget() is not None
 
-        focus = True
+        self.busy_start()
 
         if isinstance(filenames[0], ResultSet):
             results = filenames
@@ -637,38 +636,49 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                            map(unicode, filenames))
 
         titles = self.shorten_titles([r['title'] for r in results])
+        self.focus_new = True
 
-        for r, t in zip(results, titles):
-            try:
-                if widget is None or widget.is_active:
-                    widget = self.add_tab(r, t, current_plot,
-                                          focus=focus)
-                    focus = False
-                else:
-                    widget.load_results(r, plot=current_plot)
-                widget.redraw()
-                self.open_files.add_file(widget.results)
-            except Exception as e:
-                traceback.print_exc()
-                if isinstance(e, RuntimeError):
-                    err = "%s" % e
-                else:
-                    typ, val, tra = sys.exc_info()
-                    err = "".join(traceback.format_exception_only(typ, val))
-                QMessageBox.warning(self, "Error loading file",
-                                    "Error while loading data file:\n\n%s\n\n"
-                                    "Skipping. Full traceback output to console."
-                                    % err)
-                continue
+        self.load_queue.extend(zip(results, titles))
+        self.load_timer.start()
 
         if set_last_dir:
             self.last_dir = os.path.dirname(unicode(filenames[-1]))
 
-        self.openFilesView.resizeColumnsToContents()
-        self.metadata_column_resize()
-        if update_tabs:
-            self.shorten_tabs()
-        self.busy_end()
+    def load_one(self):
+        r, t = self.load_queue.pop(0)
+
+        widget = self.viewArea.currentWidget()
+        if widget is not None:
+            current_plot = widget.current_plot
+        else:
+            current_plot = None
+
+        try:
+            if widget is None or widget.is_active:
+                widget = self.add_tab(r, t, current_plot, focus=False)
+            else:
+                widget.load_results(r, plot=current_plot)
+            widget.redraw()
+            self.open_files.add_file(widget.results)
+        except Exception as e:
+            traceback.print_exc()
+            if isinstance(e, RuntimeError):
+                err = "%s" % e
+            else:
+                typ, val, tra = sys.exc_info()
+                err = "".join(traceback.format_exception_only(typ, val))
+            QMessageBox.warning(self, "Error loading file",
+                                "Error while loading data file:\n\n%s\n\n"
+                                "Skipping. Full traceback output to console."
+                                % err)
+
+        if not self.load_queue:
+            self.openFilesView.resizeColumnsToContents()
+            self.metadata_column_resize()
+            if self.update_tabs:
+                self.shorten_tabs()
+            self.load_timer.stop()
+            self.busy_end()
 
     def run_test(self):
         dialog = NewTestDialog(self, self.settings)
