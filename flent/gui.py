@@ -584,7 +584,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.open_files.set_active_widget(None)
             return
 
-        widget.redraw()
+        self.redraw_near(idx)
 
         self.plotView.setModel(widget.plotModel)
         if widget.plotSelectionModel is not None:
@@ -602,6 +602,19 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget = self.viewArea.widget(i)
             if widget and widget.settings.NAME == testname:
                 widget.change_plot(plotname)
+
+        idx = self.viewArea.currentIndex()
+        if idx >= 0:
+            self.redraw_near(idx)
+
+    def redraw_near(self, idx):
+        rng = (os.cpu_count() + 1) // 2
+        for i in range(idx - rng, idx + rng + 1):
+            if i < 0:
+                i += self.viewArea.count()
+            w = self.viewArea.widget(i)
+            if w:
+                w.redraw()
 
     def add_tab(self, results=None, title=None, plot=None, focus=True):
         widget = ResultWidget(self.viewArea, self.settings, self.worker_pool)
