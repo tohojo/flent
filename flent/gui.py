@@ -1312,7 +1312,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     update_start = pyqtSignal()
     update_end = pyqtSignal()
     plot_changed = pyqtSignal('QString', 'QString')
-    new_fig = pyqtSignal()
+    new_plot = pyqtSignal()
     default_title = "New tab"
 
     def __init__(self, parent, settings, worker_pool):
@@ -1332,10 +1332,13 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.toolbar = None
         self.plotter = None
         self.canvas = None
-        self.canvas_dirty = False
+        self.needs_resize = False
 
-        self.new_fig.connect(self.get_figure)
+        self.new_plot.connect(self.get_plotter)
         self.async_fig = None
+        self.async_timer = QTimer(self)
+        self.async_timer.setInterval(100)
+        self.async_timer.timeout.connect(self.get_plotter)
 
         self.worker_pool = worker_pool
 
@@ -1566,8 +1569,18 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.redraw()
 
     def activate(self):
+        self.get_plotter()
+
+        if self.async_fig:
+            self.async_timer.start()
+
         if not self.canvas:
             return
+
+        if self.needs_resize:
+            self.canvas.resizeEvent(QResizeEvent(self.canvas.size(),
+                                                 self.canvas.size()))
+            self.needs_resize = False
 
         try:
             self.canvas.blit(self.canvas.figure.bbox)
@@ -1593,17 +1606,20 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             res = [self.results] + self.extra_results
 
         self.async_fig = self.worker_pool.apply_async(
-            plotters.draw_worker, (self.settings, res),
-            callback=self.recv_fig,
-            error_callback=self.recv_fig)
+            plotters.draw_worker,
+            (self.settings, res),
+            callback=self.recv_plot)
+
+        if self.isVisible():
+            self.async_timer.start()
 
         self.dirty = False
         self.setCursor(Qt.WaitCursor)
 
-    def recv_fig(self, fig):
-        self.new_fig.emit()
+    def recv_plot(self, fig):
+        self.new_plot.emit()
 
-    def get_figure(self):
+    def get_plotter(self):
         if not self.async_fig or not self.async_fig.ready():
             return
 
@@ -1619,8 +1635,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                 self.plotter.figure.set_canvas(self.canvas)
 
             self.plotter.connect_interactive()
-            self.canvas.resizeEvent(QResizeEvent(self.canvas.size(),
-                                                 self.canvas.size()))
+
+            if self.isVisible():
+                self.canvas.resizeEvent(QResizeEvent(self.canvas.size(),
+                                                     self.canvas.size()))
+            else:
+                self.needs_resize = True
 
         except Exception as e:
             traceback.print_exc()
@@ -1632,6 +1652,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                                 % err)
         finally:
             self.async_fig = None
+            self.async_timer.stop()
             self.setCursor(Qt.ArrowCursor)
 
     def setCursor(self, cursor):
