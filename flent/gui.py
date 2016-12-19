@@ -630,10 +630,16 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if idx >= 0:
             self.redraw_near(idx)
 
-    def redraw_near(self, idx):
+    def redraw_near(self, idx=None):
+        if idx is None:
+            idx = self.viewArea.currentIndex()
+
         rng = (CPU_COUNT + 1) // 2
-        for i in range(idx - rng, idx + rng + 1):
-            if i < 0:
+        # Start a middle, go rng steps in either direction (will duplicate the
+        # middle idx, but that doesn't matter, since multiple redraw()
+        # operations are no-op.
+        for i in chain(*[(idx+i, idx-i) for i in range(rng + 1)]):
+            while i < 0:
                 i += self.viewArea.count()
             w = self.viewArea.widget(i)
             if w:
