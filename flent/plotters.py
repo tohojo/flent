@@ -425,9 +425,9 @@ def add_plotting_args(parser):
 
 
 def new(settings, plotter=None, in_worker=False, **kwargs):
-    if plotter is None:
-        plotter = get_plotter(get_plotconfig(settings)['type'])
     try:
+        if plotter is None:
+            plotter = get_plotter(get_plotconfig(settings)['type'])
         kwargs.update(vars(settings))
         return plotter(
             plot_config=get_plotconfig(settings),
