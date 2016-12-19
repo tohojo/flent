@@ -1,3 +1,28 @@
+# Changes since latest release #
+
+Changes since v0.15.0 include:
+
+- Add new SummaryFormatter that outputs mean and median values for each
+  data series. This is the new default formatter, meaning that its
+  output will be shown after a test run if no other formatter (or plot)
+  is specified.
+
+- Support multiprocessing in the GUI. When loading several plots at
+  once, plotting will now be passed off to separate worker processes.
+  This allows plotting to use all the available processors on the
+  machine, and speeds up loading of many plots tremendously (initial
+  load is sped up by an order of magnitude). This change also means that
+  re-plotting on config changes will be done dynamically in the
+  background, which makes the GUI more responsive.
+
+- Make text completely black in the default colour scheme. This
+  increases contrast, and helps legibility, especially on printed
+  figures.
+
+- Some internal code changes: Port command line parser from the old
+  optparse class to the newer argparse, and fix a bunch of linter
+  errors.
+
 # Flent v0.15.0 #
 Released on 2016-10-01.
 
