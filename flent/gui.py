@@ -201,17 +201,25 @@ class LoadedResultset(dict):
 
 
 def results_load_helper(filename):
-    r = ResultSet.load_file(filename)
-    s = new_settings()
-    s.update(r.meta())
-    s.load_test(informational=True)
-    s.compute_missing_results(r)
-    return LoadedResultset(results=r,
-                           plots=s.PLOTS,
-                           data_sets=s.DATA_SETS,
-                           defaults=s.DEFAULTS,
-                           description=s.DESCRIPTION,
-                           title=r.title)
+    try:
+        r = ResultSet.load_file(filename)
+        s = new_settings()
+        s.update(r.meta())
+        s.load_test(informational=True)
+        s.compute_missing_results(r)
+        return LoadedResultset(results=r,
+                               plots=s.PLOTS,
+                               data_sets=s.DATA_SETS,
+                               defaults=s.DEFAULTS,
+                               description=s.DESCRIPTION,
+                               title=r.title)
+    except RuntimeError as e:
+        sys.stderr.write(unicode(e) + "\n")
+        return None
+    except Exception as e:
+        traceback.print_exc()
+        return None
+
 
 
 class MainWindow(get_ui_class("mainwindow.ui")):
@@ -683,8 +691,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if isinstance(filenames[0], ResultSet):
             results = filenames
         else:
-            results = self.worker_pool.map(results_load_helper,
-                                           map(unicode, filenames))
+            results = list(filter(None, self.worker_pool.map(results_load_helper,
+                                                             map(unicode,
+                                                                 filenames))))
 
         titles = self.shorten_titles([r['title'] for r in results])
         self.focus_new = True
@@ -696,6 +705,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.last_dir = os.path.dirname(unicode(filenames[-1]))
 
     def load_one(self):
+        if not self.load_queue:
+            self.load_timer.stop()
+            return
+
         r, t = self.load_queue.pop(0)
 
         widget = self.viewArea.currentWidget()
