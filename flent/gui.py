@@ -709,7 +709,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 widget = self.add_tab(r, t, current_plot, focus=False)
             else:
                 widget.load_results(r, plot=current_plot)
-            widget.redraw()
             self.open_files.add_file(widget.results)
         except Exception as e:
             traceback.print_exc()
@@ -729,6 +728,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if self.update_tabs:
                 self.shorten_tabs()
             self.load_timer.stop()
+            self.redraw_near()
             self.busy_end()
 
     def run_test(self):
