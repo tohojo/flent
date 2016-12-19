@@ -365,6 +365,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         settings.setValue("open_files/columns", self.open_files.save_columns())
         settings.setValue("open_files/column_order",
                           self.openFilesView.horizontalHeader().saveState())
+
+        self.worker_pool.terminate()
+
         event.accept()
 
     # Helper functions to update menubar actions when dock widgets are closed
