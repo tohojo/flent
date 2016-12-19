@@ -2,6 +2,9 @@
 
 Changes since v0.15.0 include:
 
+- Support PyQt5 in the GUI (and prefer it over PyQt4). If PyQt5 is not
+  found, fall back to PyQt4.
+
 - Add new SummaryFormatter that outputs mean and median values for each
   data series. This is the new default formatter, meaning that its
   output will be shown after a test run if no other formatter (or plot)

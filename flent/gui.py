@@ -61,29 +61,57 @@ except NotImplementedError:
     CPU_COUNT = 1
 
 try:
-    from PyQt4 import QtGui, uic
+    from PyQt5 import QtGui, uic
 
-    from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
-        QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
-        QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
-        QApplication, QStringListModel, QKeySequence, QResizeEvent
+    from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
+        QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
+        QVBoxLayout, QApplication
 
-    from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
+    from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
+        QResizeEvent
+
+    from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
-        QAbstractItemModel, QAbstractTableModel, QModelIndex
+        QAbstractItemModel, QAbstractTableModel, QModelIndex, \
+        QItemSelectionModel, QStringListModel
 
-    from PyQt4.QtNetwork import QLocalSocket, QLocalServer
+    from PyQt5.QtNetwork import QLocalSocket, QLocalServer
+    QTVER = 5
 except ImportError:
-    raise
-    raise RuntimeError("PyQt4 must be installed to use the GUI.")
+    try:
+        from PyQt4 import QtGui, uic
+
+        from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
+            QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
+            QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
+            QApplication, QStringListModel, QKeySequence, QResizeEvent
+
+        from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
+            QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
+            QAbstractItemModel, QAbstractTableModel, QModelIndex
+
+        from PyQt4.QtNetwork import QLocalSocket, QLocalServer
+
+        QTVER = 4
+
+        sys.stderr.write("Warning: Falling back to Qt4 for the GUI. "
+                         "Please consider installing PyQt5.\n")
+    except ImportError:
+        raise RuntimeError("PyQt must be installed to use the GUI.")
 
 try:
     import matplotlib
     matplotlib.use("Agg")
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
-        as FigureCanvas
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
-        as NavigationToolbar
+    if QTVER == 5:
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
+            as FigureCanvas
+        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
+            as NavigationToolbar
+    else:
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
+            as FigureCanvas
+        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
+            as NavigationToolbar
 except ImportError:
     raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
@@ -426,6 +454,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                                  "Select data file(s)",
                                                  self.last_dir,
                                                  FILE_SELECTOR_STRING)
+
+        if isinstance(filenames, tuple):
+            filenames = filenames[0]
         if filenames:
             self.last_dir = os.path.dirname(unicode(filenames[0]))
 
@@ -1305,7 +1336,10 @@ class OpenFilesHeader(QHeaderView):
     def __init__(self, parent):
         super(OpenFilesHeader, self).__init__(Qt.Horizontal, parent)
         self._parent = parent
-        self.setMovable(True)
+        try:
+            self.setSectionsMovable(True)
+        except AttributeError:
+            self.setMovable(True)
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
 
     def column_actions(self, col, parent):
