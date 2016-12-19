@@ -56,9 +56,9 @@ except ImportError:
     from multiprocessing import cpu_count
 
 try:
-    CPU_COUNT=cpu_count()
+    CPU_COUNT = cpu_count()
 except NotImplementedError:
-    CPU_COUNT=1
+    CPU_COUNT = 1
 
 try:
     from PyQt4 import QtGui, uic
