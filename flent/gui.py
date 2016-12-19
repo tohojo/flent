@@ -661,7 +661,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         # work around that by storing the size before adding the tab and
         # resizing it back to the same size after.
         if osx:
-            size = self.viewArea.size()
+            size = self.size()
 
         widget = ResultWidget(self.viewArea, self.settings, self.worker_pool)
         widget.update_start.connect(self.busy_start)
@@ -680,7 +680,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.focus_new = False
 
         if osx:
-            self.viewArea.resize(size)
+            self.resize(size)
         return widget
 
     def load_files(self, filenames, set_last_dir=True):
