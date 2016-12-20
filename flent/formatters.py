@@ -27,7 +27,7 @@ import json
 import os
 import sys
 
-from flent.util import classname
+from flent.util import classname, format_bytes
 from flent import plotters
 from functools import reduce
 
@@ -272,17 +272,19 @@ class SummaryFormatter(Formatter):
                 m = r.meta().get("SERIES_META", {})
 
             txtlen = max([len(n) for n in r.series_names])
-            unit_len = max((len(s['units']) for s in self.settings.DATA_SETS.values()))
+            unit_len = max((len(s['units']) for s in
+                            self.settings.DATA_SETS.values()))
 
             self.write("{spc:{txtlen}s} {avg:>{width}s}"
                        " {med:>{width}s} {datapoints:>{lwidth}s}\n".format(
-                           spc="", avg="avg", med="median", datapoints="# data pts",
-                           txtlen=txtlen + 3, width=self.COL_WIDTH,
+                           spc="", avg="avg", med="median",
+                           datapoints="# data pts", txtlen=txtlen + 3,
+                           width=self.COL_WIDTH,
                            lwidth=self.COL_WIDTH + unit_len))
 
             for s in sorted(r.series_names):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
-                d = [i for i in r.series(s) if i]
+                d = [i for i in r.series(s) if i is not None]
 
                 median = mean = None
 
@@ -292,7 +294,8 @@ class SummaryFormatter(Formatter):
                     self.write("No data.\n")
                     continue
 
-                units = self.settings.DATA_SETS[s]['units']
+                units = self.settings.DATA_SETS[s]['units'] if s in \
+                    self.settings.DATA_SETS else ''
 
                 if d and self.np is not None:
                     mean = self.np.mean(d) if not mean else mean
@@ -301,15 +304,23 @@ class SummaryFormatter(Formatter):
                     mean = sum(d) / len(d) if not mean else mean
                     median = sorted(d)[len(d) // 2]
 
-                if mean:
-                    self.write("{0:{width}.2f} ".format(mean, width=self.COL_WIDTH))
+                if mean and units == 'bytes':
+                    factor, units = format_bytes(max(mean, median))
+                    mean /= factor
+                    median /= factor
+
+                if mean is not None:
+                    self.write("{0:{width}.2f} ".format(mean,
+                                                        width=self.COL_WIDTH))
                 else:
                     self.write("{0:>{width}}".format("N/A", width=self.COL_WIDTH))
 
-                if median:
-                    self.write("{0:{width}.2f} {1}".format(median, units, width=self.COL_WIDTH))
+                if median is not None:
+                    self.write("{0:{width}.2f} {1}".format(median, units,
+                                                           width=self.COL_WIDTH))
                 else:
-                    self.write("{0:>{width}} {1}".format("N/A", units, width=self.COL_WIDTH))
+                    self.write("{0:>{width}} {1}".format("N/A", units,
+                                                         width=self.COL_WIDTH))
 
                 self.write("{0:{width}d}\n".format(len(d),
                                                    width=(self.COL_WIDTH +

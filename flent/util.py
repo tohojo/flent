@@ -70,6 +70,17 @@ def format_date(dt, fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False):
     return (dt + offset).strftime(fmt)
 
 
+def format_bytes(nbytes):
+    if nbytes > 2**30:
+        return (2**30, 'Gbytes')
+    elif nbytes > 2**20:
+        return (2**20, 'Mbytes')
+    elif nbytes > 2**10:
+        return (1**10, 'Kbytes')
+    else:
+        return (nbytes, 'bytes')
+
+
 def parse_date(timestring):
     try:
         # Try to parse the straight UTC time string (has a Z at the end)
