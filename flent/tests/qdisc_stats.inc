@@ -11,7 +11,12 @@ if QDISC_STATS_HOSTS:
                                               'units': 'misc',
                                               'runner': 'tc',}
         DATA_SETS['qdisc_stats_%s::backlog_pkts' % host] = {'units': 'packets', 'runner': 'null', 'id': host}
+        DATA_SETS['qdisc_stats_%s::sent_pkts' % host] = {'units': 'packets', 'runner': 'null', 'id': host}
         DATA_SETS['qdisc_stats_%s::backlog_bytes' % host] = {'units': 'bytes', 'runner': 'null', 'id': host}
+        DATA_SETS['qdisc_stats_%s::sent_bytes' % host] = {'units': 'bytes', 'runner': 'null', 'id': host}
+        DATA_SETS['qdisc_stats_%s::backlog_requeues' % host] = {'units': 'packets', 'runner': 'null', 'id': host}
+        DATA_SETS['qdisc_stats_%s::requeues' % host] = {'units': 'packets', 'runner': 'null', 'id': host}
+        DATA_SETS['qdisc_stats_%s::overlimits' % host] = {'units': 'packets', 'runner': 'null', 'id': host}
         DATA_SETS['qdisc_stats_%s::dropped' % host] = {'units': 'packets', 'data_transform': 'cumulative_to_events', 'runner': 'null', 'id': host}
         DATA_SETS['qdisc_stats_%s::ecn_mark' % host] = {'units': 'packets', 'data_transform': 'cumulative_to_events', 'runner': 'null', 'id': host}
         DATA_SETS['qdisc_stats_%s::delay' % host] = {'units': 'ms', 'runner': 'null'}
