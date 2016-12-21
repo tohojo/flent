@@ -346,6 +346,12 @@ sense combined with :option:`-f` *plot*.
 
    Like :option:`--override-title`, this is applied *at the time of plotting*.
 
+.. option:: --override-group-by=GROUP
+
+   Override the ``group_by`` setting for combination plots. This is useful to,
+   for instance, switch to splitting up combined data sets by batch run instead
+   of by file name.
+
 .. option:: --split-group=LABEL
 
    Split data sets into groups when creating box plots. Specify this option
@@ -439,12 +445,6 @@ Data combination configuration
 
 These options are used to combine several datasets, for instance to make
 aggregate plots.
-
-.. option:: --override-group-by=GROUP
-
-   Override the ``group_by`` setting for combination plots. This is useful to,
-   for instance, switch to splitting up combined data sets by batch run instead
-   of by file name.
 
 .. option:: --combine-save-dir=DIRNAME
 

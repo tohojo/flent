@@ -339,11 +339,6 @@ combine_group = parser.add_argument_group(
     "for instance to make aggregate plots.")
 
 combine_group.add_argument(
-    "--override-group-by",
-    action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
-    help="Override plot group_by attribute for combination plots.")
-
-combine_group.add_argument(
     "--combine-save-dir",
     action="store", type=unicode, dest="COMBINE_SAVE_DIR", metavar="DIRNAME",
     help="When doing a combination plot save the intermediate data to DIRNAME. "

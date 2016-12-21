@@ -313,6 +313,11 @@ def add_plotting_args(parser):
         "corresponding to the datasets being overridden.")
 
     parser.add_argument(
+        "--override-group-by",
+        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
+        help="Override plot group_by attribute for combination plots.")
+
+    parser.add_argument(
         "--split-group",
         action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
         metavar="LABEL",
