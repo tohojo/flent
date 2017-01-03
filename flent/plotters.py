@@ -44,8 +44,10 @@ except ImportError:
 # Python 2/3 compatibility
 try:
     unicode
+    PY2 = True
 except NameError:
     unicode = str
+    PY2 = False
 
 
 PLOT_KWARGS = (
@@ -113,6 +115,27 @@ MATPLOTLIB_STYLES = {'axes.axisbelow': True,
                      'ytick.major.size': 0.0,
                      'ytick.minor.size': 0.0}
 
+if PY2:
+    # Matplotlib will tend to pass the values directly to backends where they
+    # will be converted into native types. This breaks on some versions of
+    # matplotlib running on Python 2 if the values are unicode objects (which
+    # can't always be automatically converted). To work around this, encode
+    # everything if we are running on Python 2.
+
+    def filt(x):
+        try:
+            return x.encode()
+        except AttributeError:
+            return x
+
+    LINESTYLES = list(map(filt, LINESTYLES))
+    MARKERS = list(map(filt, LINESTYLES))
+    COLOURS = list(map(filt, COLOURS))
+
+    for k,v in MATPLOTLIB_STYLES.items():
+        MATPLOTLIB_STYLES[k] = filt(v)
+
+    del filt
 
 def init_matplotlib(output, use_markers, load_rc):
     if not HAS_MATPLOTLIB:
