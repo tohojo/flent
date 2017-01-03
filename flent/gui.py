@@ -688,12 +688,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 w.redraw()
 
     def add_tab(self, results=None, title=None, plot=None, focus=True):
-        # OSX has a tendency to resize the tab widget when adding a tab. Try to
-        # work around that by storing the size before adding the tab and
-        # resizing it back to the same size after.
-        if osx:
-            size = self.size()
-
         widget = ResultWidget(self.viewArea, self.settings, self.worker_pool)
         widget.update_start.connect(self.busy_start)
         widget.update_end.connect(self.busy_end)
@@ -710,8 +704,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.viewArea.setCurrentWidget(widget)
             self.focus_new = False
 
-        if osx:
-            self.resize(size)
         return widget
 
     def load_files(self, filenames, set_last_dir=True):
