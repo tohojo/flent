@@ -94,13 +94,6 @@ Metadata keys
             IP version used to run test (as specified by command line
 	    parameters, or auto-detected from :c:func:`getaddrinfo()` if unspecified).
 
-Extended metadata
------------------
-
-If the :option:`--extended-metadata` switch is turned on, the following
-additional values are collected and stored (to the extent they are available
-from the platform):
-
 .. envvar:: KERNEL_NAME
 
 	    The kernel name as reported by :command:`uname -s`.
@@ -109,25 +102,26 @@ from the platform):
 
             The kernel release as reported by :command:`uname -r`.
 
-.. envvar:: IP_ADDRS
+.. envvar:: MODULE_VERSIONS
 
-	    IP addresses assigned to the machine running flent.
+            The sha1sum of certain interesting Linux kernel modules, if
+            available. Can be used to match test data to specific code versions,
+            if the kernel build is instrumented to, e.g., set the build ID to a
+            git revision.
 
-.. envvar:: GATEWAYS
+.. envvar:: SYSCTLS
 
-	    IP addresses of all detected default gateways on the system, and the
-            interfaces they are reachable through. Only available if the
-            :command:`netstat` binary is present on the system.
+            The values of several networking-related sysctls on the host (if
+            available; Linux only).
 
 .. envvar:: EGRESS_INFO
 
-	    Egress interface, its qdisc, offload, driver and BQL configuration,
-            and (if applicable) the IP address of the next-hop router used to
-            reach the test target. The egress interface and next-hop router
-            requires that the :command:`ip` binary is present on Linux, but can
-            be extracted from :command:`route` on BSD. Qdisc information
-            requires the :command:`tc` binary to be present, and offload
-            information requires :command:`ethtool`.
+	    Interface name, qdisc, offload, driver and BQL configuration of the
+            interface used to reach the test target. This requires that the
+            :command:`ip` binary is present on Linux, but can be extracted from
+            :command:`route` on BSD. Qdisc information requires the
+            :command:`tc` binary to be present, and offload information requires
+            :command:`ethtool`.
 
             If the :option:`--remote-metadata` is used, the extended metadata
             info is gathered for each of the hostnames specified. This is
@@ -146,4 +140,25 @@ from the platform):
             is off the path, the contents of :envvar:`INGRESS_INFO` will
             probably be the same as that of :envvar:`EGRESS_INFO` .
 
+Extended metadata
+-----------------
 
+If the :option:`--extended-metadata` switch is turned on, the following
+additional values are collected and stored (to the extent they are available
+from the platform):
+
+.. envvar:: IP_ADDRS
+
+	    IP addresses assigned to the machine running flent.
+
+.. envvar:: GATEWAYS
+
+	    IP addresses of all detected default gateways on the system, and the
+            interfaces they are reachable through. Only available if the
+            :command:`netstat` binary is present on the system.
+
+.. envvar:: EGRESS_INFO
+
+            In the :envvar:`EGRESS_INFO` key, the IP address of the next-hop
+            router and the interface MAC address are added if extended metadata
+            is enabled.

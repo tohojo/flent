@@ -100,22 +100,26 @@ class CommandRunner(object):
         except subprocess.CalledProcessError:
             return None
 
+
 get_command_output = CommandRunner()
 
-__all__ = ['record_extended_metadata']
+__all__ = ['record_metadata']
 
 
-def record_extended_metadata(results, hostnames):
+def record_metadata(results, extended, hostnames):
     m = results.meta()
     get_command_output.set_hostname(None)
     m['KERNEL_NAME'] = get_command_output("uname -s")
     m['KERNEL_RELEASE'] = get_command_output("uname -r")
     m['MODULE_VERSIONS'] = get_module_versions()
-    m['IP_ADDRS'] = get_ip_addrs()
-    m['GATEWAYS'] = get_gateways()
     m['SYSCTLS'] = get_sysctls()
-    m['EGRESS_INFO'] = get_egress_info(
-        target=m['HOST'], ip_version=m['IP_VERSION'])
+    m['EGRESS_INFO'] = get_egress_info(target=m['HOST'],
+                                       ip_version=m['IP_VERSION'],
+                                       extended=extended)
+
+    if extended:
+        m['IP_ADDRS'] = get_ip_addrs()
+        m['GATEWAYS'] = get_gateways()
 
     m['REMOTE_METADATA'] = {}
 
@@ -126,21 +130,26 @@ def record_extended_metadata(results, hostnames):
         m['REMOTE_METADATA'][h]['KERNEL_NAME'] = get_command_output("uname -s")
         m['REMOTE_METADATA'][h]['KERNEL_RELEASE'] = get_command_output("uname -r")
         m['REMOTE_METADATA'][h]['MODULE_VERSIONS'] = get_module_versions()
-        m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
-        m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
         m['REMOTE_METADATA'][h]['SYSCTLS'] = get_sysctls()
         m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(
-            target=m['HOST'], ip_version=m['IP_VERSION'])
+            target=m['HOST'], ip_version=m['IP_VERSION'], extended=extended)
+
         if m['EGRESS_INFO'] is not None and 'src' in m['EGRESS_INFO']:
             m['REMOTE_METADATA'][h]['INGRESS_INFO'] = get_egress_info(
-                target=m['EGRESS_INFO']['src'], ip_version=m['IP_VERSION'])
+                target=m['EGRESS_INFO']['src'], ip_version=m['IP_VERSION'],
+                extended=extended)
         else:
             m['REMOTE_METADATA'][h]['INGRESS_INFO'] = None
-        m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(
-            target=m['HOST'], ip_version=m['IP_VERSION'])
+            m['REMOTE_METADATA'][h]['EGRESS_INFO'] = get_egress_info(
+                target=m['HOST'], ip_version=m['IP_VERSION'],
+                extended=extended)
+
+        if extended:
+            m['REMOTE_METADATA'][h]['IP_ADDRS'] = get_ip_addrs()
+            m['REMOTE_METADATA'][h]['GATEWAYS'] = get_gateways()
 
 
-def record_postrun_metadata(results, hostnames):
+def record_postrun_metadata(results, extended, hostnames):
     m = results.meta()
     get_command_output.set_hostname(None)
     if m['EGRESS_INFO'] is not None:
@@ -286,7 +295,7 @@ def get_gateways():
     return gws
 
 
-def get_egress_info(target, ip_version):
+def get_egress_info(target, ip_version, extended):
     route = {}
 
     if target:
@@ -339,6 +348,13 @@ def get_egress_info(target, ip_version):
         route['target'] = ip
         if 'nexthop' not in route:
             route['nexthop'] = None
+
+    if not extended:
+        for k in 'gateway', 'src', 'nexthop', 'target':
+            if k in route:
+                del route[k]
+        if route['link_params'] and 'ether' in route['link_params']:
+            del route['link_params']['ether']
 
     return route or None
 

@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "December 02, 2016" "0.15.0-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "January 05, 2017" "0.15.0-git" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -463,6 +463,13 @@ Like \fI\%\-\-override\-title\fP, this is applied \fIat the time of plotting\fP\
 .UNINDENT
 .INDENT 0.0
 .TP
+.B \-\-override\-group\-by=GROUP
+Override the \fBgroup_by\fP setting for combination plots. This is useful to,
+for instance, switch to splitting up combined data sets by batch run instead
+of by file name.
+.UNINDENT
+.INDENT 0.0
+.TP
 .B \-\-split\-group=LABEL
 Split data sets into groups when creating box plots. Specify this option
 multiple times to define the new groups; the value of each option is the
@@ -572,13 +579,6 @@ redrawing is too slow, or the highlighting is undesired for other reasons.
 .sp
 These options are used to combine several datasets, for instance to make
 aggregate plots.
-.INDENT 0.0
-.TP
-.B \-\-override\-group\-by=GROUP
-Override the \fBgroup_by\fP setting for combination plots. This is useful to,
-for instance, switch to splitting up combined data sets by batch run instead
-of by file name.
-.UNINDENT
 .INDENT 0.0
 .TP
 .B \-\-combine\-save\-dir=DIRNAME
@@ -1007,11 +1007,6 @@ Version of Flent that generated the data file.
 IP version used to run test (as specified by command line
 parameters, or auto\-detected from \fBgetaddrinfo()\fP if unspecified).
 .UNINDENT
-.SS Extended metadata
-.sp
-If the \fB\-\-extended\-metadata\fP switch is turned on, the following
-additional values are collected and stored (to the extent they are available
-from the platform):
 .INDENT 0.0
 .TP
 .B KERNEL_NAME
@@ -1024,26 +1019,27 @@ The kernel release as reported by \fBuname \-r\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B IP_ADDRS
-IP addresses assigned to the machine running flent.
+.B MODULE_VERSIONS
+The sha1sum of certain interesting Linux kernel modules, if
+available. Can be used to match test data to specific code versions,
+if the kernel build is instrumented to, e.g., set the build ID to a
+git revision.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B GATEWAYS
-IP addresses of all detected default gateways on the system, and the
-interfaces they are reachable through. Only available if the
-\fBnetstat\fP binary is present on the system.
+.B SYSCTLS
+The values of several networking\-related sysctls on the host (if
+available; Linux only).
 .UNINDENT
 .INDENT 0.0
 .TP
 .B EGRESS_INFO
-Egress interface, its qdisc, offload, driver and BQL configuration,
-and (if applicable) the IP address of the next\-hop router used to
-reach the test target. The egress interface and next\-hop router
-requires that the \fBip\fP binary is present on Linux, but can
-be extracted from \fBroute\fP on BSD. Qdisc information
-requires the \fBtc\fP binary to be present, and offload
-information requires \fBethtool\fP\&.
+Interface name, qdisc, offload, driver and BQL configuration of the
+interface used to reach the test target. This requires that the
+\fBip\fP binary is present on Linux, but can be extracted from
+\fBroute\fP on BSD. Qdisc information requires the
+\fBtc\fP binary to be present, and offload information requires
+\fBethtool\fP\&.
 .sp
 If the \fB\-\-remote\-metadata\fP is used, the extended metadata
 info is gathered for each of the hostnames specified. This is
@@ -1061,6 +1057,30 @@ path from the router (which is ingress from the point of view of the
 host running flent). If the host being queried for remote metadata
 is off the path, the contents of \fBINGRESS_INFO\fP will
 probably be the same as that of \fI\%EGRESS_INFO\fP .
+.UNINDENT
+.SS Extended metadata
+.sp
+If the \fB\-\-extended\-metadata\fP switch is turned on, the following
+additional values are collected and stored (to the extent they are available
+from the platform):
+.INDENT 0.0
+.TP
+.B IP_ADDRS
+IP addresses assigned to the machine running flent.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B GATEWAYS
+IP addresses of all detected default gateways on the system, and the
+interfaces they are reachable through. Only available if the
+\fBnetstat\fP binary is present on the system.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B EGRESS_INFO
+In the \fI\%EGRESS_INFO\fP key, the IP address of the next\-hop
+router and the interface MAC address are added if extended metadata
+is enabled.
 .UNINDENT
 .SH OUTPUT FORMATS
 .sp

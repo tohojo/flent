@@ -41,8 +41,8 @@ try:
 except ImportError:
     from ConfigParser import RawConfigParser
 
-from flent import aggregators, formatters, resultset, settings
-from flent.metadata import record_extended_metadata, record_postrun_metadata
+from flent import aggregators, formatters, resultset
+from flent.metadata import record_metadata, record_postrun_metadata
 from flent.util import clean_path, format_date
 
 # Python2/3 compatibility
@@ -491,8 +491,8 @@ class BatchRunner(object):
         settings = settings.copy()
         settings.load_test()
         res = resultset.new(settings)
-        if settings.EXTENDED_METADATA:
-            record_extended_metadata(res, settings.REMOTE_METADATA)
+        record_metadata(res, settings.EXTENDED_METADATA,
+                        settings.REMOTE_METADATA)
 
         if not settings.HOSTS:
             raise RuntimeError("Must specify host (-H option).")
@@ -501,8 +501,8 @@ class BatchRunner(object):
         res = self.agg.postprocess(self.agg.aggregate(res))
         if self.killed:
             return
-        if settings.EXTENDED_METADATA:
-            record_postrun_metadata(res, settings.REMOTE_METADATA)
+        record_postrun_metadata(res, settings.EXTENDED_METADATA,
+                                settings.REMOTE_METADATA)
         res.dump_dir(output_path)
         if print_datafile_loc:
             sys.stderr.write("Data file written to %s.\n" % res.dump_filename)
