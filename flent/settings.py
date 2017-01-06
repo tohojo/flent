@@ -602,10 +602,9 @@ class Settings(argparse.Namespace):
         return Settings(self)
 
     def process_args(self):
-        if not self.INPUT:
-            self.INPUT = []
-        if not self.SCALE_DATA:
-            self.SCALE_DATA = []
+        for v in 'INPUT', 'SCALE_DATA', 'HOSTS':
+            if not getattr(self, v):
+                setattr(self, v, [])
         while self.args:
             a = self.args.pop(0)
             if os.path.exists(a):
@@ -668,7 +667,8 @@ def load(argv):
     # We parse the args twice - the first pass is just to get the test name and
     # the name of the rcfile to parse in order to get the defaults
     settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
-    parser.set_defaults(**settings.load_rcfile())
+    parser.set_defaults(**{k: v for k, v in settings.load_rcfile().items()
+                           if getattr(settings, k) == parser.get_default(k)})
 
     settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
     settings.process_args()
