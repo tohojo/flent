@@ -47,9 +47,13 @@ class MaxFilter(object):
 
 
 class LogFormatter(Formatter):
-    def __init__(self, fmt=None, datefmt=None, format_output=False):
+    def __init__(self, fmt=None, datefmt=None, output_markers=None):
         self.format_exceptions = True
-        self.format_output = format_output
+
+        if output_markers is not None:
+            self.start_marker, self.end_marker = output_markers
+        else:
+            self.start_marker = self.end_marker = None
         super(LogFormatter, self).__init__(fmt, datefmt)
 
     def disable_exceptions(self):
@@ -63,13 +67,13 @@ class LogFormatter(Formatter):
     def format(self, record):
         s = super(LogFormatter, self).format(record)
 
-        if not self.format_output:
+        if self.start_marker is None:
             return s
 
         if hasattr(record, 'output'):
             if s[-1:] != "\n":
                 s = s + "\n"
-            s = s + START_MARKER + record.output + END_MARKER
+            s = s + self.start_marker + record.output + self.end_marker
 
         elif hasattr(record, 'runner'):
             if s[-1:] != "\n":
@@ -78,9 +82,10 @@ class LogFormatter(Formatter):
             s = s + "Runner class: %s\n" % record.runner.__class__.__name__
             s = s + "Command: %s\n" % record.runner.command
             s = s + "Return code: %s\n" % record.runner.returncode
-            s = s + "Stdout: " + START_MARKER + record.runner.out + \
-                END_MARKER + "\n"
-            s = s + "Stderr: " + START_MARKER + record.runner.err + END_MARKER
+            s = s + "Stdout: " + self.start_marker + record.runner.out + \
+                self.end_marker + "\n"
+            s = s + "Stderr: " + self.start_marker + record.runner.err + \
+                self.end_marker
 
         return s
 
@@ -99,7 +104,8 @@ def setup_console():
 
     err_handler = StreamHandler(sys.stderr)
     err_handler.setLevel(logging.WARNING)
-    fmt = LogFormatter(fmt="%(levelname)s: %(message)s")
+    fmt = LogFormatter(fmt="%(levelname)s: %(message)s",
+                       output_markers=("", ""))
     err_handler.setFormatter(fmt)
     logger.addHandler(err_handler)
 
@@ -127,7 +133,7 @@ def setup_logfile(filename, level=DEBUG, maxlevel=None):
     handler.setLevel(DEBUG)
     fmt = LogFormatter(
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        format_output=True)
+        output_markers=(START_MARKER, END_MARKER))
     handler.setFormatter(fmt)
 
     if maxlevel:

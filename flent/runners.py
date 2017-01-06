@@ -194,10 +194,6 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
                 self.result = result
             else:
                 self.returncode = 1
-                sys.stderr.write(
-                    "Unable to produce any valid data from file '%s'. Errors:\n"
-                    % self.filename)
-                sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
 
         self.finish_event.set()
 
@@ -380,23 +376,13 @@ class ProcessRunner(threading.Thread, RunnerBase):
             pass
 
         if self.returncode and not self.silent:
-            sys.stderr.write(
-                "Warning: Program exited non-zero (%d).\nCommand: %s\n"
-                % (self.returncode, self.command))
-            sys.stderr.write("Program output:\n")
-            sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
-            sys.stderr.write("  " + "\n  ".join(self.out.splitlines()) + "\n")
+            logger.warning("Program exited non-zero.",
+                           extra={'runner': self})
 
         self.result = self.parse(self.out)
         if not self.result and not self.silent:
-            sys.stderr.write("Warning: Command produced no valid data.\n"
-                             "Data series: %s\n"
-                             "Runner: %s\n"
-                             "Command: %s\n"
-                             "Standard error output:\n" % (
-                                 self.name, self.__class__.__name__, self.command)
-                             )
-            sys.stderr.write("  " + "\n  ".join(self.err.splitlines()) + "\n")
+            logger.warning("Command produced no valid data.",
+                           extra={'runner': self})
 
     def parse(self, output):
         """Default parser returns the last (whitespace-separated) word of
@@ -683,9 +669,9 @@ class PingRunner(RegexpRunner):
                                     if local_bind else ""),
                         host=host)
             elif "must run as root?" in str(err):
-                sys.stderr.write(
+                logger.warning(
                     "Found fping but it seems to be missing "
-                    "permissions (no SUID?). Not using.\n")
+                    "permissions (no SUID?). Not using.")
 
         if ping is not None:
             # Ping can't handle hostnames for the -I parameter, so do a lookup
@@ -817,9 +803,9 @@ class IperfCsvRunner(ProcessRunner):
                         no_delay="--nodelay" if no_delay else "",
                         udp=udp_args)
             else:
-                sys.stderr.write(
+                logger.warning(
                     "Found iperf binary, but it does not have "
-                    "an --enhancedreport option. Not using.\n")
+                    "an --enhancedreport option. Not using.")
 
         raise RuntimeError("No suitable Iperf binary found.")
 
@@ -974,9 +960,9 @@ class TcRunner(ProcessRunner):
             raise RuntimeError("TC stats requires a Bash shell.")
 
         if interface is None:
-            sys.stderr.write(
+            logger.warning(
                 "Warning: No interface given for tc runner. "
-                "Defaulting to 'eth0'.\n")
+                "Defaulting to 'eth0'.")
             interface = 'eth0'
 
         return "{bash} {script} -i {interface} -I {interval:.2f} " \
