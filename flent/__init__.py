@@ -40,6 +40,10 @@ def run_flent(gui=False):
         locale.setlocale(locale.LC_ALL, '')
         from flent import batch
         from flent.settings import load
+        from flent.loggers import setup_console, get_logger
+
+        setup_console()
+        logger = get_logger(__name__)
 
         try:
             signal.signal(signal.SIGTERM, handle_sigterm)
@@ -52,15 +56,8 @@ def run_flent(gui=False):
                 b.run()
 
         except RuntimeError as e:
-            try:
-                if not settings.DEBUG_ERROR:
-                    sys.stderr.write("Fatal error: %s\n" % str(e))
-                    return 1
-                else:
-                    raise
-            except NameError:
-                sys.stderr.write("Fatal error: %s\n" % str(e))
-                return 1
+            logger.exception(str(e))
+
     except KeyboardInterrupt:
         try:
             b.kill()

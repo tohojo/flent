@@ -24,7 +24,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import sys
 
-from logging import StreamHandler, FileHandler
+from logging import StreamHandler, FileHandler, Formatter
+
+err_handler = out_handler = None
+
 
 class MaxFilter(object):
 
@@ -37,26 +40,45 @@ class MaxFilter(object):
         return 1
 
 
+class LogFormatter(Formatter):
+    def __init__(self, *args, **kwargs):
+        self.format_exceptions = True
+        super(LogFormatter, self).__init__(*args, **kwargs)
+
+    def formatException(self, ei):
+        if self.format_exceptions:
+            return super(LogFormatter, self).formatException(ei)
+        return ""
+
+    def disable_exceptions(self):
+        self.format_exceptions = False
+
+
 def get_logger(name):
     return logging.getLogger(name)
 
 
 def setup_console():
+    global err_handler, out_handler
+
+    if err_handler is not None:
+        return
+
     logger = logging.getLogger()
 
-    err = StreamHandler(sys.stderr)
-    err.setLevel(logging.WARNING)
-    fmt = logging.Formatter(fmt="%(levelname)s: %(message)s")
-    err.setFormatter(fmt)
-    logger.addHandler(err)
+    err_handler = StreamHandler(sys.stderr)
+    err_handler.setLevel(logging.WARNING)
+    fmt = LogFormatter(fmt="%(levelname)s: %(message)s")
+    err_handler.setFormatter(fmt)
+    logger.addHandler(err_handler)
 
-    out = StreamHandler(sys.stdout)
-    out.setLevel(logging.INFO)
-    fmt = logging.Formatter(fmt="%(message)s")
-    out.setFormatter(fmt)
+    out_handler = StreamHandler(sys.stdout)
+    out_handler.setLevel(logging.INFO)
+    fmt = LogFormatter(fmt="%(message)s")
+    out_handler.setFormatter(fmt)
     filt = MaxFilter(logging.INFO)
-    out.addFilter(filt)
-    logger.addHandler(out)
+    out_handler.addFilter(filt)
+    logger.addHandler(out_handler)
 
     logger.setLevel(logging.INFO)
 
@@ -72,9 +94,14 @@ def setup_file(filename):
 
     handler = FileHandler(filename, encoding='utf-8')
     handler.setLevel(logging.DEBUG)
-    fmt = logging.Formatter(
+    fmt = LogFormatter(
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
     handler.setFormatter(fmt)
     logger.addHandler(handler)
 
     logger.setLevel(logging.DEBUG)
+
+
+def disable_exceptions():
+    if err_handler is not None:
+        err_handler.formatter.disable_exceptions()

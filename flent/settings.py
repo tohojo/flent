@@ -674,7 +674,8 @@ def load(argv):
     settings.process_args()
     settings.update_implications()
 
-    loggers.setup_console()
+    if not settings.DEBUG_ERROR:
+        loggers.disable_exceptions()
 
     if settings.SCALE_DATA:
         scale_data = []
