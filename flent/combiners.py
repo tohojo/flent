@@ -25,9 +25,6 @@ import math
 import re
 import sys
 
-from flent.util import classname, long_substr, Glob, format_date, mos_score
-from flent.resultset import ResultSet
-
 from datetime import datetime
 from bisect import bisect_left, bisect_right
 from collections import OrderedDict
@@ -37,11 +34,17 @@ try:
 except ImportError:
     from itertools import zip_longest
 
+from flent.util import classname, long_substr, Glob, format_date, mos_score
+from flent.resultset import ResultSet
+from flent.loggers import get_logger
+
 try:
     import numpy
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
+
+logger = get_logger(__name__)
 
 
 def get_combiner(combiner_type):

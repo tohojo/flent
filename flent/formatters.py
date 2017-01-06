@@ -27,9 +27,13 @@ import json
 import os
 import sys
 
-from flent.util import classname, format_bytes
-from flent import plotters
 from functools import reduce
+
+from flent import plotters
+from flent.util import classname, format_bytes
+from flent.loggers import get_logger
+
+logger = get_logger(__name__)
 
 
 def new(settings):

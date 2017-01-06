@@ -37,10 +37,13 @@ except ImportError:
 from itertools import chain
 from multiprocessing import Pool
 
+from flent import util, batch, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
+from flent.loggers import get_logger
 from flent.resultset import ResultSet
 from flent.settings import ListTests, new as new_settings
-from flent import util, batch, resultset, plotters
+
+logger = get_logger(__name__)
 
 mswindows = (sys.platform == "win32")
 

@@ -33,8 +33,10 @@ from itertools import repeat
 from copy import deepcopy
 from collections import OrderedDict
 
-
+from flent.loggers import get_logger
 from flent.util import gzip_open, bz2_open, parse_date, format_date
+
+logger = get_logger(__name__)
 
 # Controls pretty-printing of json dumps
 JSON_INDENT = 2

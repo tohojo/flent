@@ -44,6 +44,7 @@ except ImportError:
 from flent import aggregators, formatters, resultset
 from flent.metadata import record_metadata, record_postrun_metadata
 from flent.util import clean_path, format_date
+from flent.loggers import get_logger
 
 # Python2/3 compatibility
 try:
@@ -51,6 +52,7 @@ try:
 except NameError:
     basestring = str
 
+logger = get_logger(__name__)
 
 def new(settings):
     return BatchRunner(settings)
@@ -496,6 +498,9 @@ class BatchRunner(object):
 
         if not settings.HOSTS:
             raise RuntimeError("Must specify host (-H option).")
+
+        logger.info("Starting %s test. Expected run time: %d seconds.",
+                    settings.NAME, settings.TOTAL_LENGTH)
 
         self.agg = aggregators.new(settings)
         res = self.agg.postprocess(self.agg.aggregate(res))

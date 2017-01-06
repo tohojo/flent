@@ -33,7 +33,9 @@ from threading import Event
 
 from flent import runners, transformers
 from flent.util import classname
+from flent.loggers import get_logger
 
+logger = get_logger(__name__)
 
 def new(settings):
     cname = classname(settings.AGGREGATOR, "Aggregator")

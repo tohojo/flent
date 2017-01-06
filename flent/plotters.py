@@ -30,6 +30,8 @@ from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
+from flent.loggers import get_logger
+
 from functools import reduce
 from itertools import cycle, islice
 from collections import OrderedDict
@@ -49,6 +51,7 @@ except NameError:
     unicode = str
     PY2 = False
 
+logger = get_logger(__name__)
 
 PLOT_KWARGS = (
     'alpha',

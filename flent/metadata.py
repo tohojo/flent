@@ -26,6 +26,9 @@ import re
 import subprocess
 
 from flent import util
+from flent.loggers import get_logger
+
+logger = get_logger(__name__)
 
 INTERESTING_OFFLOADS = ['tcp-segmentation-offload',
                         'udp-fragmentation-offload',

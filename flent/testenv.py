@@ -30,12 +30,15 @@ from copy import deepcopy
 from flent import util, runners
 from flent.util import Glob
 from flent.build_info import DATA_DIR
+from flent.loggers import get_logger
+
 try:
     from collections import OrderedDict
 except ImportError:
     from flent.ordereddict import OrderedDict
 
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
+logger = get_logger(__name__)
 
 
 class _no_default():

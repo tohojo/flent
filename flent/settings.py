@@ -37,15 +37,18 @@ except ImportError:
 
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
+from flent.loggers import get_logger
 from flent.util import FuncAction, Update, keyval, keyval_int, ArgParser
 from flent.plotters import add_plotting_args
-from flent import util, resultset, runners
+from flent import loggers, util, resultset, runners
 
 # Python 2/3 compatibility
 try:
     unicode
 except NameError:
     unicode = str
+
+logger = get_logger(__name__)
 
 OLD_RCFILE = os.path.expanduser("~/.netperf-wrapperrc")
 
@@ -671,6 +674,8 @@ def load(argv):
     settings.process_args()
     settings.update_implications()
 
+    loggers.setup_console()
+
     if settings.SCALE_DATA:
         scale_data = []
         for filename in settings.SCALE_DATA:
@@ -687,6 +692,9 @@ def load(argv):
 
     if settings.LIST_PLOTS:
         list_plots(settings)
+
+    if settings.LOG_FILE:
+        loggers.setup_file(settings.LOG_FILE)
 
     return settings
 

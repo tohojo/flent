@@ -42,6 +42,7 @@ from threading import Event
 from flent import util
 from flent.build_info import DATA_DIR
 from flent.util import classname, ENCODING, Glob
+from flent.loggers import get_logger
 
 mswindows = (sys.platform == "win32")
 
@@ -59,6 +60,7 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpc
 
+logger = get_logger(__name__)
 
 if mswindows:
     def _handle_exitstatus(sts):
