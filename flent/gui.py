@@ -867,10 +867,14 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.runButton.setEnabled(False)
 
         b = batch.new(self.settings)
-        self.pid = b.fork_and_run()
+        self.pid, self.pipe = b.fork_and_run()
         self.monitor_timer.start()
 
     def update_progress(self):
+
+        while not self.pipe.empty():
+            msg = self.pipe.get_nowait()
+            logging.getLogger().handle(msg)
 
         p, s = os.waitpid(self.pid, os.WNOHANG)
         if (p, s) == (0, 0):
@@ -881,6 +885,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             self.runButton.setEnabled(True)
             self.progressBar.setValue(0)
             self.monitor_timer.stop()
+            self.pid = self.pipe = None
             self.parent().load_files(
                 [os.path.join(self.settings.DATA_DIR,
                               self.settings.DATA_FILENAME)])

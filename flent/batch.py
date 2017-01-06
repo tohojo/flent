@@ -33,6 +33,7 @@ import uuid
 from datetime import datetime, timedelta
 from fnmatch import fnmatch
 from collections import OrderedDict
+from multiprocessing import Queue
 
 try:
     from configparser import RawConfigParser
@@ -539,10 +540,12 @@ class BatchRunner(object):
         formatter.format(results)
 
     def fork_and_run(self):
+        queue = Queue()
         pid = os.fork()
         if pid:
-            return pid
+            return pid, queue
         else:
+            loggers.set_queue_handler(queue)
             self.run()
             os._exit(0)
 

@@ -90,6 +90,19 @@ class LogFormatter(Formatter):
         return s
 
 
+class QueueHandler(logging.Handler):
+
+    def __init__(self, queue, level=logging.NOTSET):
+        super(QueueHandler, self).__init__(level=level)
+        self.queue = queue
+
+    def emit(self, record):
+        self.queue.put(record)
+
+    def write(self, m):
+        pass
+
+
 def get_logger(name):
     return logging.getLogger(name)
 
@@ -160,6 +173,15 @@ def add_log_handler(handler):
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
     handler.setFormatter(fmt)
 
+    logger.addHandler(handler)
+
+
+def set_queue_handler(queue):
+    logger = logging.getLogger()
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+
+    handler = QueueHandler(queue)
     logger.addHandler(handler)
 
 
