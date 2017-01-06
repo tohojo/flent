@@ -27,6 +27,8 @@ import sys
 from logging import StreamHandler, FileHandler, Formatter
 
 err_handler = out_handler = None
+START_MARKER = "-- OUTPUT START -->"
+END_MARKER = "<-- OUTPUT END --"
 
 
 class MaxFilter(object):
@@ -41,17 +43,42 @@ class MaxFilter(object):
 
 
 class LogFormatter(Formatter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, fmt=None, datefmt=None, format_output=False):
         self.format_exceptions = True
-        super(LogFormatter, self).__init__(*args, **kwargs)
+        self.format_output = format_output
+        super(LogFormatter, self).__init__(fmt, datefmt)
+
+    def disable_exceptions(self):
+        self.format_exceptions = False
 
     def formatException(self, ei):
         if self.format_exceptions:
             return super(LogFormatter, self).formatException(ei)
         return ""
 
-    def disable_exceptions(self):
-        self.format_exceptions = False
+    def format(self, record):
+        s = super(LogFormatter, self).format(record)
+
+        if not self.format_output:
+            return s
+
+        if hasattr(record, 'output'):
+            if s[-1:] != "\n":
+                s = s + "\n"
+            s = s + START_MARKER + record.output + END_MARKER
+
+        elif hasattr(record, 'runner'):
+            if s[-1:] != "\n":
+                s = s + "\n"
+
+            s = s + "Runner class: %s\n" % record.runner.__class__.__name__
+            s = s + "Command: %s\n" % record.runner.command
+            s = s + "Return code: %s\n" % record.runner.returncode
+            s = s + "Stdout: " + START_MARKER + record.runner.out + \
+                END_MARKER + "\n"
+            s = s + "Stderr: " + START_MARKER + record.runner.err + END_MARKER
+
+        return s
 
 
 def get_logger(name):
@@ -95,7 +122,8 @@ def setup_file(filename):
     handler = FileHandler(filename, encoding='utf-8')
     handler.setLevel(logging.DEBUG)
     fmt = LogFormatter(
-        fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+        fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+        format_output=True)
     handler.setFormatter(fmt)
     logger.addHandler(handler)
 

@@ -22,7 +22,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
-import io
 import math
 import pprint
 import signal
@@ -36,6 +35,7 @@ from flent.util import classname
 from flent.loggers import get_logger
 
 logger = get_logger(__name__)
+
 
 def new(settings):
     cname = classname(settings.AGGREGATOR, "Aggregator")
@@ -67,10 +67,6 @@ class Aggregator(object):
         self.settings = settings
         self.failed_runners = 0
         self.runner_counter = 0
-        if self.settings.LOG_FILE is None:
-            self.logfile = None
-        else:
-            self.logfile = io.open(self.settings.LOG_FILE, "at")
 
         self.postprocessors = []
 
@@ -123,8 +119,6 @@ class Aggregator(object):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
 
-        if self.logfile:
-            self.logfile.write("Start run at %s\n" % datetime.now())
         signal.signal(signal.SIGUSR1, handle_usr1)
 
         result = {}
@@ -160,7 +154,9 @@ class Aggregator(object):
                             sys.stderr.write(
                                 "Already initiated graceful shutdown. "
                                 "Patience, please...\n")
-                self._log(n, t)
+
+                logger.debug("Runner %s finished", n,
+                             extra={'runner': t})
 
                 metadata['series'][n] = t.metadata
                 if 'transformers' in self.instances[n]:
@@ -205,12 +201,9 @@ class Aggregator(object):
             self.kill_runners()
             raise
 
-        if self.logfile is not None:
-            self.logfile.write("Raw aggregated data:\n")
-            formatted = pprint.pformat(result)
-            if hasattr(formatted, 'decode'):
-                formatted = formatted.decode()
-            self.logfile.write(formatted)
+        logger.debug("Runner aggregation finished",
+                     extra={'output': pprint.pformat(result)})
+
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
         return result, metadata, raw_values
 
@@ -222,18 +215,6 @@ class Aggregator(object):
         for p in self.postprocessors:
             result = p(result)
         return result
-
-    def _log(self, name, runner):
-        if self.logfile is None:
-            return
-        self.logfile.write("Runner: %s - %s\n" % (name,
-                                                  runner.__class__.__name__))
-        self.logfile.write("Command: %s\nReturncode: %d\n" % (runner.command,
-                                                              runner.returncode))
-        self.logfile.write("Program stdout:\n")
-        self.logfile.write("  " + "\n  ".join(runner.out.splitlines()) + "\n")
-        self.logfile.write("Program stderr:\n")
-        self.logfile.write("  " + "\n  ".join(runner.err.splitlines()) + "\n")
 
 
 class IterationAggregator(Aggregator):
