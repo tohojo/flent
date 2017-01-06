@@ -72,6 +72,7 @@
     <addaction name="actionPlotSelector"/>
     <addaction name="actionMetadata"/>
     <addaction name="actionOpenFiles"/>
+    <addaction name="actionLogEntries"/>
     <addaction name="separator"/>
     <addaction name="actionNextTab"/>
     <addaction name="actionPrevTab"/>
@@ -167,6 +168,15 @@
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout"/>
    </widget>
+  </widget>
+  <widget class="QDockWidget" name="logEntriesDock">
+   <property name="windowTitle">
+    <string>Log entries</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -389,6 +399,14 @@
     <string>&amp;Highlight on hover</string>
    </property>
   </action>
+  <action name="actionLogEntries">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Log entries</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>
@@ -453,6 +471,22 @@
     <hint type="destinationlabel">
      <x>1033</x>
      <y>627</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionLogEntries</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>logEntriesDock</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1093</x>
+     <y>711</y>
     </hint>
    </hints>
   </connection>

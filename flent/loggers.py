@@ -154,6 +154,15 @@ def remove_log_handler(handler):
     logger.removeHandler(handler)
 
 
+def add_log_handler(handler):
+    logger = logging.getLogger()
+    fmt = LogFormatter(
+        fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+    handler.setFormatter(fmt)
+
+    logger.addHandler(handler)
+
+
 def disable_exceptions():
     if err_handler is not None:
         err_handler.formatter.disable_exceptions()

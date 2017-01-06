@@ -22,6 +22,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import base64
+import logging
 import os
 import signal
 import sys
@@ -39,7 +40,7 @@ from multiprocessing import Pool
 
 from flent import util, batch, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
-from flent.loggers import get_logger
+from flent.loggers import get_logger, add_log_handler
 from flent.resultset import ResultSet
 from flent.settings import ListTests, new as new_settings
 
@@ -68,7 +69,7 @@ try:
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
-        QVBoxLayout, QApplication
+        QVBoxLayout, QApplication, QPlainTextEdit
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent
@@ -87,7 +88,8 @@ except ImportError:
         from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
             QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
-            QApplication, QStringListModel, QKeySequence, QResizeEvent
+            QApplication, QStringListModel, QKeySequence, QResizeEvent, \
+            QPlainTextEdit
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -295,6 +297,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.openFilesDock.visibilityChanged.connect(self.open_files_visibility)
+        self.logEntriesDock.visibilityChanged.connect(self.log_entries_visibility)
         self.expandButton.clicked.connect(self.metadata_column_resize)
 
         # Set initial value of checkboxes from settings
@@ -321,6 +324,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkHighlight.toggled.connect(self.update_checkboxes)
 
         self.tabifyDockWidget(self.openFilesDock, self.metadataDock)
+        self.tabifyDockWidget(self.openFilesDock, self.logEntriesDock)
         self.openFilesDock.raise_()
         self.open_files = OpenFilesModel(self)
         self.openFilesView = OpenFilesView(self.openFilesDock)
@@ -333,6 +337,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
 
+        self.logEntries = QPlainTextLogger(self, logging.DEBUG)
+        add_log_handler(self.logEntries)
+        self.logEntriesDock.setWidget(self.logEntries.widget)
+
         # Start IPC socket server on name corresponding to pid
         self.server = QLocalServer()
         self.sockets = []
@@ -343,6 +351,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.read_settings()
 
         self.worker_pool = Pool()
+
+        logger.info("GUI loaded")
 
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
@@ -410,6 +420,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def open_files_visibility(self):
         self.actionOpenFiles.setChecked(not self.openFilesDock.isHidden())
+
+    def log_entries_visibility(self):
+        self.actionLogEntries.setChecked(not self.logEntriesDock.isHidden())
 
     def metadata_column_resize(self):
         self.metadataView.resizeColumnToContents(0)
@@ -866,6 +879,27 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             self.parent().load_files(
                 [os.path.join(self.settings.DATA_DIR,
                               self.settings.DATA_FILENAME)])
+
+
+class QPlainTextLogger(logging.Handler):
+
+    def __init__(self, parent, level=logging.NOTSET):
+
+        super(QPlainTextLogger, self).__init__(level=level)
+
+        font = QFont("Monospace")
+        font.setStyleHint(QFont.TypeWriter)
+
+        self.widget = QPlainTextEdit(parent)
+        self.widget.setFont(font)
+        self.widget.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
+
+    def write(self, p):
+        pass
 
 
 class PlotModel(QStringListModel):
