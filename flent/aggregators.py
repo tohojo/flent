@@ -145,15 +145,15 @@ class Aggregator(object):
                         t.join(1)
                     except GracefulShutdown:
                         if not shutting_down:
-                            sys.stderr.write(
+                            logger.info(
                                 "SIGUSR1 received; initiating graceful shutdown. "
-                                "This may take a while...\n")
+                                "This may take a while...")
                             self.kill_runners(graceful=True)
                             shutting_down = True
                         else:
-                            sys.stderr.write(
+                            logger.info(
                                 "Already initiated graceful shutdown. "
-                                "Patience, please...\n")
+                                "Patience, please...")
 
                 logger.debug("Runner %s finished", n,
                              extra={'runner': t})

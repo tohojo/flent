@@ -224,8 +224,7 @@ class ResultSet(object):
 
     def series(self, name, smooth=None):
         if name not in self._results:
-            sys.stderr.write(
-                "Warning: Missing data points for series '%s'\n" % name)
+            logger.warning("Missing data points for series '%s'", name)
             return [None] * len(self.x_values)
         if smooth:
             return self.smoothed(self._results[name], smooth)
@@ -237,8 +236,7 @@ class ResultSet(object):
 
     def raw_series(self, name, smooth=None, absolute=False):
         if name not in self.raw_values:
-            sys.stderr.write(
-                "Warning: Missing data points for series '%s'\n" % name)
+            logger.warning("Missing data points for series '%s'", name)
             return ([], [])
         if self.t0 is None:
             self._calculate_t0()
@@ -338,7 +336,7 @@ class ResultSet(object):
             with o(filename, "wt") as fp:
                 self.dump(fp)
         except IOError as e:
-            sys.stderr.write("Unable to write results data file: %s\n" % e)
+            logger.error("Unable to write results data file: %s", e)
 
     def dumps(self):
         return json.dumps(self.serialise(), indent=JSON_INDENT, sort_keys=True)
@@ -379,7 +377,7 @@ class ResultSet(object):
             with o(self._dump_file, "wt") as fp:
                 self.dump(fp)
         except IOError as e:
-            sys.stderr.write("Unable to write results data file: %s\n" % e)
+            logger.error("Unable to write results data file: %s", e)
             self._dump_file = None
 
     @classmethod

@@ -99,9 +99,9 @@ class Formatter(object):
 
     def format(self, results):
         if results[0].dump_filename is not None:
-            sys.stderr.write(
+            logger.info(
                 "No output formatter selected.\nTest data is in %s "
-                "(use with -i to format).\n" % results[0].dump_filename)
+                "(use with -i to format).", results[0].dump_filename)
 
     def write(self, string):
         try:

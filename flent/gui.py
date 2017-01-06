@@ -97,8 +97,8 @@ except ImportError:
 
         QTVER = 4
 
-        sys.stderr.write("Warning: Falling back to Qt4 for the GUI. "
-                         "Please consider installing PyQt5.\n")
+        logger.warning("Falling back to Qt4 for the GUI. "
+                       "Please consider installing PyQt5.\n")
     except ImportError:
         raise RuntimeError("PyQt must be installed to use the GUI.")
 
@@ -170,9 +170,9 @@ def check_running(settings):
             try:
                 pid = int(f.split("-")[-1])
                 os.kill(pid, 0)
-                sys.stderr.write(
+                logger.info(
                     "Found a running instance with pid %d. "
-                    "Trying to connect... " % pid)
+                    "Trying to connect... ", pid)
                 # Signal handler did not raise an error, so the pid is running.
                 # Try to connect
                 sock = QLocalSocket()
@@ -196,10 +196,10 @@ def check_running(settings):
                 # there's another possibly valid socket in the list we'll try
                 # again the next time round in the loop.
                 if ret:
-                    sys.stderr.write("Success!\n")
+                    logger.info("Success!\n")
                     return True
                 else:
-                    sys.stderr.write("Error!\n")
+                    logger.info("Error!\n")
             except (OSError, ValueError):
                 # os.kill raises OSError if the pid does not exist
                 # int() returns a ValueError if the pid is not an integer
@@ -1030,13 +1030,12 @@ class MetadataView(QTreeView):
                     self.setExpanded(idx, True)
                     parent = idx
                 except IndexError:
-                    sys.stderr.write(
-                        "Could not find pinned entry '%s'.\n"
-                        % ":".join(map(str, pin)))
+                    logger.warning("Could not find pinned entry '%s'.",
+                                   ":".join(map(str, pin)))
                     break
                 except Exception as e:
-                    sys.stderr.write("Restoring pin '%s' failed: %s.\n" %
-                                     (":".join(map(str, pin)), e))
+                    logger.warning("Restoring pin '%s' failed: %s.",
+                                   ":".join(map(str, pin)), e)
                     break
 
 

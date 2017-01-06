@@ -100,11 +100,11 @@ class ListTests(FuncAction):
 
     def __call__(self, parser, namespace, values, option_string=None):
         tests = self.get_tests(namespace)
-        sys.stderr.write('Available tests:\n')
+        logger.info('Available tests:')
         max_len = max([len(t[0]) for t in tests])
         for t, desc in tests:
             desc = desc.replace("\n", "\n" + " " * (max_len + 6))
-            sys.stderr.write(("  %-" + str(max_len) + "s :  %s\n") % (t, desc))
+            logger.info("  %-" + str(max_len) + "s :  %s", t, desc)
         sys.exit(0)
 
 
@@ -465,9 +465,9 @@ class Settings(argparse.Namespace):
         self.process_args()
         if self.RCFILE == parser.get_default('RCFILE') and \
            not os.path.exists(self.RCFILE) and os.path.exists(OLD_RCFILE):
-            sys.stderr.write("Warning: Using old rcfile found at %s, "
-                             "please rename to %s.\n"
-                             % (OLD_RCFILE, self.RCFILE))
+            logger.warning("Using old rcfile found at %s, "
+                           "please rename to %s.",
+                           OLD_RCFILE, self.RCFILE)
             self.RCFILE = OLD_RCFILE
         if os.path.exists(self.RCFILE):
 
@@ -566,8 +566,8 @@ class Settings(argparse.Namespace):
                                         post=True, **dvals)
                         runner.result(results)
                     except Exception as e:
-                        sys.stderr.write("Unable to compute missing data "
-                                         "series '%s': '%s'.\n" % (dname, e))
+                        logger.exception("Unable to compute missing data "
+                                         "series '%s': '%s'.", dname, e)
                         raise
 
     def lookup_hosts(self):
@@ -703,12 +703,12 @@ def load(argv):
 def list_plots(settings):
     plots = list(settings.PLOTS.keys())
     if not plots:
-        sys.stderr.write("No plots available for test '%s'.\n" % settings.NAME)
+        logger.error("No plots available for test '%s'.", settings.NAME)
         sys.exit(0)
 
-    sys.stderr.write("Available plots for test '%s':\n" % settings.NAME)
+    logger.info("Available plots for test '%s':", settings.NAME)
     max_len = str(max([len(p) for p in plots]))
     for p in plots:
-        sys.stderr.write(("  %-" + max_len + "s :  %s\n")
-                         % (p, settings.PLOTS[p]['description']))
+        logger.info("  %-" + max_len + "s :  %s",
+                    p, settings.PLOTS[p]['description'])
     sys.exit(0)

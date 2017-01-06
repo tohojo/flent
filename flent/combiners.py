@@ -571,9 +571,9 @@ class RawReducer(Reducer):
         except KeyError:
             return None
         if not rawdata and self.cutoff:
-            sys.stderr.write(
-                "Warning: No data points with current cutoff settings, "
-                "relaxing end cutoff.\n")
+            logger.warning(
+                "No data points with current cutoff settings, "
+                "relaxing end cutoff.")
             self.cutoff = (self.cutoff[0], None)
             rawdata = self._get_series(resultset, key)
         if self.filter_none:
