@@ -470,7 +470,7 @@ def new(settings, plotter=None, in_worker=False, **kwargs):
 
             **kwargs)
     except Exception as e:
-        raise RuntimeError("Error loading plotter: %s." % e)
+        raise RuntimeError("Error loading plotter: %s" % e)
 
 
 def draw_worker(settings, results):

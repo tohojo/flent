@@ -766,7 +766,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 widget.load_results(r, plot=current_plot)
             self.open_files.add_file(widget.results)
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(str(e))
             if isinstance(e, RuntimeError):
                 err = "%s" % e
             else:
@@ -774,7 +774,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 err = "".join(traceback.format_exception_only(typ, val))
             QMessageBox.warning(self, "Error loading file",
                                 "Error while loading data file:\n\n%s\n\n"
-                                "Skipping. Full traceback output to console."
+                                "Skipping. Full traceback output to log."
                                 % err)
 
         if not self.load_queue:
@@ -1503,7 +1503,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         try:
             self.plotter = plotters.new(self.settings)
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(str(e))
             if isinstance(e, RuntimeError):
                 err = "%s" % e
             else:
@@ -1512,7 +1512,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             QMessageBox.warning(self, "Error loading plot",
                                 "Error while loading plot:\n\n%s\n"
                                 "Falling back to default plot. "
-                                "Full traceback output to console." % err)
+                                "Full traceback output to log." % err)
 
             self.settings.PLOT = self.settings.DEFAULTS['PLOT']
             self.plotter = plotters.new(self.settings)
@@ -1794,12 +1794,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                 self.needs_resize = True
 
         except Exception as e:
-            traceback.print_exc()
+            logger.exception(str(e))
             typ, val, tra = sys.exc_info()
             err = "".join(traceback.format_exception_only(typ, val))
             QMessageBox.warning(self, "Error plotting",
                                 "Unhandled exception while plotting:\n\n%s\n"
-                                "Aborting. Full traceback output to console."
+                                "Aborting. Full traceback output to log."
                                 % err)
         finally:
             self.async_fig = None
