@@ -193,7 +193,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="logBox">
      <property name="enabled">
       <bool>true</bool>
      </property>
@@ -201,6 +201,13 @@
       <string>Progress</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
+      <item row="3" column="1">
+       <widget class="QProgressBar" name="progressBar">
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
       <item row="3" column="0">
        <widget class="QPushButton" name="runButton">
         <property name="text">
@@ -211,20 +218,10 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QProgressBar" name="progressBar">
-        <property name="value">
-         <number>0</number>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0" colspan="2">
-       <widget class="QPlainTextEdit" name="plainTextEdit">
+       <widget class="QPlainTextEdit" name="logTextEdit">
         <property name="readOnly">
          <bool>true</bool>
-        </property>
-        <property name="plainText">
-         <string>This doesn't work yet...</string>
         </property>
        </widget>
       </item>

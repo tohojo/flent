@@ -821,6 +821,11 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.monitor_timer.setSingleShot(False)
         self.monitor_timer.timeout.connect(self.update_progress)
 
+        self.logEntries = QPlainTextLogger(self,
+                                           level=logging.DEBUG,
+                                           widget=self.logTextEdit)
+        add_log_handler(self.logEntries)
+
     def select_output_dir(self):
         directory = QFileDialog.getExistingDirectory(self,
                                                      "Select output directory",
@@ -883,14 +888,14 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
 class QPlainTextLogger(logging.Handler):
 
-    def __init__(self, parent, level=logging.NOTSET):
+    def __init__(self, parent, level=logging.NOTSET, widget=None):
 
         super(QPlainTextLogger, self).__init__(level=level)
 
         font = QFont("Monospace")
         font.setStyleHint(QFont.TypeWriter)
 
-        self.widget = QPlainTextEdit(parent)
+        self.widget = widget or QPlainTextEdit(parent)
         self.widget.setFont(font)
         self.widget.setReadOnly(True)
 
