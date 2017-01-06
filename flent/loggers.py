@@ -30,6 +30,10 @@ err_handler = out_handler = None
 START_MARKER = "-- OUTPUT START -->"
 END_MARKER = "<-- OUTPUT END --"
 
+DEBUG = logging.DEBUG
+INFO = logging.INFO
+WARNING = logging.WARNING
+
 
 class MaxFilter(object):
 
@@ -116,18 +120,32 @@ def setup_null():
     logger.addHandler(handler)
 
 
-def setup_file(filename):
+def setup_logfile(filename, level=DEBUG, maxlevel=None):
     logger = logging.getLogger()
 
     handler = FileHandler(filename, encoding='utf-8')
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(DEBUG)
     fmt = LogFormatter(
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         format_output=True)
     handler.setFormatter(fmt)
-    logger.addHandler(handler)
 
-    logger.setLevel(logging.DEBUG)
+    if maxlevel:
+        filt = MaxFilter(maxlevel)
+        handler.addFilter(filt)
+
+    logger.addHandler(handler)
+    logger.setLevel(min(logger.level, level))
+
+    return handler
+
+
+def remove_log_handler(handler):
+    if not handler:
+        return
+
+    logger = logging.getLogger()
+    logger.removeHandler(handler)
 
 
 def disable_exceptions():

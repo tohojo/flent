@@ -695,7 +695,7 @@ def load(argv):
         list_plots(settings)
 
     if settings.LOG_FILE:
-        loggers.setup_file(settings.LOG_FILE)
+        loggers.setup_logfile(settings.LOG_FILE)
 
     return settings
 
