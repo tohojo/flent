@@ -2,6 +2,14 @@
 
 Changes since v0.15.0 include:
 
+- Improve logging of Flent's operations. The log file will now contain a
+  proper superset of the console output, and Flent has been made
+  slightly more verbose about what it is doing. Also, the log is now
+  shown in a pane in the GUI.
+
+- Fix an error breaking plots on Python 2 and some versions of
+  matplotlib.
+
 - Support PyQt5 in the GUI (and prefer it over PyQt4). If PyQt5 is not
   found, fall back to PyQt4.
 
