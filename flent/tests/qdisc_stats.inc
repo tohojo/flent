@@ -23,14 +23,10 @@ if QDISC_STATS_HOSTS:
 
     PLOTS['backlog'] = {'description': 'Queue backlog',
                         'type': 'timeseries',
-                        'axis_labels': ['Packets', 'Bytes'],
-                        'dual_axes': True,
+                        'axis_labels': ['Bytes'],
                         'series': [
-                            {'data': glob('qdisc_stats_*::backlog_pkts'),
-                             'label': 'Backlog (packets)'},
                             {'data': glob('qdisc_stats_*::backlog_bytes'),
-                             'label': 'Backlog (bytes)',
-                             'axis': 2},
+                             'label': 'Backlog (bytes)'},
                         ]}
 
     PLOTS['drops'] = {'description': 'Packet drops',
