@@ -352,6 +352,12 @@ sense combined with :option:`-f` *plot*.
    for instance, switch to splitting up combined data sets by batch run instead
    of by file name.
 
+.. option:: --combine-save-dir=DIRNAME
+
+   When doing a combination plot save the intermediate data to ``DIRNAME``. This
+   can then be used for subsequent plotting to avoid having to load all the
+   source data files again on each plot.
+
 .. option:: --split-group=LABEL
 
    Split data sets into groups when creating box plots. Specify this option
@@ -439,19 +445,6 @@ sense combined with :option:`-f` *plot*.
 
    Don't highlight data series on hover in interactive plot views. Use this if
    redrawing is too slow, or the highlighting is undesired for other reasons.
-
-Data combination configuration
-------------------------------
-
-These options are used to combine several datasets, for instance to make
-aggregate plots.
-
-.. option:: --combine-save-dir=DIRNAME
-
-   When doing a combination plot save the intermediate data to ``DIRNAME``. This
-   can then be used for subsequent plotting to avoid having to load all the
-   source data files again on each plot.
-
 
 Test tool-related options
 -------------------------

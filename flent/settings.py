@@ -336,18 +336,6 @@ plot_group = parser.add_argument_group(
 
 add_plotting_args(plot_group)
 
-combine_group = parser.add_argument_group(
-    "Data combination configuration",
-    "These options are used to combine several datasets, "
-    "for instance to make aggregate plots.")
-
-combine_group.add_argument(
-    "--combine-save-dir",
-    action="store", type=unicode, dest="COMBINE_SAVE_DIR", metavar="DIRNAME",
-    help="When doing a combination plot save the intermediate data to DIRNAME. "
-    "This can then be used for subsequent plotting to avoid having to "
-    "load all the source data files again on each plot.")
-
 tool_group = parser.add_argument_group("Test tool-related options")
 
 tool_group.add_argument(

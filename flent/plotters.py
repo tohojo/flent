@@ -344,6 +344,14 @@ def add_plotting_args(parser):
         help="Override plot group_by attribute for combination plots.")
 
     parser.add_argument(
+        "--combine-save-dir",
+        action="store", type=unicode, dest="COMBINE_SAVE_DIR",
+        metavar="DIRNAME",
+        help="When doing a combination plot save the intermediate data "
+        "to DIRNAME. This can then be used for subsequent plotting to "
+        "avoid having to load all the source data files again on each plot.")
+
+    parser.add_argument(
         "--split-group",
         action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
         metavar="LABEL",
