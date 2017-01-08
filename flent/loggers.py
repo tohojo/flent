@@ -174,6 +174,7 @@ def add_log_handler(handler):
     handler.setFormatter(fmt)
 
     logger.addHandler(handler)
+    logger.setLevel(min(logger.level, handler.level))
 
 
 def set_queue_handler(queue):
