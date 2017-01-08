@@ -111,11 +111,27 @@ class RunnerBase(object):
         self.kill_event = kill_event if kill_event is not None else Event()
         self.finish_event = finish_event
 
+        self._pickled = False
+
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
+
+    def __getstate__(self):
+        state = {}
+
+        for k, v in self.__dict__.items():
+            if k not in ('start_event', 'kill_event', 'finish_event',
+                         'kill_lock', '_started', '_stderr', '_stdout',
+                         'stdout', 'stderr', '_tstate_lock'):
+                state[k] = v
+
+        state['_pickled'] = True
+
+        return state
 
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
-        pass
+        if self._pickled:
+            raise RuntimeError("Attempt to run a pickled runner")
 
     def join(self):
         pass
@@ -134,6 +150,12 @@ class TimerRunner(threading.Thread, RunnerBase):
         RunnerBase.__init__(self, **kwargs)
         self.timeout = timeout
         self.command = 'Timeout after %f seconds' % self.timeout
+
+    def start(self):
+        if self._pickled:
+            raise RuntimeError("Attempt to run a pickled runner")
+
+        threading.Thread.start(self)
 
     def run(self):
         if self.start_event is not None:
@@ -157,6 +179,12 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
         self.delay = delay
         self.metadata['FILENAME'] = self.filename
         self.command = 'File monitor for %s' % self.filename
+
+    def start(self):
+        if self._pickled:
+            raise RuntimeError("Attempt to run a pickled runner")
+
+        threading.Thread.start(self)
 
     def run(self):
         if self.start_event is not None:
@@ -313,6 +341,9 @@ class ProcessRunner(threading.Thread, RunnerBase):
             return self.killed
 
     def start(self):
+        if self._pickled:
+            raise RuntimeError("Attempt to run a pickled runner")
+
         if mswindows:
             raise RuntimeError(
                 "Process management currently doesn't work on Windows, "
