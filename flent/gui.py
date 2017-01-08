@@ -36,11 +36,12 @@ except ImportError:
     import pickle
 
 from itertools import chain
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue
 
 from flent import util, batch, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
-from flent.loggers import get_logger, add_log_handler
+from flent.loggers import get_logger, add_log_handler, remove_log_handler, \
+    set_queue_handler
 from flent.resultset import ResultSet
 from flent.settings import ListTests, new as new_settings
 
@@ -340,6 +341,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.logEntries = QPlainTextLogger(self, logging.DEBUG)
         add_log_handler(self.logEntries)
         self.logEntriesDock.setWidget(self.logEntries.widget)
+        self.log_queue = Queue()
+        self.log_timer = QTimer(self)
+        self.log_timer.timeout.connect(self.read_log_queue)
+        self.log_timer.setInterval(100)
+        self.log_timer.start()
 
         # Start IPC socket server on name corresponding to pid
         self.server = QLocalServer()
@@ -350,9 +356,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.read_settings()
 
-        self.worker_pool = Pool()
+        self.worker_pool = Pool(initializer=set_queue_handler,
+                                initargs=(self.log_queue,))
 
         logger.info("GUI loaded")
+
+    def read_log_queue(self):
+        while not self.log_queue.empty():
+            msg = self.log_queue.get_nowait()
+            logging.getLogger().handle(msg)
 
     def get_last_dir(self):
         if 'savefig.directory' in matplotlib.rcParams:
@@ -783,17 +795,18 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.busy_end()
 
     def run_test(self):
-        dialog = NewTestDialog(self, self.settings)
+        dialog = NewTestDialog(self, self.settings, self.log_queue)
         dialog.exec_()
 
 
 class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
-    def __init__(self, parent, settings):
+    def __init__(self, parent, settings, log_queue):
         super(NewTestDialog, self).__init__(parent)
         self.settings = settings.copy()
         self.settings.INPUT = []
         self.settings.GUI = False
+        self.log_queue = log_queue
 
         tests = ListTests.get_tests(settings)
         max_len = max([len(t[0]) for t in tests])
@@ -829,6 +842,12 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         if directory:
             self.outputDir.setText(directory)
 
+
+    def closeEvent(self, event):
+        remove_log_handler(self.logEntries)
+
+        event.accept()
+
     def run_test(self):
         test = self.testName.itemData(self.testName.currentIndex())
         host = self.hostName.text()
@@ -863,14 +882,10 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.runButton.setEnabled(False)
 
         b = batch.new(self.settings)
-        self.pid, self.pipe = b.fork_and_run()
+        self.pid = b.fork_and_run(self.log_queue)
         self.monitor_timer.start()
 
     def update_progress(self):
-
-        while not self.pipe.empty():
-            msg = self.pipe.get_nowait()
-            logging.getLogger().handle(msg)
 
         p, s = os.waitpid(self.pid, os.WNOHANG)
         if (p, s) == (0, 0):
@@ -881,7 +896,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             self.runButton.setEnabled(True)
             self.progressBar.setValue(0)
             self.monitor_timer.stop()
-            self.pid = self.pipe = None
+            self.pid = None
             self.parent().load_files(
                 [os.path.join(self.settings.DATA_DIR,
                               self.settings.DATA_FILENAME)])

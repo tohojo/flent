@@ -539,11 +539,10 @@ class BatchRunner(object):
         formatter = formatters.new(settings)
         formatter.format(results)
 
-    def fork_and_run(self):
-        queue = Queue()
+    def fork_and_run(self, queue):
         pid = os.fork()
         if pid:
-            return pid, queue
+            return pid
         else:
             loggers.set_queue_handler(queue)
             self.run()
