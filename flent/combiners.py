@@ -23,7 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 import re
-import sys
 
 from datetime import datetime
 from bisect import bisect_left, bisect_right
