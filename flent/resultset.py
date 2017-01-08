@@ -25,7 +25,6 @@ import json
 import math
 import os
 import re
-import sys
 
 from datetime import datetime
 from calendar import timegm
