@@ -66,7 +66,7 @@ except NotImplementedError:
     CPU_COUNT = 1
 
 try:
-    from PyQt5 import QtGui, uic
+    from PyQt5 import QtCore, QtGui, uic
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
@@ -84,7 +84,7 @@ try:
     QTVER = 5
 except ImportError:
     try:
-        from PyQt4 import QtGui, uic
+        from PyQt4 import QtCore, QtGui, uic
 
         from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
@@ -359,7 +359,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.worker_pool = Pool(initializer=set_queue_handler,
                                 initargs=(self.log_queue,))
 
-        logger.info("GUI loaded")
+        logger.info("GUI loaded. Running on PyQt v%s.", QtCore.PYQT_VERSION_STR)
 
     def read_log_queue(self):
         while not self.log_queue.empty():

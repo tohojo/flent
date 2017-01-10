@@ -708,6 +708,10 @@ def load(argv):
     if settings.LOG_FILE:
         loggers.setup_logfile(settings.LOG_FILE)
 
+
+    logger.debug("Loaded Flent %s running on Python %s.", VERSION,
+                 sys.version.replace("\n"," "))
+
     return settings
 
 
