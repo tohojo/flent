@@ -148,7 +148,8 @@ def run_gui(settings):
     if check_running(settings):
         return 0
 
-    plotters.init_matplotlib("-", settings.USE_MARKERS, settings.LOAD_MATPLOTLIBRC)
+    plotters.init_matplotlib("-", settings.USE_MARKERS,
+                             settings.LOAD_MATPLOTLIBRC)
 
     # Python does not get a chance to process SIGINT while in the Qt event loop,
     # so reset to the default signal handler which just kills the application.
@@ -253,7 +254,6 @@ def results_load_helper(filename):
     except Exception as e:
         traceback.print_exc()
         return None
-
 
 
 class MainWindow(get_ui_class("mainwindow.ui")):
@@ -778,11 +778,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.open_files.add_file(widget.results)
         except Exception as e:
             logger.exception(str(e))
-            if isinstance(e, RuntimeError):
-                err = "%s" % e
-            else:
-                typ, val, tra = sys.exc_info()
-                err = "".join(traceback.format_exception_only(typ, val))
             logger.warning("Error while loading data file. Skipping.")
 
         if not self.load_queue:
@@ -841,7 +836,6 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
                                                      self.outputDir.text())
         if directory:
             self.outputDir.setText(directory)
-
 
     def closeEvent(self, event):
         remove_log_handler(self.logEntries)
@@ -1515,13 +1509,8 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.plotter = plotters.new(self.settings)
         except Exception as e:
             logger.exception(str(e))
-            if isinstance(e, RuntimeError):
-                err = "%s" % e
-            else:
-                typ, val, tra = sys.exc_info()
-                err = "".join(traceback.format_exception_only(typ, val))
-
-            logger.warning("Error while loading plot '%s'. Falling back to default plot.",
+            logger.warning("Error while loading plot '%s'. "
+                           "Falling back to default plot.",
                            self.settings.PLOT)
 
             self.settings.PLOT = self.settings.DEFAULTS['PLOT']
@@ -1805,8 +1794,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
         except Exception as e:
             logger.exception(str(e))
-            typ, val, tra = sys.exc_info()
-            err = "".join(traceback.format_exception_only(typ, val))
             logger.warning("Unhandled exception while plotting. Aborting.")
         finally:
             self.async_fig = None
