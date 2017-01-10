@@ -87,6 +87,16 @@ class Version(FuncAction):
         sys.exit(0)
 
 
+class LogLevel(FuncAction):
+
+    def __init__(self, option_strings, dest, level=None, **kwargs):
+        super(LogLevel, self).__init__(option_strings, dest, **kwargs)
+        self.level = level
+
+    def __call__(self, *args):
+        loggers.set_console_level(self.level)
+
+
 class ListTests(FuncAction):
 
     @classmethod
@@ -416,9 +426,19 @@ misc_group.add_argument(
     help="Show flent version information and exit.")
 
 misc_group.add_argument(
+    "-v", "--verbose",
+    action=LogLevel, level=loggers.DEBUG,
+    help="Enable verbose logging to console.")
+
+misc_group.add_argument(
+    "-q", "--quiet",
+    action=LogLevel, level=loggers.WARNING,
+    help="Disable normal logging to console (and only log warnings and errors).")
+
+misc_group.add_argument(
     "--debug-error",
     action="store_true", dest="DEBUG_ERROR",
-    help="Debug errors: Don't catch unhandled exceptions.")
+    help="Print full exception backtraces to console.")
 
 
 def new():

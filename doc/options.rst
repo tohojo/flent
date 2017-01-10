@@ -524,6 +524,18 @@ Misc and debugging options:
 
    Show Flent version information and exit.
 
+.. option:: -v, --verbose
+
+   Enable verbose logging to console.
+
+.. option:: -q, --quiet
+
+   Disable normal logging to console (and only log warnings and errors).
+
+.. option:: --debug-error
+
+   Print full exception backtraces to console.
+
 .. option:: -h, --help
 
    Show usage help message and exit.

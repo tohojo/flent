@@ -133,6 +133,13 @@ def setup_console():
     logger.setLevel(logging.INFO)
 
 
+def set_console_level(level):
+    logger = logging.getLogger()
+
+    out_handler.setLevel(level)
+    logger.setLevel(min(logger.level, level))
+
+
 def setup_null():
     logger = logging.getLogger()
     handler = logging.NullHandler()
