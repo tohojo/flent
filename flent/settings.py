@@ -69,21 +69,24 @@ DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 class Version(FuncAction):
 
     def __call__(*args):
-        print("Flent v%s.\nRunning on Python %s." % (VERSION,
-                                                     sys.version.replace("\n",
-                                                                         " ")))
+        logger.info("Flent v%s.\nRunning on Python %s.",
+                    VERSION, sys.version.replace("\n"," "))
         try:
             import matplotlib
             import numpy
-            print("Using matplotlib version %s on numpy %s."
-                  % (matplotlib.__version__, numpy.__version__))
+            logger.info("Using matplotlib version %s on numpy %s.",
+                        matplotlib.__version__, numpy.__version__)
         except ImportError:
-            print("No matplotlib found. Plots won't be available.")
+            logger.info("No matplotlib found. Plots won't be available.")
         try:
-            from PyQt4 import QtCore
-            print("Using PyQt4 version %s" % QtCore.PYQT_VERSION_STR)
+            from PyQt5 import QtCore
+            logger.info("Using PyQt5 version %s.", QtCore.PYQT_VERSION_STR)
         except ImportError:
-            print("No PyQt4. GUI won't work.")
+            try:
+                from PyQt4 import QtCore
+                logger.info("Using PyQt4 version %s.", QtCore.PYQT_VERSION_STR)
+            except ImportError:
+                logger.info("No usable PyQt found. GUI won't work.")
         sys.exit(0)
 
 
