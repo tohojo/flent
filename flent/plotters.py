@@ -21,7 +21,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import argparse
 import inspect
 import io
 import re
@@ -135,10 +134,11 @@ if PY2:
     MARKERS = list(map(filt, LINESTYLES))
     COLOURS = list(map(filt, COLOURS))
 
-    for k,v in MATPLOTLIB_STYLES.items():
+    for k, v in MATPLOTLIB_STYLES.items():
         MATPLOTLIB_STYLES[k] = filt(v)
 
     del filt
+
 
 def init_matplotlib(output, use_markers, load_rc):
     if not HAS_MATPLOTLIB:
@@ -534,7 +534,7 @@ class Plotter(ArgParam):
         self.in_worker = in_worker
 
         self.gui = gui
-        self.description=description
+        self.description = description
 
         self.interactive_callback = self.resize_callback = None
         if self.hover_highlight is not None:
@@ -1634,15 +1634,15 @@ class QqPlotter(Plotter):
         # data points in the shorter data set.
         if len(x_values) < len(y_values):
             y_values = numpy.interp(numpy.linspace(0, len(y_values),
-                                                       num=len(x_values),
-                                                       endpoint=False),
-                                      range(len(y_values)), y_values)
+                                                   num=len(x_values),
+                                                   endpoint=False),
+                                    range(len(y_values)), y_values)
 
         elif len(y_values) < len(x_values):
             x_values = numpy.interp(numpy.linspace(0, len(x_values),
-                                                       num=len(y_values),
-                                                       endpoint=False),
-                                      range(len(x_values)), x_values)
+                                                   num=len(y_values),
+                                                   endpoint=False),
+                                    range(len(x_values)), x_values)
 
         return x_values, y_values
 
