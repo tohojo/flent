@@ -338,7 +338,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
 
-        self.logEntries = QPlainTextLogger(self, logging.DEBUG)
+        self.logEntries = QPlainTextLogger(self, logging.DEBUG,
+                                           statusbar=self.statusBar())
         add_log_handler(self.logEntries)
         self.logEntriesDock.setWidget(self.logEntries.widget)
         self.log_queue = Queue()
@@ -898,7 +899,8 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
 class QPlainTextLogger(logging.Handler):
 
-    def __init__(self, parent, level=logging.NOTSET, widget=None):
+    def __init__(self, parent, level=logging.NOTSET, widget=None,
+                 statusbar=None, timeout=5000):
 
         super(QPlainTextLogger, self).__init__(level=level)
 
@@ -909,9 +911,15 @@ class QPlainTextLogger(logging.Handler):
         self.widget.setFont(font)
         self.widget.setReadOnly(True)
 
+        self.statusbar = statusbar
+        self.timeout = timeout
+
     def emit(self, record):
         msg = self.format(record)
         self.widget.appendPlainText(msg)
+
+        if self.statusbar:
+            self.statusbar.showMessage(record.message, self.timeout)
 
     def write(self, p):
         pass
