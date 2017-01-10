@@ -170,7 +170,8 @@ def remove_log_handler(handler):
 def add_log_handler(handler):
     logger = logging.getLogger()
     fmt = LogFormatter(
-        fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+        fmt="%(asctime)s %(levelname)s: %(message)s",
+        datefmt="%H:%M:%S")
     handler.setFormatter(fmt)
 
     logger.addHandler(handler)
