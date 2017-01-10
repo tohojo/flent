@@ -70,7 +70,7 @@ class Version(FuncAction):
 
     def __call__(*args):
         logger.info("Flent v%s.\nRunning on Python %s.",
-                    VERSION, sys.version.replace("\n"," "))
+                    VERSION, sys.version.replace("\n", " "))
         try:
             import matplotlib
             import numpy
@@ -404,7 +404,8 @@ tool_group.add_argument(
 tool_group.add_argument(
     "--http-getter-workers",
     action="store", type=int, dest="HTTP_GETTER_WORKERS", metavar="NUMBER",
-    default=4, help="Number of workers to use for getting HTTP urls. Default is 4.")
+    default=4, help="Number of workers to use for getting HTTP urls. "
+    "Default is 4.")
 
 misc_group = parser.add_argument_group("Misc and debugging options")
 
@@ -708,9 +709,8 @@ def load(argv):
     if settings.LOG_FILE:
         loggers.setup_logfile(settings.LOG_FILE)
 
-
     logger.debug("Loaded Flent %s running on Python %s.", VERSION,
-                 sys.version.replace("\n"," "))
+                 sys.version.replace("\n", " "))
 
     return settings
 
