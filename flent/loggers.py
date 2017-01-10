@@ -97,6 +97,14 @@ class QueueHandler(logging.Handler):
         self.queue = queue
 
     def emit(self, record):
+        if record.exc_info:
+            # The log formatter will use the cached exc_text in place of the
+            # exc_info Traceback object; since Traceback objects can't be
+            # pickled, use this to pass over the formatted exception text
+            # instead.
+            fmt = Formatter()
+            record.exc_text = fmt.formatException(record.exc_info)
+            record.exc_info = True
         self.queue.put(record)
 
     def write(self, m):

@@ -248,11 +248,9 @@ def results_load_helper(filename):
                                defaults=s.DEFAULTS,
                                description=s.DESCRIPTION,
                                title=r.title)
-    except RuntimeError as e:
-        sys.stderr.write(unicode(e) + "\n")
-        return None
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(unicode(e))
+        logger.warning("Unable to load file '%s'.", filename)
         return None
 
 
