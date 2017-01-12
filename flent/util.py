@@ -485,6 +485,8 @@ def keyval(value):
             "Invalid value '%s' (missing =)" % value)
     ret = {}
     for p in value.split(";"):
+        if not p.strip():
+            continue
         k, v = p.split('=', 1)
         ret.update({k.strip(): v.strip()})
     return ret
