@@ -493,7 +493,10 @@ class Settings(argparse.Namespace):
                 items.extend(config.items('global'))
             if self.NAME is not None and config.has_section(self.NAME):
                 items.extend(config.items(self.NAME))
-            return self.parse_rcvalues(items)
+            try:
+                return self.parse_rcvalues(items)
+            except (ValueError, argparse.ArgumentTypeError) as e:
+                raise RuntimeError("Unable to parse RC values: %s" % e)
         return {}
 
     def parse_rcvalues(self, items):
@@ -528,7 +531,12 @@ class Settings(argparse.Namespace):
 
     def load_rcvalues(self, vals, override=False):
 
-        for k, v in vals.items():
+        try:
+            vals = self.parse_rcvalues(vals)
+        except (ValueError, argparse.ArgumentTypeError) as e:
+            raise RuntimeError("Unable to parse RC values: %s" % e)
+
+        for k, v in vals:
             if override or getattr(self, k) == parser.get_default(k):
                 setattr(self, k, v)
 
