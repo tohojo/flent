@@ -293,7 +293,7 @@ class BatchRunner(object):
             if 'test_name' not in b:
                 raise RuntimeError("Missing test name.")
 
-            settings.load_rcvalues(b.items(), override=True)
+            settings.load_rcvalues(b, override=True)
             settings.NAME = b['test_name']
             settings.load_test(informational=settings.BATCH_DRY)
             settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
