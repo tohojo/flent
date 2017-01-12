@@ -486,7 +486,7 @@ def keyval(value):
     ret = {}
     for p in value.split(";"):
         k, v = p.split('=', 1)
-        ret.update({k: v})
+        ret.update({k.strip(): v.strip()})
     return ret
 
 
@@ -499,7 +499,7 @@ def keyval_int(value):
 
 def comma_list(value):
     try:
-        return value.split(",")
+        return [v.strip() for v in value.split(",")]
     except ValueError:
         raise argparse.ArgumentTypeError("Unable to split into list.")
 
