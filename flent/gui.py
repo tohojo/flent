@@ -38,7 +38,7 @@ except ImportError:
 from itertools import chain
 from multiprocessing import Pool, Queue
 
-from flent import util, batch, resultset, plotters
+from flent import util, batch, loggers, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
 from flent.loggers import get_logger, add_log_handler, remove_log_handler, \
     set_queue_handler
@@ -310,6 +310,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkTitle.setChecked(self.settings.PRINT_TITLE)
         self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
         self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT)
+        self.checkDebugLog.setChecked(loggers.out_handler.level == loggers.DEBUG)
+        self.checkExceptionLog.setChecked(self.settings.DEBUG_ERROR)
 
         self.checkZeroY.toggled.connect(self.update_checkboxes)
         self.checkInvertY.toggled.connect(self.update_checkboxes)
@@ -321,6 +323,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.checkTitle.toggled.connect(self.update_checkboxes)
         self.checkFilterLegend.toggled.connect(self.update_checkboxes)
         self.checkHighlight.toggled.connect(self.update_checkboxes)
+        self.checkDebugLog.toggled.connect(self.update_checkboxes)
+        self.checkExceptionLog.toggled.connect(self.update_checkboxes)
 
         self.tabifyDockWidget(self.openFilesDock, self.metadataDock)
         self.tabifyDockWidget(self.openFilesDock, self.logEntriesDock)
@@ -453,9 +457,16 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 widget.filter_legend(self.checkFilterLegend.isChecked())
                 widget.highlight(self.checkHighlight.isChecked())
 
+        self.log_settings(self.checkDebugLog.isChecked(),
+                          self.checkExceptionLog.isChecked())
+
         idx = self.viewArea.currentIndex()
         if idx >= 0:
             self.redraw_near(idx)
+
+    def log_settings(self, debug=False, exceptions=False):
+        self.logEntries.setLevel(loggers.DEBUG if debug else loggers.INFO)
+        self.logEntries.format_exceptions = exceptions
 
     def new_connection(self):
         sock = self.server.nextPendingConnection()
@@ -895,7 +906,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
                               self.settings.DATA_FILENAME)])
 
 
-class QPlainTextLogger(logging.Handler):
+class QPlainTextLogger(loggers.Handler):
 
     def __init__(self, parent, level=logging.NOTSET, widget=None,
                  statusbar=None, timeout=5000):

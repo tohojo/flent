@@ -90,7 +90,19 @@ class LogFormatter(Formatter):
         return s
 
 
-class QueueHandler(logging.Handler):
+class Handler(logging.Handler):
+
+    def get_format_exceptions(self):
+        return self.formatter.format_exceptions
+
+    def set_format_exceptions(self, val):
+        self.formatter.format_exceptions = val
+
+    format_exceptions = property(get_format_exceptions,
+                                 set_format_exceptions)
+
+
+class QueueHandler(Handler):
 
     def __init__(self, queue, level=logging.NOTSET):
         super(QueueHandler, self).__init__(level=level)

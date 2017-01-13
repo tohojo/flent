@@ -107,6 +107,9 @@
     <addaction name="checkFilterLegend"/>
     <addaction name="separator"/>
     <addaction name="checkHighlight"/>
+    <addaction name="separator"/>
+    <addaction name="checkDebugLog"/>
+    <addaction name="checkExceptionLog"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
@@ -404,7 +407,23 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Log entries</string>
+    <string>&amp;Log entries</string>
+   </property>
+  </action>
+  <action name="checkDebugLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;debug log entries</string>
+   </property>
+  </action>
+  <action name="checkExceptionLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;exception backtraces</string>
    </property>
   </action>
  </widget>
