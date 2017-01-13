@@ -64,7 +64,24 @@ try:
 except NotImplementedError:
     CPU_COUNT = 1
 
+
+FORCE_QT4 = False
 try:
+    import matplotlib
+    ver = tuple([int(i) for i in matplotlib.__version__.split(".")[:2]])
+    if ver < (1, 4):
+        logger.debug("Forcing fallback to Qt4 because of matplotlib version %s.",
+                     matplotlib.__version__)
+        FORCE_QT4 = True
+    matplotlib.use("Agg")
+except ImportError:
+    raise RuntimeError("The GUI requires matplotlib.")
+
+
+try:
+    if FORCE_QT4:
+        raise ImportError("Force fallback to Qt4")
+
     from PyQt5 import QtCore, QtGui, uic
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
@@ -80,6 +97,11 @@ try:
         QItemSelectionModel, QStringListModel
 
     from PyQt5.QtNetwork import QLocalSocket, QLocalServer
+
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
+        as FigureCanvas
+    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
+        as NavigationToolbar
     QTVER = 5
 except ImportError:
     try:
@@ -97,28 +119,17 @@ except ImportError:
 
         from PyQt4.QtNetwork import QLocalSocket, QLocalServer
 
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
+            as FigureCanvas
+        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
+            as NavigationToolbar
+
         QTVER = 4
 
         logger.warning("Falling back to Qt4 for the GUI. "
                        "Please consider installing PyQt5.\n")
     except ImportError:
         raise RuntimeError("PyQt must be installed to use the GUI.")
-
-try:
-    import matplotlib
-    matplotlib.use("Agg")
-    if QTVER == 5:
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
-            as FigureCanvas
-        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
-            as NavigationToolbar
-    else:
-        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
-            as FigureCanvas
-        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
-            as NavigationToolbar
-except ImportError:
-    raise RuntimeError("The GUI requires matplotlib with the QtAgg backend.")
 
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
