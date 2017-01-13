@@ -28,7 +28,6 @@ import signal
 import sys
 import tempfile
 import time
-import traceback
 
 try:
     import cPickle as pickle
