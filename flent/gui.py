@@ -172,6 +172,12 @@ def run_gui(settings):
     return app.exec_()
 
 
+def pool_init_func(settings, queue):
+    plotters.init_matplotlib("-", settings.USE_MARKERS,
+                             settings.LOAD_MATPLOTLIBRC)
+    set_queue_handler(queue)
+
+
 def check_running(settings):
     """Check for a valid socket of an already running instance, and if so,
     connect to it and send the input file names."""
@@ -369,8 +375,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.read_settings()
 
-        self.worker_pool = Pool(initializer=set_queue_handler,
-                                initargs=(self.log_queue,))
+        self.worker_pool = Pool(initializer=pool_init_func,
+                                initargs=(self.settings, self.log_queue))
 
         logger.info("GUI loaded. Running on PyQt v%s.", QtCore.PYQT_VERSION_STR)
 

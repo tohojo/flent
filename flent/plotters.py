@@ -117,6 +117,8 @@ MATPLOTLIB_STYLES = {'axes.axisbelow': True,
                      'ytick.major.size': 0.0,
                      'ytick.minor.size': 0.0}
 
+MATPLOTLIB_INIT = False
+
 if PY2:
     # Matplotlib will tend to pass the values directly to backends where they
     # will be converted into native types. This breaks on some versions of
@@ -145,7 +147,11 @@ def init_matplotlib(output, use_markers, load_rc):
         raise RuntimeError(
             "Unable to plot -- matplotlib is missing! "
             "Please install it if you want plots.")
-    global pyplot, COLOURS
+    global pyplot, COLOURS, MATPLOTLIB_INIT
+
+    if MATPLOTLIB_INIT:
+        return
+
     if output != "-":
         if output.endswith('.svg') or output.endswith('.svgz'):
             matplotlib.use('svg')
@@ -181,6 +187,7 @@ def init_matplotlib(output, use_markers, load_rc):
     else:
         COLOURS = matplotlib.rcParams['axes.color_cycle']
 
+    MATPLOTLIB_INIT = True
     logger.debug("Initialised matplotlib v%s on numpy v%s.",
                  matplotlib.__version__, numpy.__version__)
 
