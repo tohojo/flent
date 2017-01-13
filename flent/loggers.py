@@ -46,6 +46,17 @@ class MaxFilter(object):
         return 1
 
 
+class NamePrefixFilter(object):
+
+    def __init__(self, prefix):
+        self.prefix = prefix
+
+    def filter(self, record):
+        if record.name.startswith(self.prefix):
+            return 0
+        return 1
+
+
 class LogFormatter(Formatter):
     def __init__(self, fmt=None, datefmt=None, output_markers=None):
         self.format_exceptions = True
@@ -146,8 +157,10 @@ def setup_console():
     out_handler.setLevel(logging.INFO)
     fmt = LogFormatter(fmt="%(message)s")
     out_handler.setFormatter(fmt)
-    filt = MaxFilter(logging.INFO)
-    out_handler.addFilter(filt)
+    mfilt = MaxFilter(logging.INFO)
+    out_handler.addFilter(mfilt)
+    nfilt = NamePrefixFilter("PyQt")
+    out_handler.addFilter(nfilt)
     logger.addHandler(out_handler)
 
     logger.setLevel(logging.INFO)
