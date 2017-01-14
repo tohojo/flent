@@ -870,8 +870,12 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
     def run_test(self):
         test = self.testName.itemData(self.testName.currentIndex())
-        host = self.hostName.text()
-        path = self.outputDir.text()
+        if hasattr(test, 'toString'):
+            test = unicode(test.toString())
+        else:
+            test = unicode(test)
+        host = unicode(self.hostName.text())
+        path = unicode(self.outputDir.text())
         if not test or not host:
             QMessageBox.critical(self, "Error running test",
                                  "You must select a test to run and a "
@@ -884,7 +888,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
         self.settings.HOSTS = [host]
         self.settings.NAME = test
-        self.settings.TITLE = self.testTitle.text()
+        self.settings.TITLE = unicode(self.testTitle.text())
         self.settings.LENGTH = self.testLength.value()
         self.settings.DATA_DIR = path
         self.settings.EXTENDED_METADATA = self.extendedMetadata.isChecked()
