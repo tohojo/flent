@@ -12,7 +12,7 @@ die()
 
 echo ==== Updating source code version numbers to ${VERSION}... ====
 
-sed -i s/VERSION=\"[0-9\\.]\\+\\\(-git\\\)\\?\"/VERSION=\"${VERSION}\"/ flent/build_info.py  || die error
+sed -i s/VERSION\ =\ \"[0-9\\.]\\+\\\(-git\\\)\\?\"/VERSION\ =\ \"${VERSION}\"/ flent/build_info.py  || die error
 sed -i -e "s/version = '[0-9\\.]\\+\\(-git\\)\\?'/version = '${VERSION}'/" doc/conf.py  || die error
 make man || die error
 
