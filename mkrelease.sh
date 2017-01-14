@@ -18,20 +18,8 @@ make man || die error
 
 if [[ ! "$VERSION" =~ -git$ ]]; then
 
-    echo ==== Updating Debian changelog and Arch PKGBUILD version... ====
+    echo ==== Updating Arch PKGBUILD version... ====
     sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" -e "s/sha1sums=([^)]\\+)/sha1sums=()/" packaging/archlinux/PKGBUILD  || die error
-    tmpfile=$(mktemp)
-    cat >$tmpfile <<EOF
-flent (${VERSION}-1) precise; urgency=low
-
-  * Bump to release ${VERSION}.
-
- -- Toke Høiland-Jørgensen <toke@toke.dk>  $(date +"%a, %d %b %Y %H:%M:%S %z")
-
-EOF
-
-    cat debian/changelog >> $tmpfile  || die error
-    mv $tmpfile debian/changelog || die error
 
     echo ==== Creating and signing release tarball... ====
     python setup.py sdist bdist_wheel  || die error
@@ -45,7 +33,7 @@ EOF
 fi
 
 echo ==== Staging changed files ====
-git add flent/build_info.py man/flent.1 doc/conf.py debian/changelog packaging/archlinux/PKGBUILD || die error
+git add flent/build_info.py man/flent.1 doc/conf.py packaging/archlinux/PKGBUILD || die error
 
 echo ==== Done. Review changes and commit \(and tag\). ====
 [[ ! "$VERSION" =~ -git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
