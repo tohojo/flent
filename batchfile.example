@@ -15,7 +15,9 @@
 # commands can be specified; which ones are run (and the order) is specified
 # below in the batch sections.
 #
-# The part after the :: is the name of the command
+# The part after the :: is the name of the command, which is used to refer to
+# the command in the batch sections below, and so should be unique for each
+# command.
 [Command::setup_qdisc]
 # Any command. Subject to variable substitution - in this case ${filename} is
 # the filename Flent will generate for the test being run (sans the extension).
@@ -33,8 +35,9 @@ essential = yes
 # specified which batch to run. The special argument ALL to -b will run all
 # defined batches that are not set as inactive.
 #
-# Batches can inherit from each other, so I generally have a 'global' batch that
-# sets most parameters, and the override things in sub-batches.
+# Batches can inherit from each other, so it can be a good idea to have a
+# 'global' batch that sets most parameters, and then override things in
+# sub-batches.
 [Batch::global]
 # These are all Flent parameters that correspond to command line options.
 extended_metadata = yes
@@ -56,7 +59,8 @@ hosts = test-target-host
 # the current repetition for each run.
 filename_extra = ${qdisc}-${repetition}
 
-# These are the commands to run; must be specified as [Command::name] sections.
+# These are the commands to run; must be specified as command type sections
+# (i.e. this one corresponds to [Command::setup_qdisc] above).
 commands = setup_qdisc
 
 # This is a special variable that causes the test in the batch to be repeated

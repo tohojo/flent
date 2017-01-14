@@ -1,8 +1,5 @@
 The Data File Format
 ====================
-.. todo::
-   - Update metadata keys from source code.
-
 The aggregated test data is saved in a file called
 :file:`<test_name>-<date>.<title>.flent.gz` (the title part is omitted if no title is
 specified by the :option:`-t` parameter). This file contains the data points
