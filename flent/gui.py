@@ -374,6 +374,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                         (SOCKET_NAME_PREFIX, os.getpid())))
 
         self.read_settings()
+        self.update_checkboxes()
 
         self.worker_pool = Pool(initializer=pool_init_func,
                                 initargs=(self.settings, self.log_queue))
