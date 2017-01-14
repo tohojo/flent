@@ -78,9 +78,6 @@ class LogFormatter(Formatter):
             self.start_marker = self.end_marker = None
         super(LogFormatter, self).__init__(fmt, datefmt)
 
-    def disable_exceptions(self):
-        self.format_exceptions = False
-
     def formatException(self, ei):
         if self.format_exceptions:
             return super(LogFormatter, self).formatException(ei)
@@ -161,6 +158,7 @@ def setup_console():
     err_handler.setLevel(logging.WARNING)
     fmt = LogFormatter(fmt="%(levelname)s: %(message)s",
                        output_markers=("", ""))
+    fmt.format_exceptions = False
     err_handler.setFormatter(fmt)
     logger.addHandler(err_handler)
 
@@ -247,6 +245,6 @@ def set_queue_handler(queue):
     logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))
 
 
-def disable_exceptions():
+def enable_exceptions():
     if err_handler is not None:
-        err_handler.formatter.disable_exceptions()
+        err_handler.formatter.format_exceptions = True

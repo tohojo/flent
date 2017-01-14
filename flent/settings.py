@@ -96,8 +96,30 @@ class LogLevel(FuncAction):
         super(LogLevel, self).__init__(option_strings, dest, **kwargs)
         self.level = level
 
-    def __call__(self, *args):
+    def __call__(self, parser, namespace, values, option_string=None):
         loggers.set_console_level(self.level)
+        setattr(namespace, self.dest, self.level)
+
+
+class LogFile(argparse.Action):
+
+    def __init__(self, option_strings, dest, level=None, **kwargs):
+        super(LogFile, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        loggers.setup_logfile(values)
+        setattr(namespace, self.dest, values)
+
+
+class Debug(argparse.Action):
+    def __init__(self, option_strings, dest, help=None):
+        super(Debug, self).__init__(option_strings, dest,
+                                    default=False, nargs=0,
+                                    help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        loggers.enable_exceptions()
+        setattr(namespace, self.dest, True)
 
 
 class ListTests(FuncAction):
@@ -414,7 +436,7 @@ misc_group = parser.add_argument_group("Misc and debugging options")
 
 misc_group.add_argument(
     "-L", "--log-file",
-    action="store", type=unicode, dest="LOG_FILE",
+    action=LogFile, type=unicode, dest="LOG_FILE",
     help="Write debug log (test program output) to log file.")
 
 misc_group.add_argument(
@@ -434,17 +456,17 @@ misc_group.add_argument(
 
 misc_group.add_argument(
     "-v", "--verbose",
-    action=LogLevel, level=loggers.DEBUG,
+    action=LogLevel, level=loggers.DEBUG, dest="LOG_LEVEL",
     help="Enable verbose logging to console.")
 
 misc_group.add_argument(
     "-q", "--quiet",
-    action=LogLevel, level=loggers.WARNING,
+    action=LogLevel, level=loggers.WARNING, dest="LOG_LEVEL",
     help="Disable normal logging to console (and only log warnings and errors).")
 
 misc_group.add_argument(
     "--debug-error",
-    action="store_true", dest="DEBUG_ERROR",
+    action=Debug, dest="DEBUG_ERROR",
     help="Print full exception backtraces to console.")
 
 
@@ -697,9 +719,6 @@ def load(argv):
     settings.process_args()
     settings.update_implications()
 
-    if not settings.DEBUG_ERROR:
-        loggers.disable_exceptions()
-
     if settings.SCALE_DATA:
         scale_data = []
         for filename in settings.SCALE_DATA:
@@ -716,9 +735,6 @@ def load(argv):
 
     if settings.LIST_PLOTS:
         list_plots(settings)
-
-    if settings.LOG_FILE:
-        loggers.setup_logfile(settings.LOG_FILE)
 
     logger.debug("Loaded Flent %s running on Python %s.", VERSION,
                  sys.version.replace("\n", " "))
