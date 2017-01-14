@@ -12,7 +12,7 @@ conflicts=('netperf-wrapper')
 replaces=('netperf-wrapper')
 optdepends=(
     'python-matplotlib: for outputting graphs'
-    'python-pyqt4: for the GUI'
+    'python-pyqt5: for the GUI'
 )
 source=(https://files.pythonhosted.org/packages/source/f/flent/flent-${pkgver}.tar.gz{,.asc})
 sha256sums=('2d775f7b612111a3f2a7d4b2b10679ab9fffec6c6844bae9e5e87df37f346954'
