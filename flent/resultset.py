@@ -21,7 +21,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import json
 import math
 import os
 import re
@@ -34,6 +33,11 @@ from collections import OrderedDict
 
 from flent.loggers import get_logger
 from flent.util import gzip_open, bz2_open, parse_date, format_date
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 logger = get_logger(__name__)
 

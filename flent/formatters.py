@@ -23,7 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import csv
 import io
-import json
 import os
 import sys
 
@@ -32,6 +31,11 @@ from functools import reduce
 from flent import plotters
 from flent.util import classname, format_bytes
 from flent.loggers import get_logger
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 logger = get_logger(__name__)
 
