@@ -15,8 +15,8 @@ optdepends=(
     'python-pyqt4: for the GUI'
 )
 source=(https://files.pythonhosted.org/packages/source/f/flent/flent-${pkgver}.tar.gz{,.asc})
-sha1sums=('14ce74928cc0024e6487397957e03cf7f7c8b40b'
-          'SKIP')
+sha256sums=('2d775f7b612111a3f2a7d4b2b10679ab9fffec6c6844bae9e5e87df37f346954'
+            'SKIP')
 validpgpkeys=('DE6162B5616BA9C9CAAC03074A55C497F744F705')
 
 package() {

@@ -19,16 +19,16 @@ make man || die error
 if [[ ! "$VERSION" =~ -git$ ]]; then
 
     echo ==== Updating Arch PKGBUILD version... ====
-    sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" -e "s/sha1sums=([^)]\\+)/sha1sums=()/" packaging/archlinux/PKGBUILD  || die error
+    sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" packaging/archlinux/PKGBUILD  || die error
 
     echo ==== Creating and signing release tarball... ====
     python setup.py sdist bdist_wheel  || die error
     gpg --detach-sign --armor dist/flent-${VERSION}.tar.gz  || die error
     gpg --detach-sign --armor dist/flent-${VERSION}-py2.py3-none-any.whl  || die error
 
-    echo ==== Updating Arch PKGBUILD sha1sum... ====
-    SHA1=$(sha1sum dist/flent-${VERSION}.tar.gz | awk '{print $1}')
-    sed -i -e "s/sha1sums=('[a-z0-9]\+'/sha1sums=('${SHA1}'/" packaging/archlinux/PKGBUILD  || die error
+    echo ==== Updating Arch PKGBUILD sha256sum... ====
+    SHA=$(sha256sum dist/flent-${VERSION}.tar.gz | awk '{print $1}')
+    sed -i -e "s/sha256sums=('[a-z0-9]\+'/sha256sums=('${SHA}'/" packaging/archlinux/PKGBUILD  || die error
 
 fi
 
