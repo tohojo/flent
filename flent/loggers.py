@@ -155,12 +155,9 @@ def setup_console():
 
     out_handler = StreamHandler(sys.stdout)
     out_handler.setLevel(logging.INFO)
-    fmt = LogFormatter(fmt="%(message)s")
-    out_handler.setFormatter(fmt)
-    mfilt = MaxFilter(logging.INFO)
-    out_handler.addFilter(mfilt)
-    nfilt = NamePrefixFilter("PyQt")
-    out_handler.addFilter(nfilt)
+    out_handler.setFormatter(LogFormatter(fmt="%(message)s"))
+    out_handler.addFilter(MaxFilter(logging.INFO))
+    add_common_filters(out_handler)
     logger.addHandler(out_handler)
 
     logger.setLevel(logging.INFO)
@@ -179,10 +176,15 @@ def setup_null():
     logger.addHandler(handler)
 
 
+def add_common_filters(handler):
+    handler.addFilter(NamePrefixFilter("PyQt"))
+
+
 def setup_logfile(filename, level=DEBUG, maxlevel=None):
     logger = logging.getLogger()
 
     handler = FileHandler(filename, encoding='utf-8')
+    add_common_filters(handler)
     handler.setLevel(DEBUG)
     fmt = LogFormatter(
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
@@ -213,6 +215,7 @@ def add_log_handler(handler):
         fmt="%(asctime)s %(levelname)s: %(message)s",
         datefmt="%H:%M:%S")
     handler.setFormatter(fmt)
+    add_common_filters(handler)
 
     logger.addHandler(handler)
     logger.setLevel(min(logger.level, handler.level))
