@@ -816,7 +816,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.busy_end()
 
     def run_test(self):
+        self.busy_start()
         dialog = NewTestDialog(self, self.settings, self.log_queue)
+        self.busy_end()
         dialog.exec_()
 
 
