@@ -57,6 +57,17 @@ class NamePrefixFilter(object):
         return 1
 
 
+class LevelDemoteFilter(object):
+
+    def __init__(self, maxlevel):
+        self.maxlevel = maxlevel
+
+    def filter(self, record):
+        if record.levelno > self.maxlevel:
+            record.levelno = self.maxlevel
+        return 1
+
+
 class LogFormatter(Formatter):
     def __init__(self, fmt=None, datefmt=None, output_markers=None):
         self.format_exceptions = True
@@ -162,6 +173,9 @@ def setup_console():
 
     logger.setLevel(logging.INFO)
 
+    logging.captureWarnings(True)
+    logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))
+
 
 def set_console_level(level):
     logger = logging.getLogger()
@@ -228,6 +242,9 @@ def set_queue_handler(queue):
 
     handler = QueueHandler(queue)
     logger.addHandler(handler)
+
+    logging.captureWarnings(True)
+    logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))
 
 
 def disable_exceptions():
