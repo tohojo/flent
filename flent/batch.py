@@ -545,7 +545,10 @@ class BatchRunner(object):
             return pid
         else:
             loggers.set_queue_handler(queue)
-            self.run()
+            try:
+                self.run()
+            except Exception as e:
+                logger.exception(str(e))
             os._exit(0)
 
     def run(self):
