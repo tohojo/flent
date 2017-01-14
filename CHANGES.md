@@ -2,6 +2,9 @@
 
 Changes since v0.15.0 include:
 
+- Use the UltraJSON library (if available) to load data files; this
+  speeds up loading of data files moderately.
+
 - Improve logging of Flent's operations. The log file will now contain a
   proper superset of the console output, and Flent has been made
   slightly more verbose about what it is doing. Also, the log is now
