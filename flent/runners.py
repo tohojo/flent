@@ -120,8 +120,8 @@ class RunnerBase(object):
 
         for k, v in self.__dict__.items():
             if k not in ('start_event', 'kill_event', 'finish_event',
-                         'kill_lock', '_started', '_stderr', '_stdout',
-                         'stdout', 'stderr', '_tstate_lock'):
+                         'kill_lock', 'stdout', 'stderr') and \
+                         not k.startswith("_"):
                 state[k] = v
 
         state['_pickled'] = True
