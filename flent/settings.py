@@ -107,8 +107,11 @@ class ListTests(FuncAction):
         tests = []
         for t in sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH)
                          if i.endswith('.conf')]):
-            settings.load_test(t, informational=True)
-            tests.append((t, settings.DESCRIPTION))
+            try:
+                settings.load_test(t, informational=True)
+                tests.append((t, settings.DESCRIPTION))
+            except Exception as e:
+                logger.exception(str(e))
         return tests
 
     def __call__(self, parser, namespace, values, option_string=None):

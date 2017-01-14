@@ -95,7 +95,7 @@ class TestEnvironment(object):
             if self.informational:
                 self.env['HOSTS'] = self.orig_hosts
             return self.expand_duplicates(self.env)
-        except (IOError, SyntaxError) as e:
+        except Exception as e:
             raise RuntimeError(
                 "Unable to read test config file '%s': '%s'." % (filename, e))
 
