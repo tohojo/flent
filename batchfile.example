@@ -1,263 +1,143 @@
 # -*- mode:conf -*-
-[Command::clear_caches]
-exec = ./clear_caches.sh
-type = pre
-essential = yes
 
-[Command::setup_qdiscs]
-exec = ./setup_qdiscs.sh ${qdisc_name} "${qdisc_args_down}" "${qdisc_args_up}" ${rate_down} ${rate_up} ${rtt}
-type = pre
-essential = yes
+# The batch file is parsed as an ini file, and can have three types of sections:
+# commands, batches and args. Each section also has a name. Type and name are
+# separated with two colons.
+#
+# Sections of the same type can inherit from each other. Args are used for the
+# loop facility (explained below). All variables are recursively substituted by
+# using the${varname} syntax. These three operations are resolved in this order
+# (inheritance, arg interpolation and variable substitution).
 
-[Command::qdisc_stats]
-exec = ./qdisc_stats.sh
-type = post
-essential = no
 
-[Command::tcpdump]
-filename = ${data_filename}
-exec = ssh ${hostname} "python tcpdump-wrapper.py start ${filename} -i ${interface} -s ${capsize}"
-type = pre
-essential = yes
 
-[Command::tcpdump_stop]
-filename = ${data_filename}
-exec = ssh ${hostname} "python tcpdump-wrapper.py stop ${filename} -d /home/data/${batch_name}"
-type = post
-essential = yes
+# These are commands to be executed before or after each test run. Any number of
+# commands can be specified; which ones are run (and the order) is specified
+# below in the batch sections.
+#
+# The part after the :: is the name of the command
+[Command::setup_qdisc]
+# Any command. Subject to variable substitution - in this case ${filename} is
+# the filename Flent will generate for the test being run (sans the extension).
+exec = ./setup_qdisc.sh ${qdisc}
+type = pre # pre or post
 
-[Command::tcpdump_egress]
-inherits = tcpdump
-hostname = ${egress_router_hostname}
-interface = ${egress_router_iface}
-extra_commands = tcpdump_egress_stop
-
-[Command::tcpdump_egress_stop]
-inherits = tcpdump_stop
-hostname = ${egress_router_hostname}
-
-[Command::tcpdump_ingress]
-inherits = tcpdump
-hostname = ${ingress_router_hostname}
-interface = ${ingress_router_iface}
-extra_commands = tcpdump_ingress_stop
-
-[Command::tcpdump_ingress_stop]
-inherits = tcpdump_stop
-hostname = ${ingress_router_hostname}
-
-[Command::tcpdump_server]
-inherits = tcpdump
-hostname = ${server_hostname}
-interface = ${server_iface}
-extra_commands = tcpdump_server_stop
-
-[Command::tcpdump_server_stop]
-inherits = tcpdump_stop
-hostname = ${server_hostname}
-
-[Command::tcpdump_client]
-filename = ${data_filename}
-exec = python tcpdump-wrapper.py start ${filename} -i ${interface} -s ${capsize}
-interface = "${client_iface}"
-type = pre
-essential = yes
-extra_commands = tcpdump_client_stop
-
-[Command::tcpdump_client_stop]
-filename = ${data_filename}
-exec = python tcpdump-wrapper.py stop ${filename} -d /home/data/${batch_name}
-type = post
+# An essential pre command will cause the test to be aborted if it fails
+# (returncode non-zero)
 essential = yes
 
 
-
+# A 'batch' is a named test to be run. It can specify normal Flent parameters as
+# well as any other variables that can be used for substitution. When executing
+# Flent in batch mode, -B specifies the batch file (this file), while -b
+# specified which batch to run. The special argument ALL to -b will run all
+# defined batches that are not set as inactive.
+#
+# Batches can inherit from each other, so I generally have a 'global' batch that
+# sets most parameters, and the override things in sub-batches.
 [Batch::global]
-# rc file keys
-remote_metadata = ${egress_router_hostname}, ${ingress_router_hostname}, ${end_hostname}, ${delaybox_hostname}
+# These are all Flent parameters that correspond to command line options.
 extended_metadata = yes
-title = qdisc:${qdisc_label} rep:${repetition} rtt:${rtt} rate:${rate_down}/${rate_up}
-filename_extra = ${rtt}-${rate_up}-${qdisc_label}-${repetition}
-output_path = batch-${batch_time}/${batch_name}/${rate_up}-${repetition}
-ip_version = 4
-length = 60
-commands = clear_caches, setup_qdiscs, tcpdump_client, tcpdump_egress, tcpdump_ingress, tcpdump_server, qdisc_stats
-for_qdiscs = ared, fq_codel, fq_nocodel, codel, pie, pfifo_fast, sfq
-for_bandwidths = 10mbit, 1mbit
-for_rtts = 50ms
-repetitions = 1
+debug_error = yes
 debug_log = yes
-hosts = testserv-05
+title = ${batch_title} qdisc:${qdisc} ecn:${ecn} rep:${repetition}
+output_path = batch-${batch_time}-${batch_title}/${batch_name}
+ip_version = 4
+length = 30
+hosts = test-target-host
 
-# Not runnable
-abstract = yes
+# This is a special variable that specifies things to *append* to the filename
+# Flent generates (based on time etc). The first part of the filename will be
+# the same for every test in a batch, so the idea is to use this variable to
+# disambiguate subsequent test runs (so putting 'repetition' in there is
+# generally a good idea).
+#
+# The 'repetition' variable is another special variable that will get assigned
+# the current repetition for each run.
+filename_extra = ${qdisc}-${repetition}
 
-# how long to pause after each run?
+# These are the commands to run; must be specified as [Command::name] sections.
+commands = setup_qdisc
+
+# This is a special variable that causes the test in the batch to be repeated
+# this many times (setting the ${repetition} variable for each).
+repetitions = 1
+
+# Special variable - how long to pause after each test run before proceeding to
+# the next one.
 pause = 5
 
-[Batch::rrul]
-inherits = global
-test_name = rrul_be
-disabled = yes
+# Special variable. A batch can be disabled in two ways: Setting 'disabled=yes'
+# which does what one would expect, and by setting 'abstract=yes'. The
+# difference is that when another batch inherits from this one, the value of
+# 'disabled' is inherited, while the value of 'abstract' isn't.
+abstract = yes
 
+# These are variables that are used for variable expansion in settings above.
+# The idea is that other batches can override these to change part of the
+# configuration.
+batch_title = untitled
+# not used
+ecn = noecn
+
+# This is the loop mechanism of the batch facility. Each variable that starts
+# with for_ defines a loop (Flent doesn't care about the part after for_, but
+# they matter when inheriting). The batch will then be repeated for each of the
+# values of this variable. Each value must be defined in the batch file as a
+# heading of type [Arg::name]. The variables in each [Arg] section will then be
+# applied on top of the batch containing the loop before the test run
+# corresponding to that arg.
+#
+# When multiple for_ statements are present, the cross product of all of them
+# will be run. Likewise with repetitions (each arg will be repeated as many
+# times as specified).
+#
+# The example here is used to repeat each test run with different qdiscs.
+for_qdisc = pfifo_fast, codel, fq_codel
+
+# Other examples:
+#for_ecn = ecn, noecn
+#for_delay = 10ms, 100ms
+
+
+# These are the actual batches that will be run. Each of them just inherits from
+# 'global' and overrides some variables.
 [Batch::tcp-upload]
 inherits = global
 test_name = tcp_1up_noping
-disabled = yes
+disabled = no
 
-[Batch::tcp-upload-compete]
+[Batch::rrul]
 inherits = global
-test_name = tcp_2up_delay
-for_cap = fullcap
-repetitions = 30
+test_name = rrul
+disabled = no
 
-[Batch::rtt-fair]
-inherits = global
-hosts = testserv-01, testserv-02, testserv-03, testserv-04
-test_name = rtt_fair_up
-for_qdiscs = ared, fq_codel, fq_nocodel, codel, pie, pfifo_fast, pfifo_fast_1000, sfq
-for_rtts = multi
-repetitions = 30
 
-[Batch::voip]
-inherits = global
-test_name = voip
-disabled = yes
-
-[Batch::voip-1up]
-inherits = global
-test_name = voip-1up
-repetitions = 30
-
-[Batch::voip-rrul]
-inherits = global
-test_name = voip-rrul
-repetitions = 30
-
-[Batch::http]
-inherits = global
-filename_extra = ${rtt}-${rate_up}-${http_site}-${qdisc_label}-${repetition}
-title = qdisc:${qdisc_label} rep:${repetition} site:${http_site} rtt:${rtt} rate:${rate_down}/${rate_up}
-test_name = http
-for_rtts = multi
-for_sites = google, huffpost
-
-[Batch::http-1up]
-inherits = http
-test_name = http-1up
-repetitions = 30
-
-[Batch::http-rrul]
-inherits = http
-test_name = http-rrul
-repetitions = 30
-
-[Arg::global]
-egress_router_hostname = testbed-02
-egress_router_iface = eth2
-ingress_router_hostname = testbed-04
-ingress_router_iface = eth1
-server_hostname = testbed-05
-server_iface = eth1
-client_iface = eth2
-delaybox_hostname = testbed-03
-end_hostname = testbed-05
-capsize = 128
-qdisc_args =
-qdisc_label = ${qdisc_name}
-rate_down = 10Mbit
-rate_up = 10Mbit
-rtt = 50ms
-qdisc_args_up = ${qdisc_args}
-qdisc_args_down = ${qdisc_args}
-
-[Arg::fullcap]
-capsize = 0
-
-[Arg::http]
-http_getter_urllist = http://testserv-05.http/mirror/${http_site}_files.txt
-http_getter_dns = 10.60.5.1
-
-[Arg::google]
-inherits = http
-http_site = google
-
-[Arg::cnn]
-inherits = http
-http_site = cnn
-step_size = 1.0
-
-[Arg::huffpost]
-inherits = http
-http_site = huffpost
-step_size = 1.0
-
-[Arg::dn]
-inherits = http
-http_site = dn
-step_size = 1.0
-
-[Arg::1mbit]
-rate_up = 1Mbit
-ared_args_up = min 1514 max 3028
-codel_args_up = target 13ms
-
-[Arg::10mbit]
-rate_up = 10Mbit
-
-[Arg::50ms]
-rtt = 50ms
-
-[Arg::multi]
-rtt = multi
-
-[Arg::pie]
-inherits = global
-qdisc_name = pie
-qdisc_args = limit 100
-
-[Arg::codel]
-inherits = global
-qdisc_name = codel
-qdisc_args = limit 100
-qdisc_args_up = ${qdisc_args} ${codel_args_up}
-codel_args_up =
-
-[Arg::fq_codel]
-inherits = global
-qdisc_name = fq_codel
-qdisc_args = limit 100 noecn
-qdisc_args_up = ${qdisc_args} ${codel_args_up}
-codel_args_up =
-
-[Arg::fq_nocodel]
-inherits = fq_codel
-qdisc_args = limit 100 noecn target 100s
-qdisc_args_up = ${qdisc_args}
-qdisc_label = fq_nocodel
-
-[Arg::ared]
-inherits = global
-qdisc_name = red
-ared_args_up = min 3125
-ared_args_down = min 3125
-qdisc_args = limit 151400 avpkt 1514 adaptive harddrop
-qdisc_args_up = ${qdisc_args} bandwidth ${rate_up} ${ared_args_up}
-qdisc_args_down = ${qdisc_args} bandwidth ${rate_down} ${ared_args_down}
-qdisc_label = ared
+# These are the args used for loops in the batches specified above. The arg name
+# (the part after ::) is what is put into the for_ variables. Args can inherit
+# from each other just like batches (but none of these do). In that case, arg
+# inheritance is performed before the values are interpolated onto the batch.
+#
+# These args all just set a single variable (which is then used in the commands
+# defined at the top of the file).
 
 [Arg::pfifo_fast]
-inherits = global
-qdisc_name = pfifo_fast
-qdisc_args = limit 100
+qdisc = pfifo_fast
 
-[Arg::pfifo_fast_1000]
-inherits = global
-qdisc_name = pfifo_fast
-qdisc_args = limit 1000
-qdisc_label = pfifo_fast(1000)
+[Arg::codel]
+qdisc = codel
 
-[Arg::sfq]
-inherits = global
-qdisc_name = sfq
-qdisc_args = limit 100
+[Arg::fq_codel]
+qdisc = fq_codel
+
+[Arg::ecn]
+ecn = ecn
+
+[Arg::noecn]
+ecn = noecn
+
+[Arg::10ms]
+base_delay = 5ms
+
+[Arg::100ms]
+base_delay = 50ms
