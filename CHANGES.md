@@ -1,6 +1,12 @@
 # Changes since latest release #
 
+# Flent v1.0.0 #
+Released on 2017-01-14.
+
 Changes since v0.15.0 include:
+
+- With most of the longtime outstanding issues closed, Flent has now
+  reached the big 1.0. Woohoo!
 
 - Use the UltraJSON library (if available) to load data files; this
   speeds up loading of data files moderately.
