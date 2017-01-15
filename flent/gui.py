@@ -300,11 +300,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionClearExtra.triggered.connect(self.clear_extra)
         self.actionScaleOpen.triggered.connect(self.scale_open)
         self.actionNextTab.triggered.connect(self.next_tab)
-        self.actionNextTab.setShortcuts([QKeySequence("Ctrl+Tab"),
-                                         QKeySequence("Ctrl+Right")])
+        self.actionNextTab.setShortcuts([QKeySequence("Ctrl+Right"),
+                                         QKeySequence("Ctrl+Tab")])
         self.actionPrevTab.triggered.connect(self.prev_tab)
-        self.actionPrevTab.setShortcuts([QKeySequence("Ctrl+Shift+Backtab"),
-                                         QKeySequence("Ctrl+Left")])
+        self.actionPrevTab.setShortcuts([QKeySequence("Ctrl+Left"),
+                                         QKeySequence("Ctrl+Shift+Backtab")])
         self.actionRefresh.triggered.connect(self.refresh_plot)
         self.actionNewTest.triggered.connect(self.run_test)
 
