@@ -79,9 +79,14 @@ class LogFormatter(Formatter):
         super(LogFormatter, self).__init__(fmt, datefmt)
 
     def formatException(self, ei):
-        if self.format_exceptions:
-            return super(LogFormatter, self).formatException(ei)
-        return ""
+        if not self.format_exceptions:
+            return ""
+
+        # A string already formatted - passed through a pipe
+        if hasattr(ei, "upper"):
+            return ei
+
+        return super(LogFormatter, self).formatException(ei)
 
     def format(self, record):
         s = super(LogFormatter, self).format(record)
@@ -134,8 +139,7 @@ class QueueHandler(Handler):
             # pickled, use this to pass over the formatted exception text
             # instead.
             fmt = Formatter()
-            record.exc_text = fmt.formatException(record.exc_info)
-            record.exc_info = True
+            record.exc_info = fmt.formatException(record.exc_info)
         self.queue.put(record)
 
     def write(self, m):
