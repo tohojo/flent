@@ -831,6 +831,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.settings.INPUT = []
         self.settings.GUI = False
         self.log_queue = log_queue
+        self.pid = None
 
         tests = ListTests.get_tests(settings)
         max_len = max([len(t[0]) for t in tests])
@@ -847,7 +848,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.extendedMetadata.setChecked(self.settings.EXTENDED_METADATA)
 
         self.selectOutputDir.clicked.connect(self.select_output_dir)
-        self.runButton.clicked.connect(self.run_test)
+        self.runButton.clicked.connect(self.run_or_abort)
 
         self.monitor_timer = QTimer()
         self.monitor_timer.setInterval(500)
@@ -870,6 +871,12 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         remove_log_handler(self.logEntries)
 
         event.accept()
+
+    def run_or_abort(self):
+        if self.pid is None:
+            self.run_test()
+        else:
+            self.abort_test()
 
     def run_test(self):
         test = self.testName.itemData(self.testName.currentIndex())
@@ -906,11 +913,30 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.start_time = time.time()
 
         self.testConfig.setEnabled(False)
-        self.runButton.setEnabled(False)
+        self.runButton.setText("Abort test")
 
         b = batch.new(self.settings)
         self.pid = b.fork_and_run(self.log_queue)
         self.monitor_timer.start()
+
+    def abort_test(self):
+        if QMessageBox.question(self, "Abort test?",
+                                "Are you sure you want to abort "
+                                "the current test?",
+                                QMessageBox.Yes | QMessageBox.No) \
+           != QMessageBox.Yes:
+            return
+
+        logger.info("Aborting test")
+        os.kill(self.pid, signal.SIGINT)
+        self.reset()
+
+    def reset(self):
+        self.testConfig.setEnabled(True)
+        self.runButton.setText("Run test")
+        self.progressBar.setValue(0)
+        self.monitor_timer.stop()
+        self.pid = None
 
     def update_progress(self):
 
@@ -919,11 +945,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             elapsed = time.time() - self.start_time
             self.progressBar.setValue(100 * elapsed / self.total_time)
         else:
-            self.testConfig.setEnabled(True)
-            self.runButton.setEnabled(True)
-            self.progressBar.setValue(0)
-            self.monitor_timer.stop()
-            self.pid = None
+            self.reset()
             self.parent().load_files(
                 [os.path.join(self.settings.DATA_DIR,
                               self.settings.DATA_FILENAME)])

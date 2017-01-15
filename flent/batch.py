@@ -25,6 +25,7 @@ import itertools
 import os
 import pprint
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -33,7 +34,6 @@ import uuid
 from datetime import datetime, timedelta
 from fnmatch import fnmatch
 from collections import OrderedDict
-from multiprocessing import Queue
 
 try:
     from configparser import RawConfigParser
@@ -545,6 +545,7 @@ class BatchRunner(object):
             return pid
         else:
             loggers.set_queue_handler(queue)
+            signal.signal(signal.SIGINT, self.kill)
             try:
                 self.run()
             except Exception as e:
@@ -594,7 +595,8 @@ class BatchRunner(object):
         else:
             return self.run_test(self.settings, self.settings.DATA_DIR, True)
 
-    def kill(self):
+    def kill(self, *args):
+        logger.debug("Killing runners")
         self.killed = True
         self.kill_children(force=True)
         try:
