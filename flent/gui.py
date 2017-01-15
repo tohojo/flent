@@ -34,6 +34,7 @@ try:
 except ImportError:
     import pickle
 
+from datetime import datetime
 from itertools import chain
 from multiprocessing import Pool, Queue
 
@@ -927,6 +928,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.settings.EXTENDED_METADATA = self.extendedMetadata.isChecked()
         self.settings.load_test(informational=True)
         self.settings.FORMATTER = "null"
+        self.settings.TIME = datetime.utcnow()
 
         self.settings.DATA_FILENAME = None
         res = resultset.new(self.settings)
