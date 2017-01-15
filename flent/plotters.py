@@ -196,7 +196,7 @@ def get_plotconfig(settings, plot=None):
     if plot is None:
         plot = settings.PLOT
     if plot not in settings.PLOTS:
-        raise RuntimeError("Unable to find plot configuration '%s'." % plot)
+        raise RuntimeError("Unable to find plot configuration '%s'" % plot)
     config = settings.PLOTS[plot].copy()
     config['plot_name'] = plot
     if 'parent' in config:
@@ -1229,7 +1229,7 @@ class BoxPlotter(TimeseriesPlotter):
             if len(results) % len(self.split_groups) > 0:
                 raise RuntimeError(
                     "Split groups only works when the number of results "
-                    "is divisible by the number of groups.")
+                    "is divisible by the number of groups")
             split_results = []
             series = []
             group_size = len(results) // len(self.split_groups)
@@ -1588,7 +1588,7 @@ class QqPlotter(Plotter):
         config['axes'] = [axis]
 
         if len(config['series']) > 1:
-            raise RuntimeError("Can't do Q-Q plot with more than one series.")
+            raise RuntimeError("Can't do Q-Q plot with more than one series")
 
     def plot(self, results, connect_interactive=True):
         if self.metadata is None:
@@ -1663,7 +1663,7 @@ class EllipsisPlotter(Plotter):
             from flent.error_ellipse import plot_point_cov
             self.plot_point_cov = plot_point_cov
         except ImportError:
-            raise RuntimeError("Unable to load error_ellipse plotting functions.")
+            raise RuntimeError("Unable to load error_ellipse plotting functions")
 
         if axis is None:
             axis = self.figure.gca()
@@ -1672,7 +1672,7 @@ class EllipsisPlotter(Plotter):
 
         if len(config['series']) < 2:
             raise RuntimeError(
-                "Can't do ellipsis plots with less than two series.")
+                "Can't do ellipsis plots with fewer than two series")
 
         axis.minorticks_on()
         config['axes'] = [axis]
@@ -1844,7 +1844,7 @@ class SubplotCombinePlotter(MetaPlotter):
             config['subplots'][str(i)] = config.copy()
         if not get_plotter(config['type']).can_subplot_combine:
             raise RuntimeError(
-                "This plot type does not work with --subplot-combine.")
+                "This plot type does not work with --subplot-combine")
         MetaPlotter.init(self, config)
 
     def plot(self, results, connect_interactive=True):
