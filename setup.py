@@ -79,6 +79,7 @@ class sdist(_sdist):
         else:
             _sdist.make_release_tree(self, base_dir, files)
 
+
 data_files = [('share/doc/flent',
                ['BUGS',
                 'README.rst'] + glob("*.example")),

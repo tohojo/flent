@@ -44,4 +44,5 @@ class TestMetadataFunctions(unittest.TestCase):
                         pass
                 self.assertEqual(sysctl_value, sysctls[sysctl])
 
+
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestMetadataFunctions)

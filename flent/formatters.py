@@ -334,6 +334,7 @@ class SummaryFormatter(Formatter):
                                                    width=(self.COL_WIDTH +
                                                           unit_len - len(units))))
 
+
 DefaultFormatter = SummaryFormatter
 
 

@@ -25,7 +25,6 @@ import collections
 import math
 import pprint
 import signal
-import sys
 
 from datetime import datetime
 from threading import Event
@@ -128,9 +127,9 @@ class Aggregator(object):
             for n, i in list(self.instances.items()):
                 watchdog = None
                 if 'run_after' in i:
-                    i['start_event'] = self.instances[i['run_after']]['finish_event']  # noqa: E251
+                    i['start_event'] = self.instances[i['run_after']]['finish_event']  # noqa: E501
                 if 'kill_after' in i:
-                    i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E251
+                    i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E501
                 if 'kill_timeout' in i and i['kill_timeout']:
                     watchdog = self.create_watchdog(n, i)
                 self.threads[n] = i['runner'](name=n, settings=self.settings, **i)

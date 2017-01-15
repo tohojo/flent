@@ -41,5 +41,6 @@ class TestTests(unittest.TestCase):
         for t in self.tests:
             self.settings.load_test(t, informational=True)
 
+
 test_suite = unittest.TestSuite(
     [unittest.TestLoader().loadTestsFromTestCase(TestTests)])

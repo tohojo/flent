@@ -823,8 +823,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def run_test(self):
         if mswindows:
             QMessageBox.critical(self, "Can't run new test",
-                                "Running new tests is currently not "
-                                "supported on Windows.")
+                                 "Running new tests is currently not "
+                                 "supported on Windows.")
             return
 
         if self.new_test_dialog is None:

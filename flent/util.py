@@ -198,6 +198,7 @@ def lookup_host(hostname, version=None):
 
     return hostnames[0]
 
+
 # In Python 2.6, the GzipFile object does not have a 'closed' property, which
 # makes the io module blow up when trying to close it. This tidbit tries to
 # detect that and substitute a subclass that does have the property, while not
@@ -245,6 +246,7 @@ def gzip_open(filename, mode="rb"):
         return io.TextIOWrapper(binary_file)
     else:
         return binary_file
+
 
 if hasattr(bz2, 'open'):
     bz2_open = bz2.open

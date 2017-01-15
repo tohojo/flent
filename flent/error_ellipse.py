@@ -71,6 +71,7 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     ax.add_artist(ellip)
     return ellip
 
+
 if __name__ == '__main__':
     # -- Example usage -----------------------
     # Generate some random, correlated data
