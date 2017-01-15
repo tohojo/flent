@@ -486,6 +486,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.logEntries.setLevel(loggers.DEBUG if debug else loggers.INFO)
         self.logEntries.format_exceptions = exceptions
 
+        if self.new_test_dialog is not None:
+            self.new_test_dialog.log_settings(debug, exceptions)
+
     def new_connection(self):
         sock = self.server.nextPendingConnection()
         self.sockets.append(sock)
@@ -823,7 +826,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.new_test_dialog = NewTestDialog(self, self.settings,
                                                  self.log_queue)
             self.busy_end()
+
         self.new_test_dialog.show()
+        self.new_test_dialog.log_settings(self.checkDebugLog.isChecked(),
+                                          self.checkExceptionLog.isChecked())
 
 
 class NewTestDialog(get_ui_class("newtestdialog.ui")):
@@ -866,6 +872,10 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
     def show(self):
         super(NewTestDialog, self).show()
         add_log_handler(self.logEntries)
+
+    def log_settings(self, debug=False, exceptions=False):
+        self.logEntries.setLevel(loggers.DEBUG if debug else loggers.INFO)
+        self.logEntries.format_exceptions = exceptions
 
     def select_output_dir(self):
         directory = QFileDialog.getExistingDirectory(self,
