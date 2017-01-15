@@ -736,8 +736,8 @@ def load(argv):
     if settings.LIST_PLOTS:
         list_plots(settings)
 
-    logger.debug("Loaded Flent %s running on Python %s.", VERSION,
-                 sys.version.replace("\n", " "))
+    logger.info("Started Flent %s using Python %s.", VERSION,
+                sys.version.split()[0])
 
     return settings
 
