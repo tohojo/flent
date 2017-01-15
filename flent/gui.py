@@ -877,7 +877,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
     def show(self):
         super(NewTestDialog, self).show()
-        add_log_handler(self.logEntries)
+        add_log_handler(self.logEntries, replay=False)
 
     def log_settings(self, debug=False, exceptions=False):
         self.logEntries.setLevel(loggers.DEBUG if debug else loggers.INFO)

@@ -26,7 +26,7 @@ import sys
 
 from logging import StreamHandler, FileHandler, Formatter
 
-err_handler = out_handler = None
+err_handler = out_handler = cache_handler = None
 START_MARKER = "-- OUTPUT START -->"
 END_MARKER = "<-- OUTPUT END --"
 
@@ -146,12 +146,32 @@ class QueueHandler(Handler):
         pass
 
 
+class CachingHandler(Handler):
+    def __init__(self, level=logging.NOTSET, max_entries=200):
+        super(CachingHandler, self).__init__(level=level)
+        self.max_entries = 200
+        self.cache = []
+
+    def emit(self, record):
+        self.cache.append(record)
+
+        while len(self.cache) > self.max_entries:
+            self.cache.pop(0)
+
+    def replay(self, handler):
+        for r in self.cache:
+            handler.handle(r)
+
+    def write(self, m):
+        pass
+
+
 def get_logger(name):
     return logging.getLogger(name)
 
 
 def setup_console():
-    global err_handler, out_handler
+    global err_handler, out_handler, cache_handler
 
     if err_handler is not None:
         return
@@ -172,6 +192,9 @@ def setup_console():
     out_handler.addFilter(MaxFilter(logging.INFO))
     add_common_filters(out_handler)
     logger.addHandler(out_handler)
+
+    cache_handler = CachingHandler()
+    logger.addHandler(cache_handler)
 
     logger.setLevel(logging.INFO)
 
@@ -214,6 +237,9 @@ def setup_logfile(filename, level=DEBUG, maxlevel=None):
     logger.addHandler(handler)
     logger.setLevel(min(logger.level, level))
 
+    if cache_handler is not None:
+        cache_handler.replay(handler)
+
     return handler
 
 
@@ -225,7 +251,7 @@ def remove_log_handler(handler):
     logger.removeHandler(handler)
 
 
-def add_log_handler(handler):
+def add_log_handler(handler, replay=True):
     logger = logging.getLogger()
     fmt = LogFormatter(
         fmt="%(asctime)s %(levelname)s: %(message)s",
@@ -235,6 +261,9 @@ def add_log_handler(handler):
 
     logger.addHandler(handler)
     logger.setLevel(min(logger.level, handler.level))
+
+    if replay and cache_handler is not None:
+        cache_handler.replay(handler)
 
 
 def set_queue_handler(queue):
