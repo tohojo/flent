@@ -835,6 +835,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.settings.GUI = False
         self.log_queue = log_queue
         self.pid = None
+        self.aborted = False
 
         tests = ListTests.get_tests(settings)
         max_len = max([len(t[0]) for t in tests])
@@ -935,16 +936,20 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             return
 
         logger.info("Aborting test")
-        os.kill(self.pid, signal.SIGINT)
-        self.reset()
+        os.kill(self.pid, signal.SIGTERM)
+        self.runButton.setEnabled(False)
+        self.aborted = True
+        logger.debug("Waiting for child process with PID %d to exit", self.pid)
 
     def reset(self):
         self.testConfig.setEnabled(True)
         self.runButton.setText("&Run test")
         self.runButton.setDefault(True)
+        self.runButton.setEnabled(True)
         self.progressBar.setValue(0)
         self.monitor_timer.stop()
         self.pid = None
+        self.aborted = False
 
     def keyPressEvent(self, evt):
         if evt.key() == Qt.Key_Escape:
@@ -960,13 +965,15 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
         p, s = os.waitpid(self.pid, os.WNOHANG)
         if (p, s) == (0, 0):
-            elapsed = time.time() - self.start_time
-            self.progressBar.setValue(100 * elapsed / self.total_time)
+            if not self.aborted:
+                elapsed = time.time() - self.start_time
+                self.progressBar.setValue(100 * elapsed / self.total_time)
         else:
             self.reset()
-            self.parent().load_files(
-                [os.path.join(self.settings.DATA_DIR,
-                              self.settings.DATA_FILENAME)])
+            fn = os.path.join(self.settings.DATA_DIR,
+                              self.settings.DATA_FILENAME)
+            if os.path.exists(fn):
+                self.parent().load_files([fn])
 
 
 class QPlainTextLogger(loggers.Handler):
