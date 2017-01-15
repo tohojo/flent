@@ -111,10 +111,22 @@
     <addaction name="checkDebugLog"/>
     <addaction name="checkExceptionLog"/>
    </widget>
+   <widget class="QMenu" name="menu_Help">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionHelpGUI"/>
+    <addaction name="actionHelpRunning"/>
+    <addaction name="actionHelpTests"/>
+    <addaction name="separator"/>
+    <addaction name="actionHelpBug"/>
+    <addaction name="actionHelpAbout"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Settings"/>
    <addaction name="menu_Data"/>
+   <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="plotDock">
@@ -424,6 +436,31 @@
    </property>
    <property name="text">
     <string>Show &amp;exception backtraces</string>
+   </property>
+  </action>
+  <action name="actionHelpRunning">
+   <property name="text">
+    <string>&amp;Running Flent</string>
+   </property>
+  </action>
+  <action name="actionHelpTests">
+   <property name="text">
+    <string>The supplied &amp;tests</string>
+   </property>
+  </action>
+  <action name="actionHelpAbout">
+   <property name="text">
+    <string>&amp;About Flent</string>
+   </property>
+  </action>
+  <action name="actionHelpGUI">
+   <property name="text">
+    <string>The Flent &amp;GUI</string>
+   </property>
+  </action>
+  <action name="actionHelpBug">
+   <property name="text">
+    <string>Report a &amp;bug</string>
    </property>
   </action>
  </widget>

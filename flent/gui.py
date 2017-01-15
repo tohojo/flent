@@ -90,12 +90,12 @@ try:
         QVBoxLayout, QApplication, QPlainTextEdit
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
-        QResizeEvent
+        QResizeEvent, QDesktopServices
 
     from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
         QAbstractItemModel, QAbstractTableModel, QModelIndex, \
-        QItemSelectionModel, QStringListModel
+        QItemSelectionModel, QStringListModel, QUrl
 
     from PyQt5.QtNetwork import QLocalSocket, QLocalServer
 
@@ -112,11 +112,11 @@ except ImportError:
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
             QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
             QApplication, QStringListModel, QKeySequence, QResizeEvent, \
-            QPlainTextEdit
+            QPlainTextEdit, QDesktopServices
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
-            QAbstractItemModel, QAbstractTableModel, QModelIndex
+            QAbstractItemModel, QAbstractTableModel, QModelIndex, QUrl
 
         from PyQt4.QtNetwork import QLocalSocket, QLocalServer
 
@@ -152,6 +152,15 @@ FILE_SELECTOR_STRING += ";;All files (*.*)"
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "flent-socket-"
 SOCKET_DIR = tempfile.gettempdir()
+
+ABOUT_TEXT = """<p>Flent version {version}.<br>
+Copyright &copy; 2017 Toke Høiland-Jørgensen and contributors.<br>
+Released under the GNU GPLv3.</p>
+
+<p><a href="https://flent.org">https://flent.org</a></p>
+
+<p>To report a bug, please <a href="https://github.com/tohojo/flent/issues">
+file an issue on Github<a>.</p>"""
 
 __all__ = ['run_gui']
 
@@ -307,6 +316,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                                          QKeySequence("Ctrl+Shift+Backtab")])
         self.actionRefresh.triggered.connect(self.refresh_plot)
         self.actionNewTest.triggered.connect(self.run_test)
+
+        self.actionHelpGUI.triggered.connect(self.help_gui)
+        self.actionHelpRunning.triggered.connect(self.help_running)
+        self.actionHelpTests.triggered.connect(self.help_tests)
+        self.actionHelpBug.triggered.connect(self.help_bug)
+        self.actionHelpAbout.triggered.connect(self.help_about)
 
         self.viewArea.tabCloseRequested.connect(self.close_tab)
         self.viewArea.currentChanged.connect(self.activate_tab)
@@ -837,6 +852,30 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.new_test_dialog.show()
         self.new_test_dialog.log_settings(self.checkDebugLog.isChecked(),
                                           self.checkExceptionLog.isChecked())
+
+    def help_gui(self):
+        QDesktopServices.openUrl(QUrl("https://flent.org/gui.html"))
+
+    def help_running(self):
+        QDesktopServices.openUrl(QUrl("https://flent.org/options.html"))
+
+    def help_tests(self):
+        QDesktopServices.openUrl(QUrl("https://flent.org/tests.html"))
+
+    def help_bug(self):
+        QDesktopServices.openUrl(QUrl("https://github.com/tohojo/flent/issues"))
+
+    def help_about(self):
+        dlg = AboutDialog(self)
+        dlg.setModal(True)
+        dlg.exec_()
+
+
+class AboutDialog(get_ui_class("aboutdialog.ui")):
+
+    def __init__(self, parent):
+        super(AboutDialog, self).__init__(parent)
+        self.aboutText.setText(ABOUT_TEXT.format(version=VERSION))
 
 
 class NewTestDialog(get_ui_class("newtestdialog.ui")):
