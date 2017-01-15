@@ -2,6 +2,12 @@
 
 Changes since v1.0.0 include:
 
+- Change the default hosts used for rtt_fair tests. One of the old ones
+  did not exist anymore.
+
+- Fix a bunch of crashes and behavioural issues in the new test dialog
+  in the GUI.
+
 # Flent v1.0.0 #
 Released on 2017-01-14.
 
