@@ -8,6 +8,9 @@ Changes since v1.0.0 include:
 - Fix a bunch of crashes and behavioural issues in the new test dialog
   in the GUI.
 
+- Make sure log entries emitted during startup make it to the GUI
+  console.
+
 # Flent v1.0.0 #
 Released on 2017-01-14.
 
