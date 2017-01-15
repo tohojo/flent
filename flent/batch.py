@@ -545,7 +545,7 @@ class BatchRunner(object):
             return pid
         else:
             loggers.set_queue_handler(queue)
-            signal.signal(signal.SIGINT, self.kill)
+            signal.signal(signal.SIGTERM, self.kill)
             try:
                 self.run()
             except Exception as e:
@@ -598,7 +598,7 @@ class BatchRunner(object):
             return self.run_test(self.settings, self.settings.DATA_DIR, True)
 
     def kill(self, *args):
-        logger.debug("Killing runners")
+        logger.debug("Killing child processes")
         self.killed = True
         self.kill_children(force=True)
         try:
