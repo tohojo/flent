@@ -66,6 +66,7 @@ class Aggregator(object):
         self.settings = settings
         self.failed_runners = 0
         self.runner_counter = 0
+        self.killed = False
 
         self.postprocessors = []
 
@@ -207,6 +208,7 @@ class Aggregator(object):
         return result, metadata, raw_values
 
     def kill_runners(self, graceful=False):
+        self.killed = True
         for t in list(self.threads.values()):
             t.kill(graceful)
 
@@ -250,6 +252,8 @@ class TimeseriesAggregator(Aggregator):
 
     def aggregate(self, results):
         measurements, metadata, raw_values = self.collect()
+        if self.killed:
+            return results
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log "
                                "file to investigate.")
