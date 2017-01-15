@@ -550,6 +550,8 @@ class BatchRunner(object):
                 self.run()
             except Exception as e:
                 logger.exception(str(e))
+            queue.close()
+            queue.join_thread()
             os._exit(0)
 
     def run(self):
