@@ -292,6 +292,7 @@ class ProcessRunner(threading.Thread, RunnerBase):
             os.dup2(self.stderr.fileno(), 2)
             self.stdout.close()
             self.stderr.close()
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
             try:
                 if self.start_event is not None:
@@ -319,9 +320,11 @@ class ProcessRunner(threading.Thread, RunnerBase):
                 self.killed = True
             self.cleanup_tmpfiles()
         if self.pid is not None:
+            sig = signal.SIGINT if graceful else signal.SIGTERM
+            logger.debug("Sending signal %d to pid %d.", sig, self.pid)
             try:
-                os.kill(self.pid, signal.SIGINT if graceful else signal.SIGTERM)
-            except OSError:
+                os.kill(self.pid, sig)
+            except OSError as e:
                 pass
 
     def cleanup_tmpfiles(self):
