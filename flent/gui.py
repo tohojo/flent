@@ -70,7 +70,7 @@ try:
     import matplotlib
     ver = tuple([int(i) for i in matplotlib.__version__.split(".")[:2]])
     if ver < (1, 4):
-        logger.debug("Forcing fallback to Qt4 because of matplotlib version %s.",
+        logger.debug("Forcing fallback to Qt4 because of old matplotlib v%s.",
                      matplotlib.__version__)
         FORCE_QT4 = True
     matplotlib.use("Agg")
@@ -126,8 +126,9 @@ except ImportError:
 
         QTVER = 4
 
-        logger.warning("Falling back to Qt4 for the GUI. "
-                       "Please consider installing PyQt5.\n")
+        if not FORCE_QT4:
+            logger.warning("Falling back to Qt4 for the GUI. "
+                           "Please consider installing PyQt5.\n")
     except ImportError:
         raise RuntimeError("PyQt must be installed to use the GUI.")
 
@@ -265,8 +266,7 @@ def results_load_helper(filename):
                                description=s.DESCRIPTION,
                                title=r.title)
     except Exception as e:
-        logger.exception(unicode(e))
-        logger.warning("Unable to load file '%s'.", filename)
+        logger.exception("Unable to load file '%s': '%s'", filename, e)
         return None
 
 
@@ -808,8 +808,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
                 widget.load_results(r, plot=current_plot)
             self.open_files.add_file(widget.results)
         except Exception as e:
-            logger.exception(str(e))
-            logger.warning("Error while loading data file. Skipping.")
+            logger.exception("Error while loading data file: '%s'. Skipping.",
+                             str(e))
 
         if not self.load_queue:
             self.openFilesView.resizeColumnsToContents()
@@ -912,7 +912,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
                          "hostname to connect to.")
             return
         if not os.path.isdir(path):
-            logger.error("Output dir does not exist.")
+            logger.error("Output directory does not exist.")
             return
 
         test = unicode(test)
@@ -951,11 +951,11 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
            != QMessageBox.Yes:
             return
 
-        logger.info("Aborting test")
+        logger.info("Aborting test.")
         os.kill(self.pid, signal.SIGTERM)
         self.runButton.setEnabled(False)
         self.aborted = True
-        logger.debug("Waiting for child process with PID %d to exit", self.pid)
+        logger.debug("Waiting for child process with PID %d to exit.", self.pid)
 
     def reset(self):
         self.testConfig.setEnabled(True)
@@ -1186,8 +1186,8 @@ class MetadataView(QTreeView):
                                    ":".join(map(str, pin)))
                     break
                 except Exception as e:
-                    logger.warning("Restoring pin '%s' failed: %s.",
-                                   ":".join(map(str, pin)), e)
+                    logger.exception("Restoring pin '%s' failed: %s.",
+                                     ":".join(map(str, pin)), e)
                     break
 
 
@@ -1611,10 +1611,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         try:
             self.plotter = plotters.new(self.settings)
         except Exception as e:
-            logger.exception(str(e))
-            logger.warning("Error while loading plot '%s'. "
-                           "Falling back to default plot.",
-                           self.settings.PLOT)
+            logger.exception("Plot '%s' failed: %s. "
+                             "Falling back to default plot '%s'.",
+                             self.settings.PLOT, e,
+                             self.settings.DEFAULTS['PLOT'])
 
             self.settings.PLOT = self.settings.DEFAULTS['PLOT']
             self.plotter = plotters.new(self.settings)
@@ -1896,8 +1896,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
                 self.needs_resize = True
 
         except Exception as e:
-            logger.exception(str(e))
-            logger.warning("Unhandled exception while plotting. Aborting.")
+            logger.exception("Aborting plotting due to error: %s", str(e))
         finally:
             self.async_fig = None
             self.async_timer.stop()
