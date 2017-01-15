@@ -881,20 +881,20 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
     def run_test(self):
         test = self.testName.itemData(self.testName.currentIndex())
         if hasattr(test, 'toString'):
-            test = unicode(test.toString())
-        else:
-            test = unicode(test)
-        host = unicode(self.hostName.text())
-        path = unicode(self.outputDir.text())
+            test = test.toString()
+        host = self.hostName.text()
+        path = self.outputDir.text()
         if not test or not host:
-            QMessageBox.critical(self, "Error running test",
-                                 "You must select a test to run and a "
-                                 "hostname to connect to.")
+            logger.error("You must select a test to run and a "
+                         "hostname to connect to.")
             return
         if not os.path.isdir(path):
-            QMessageBox.critical(self, "Error running test",
-                                 "Output dir does not exist.")
+            logger.error("Output dir does not exist.")
             return
+
+        test = unicode(test)
+        host = unicode(host)
+        path = unicode(path)
 
         self.settings.HOSTS = [host]
         self.settings.NAME = test
@@ -913,7 +913,8 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.start_time = time.time()
 
         self.testConfig.setEnabled(False)
-        self.runButton.setText("Abort test")
+        self.runButton.setText("&Abort test")
+        self.runButton.setDefault(False)
 
         b = batch.new(self.settings)
         self.pid = b.fork_and_run(self.log_queue)
@@ -933,10 +934,21 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
     def reset(self):
         self.testConfig.setEnabled(True)
-        self.runButton.setText("Run test")
+        self.runButton.setText("&Run test")
+        self.runButton.setDefault(True)
         self.progressBar.setValue(0)
         self.monitor_timer.stop()
         self.pid = None
+
+    def keyPressEvent(self, evt):
+        if evt.key() == Qt.Key_Escape:
+            evt.accept()
+            if self.pid is not None:
+                self.abort_test()
+            else:
+                self.close()
+        else:
+            super(NewTestDialog, self).keyPressEvent(evt)
 
     def update_progress(self):
 
