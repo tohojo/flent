@@ -282,6 +282,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.load_timer = QTimer(self)
         self.load_timer.timeout.connect(self.load_one)
         self.focus_new = False
+        self.new_test_dialog = None
 
         if self.settings.HOVER_HIGHLIGHT is None:
             self.settings.HOVER_HIGHLIGHT = True
@@ -817,10 +818,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.busy_end()
 
     def run_test(self):
-        self.busy_start()
-        dialog = NewTestDialog(self, self.settings, self.log_queue)
-        self.busy_end()
-        dialog.exec_()
+        if self.new_test_dialog is None:
+            self.busy_start()
+            self.new_test_dialog = NewTestDialog(self, self.settings,
+                                                 self.log_queue)
+            self.busy_end()
+        self.new_test_dialog.show()
 
 
 class NewTestDialog(get_ui_class("newtestdialog.ui")):
@@ -858,6 +861,9 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.logEntries = QPlainTextLogger(self,
                                            level=logging.DEBUG,
                                            widget=self.logTextEdit)
+
+    def show(self):
+        super(NewTestDialog, self).show()
         add_log_handler(self.logEntries)
 
     def select_output_dir(self):
