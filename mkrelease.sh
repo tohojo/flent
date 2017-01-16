@@ -18,6 +18,10 @@ make man || die error
 
 if [[ ! "$VERSION" =~ -git$ ]]; then
 
+    echo ==== Updating CHANGES.md... ====
+    sed -i -e "1 s/Changes since latest release/Flent v${VERSION}/" \
+        -e "2 iReleased on $(date +%Y-%m-%d)." CHANGES.md
+
     echo ==== Updating Arch PKGBUILD version... ====
     sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" packaging/archlinux/PKGBUILD  || die error
 
@@ -30,10 +34,16 @@ if [[ ! "$VERSION" =~ -git$ ]]; then
     SHA=$(sha256sum dist/flent-${VERSION}.tar.gz | awk '{print $1}')
     sed -i -e "s/sha256sums=('[a-z0-9]\+'/sha256sums=('${SHA}'/" packaging/archlinux/PKGBUILD  || die error
 
+else
+
+    echo ==== Updating CHANGES.md... ====
+    sed -i -e "1 i# Changes since latest release #\n\nChanges since v${VERSION%-git} include:\n" CHANGES.md
+
 fi
 
 echo ==== Staging changed files ====
-git add flent/build_info.py man/flent.1 doc/conf.py packaging/archlinux/PKGBUILD || die error
+git add flent/build_info.py man/flent.1 doc/conf.py \
+    packaging/archlinux/PKGBUILD CHANGES.md || die error
 
 echo ==== Done. Review changes and commit \(and tag\). ====
 [[ ! "$VERSION" =~ -git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
