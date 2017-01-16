@@ -561,7 +561,7 @@ class Settings(argparse.Namespace):
         except (ValueError, argparse.ArgumentTypeError) as e:
             raise RuntimeError("Unable to parse RC values: %s" % e)
 
-        for k, v in vals:
+        for k, v in vals.items():
             if override or getattr(self, k) == parser.get_default(k):
                 setattr(self, k, v)
 
