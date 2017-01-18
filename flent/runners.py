@@ -924,7 +924,8 @@ class TcRunner(ProcessRunner):
         for part in parts:
             # Split out individual qdisc entries (in case there are more than
             # one). If so, discard the root qdisc and sum the rest.
-            qdiscs = self.split_re.split(part)
+            qdiscs = [i for i in self.split_re.split(part)
+                      if not i.startswith("ingress")]
             if len(qdiscs) > 2:
                 part = "qdisc ".join([i for i in qdiscs
                                       if 'root' not in i])
