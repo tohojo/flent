@@ -171,9 +171,7 @@ int run(args *a)
 	//new_value.it_interval.tv_nsec = 100000000; // 10ms interval
 	//new_value.it_interval.tv_sec = 0;
 	new_value.it_interval = a->interval;
-
-	new_value.it_value.tv_nsec = 10; // arm the timer, wait 10ns
-	new_value.it_value.tv_sec = 0;
+	new_value.it_value = a->interval;
 
 	/* better method would be to poll for input (since writes from the
 	   tool could block or return no output for some reason), timestamp the input,
