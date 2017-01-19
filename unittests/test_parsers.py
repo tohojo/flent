@@ -68,7 +68,7 @@ CAKE_4TINS = """qdisc cake 8011: dev eth0.3 root refcnt 2 bandwidth 100Mbit diff
   way_miss           0          65           2           0
   way_cols           0           0           0           0
   drops              0           0           0           0
-  marks              0           0           0           0
+  marks              0           0           1           0
   sp_flows           0           0           0           0
   bk_flows           0           1           0           0
   max_len            0        1518         172           0
@@ -409,6 +409,11 @@ class TestParsers(unittest.TestCase):
         for k in raw_keys:
             self.assertIn(k, raw[0])
 
+    def check_vals(self, keys, res):
+        for k in keys:
+            vals = [i[1] > 0 for i in res[k]]
+            self.assertTrue(all(vals))
+
     def new_runner(self, name):
         r = runners.get(name)
         return r(name='test', settings=object(), command='test',
@@ -422,6 +427,7 @@ class TestParsers(unittest.TestCase):
             res = r.parse(data)
             self.check_res_keys(
                 QDISC_KEYS + ['ecn_mark'], res, raw_keys, r.raw_values)
+            self.check_vals(['sent_bytes', 'sent_pkts', 'ecn_mark'], res)
 
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestParsers)
