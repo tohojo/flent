@@ -105,6 +105,7 @@ MATPLOTLIB_STYLES = {'axes.axisbelow': True,
                      'legend.numpoints': 1,
                      'legend.scatterpoints': 1,
                      'lines.color': 'black',
+                     'lines.linewidth': 1,
                      'lines.solid_capstyle': 'round',
                      'pdf.fonttype': 42,
                      'text.color': 'black',
@@ -1146,6 +1147,7 @@ class TimeseriesPlotter(Plotter):
 
             if stack:
                 kwargs['facecolor'] = kwargs['color']
+                kwargs['edgecolor'] = 'none'
                 del kwargs['color']
                 y_values = numpy.array(y_values, dtype=float)
 
@@ -1283,7 +1285,7 @@ class BoxPlotter(TimeseriesPlotter):
             ticks.append(numpy.mean(positions))
 
             bp = config['axes'][a].boxplot(data,
-                                           positions=positions)
+                                           positions=positions, sym="b+")
             for j, r in enumerate(results):
                 pyplot.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
