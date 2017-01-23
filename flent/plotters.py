@@ -640,8 +640,10 @@ class Plotter(ArgParam):
         if self.output == "-":
             self.size_legends()
             if not self.gui:
+                logger.debug("Showing matplotlib pyplot viewer")
                 pyplot.show()
         else:
+            logger.debug("Saving plot to %s", self.output)
             try:
                 save_args = self.build_tight_layout(artists)
                 if pyplot.get_backend() == 'pdf':

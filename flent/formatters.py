@@ -44,6 +44,7 @@ def new(settings):
     formatter_name = classname(settings.FORMAT, 'Formatter')
     if formatter_name not in globals():
         raise RuntimeError("Formatter not found: '%s'." % settings.FORMAT)
+    logger.debug("Creating new %s", formatter_name)
     try:
         return globals()[formatter_name](settings)
     except RuntimeError:

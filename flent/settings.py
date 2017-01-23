@@ -585,6 +585,7 @@ class Settings(argparse.Namespace):
             raise RuntimeError("Missing test name.")
         test_env = TestEnvironment(self.__dict__, informational)
         filename = os.path.join(TEST_PATH, self.NAME + ".conf")
+        logger.debug("Executing test environment file %s", filename)
         s = test_env.execute(filename)
 
         for k, v in list(s.items()):
@@ -606,6 +607,7 @@ class Settings(argparse.Namespace):
             if dname not in results:
                 runner = runners.get(dvals['runner'])
                 if issubclass(runner, runners.ComputingRunner):
+                    logger.debug("Computing missing data series %s", dname)
                     try:
                         runner = runner(name=dname, settings=self,
                                         post=True, **dvals)

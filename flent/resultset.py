@@ -465,6 +465,7 @@ class ResultSet(object):
 
     @classmethod
     def load_file(cls, filename, absolute=False):
+        logger.debug("Loading data file %s", filename)
         try:
             if filename.endswith(".gz"):
                 o = gzip_open
