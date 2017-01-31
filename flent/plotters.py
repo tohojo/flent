@@ -536,6 +536,7 @@ class Plotter(ArgParam):
         self.styles = STYLES
         self.legends = []
         self.artists = []
+        self.top_artists = []
         self.data_artists = []
         self.metadata = None
         self.callbacks = []
@@ -749,6 +750,11 @@ class Plotter(ArgParam):
             # test is from matplotlib's tight_layout() in figure.py
             from matplotlib.tight_layout import get_subplotspec_list
             if None not in get_subplotspec_list(self.figure.axes):
+
+                def get_height(artist):
+                    return (artist.get_window_extent(renderer).height
+                            / self.figure.dpi)
+
                 self.figure.savefig(io.BytesIO())
                 renderer = self.figure._cachedRenderer
                 fig_bbox = self.figure.get_tightbbox(renderer)
@@ -774,10 +780,9 @@ class Plotter(ArgParam):
                         renderer).height / self.figure.dpi
                     rect[1] = max(rect[1], note_height / fig_bbox.height)
 
-                if self.title_obj:
-                    title_height = self.title_obj.get_window_extent(
-                        renderer).height / self.figure.dpi
-                    rect[3] = 1 - title_height / fig_bbox.height
+                if self.top_artists:
+                    height = max(map(get_height, self.top_artists))
+                    rect[3] = 1 - height / fig_bbox.height
 
                 self.figure.tight_layout(pad=0.5, rect=rect)
                 args = {}
@@ -829,9 +834,10 @@ class Plotter(ArgParam):
         titles = []
         title_y = 1
         if self.override_title:
-            self.title_obj = self.figure.suptitle(self.override_title,
-                                                  fontsize=14, y=title_y)
-            titles.append(self.title_obj)
+            art = self.figure.suptitle(self.override_title,
+                                       fontsize=14, y=title_y)
+            titles.append(art)
+            self.top_artists.append(art)
             self.title = self.override_title
         elif self.print_title:
             plot_title = self.description
@@ -843,12 +849,11 @@ class Plotter(ArgParam):
                and self.metadata['TITLE'] \
                and not skip_title:
                 title_y = 1.00
-            self.title_obj = self.figure.suptitle(
+            art = self.figure.suptitle(
                 plot_title, fontsize=14, y=title_y)
-            titles.append(self.title_obj)
+            titles.append(art)
+            self.top_artists.append(art)
             self.title = plot_title
-        else:
-            self.title_obj = None
 
         if self.annotate:
             annotation_string = "Local/remote: %s/%s - " \
@@ -1333,6 +1338,9 @@ class BoxPlotter(TimeseriesPlotter):
             x, y = t.get_position()
             t.set_position((x, max_y + abs(max_y - min_y) * 0.01))
 
+        self.artists.extend(texts)
+        self.top_artists = texts
+
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
         axis.set_xticklabels(self._filter_labels(ticklabels),
@@ -1446,6 +1454,7 @@ class BarPlotter(BoxPlotter):
         axis.set_xlim(0, pos - 1)
 
         self.artists.extend(texts)
+        self.top_artists = texts
 
 
 class BarCombinePlotter(CombineManyPlotter, BarPlotter):
