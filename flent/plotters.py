@@ -381,6 +381,11 @@ def add_plotting_args(parser):
         help="Exclude legend from plots.")
 
     parser.add_argument(
+        "--no-labels",
+        action="store_false", dest="PRINT_LABELS",
+        help="Exclude data series labels from plots.")
+
+    parser.add_argument(
         "--horizontal-legend",
         action="store_true", dest="HORIZONTAL_LEGEND",
         help="Place a horizontal legend below the plot instead of a vertical one "
@@ -1341,11 +1346,14 @@ class BoxPlotter(TimeseriesPlotter):
         self.artists.extend(texts)
         self.top_artists = texts
 
+        axis.set_xlim(0, pos - 1)
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
-        axis.set_xticklabels(self._filter_labels(ticklabels),
-                             rotation=90, ha='center')
-        axis.set_xlim(0, pos - 1)
+        if self.print_labels:
+            axis.set_xticklabels(ticklabels,
+                                 rotation=90, ha='center')
+        else:
+            axis.set_xticklabels([])
 
 
 class BoxCombinePlotter(CombineManyPlotter, BoxPlotter):
@@ -1448,10 +1456,15 @@ class BarPlotter(BoxPlotter):
             if len(l) > self._max_label_length:
                 ticklabels[i] = l[:self._max_label_length] + "..."
 
-        axis.set_xticks(ticks)
-        axis.set_xticks([], minor=True)
         axis.set_xticklabels(ticklabels, rotation=90, ha='center')
         axis.set_xlim(0, pos - 1)
+        axis.set_xticks(ticks)
+        axis.set_xticks([], minor=True)
+        if self.print_labels:
+            axis.set_xticklabels(ticklabels,
+                                 rotation=90, ha='center')
+        else:
+            axis.set_xticklabels([])
 
         self.artists.extend(texts)
         self.top_artists = texts
