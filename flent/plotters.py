@@ -1423,7 +1423,7 @@ class BarPlotter(BoxPlotter):
 
             config['axes'][a].bar(positions, data, yerr=errors, ecolor=errcol,
                                   color=colour, alpha=0.75, width=width,
-                                  align='edge')
+                                  align='edge', capsize=2)
             if len(config['series']) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
                     pos + group_size / 2.0 - 0.5,
