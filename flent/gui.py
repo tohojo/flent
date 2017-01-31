@@ -71,8 +71,8 @@ try:
     import matplotlib
     ver = tuple([int(i) for i in matplotlib.__version__.split(".")[:2]])
     if ver < (1, 4):
-        logger.debug("Forcing fallback to Qt4 because of old matplotlib v%s.",
-                     matplotlib.__version__)
+        logger.warning("Forcing fallback to Qt4 because of old matplotlib v%s.",
+                       matplotlib.__version__)
         FORCE_QT4 = True
     matplotlib.use("Agg")
 except ImportError:
@@ -131,7 +131,7 @@ except ImportError:
             logger.warning("Falling back to Qt4 for the GUI. "
                            "Please consider installing PyQt5.\n")
     except ImportError:
-        raise RuntimeError("PyQt must be installed to use the GUI.")
+        raise RuntimeError("Unable to find a usable PyQt version.")
 
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
