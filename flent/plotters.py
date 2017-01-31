@@ -1195,6 +1195,9 @@ class TimeseriesCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
 
 
 class BoxPlotter(TimeseriesPlotter):
+    # Since labels are printed vertically at the bottom, they tend to break
+    # matplotlib's layout logic if they're too long.
+    _max_label_length = 30
 
     def init(self, config=None, axis=None):
         if axis is None:
@@ -1224,8 +1227,11 @@ class BoxPlotter(TimeseriesPlotter):
 
         ticklabels = []
         ticks = []
+        texts = []
         pos = 1
         all_data = []
+        series_labels = self._filter_labels(
+            [s['label'] for s in config['series']])
         for a in config['axes']:
             all_data.append([])
 
@@ -1276,13 +1282,15 @@ class BoxPlotter(TimeseriesPlotter):
                 else:
                     data.append(d)
 
-            if 'label' in s:
-                ticklabels.append(s['label'])
-            else:
-                ticklabels.append(i)
+            if len(config['series']) > 1 or self.print_title:
+                texts.append(config['axes'][0].text(
+                    pos + group_size / 2.0 - 0.5,
+                    14,
+                    series_labels[i],
+                    ha='center'))
 
             positions = range(pos, pos + group_size)
-            ticks.append(numpy.mean(positions))
+            ticks.extend(list(range(pos, pos + group_size)))
 
             bp = config['axes'][a].boxplot(data,
                                            positions=positions, sym="b+")
@@ -1290,6 +1298,8 @@ class BoxPlotter(TimeseriesPlotter):
                 pyplot.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
                     bp['caps'][j * 2].set_label(r.label())
+                if len(results) > 1:
+                    ticklabels.append(r.label())
                 if len(bp['fliers']) == group_size:
                     pyplot.setp([bp['fliers'][j]], markeredgecolor=colours[j])
                     keys = 'caps', 'whiskers'
@@ -1314,9 +1324,19 @@ class BoxPlotter(TimeseriesPlotter):
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
+        for i, l in enumerate(ticklabels):
+            if len(l) > self._max_label_length:
+                ticklabels[i] = l[:self._max_label_length] + "..."
+
+        for t in texts:
+            min_y, max_y = t.get_axes().get_ylim()
+            x, y = t.get_position()
+            t.set_position((x, max_y + abs(max_y - min_y) * 0.01))
+
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
-        axis.set_xticklabels(self._filter_labels(ticklabels))
+        axis.set_xticklabels(self._filter_labels(ticklabels),
+                             rotation=90, ha='center')
         axis.set_xlim(0, pos - 1)
 
 
@@ -1325,9 +1345,6 @@ class BoxCombinePlotter(CombineManyPlotter, BoxPlotter):
 
 
 class BarPlotter(BoxPlotter):
-    # Since labels are printed vertically at the bottom, they tend to break
-    # matplotlib's layout logic if they're too long.
-    _max_label_length = 30
 
     def init(self, config=None, axis=None):
         BoxPlotter.init(self, config, axis)
