@@ -1334,7 +1334,8 @@ class BoxPlotter(TimeseriesPlotter):
         for t in texts:
             min_y, max_y = t.get_axes().get_ylim()
             x, y = t.get_position()
-            t.set_position((x, max_y + abs(max_y - min_y) * 0.01))
+            mult = 0.1 if self.log_scale else 0.01
+            t.set_position((x, max_y + abs(max_y - min_y) * mult))
 
         self.artists.extend(texts)
         self.top_artists = texts
