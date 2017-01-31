@@ -1300,6 +1300,10 @@ class BoxPlotter(TimeseriesPlotter):
                         pyplot.setp(bp[k][j * 2], color=colours[j])
                         pyplot.setp(bp[k][j * 2 + 1], color=colours[j])
 
+                if bp['whiskers']:
+                    for art in bp['whiskers']:
+                        art.set_linestyle("-")
+
             config['axes'][a].axvline(
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size + 1
