@@ -541,7 +541,6 @@ class Plotter(ArgParam):
         self.styles = STYLES
         self.legends = []
         self.artists = []
-        self.top_artists = []
         self.data_artists = []
         self.metadata = None
         self.callbacks = []
@@ -748,7 +747,6 @@ class Plotter(ArgParam):
             self.figure.savefig(pdf, dpi=self.fig_dpi, **save_args)
 
     def build_tight_layout(self, artists):
-        rect = [0, 0, 1, 1]
         args = None
         try:
             # Some plot configurations are incompatible with tight_layout; this
@@ -756,38 +754,39 @@ class Plotter(ArgParam):
             from matplotlib.tight_layout import get_subplotspec_list
             if None not in get_subplotspec_list(self.figure.axes):
 
-                def get_height(artist):
-                    return (artist.get_window_extent(renderer).height
-                            / self.figure.dpi)
+                Bbox = matplotlib.transforms.Bbox
 
                 self.figure.savefig(io.BytesIO())
                 renderer = self.figure._cachedRenderer
                 fig_bbox = self.figure.get_tightbbox(renderer)
-                if self.legends and not self.legend_placement:
-                    if self.horizontal_legend:
-                        legend_height = max(
-                            [l.get_window_extent().height
-                             for l in self.legends]) / self.figure.dpi
-                        rect[1] = legend_height / fig_bbox.height
-                    else:
-                        legend_width = max(
-                            [l.get_window_extent().width
-                             for l in self.legends]) / self.figure.dpi
-                        rect[2] = max(0.5, 1 - legend_width / fig_bbox.width)
+                if isinstance(fig_bbox, matplotlib.transforms.TransformedBbox):
+                    fig_bbox = fig_bbox._bbox
 
-                if self.annotation_obj:
-                    annotation_height = self.annotation_obj.get_window_extent(
-                        renderer).height / self.figure.dpi
-                    rect[1] = max(rect[1], annotation_height / fig_bbox.height)
+                bbs = [a.get_window_extent(renderer) for a in artists] + [fig_bbox]
 
-                if self.note_obj:
-                    note_height = self.note_obj.get_window_extent(
-                        renderer).height / self.figure.dpi
-                    rect[1] = max(rect[1], note_height / fig_bbox.height)
+                # Just including the legend in the list of artists doesn't
+                # always work when it is placed outside the figure, so include a
+                # fake bbox the width of the legend to the right of the figure
+                # proper
+                if self.print_legend and not self.horizontal_legend \
+                   and not self.legend_placement:
+                    w = 0
+                    for l in self.legends:
+                        bbox = l.get_window_extent(renderer)
+                        w = max(w, bbox.width)
+                    if w > 0:
+                        bbs.append(Bbox.from_bounds(fig_bbox.x1, 0, w, 0))
 
-                if self.top_artists:
-                    height = max(map(get_height, self.top_artists))
-                    rect[3] = 1 - height / fig_bbox.height
+                bbox = Bbox.union([b for b in bbs if b.height != 0 or b.width != 0])
+
+                h = fig_bbox.height
+                w = fig_bbox.width
+
+                rect = [(fig_bbox.x0 - bbox.x0) / w,
+                        (fig_bbox.y0 - bbox.y0) / h,
+                        1 - (bbox.x1 - fig_bbox.x1) / w,
+                        1 - (bbox.y1 - fig_bbox.y1) / h]
+
 
                 self.figure.tight_layout(pad=0.5, rect=rect)
                 args = {}
@@ -857,7 +856,6 @@ class Plotter(ArgParam):
             art = self.figure.suptitle(
                 plot_title, fontsize=14, y=title_y)
             titles.append(art)
-            self.top_artists.append(art)
             self.title = plot_title
 
         if self.annotate:
@@ -868,21 +866,16 @@ class Plotter(ArgParam):
                                     format_date(self.metadata['TIME']),
                                     self.metadata['LENGTH'],
                                     self.metadata['STEP_SIZE'])
-            self.annotation_obj = self.figure.text(0.5, 0.0, annotation_string,
-                                                   horizontalalignment='center',
-                                                   verticalalignment='bottom',
-                                                   fontsize=8)
-        else:
-            self.annotation_obj = None
-
+            titles.append(self.figure.text(0.5, 0.0, annotation_string,
+                                           horizontalalignment='center',
+                                           verticalalignment='bottom',
+                                           fontsize=8))
         if self.fig_note:
-            self.note_obj = self.figure.text(0.0, 0.0, self.fig_note,
-                                             horizontalalignment='left',
-                                             verticalalignment='bottom',
-                                             fontsize=8)
-            titles.append(self.note_obj)
-        else:
-            self.note_obj = None
+            titles.append(self.figure.text(0.0, 0.0, self.fig_note,
+                                           horizontalalignment='left',
+                                           verticalalignment='bottom',
+                                           fontsize=8))
+
         return titles
 
     def _filter_labels(self, labels):
@@ -1350,8 +1343,7 @@ class BoxPlotter(TimeseriesPlotter):
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
         if self.print_labels:
-            axis.set_xticklabels(ticklabels,
-                                 rotation=90, ha='center')
+            axis.set_xticklabels(ticklabels, rotation=90, ha='center')
         else:
             axis.set_xticklabels([])
 
@@ -1461,8 +1453,7 @@ class BarPlotter(BoxPlotter):
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
         if self.print_labels:
-            axis.set_xticklabels(ticklabels,
-                                 rotation=90, ha='center')
+            axis.set_xticklabels(ticklabels, rotation=90, ha='center')
         else:
             axis.set_xticklabels([])
 
