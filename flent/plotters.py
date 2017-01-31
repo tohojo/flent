@@ -1240,8 +1240,6 @@ class BoxPlotter(TimeseriesPlotter):
         texts = []
         pos = 1
         all_data = []
-        series_labels = self._filter_labels(
-            [s['label'] for s in config['series']])
         for a in config['axes']:
             all_data.append([])
 
@@ -1267,6 +1265,8 @@ class BoxPlotter(TimeseriesPlotter):
         # The median lines are red, so filter out red from the list of colours
         colours = list(
             islice(cycle([c for c in self.colours if c != 'r']), group_size))
+        series_labels = self._filter_labels(
+            [s['label'] for s in series])
 
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
@@ -1292,7 +1292,7 @@ class BoxPlotter(TimeseriesPlotter):
                 else:
                     data.append(d)
 
-            if len(config['series']) > 1 or self.print_title:
+            if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
                     pos + group_size / 2.0 - 0.5,
                     14,
