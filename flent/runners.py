@@ -256,7 +256,13 @@ class ProcessRunner(RunnerBase, threading.Thread):
             command = "ssh %s '%s'" % (remote_host, command)
             self.metadata['REMOTE_HOST'] = remote_host
 
-        self.command = command
+        if isinstance(command, dict):
+            self.command = self.find_binary(**command)
+            self.command_args = command
+        else:
+            self.command = command
+            self.command_args = {}
+
         self.args = shlex.split(self.command)
         self.delay = delay
         self.killed = False
