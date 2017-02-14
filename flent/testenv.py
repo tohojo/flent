@@ -80,7 +80,6 @@ class TestEnvironment(object):
             'parse_int': self.parse_int,
         })
         self.informational = informational
-        self.netperf = None
         self.itgsend = None
         self.http_getter = None
         self.orig_hosts = self.env['HOSTS']
@@ -184,38 +183,6 @@ class TestEnvironment(object):
         """Find a suitable netperf executable, and test for the required
         capabilities."""
 
-        if self.netperf is None:
-            netperf = util.which('netperf', fail=True)
-
-            # Try to figure out whether this version of netperf supports the -e
-            # option for socket timeout on UDP_RR tests, and whether it has been
-            # compiled with --enable-demo. Unfortunately, the --help message is
-            # not very helpful for this, so the only way to find out is try to
-            # invoke it and check for an error message. This has the side-effect
-            # of having netperf attempt a connection to localhost, which can
-            # stall, so we kill the process almost immediately.
-
-            proc = subprocess.Popen([netperf, '-l', '1', '-D', '-0.2',
-                                     '--', '-e', '1'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            # should be enough time for netperf to output any error messages
-            time.sleep(0.1)
-            proc.kill()
-            out, err = proc.communicate()
-            if "Demo Mode not configured" in str(out):
-                raise RuntimeError("%s does not support demo mode." % netperf)
-
-            if "invalid option -- '0'" in str(err):
-                raise RuntimeError(
-                    "%s does not support accurate intermediate time reporting. "
-                    "You need netperf v2.6.0 or newer." % netperf)
-
-            self.netperf = {'executable': netperf, "-e": False}
-
-            if "netperf: invalid option -- 'e'" not in str(err):
-                self.netperf['-e'] = True
-
         args.setdefault('ip_version', self.env['IP_VERSION'])
         args.setdefault('interval', self.env['STEP_SIZE'])
         args.setdefault('control_host', self.env['CONTROL_HOST'] or host)
@@ -227,7 +194,7 @@ class TestEnvironment(object):
         args.setdefault('extra_test_args', "")
         args.setdefault('format', "")
         args.setdefault('marking', "")
-        args.setdefault('socket_timeout', "")
+        args.setdefault('socket_timeout', self.env['SOCKET_TIMEOUT'])
 
         if self.env['SWAP_UPDOWN']:
             if test == 'TCP_STREAM':
@@ -235,27 +202,8 @@ class TestEnvironment(object):
             elif test == 'TCP_MAERTS':
                 test = 'TCP_STREAM'
 
-        args.update({'binary': self.netperf['executable'],
-                     'host': host,
-                     'test': test,
-                     'length': length})
-
-        if args['marking']:
-            args['marking'] = "-Y {0}".format(args['marking'])
-
-        for c in 'local_bind', 'control_local_bind':
-            if args[c]:
-                args[c] = "-L {0}".format(args[c])
-
-        if test == "UDP_RR" and self.netperf["-e"]:
-            args['socket_timeout'] = "-e {0:d}".format(self.env['SOCKET_TIMEOUT'])
-        elif test in ("TCP_STREAM", "TCP_MAERTS", "omni"):
-            args['format'] = "-f m"
-
-        return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
-            "-H {control_host} -t {test} -l {length:d} {format} " \
-            "{control_local_bind} {extra_args} -- {socket_timeout} " \
-            "{local_bind} -H {host} {extra_test_args}".format(**args)
+        return runners.NetperfDemoRunner.find_binary(test, length,
+                                                     host, args)
 
     @finder
     def find_itgsend(self, test_args, length, host, local_bind=None):
