@@ -202,8 +202,11 @@ class TestEnvironment(object):
             elif test == 'TCP_MAERTS':
                 test = 'TCP_STREAM'
 
-        return runners.NetperfDemoRunner.find_binary(test, length,
-                                                     host, args)
+        args['test'] = test
+        args['length'] = length
+        args['host'] = host
+
+        return args
 
     @finder
     def find_itgsend(self, test_args, length, host, local_bind=None):

@@ -577,7 +577,7 @@ class DitgRunner(ProcessRunner):
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
     transformed_metadata = ('MEAN_VALUE',)
-    netperf = None
+    netperf = {}
 
     def parse(self, output):
         """Parses the interim result lines and returns a list of (time,value)
@@ -618,9 +618,9 @@ class NetperfDemoRunner(ProcessRunner):
 
         return result
 
-    @classmethod
-    def find_binary(cls, test, length, host, args):
-        if cls.netperf is None:
+    def find_binary(self, **args):
+
+        if not self.netperf:
             netperf = util.which('netperf', fail=True)
 
             # Try to figure out whether this version of netperf supports the -e
@@ -647,15 +647,13 @@ class NetperfDemoRunner(ProcessRunner):
                     "%s does not support accurate intermediate time reporting. "
                     "You need netperf v2.6.0 or newer." % netperf)
 
-            cls.netperf = {'executable': netperf, "-e": False}
+            self.netperf['executable'] = netperf
+            self.netperf['-e'] = False
 
             if "netperf: invalid option -- 'e'" not in str(err):
-                cls.netperf['-e'] = True
+                self.netperf['-e'] = True
 
-        args.update({'binary': cls.netperf['executable'],
-                     'host': host,
-                     'test': test,
-                     'length': length})
+        args['binary'] = self.netperf['executable']
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -664,12 +662,12 @@ class NetperfDemoRunner(ProcessRunner):
             if args[c]:
                 args[c] = "-L {0}".format(args[c])
 
-        if test == "UDP_RR" and cls.netperf["-e"]:
+        if args['test'] == "UDP_RR" and self.netperf["-e"]:
             args['socket_timeout'] = "-e {0:d}".format(args['socket_timeout'])
         else:
             args['socket_timeout'] = ""
 
-        if test in ("TCP_STREAM", "TCP_MAERTS", "omni"):
+        if args['test'] in ("TCP_STREAM", "TCP_MAERTS", "omni"):
             args['format'] = "-f m"
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
