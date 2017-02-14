@@ -94,7 +94,7 @@ class RunnerBase(object):
     transformed_metadata = []
 
     def __init__(self, name, settings, idx=None, start_event=None,
-                 finish_event=None, kill_event=None, **kwargs):
+                 finish_event=None, kill_event=None, parent=None, **kwargs):
         super(RunnerBase, self).__init__()
         self.name = name
         self.settings = settings
@@ -104,6 +104,7 @@ class RunnerBase(object):
         self.command = None
         self.returncode = 0
         self.out = self.err = ''
+        self._parent = parent
 
         if not hasattr(self, 'result'):
             self.result = None
