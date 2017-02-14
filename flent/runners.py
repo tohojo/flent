@@ -659,6 +659,11 @@ class RegexpRunner(ProcessRunner):
 class PingRunner(RegexpRunner):
     """Runner for ping/ping6 in timestamped (-D) mode."""
 
+    # Ping will change the comma separator for command line arguments based on
+    # locale, which will break sub-second intervals. Override locale settings to
+    # avoid this breaking stuff.
+    _env = {"LC_ALL": "C", "LANG": "C"}
+
     # For some reason some versions of ping output icmp_req and others icmp_seq
     # for sequence numbers.
     regexes = [re.compile(r'^\[(?P<t>[0-9]+\.[0-9]+)\]'
