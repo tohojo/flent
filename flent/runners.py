@@ -161,7 +161,9 @@ class RunnerBase(object):
             return False
 
     def kill(self, graceful=False):
-        pass
+        for c in self._child_runners:
+            c.kill(graceful)
+        self.kill_event.set()
 
 
 class TimerRunner(RunnerBase, threading.Thread):
@@ -177,9 +179,6 @@ class TimerRunner(RunnerBase, threading.Thread):
 
         self.kill_event.wait(self.timeout)
         self.finish_event.set()
-
-    def kill(self, graceful=False):
-        self.kill_event.set()
 
 
 class FileMonitorRunner(RunnerBase, threading.Thread):
@@ -231,10 +230,6 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
                 self.returncode = 1
 
         self.finish_event.set()
-
-    def kill(self, graceful=False):
-        self.kill_event.set()
-
 
 class ProcessRunner(RunnerBase, threading.Thread):
     """Default process runner for any process."""
@@ -326,6 +321,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             self.pid = pid
 
     def kill(self, graceful=False):
+        super(ProcessRunner, self).kill(graceful)
         if graceful:
             # Graceful shutdown is done on a best-effort basis, and may results
             # in some errors from the test tools. We don't print these, since
