@@ -175,6 +175,18 @@ class RunnerBase(object):
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
+    def add_child(self, cls, *args):
+        c = cls(*args,
+                name="%s :: child %d" % (self.name, len(self._child_runners)),
+                settings=self.settings,
+                idx=self.idx,
+                start_event=self.start_event,
+                finish_event=self.finish_event,
+                kill_event=self.kill_event,
+                parent=self)
+        self._child_runners.append(c)
+
+
 class TimerRunner(RunnerBase, threading.Thread):
 
     def __init__(self, timeout, **kwargs):
