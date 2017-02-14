@@ -144,8 +144,8 @@ class RunnerBase(object):
         if hasattr(s, 'start'):
             s.start()
 
-        logger.debug("Started %s idx %d ('%s')", self.__class__.__name__,
-                     self.idx, self.name)
+            logger.debug("Started %s idx %d ('%s')", self.__class__.__name__,
+                         self.idx, self.name)
 
     def join(self, timeout=None):
         s = super(RunnerBase, self)
