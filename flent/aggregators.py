@@ -155,9 +155,6 @@ class Aggregator(object):
                                 "Already initiated graceful shutdown. "
                                 "Patience, please...")
 
-                logger.debug("Runner %s finished", n,
-                             extra={'runner': t})
-
                 metadata['series'][n] = t.metadata
                 if 'transformers' in self.instances[n]:
                     for tr in self.instances[n]['transformers']:

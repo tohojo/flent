@@ -169,6 +169,13 @@ class RunnerBase(object):
             c.kill(graceful)
         self.kill_event.set()
 
+    def run(self):
+        if self.start_event is not None:
+            self.start_event.wait()
+        self._run()
+        self.finish_event.set()
+        logger.debug("%s %s finished", self.__class__.__name__,
+                     self.name, extra={'runner': self})
 
 class TimerRunner(RunnerBase, threading.Thread):
 
@@ -177,12 +184,8 @@ class TimerRunner(RunnerBase, threading.Thread):
         self.timeout = timeout
         self.command = 'Timeout after %f seconds' % self.timeout
 
-    def run(self):
-        if self.start_event is not None:
-            self.start_event.wait()
-
+    def _run(self):
         self.kill_event.wait(self.timeout)
-        self.finish_event.set()
 
 
 class FileMonitorRunner(RunnerBase, threading.Thread):
@@ -196,10 +199,7 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
         self.metadata['FILENAME'] = self.filename
         self.command = 'File monitor for %s' % self.filename
 
-    def run(self):
-        if self.start_event is not None:
-            self.start_event.wait()
-
+    def _run(self):
         if self.delay:
             self.kill_event.wait(self.delay)
 
@@ -232,8 +232,6 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
                 self.result = result
             else:
                 self.returncode = 1
-
-        self.finish_event.set()
 
 
 class ProcessRunner(RunnerBase, threading.Thread):
@@ -394,6 +392,9 @@ class ProcessRunner(RunnerBase, threading.Thread):
                 pid, sts = os.waitpid(self.pid, os.WNOHANG)
 
         self.finish_event.set()
+        logger.debug("%s %s finished", self.__class__.__name__,
+                     self.name, extra={'runner': self})
+
         self.returncode = _handle_exitstatus(sts)
 
         # Even with locking, kill detection is not reliable; sleeping seems to
