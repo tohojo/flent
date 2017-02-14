@@ -233,6 +233,7 @@ class ProcessRunner(threading.Thread, RunnerBase):
     """Default process runner for any process."""
     silent = False
     supports_remote = True
+    _env = {}
 
     def __init__(self, command, delay, remote_host, **kwargs):
         threading.Thread.__init__(self)
@@ -304,8 +305,10 @@ class ProcessRunner(threading.Thread, RunnerBase):
             except:
                 os._exit(0)
 
+            env = dict(os.environ)
+            env.update(self._env)
             prog = self.args[0]
-            os.execvp(prog, self.args)
+            os.execvpe(prog, self.args, env)
         else:
             self.pid = pid
 
