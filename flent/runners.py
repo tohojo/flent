@@ -112,7 +112,7 @@ class RunnerBase(object):
         self.kill_event = kill_event if kill_event is not None else Event()
         self.finish_event = finish_event
 
-        self.child_runners = []
+        self._child_runners = []
 
         self._pickled = False
 
@@ -136,8 +136,8 @@ class RunnerBase(object):
         if self._pickled:
             raise RuntimeError("Attempt to run a pickled runner")
 
-        for r in self.child_runners:
-            r.start()
+        for c in self._child_runners:
+            c.start()
 
         s = super(RunnerBase, self)
         if hasattr(s, 'start'):
@@ -151,7 +151,7 @@ class RunnerBase(object):
         if hasattr(s, 'join'):
             s.join(timeout)
 
-        for c in self.child_runners:
+        for c in self._child_runners:
             c.join(timeout)
 
     def is_alive(self):
