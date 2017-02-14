@@ -156,10 +156,13 @@ class RunnerBase(object):
             c.join(timeout)
 
     def is_alive(self):
-        try:
-            return super(RunnerBase, self).is_alive()
-        except AttributeError:
-            return False
+        alive = []
+        s = super(RunnerBase, self)
+        if hasattr(s, "is_alive"):
+            alive.append(s.is_alive())
+
+        alive.extend([c.is_alive() for c in self._child_runners])
+        return any(alive)
 
     def kill(self, graceful=False):
         for c in self._child_runners:
@@ -231,6 +234,7 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
                 self.returncode = 1
 
         self.finish_event.set()
+
 
 class ProcessRunner(RunnerBase, threading.Thread):
     """Default process runner for any process."""
