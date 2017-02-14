@@ -692,6 +692,7 @@ class PingRunner(RegexpRunner):
 
         fping = util.which('fping' + suffix)
         ping = util.which('ping' + suffix)
+        pingargs = []
 
         if fping is not None:
             proc = subprocess.Popen([fping, '-h'],
@@ -716,6 +717,19 @@ class PingRunner(RegexpRunner):
                     "Found fping but it seems to be missing "
                     "permissions (no SUID?). Not using.")
 
+        if ping is None and ip_version == 6:
+            # See if we have a combined ping binary (new versions of iputils)
+            ping6 = util.which("ping")
+            proc = subprocess.Popen([ping6, '-h'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out, err = proc.communicate()
+            if hasattr(err, 'decode'):
+                err = err.decode(ENCODING)
+            if '-6' in err:
+                ping = ping6
+                pingargs = ['-6']
+
         if ping is not None:
             # Ping can't handle hostnames for the -I parameter, so do a lookup
             # first.
@@ -726,7 +740,8 @@ class PingRunner(RegexpRunner):
             # returned from the parser. This should pick up e.g. the ping on OSX
             # not having a -D option and allow us to supply a better error
             # message.
-            proc = subprocess.Popen([ping, '-D', '-n', '-c', '1', 'localhost'],
+            proc = subprocess.Popen([ping, '-D', '-n',
+                                     '-c', '1', 'localhost'] + pingargs,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
@@ -738,13 +753,14 @@ class PingRunner(RegexpRunner):
                     "Please install fping v3.5+.".format(ping=ping))
 
             return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} " \
-                "{local_bind} {host}".format(
+                "{local_bind} {pingargs} {host}".format(
                     binary=ping,
                     interval=max(0.2, interval),
                     length=length,
                     marking="-Q {0}".format(marking) if marking else "",
                     local_bind="-I {0}".format(local_bind) if local_bind else "",
-                    host=host)
+                    host=host,
+                    pingargs=" ".join(pingargs))
 
         raise RuntimeError("No suitable ping tool found.")
 
