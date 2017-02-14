@@ -95,6 +95,7 @@ class RunnerBase(object):
 
     def __init__(self, name, settings, idx=None, start_event=None,
                  finish_event=None, kill_event=None, **kwargs):
+        super(RunnerBase, self).__init__()
         self.name = name
         self.settings = settings
         self.idx = idx
@@ -110,6 +111,8 @@ class RunnerBase(object):
         self.start_event = start_event
         self.kill_event = kill_event if kill_event is not None else Event()
         self.finish_event = finish_event
+
+        self.child_runners = []
 
         self._pickled = False
 
@@ -133,29 +136,40 @@ class RunnerBase(object):
         if self._pickled:
             raise RuntimeError("Attempt to run a pickled runner")
 
-    def join(self):
-        pass
+        for r in self.child_runners:
+            r.start()
 
-    def isAlive(self):
-        return False
+        s = super(RunnerBase, self)
+        if hasattr(s, 'start'):
+            s.start()
+
+        logger.debug("Started %s idx %d ('%s')", self.__class__.__name__,
+                     self.idx, self.name)
+
+    def join(self, timeout=None):
+        s = super(RunnerBase, self)
+        if hasattr(s, 'join'):
+            s.join(timeout)
+
+        for c in self.child_runners:
+            c.join(timeout)
+
+    def is_alive(self):
+        try:
+            return super(RunnerBase, self).is_alive()
+        except AttributeError:
+            return False
 
     def kill(self, graceful=False):
         pass
 
 
-class TimerRunner(threading.Thread, RunnerBase):
+class TimerRunner(RunnerBase, threading.Thread):
 
     def __init__(self, timeout, **kwargs):
-        threading.Thread.__init__(self)
-        RunnerBase.__init__(self, **kwargs)
+        super(TimerRunner, self).__init__(**kwargs)
         self.timeout = timeout
         self.command = 'Timeout after %f seconds' % self.timeout
-
-    def start(self):
-        if self._pickled:
-            raise RuntimeError("Attempt to run a pickled runner")
-
-        threading.Thread.start(self)
 
     def run(self):
         if self.start_event is not None:
@@ -168,23 +182,16 @@ class TimerRunner(threading.Thread, RunnerBase):
         self.kill_event.set()
 
 
-class FileMonitorRunner(threading.Thread, RunnerBase):
+class FileMonitorRunner(RunnerBase, threading.Thread):
 
     def __init__(self, filename, length, interval, delay, **kwargs):
-        threading.Thread.__init__(self)
-        RunnerBase.__init__(self, **kwargs)
+        super(FileMonitorRunner, self).__init__(**kwargs)
         self.filename = filename
         self.length = length
         self.interval = interval
         self.delay = delay
         self.metadata['FILENAME'] = self.filename
         self.command = 'File monitor for %s' % self.filename
-
-    def start(self):
-        if self._pickled:
-            raise RuntimeError("Attempt to run a pickled runner")
-
-        threading.Thread.start(self)
 
     def run(self):
         if self.start_event is not None:
@@ -229,15 +236,14 @@ class FileMonitorRunner(threading.Thread, RunnerBase):
         self.kill_event.set()
 
 
-class ProcessRunner(threading.Thread, RunnerBase):
+class ProcessRunner(RunnerBase, threading.Thread):
     """Default process runner for any process."""
     silent = False
     supports_remote = True
     _env = {}
 
     def __init__(self, command, delay, remote_host, **kwargs):
-        threading.Thread.__init__(self)
-        RunnerBase.__init__(self, **kwargs)
+        super(ProcessRunner, self).__init__(**kwargs)
 
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
@@ -310,6 +316,7 @@ class ProcessRunner(threading.Thread, RunnerBase):
             prog = self.args[0]
             os.execvpe(prog, self.args, env)
         else:
+            logger.debug("Forked %s as pid %d", self.args[0], pid)
             self.pid = pid
 
     def kill(self, graceful=False):
@@ -347,15 +354,12 @@ class ProcessRunner(threading.Thread, RunnerBase):
             return self.killed
 
     def start(self):
-        if self._pickled:
-            raise RuntimeError("Attempt to run a pickled runner")
-
         if mswindows:
             raise RuntimeError(
                 "Process management currently doesn't work on Windows, "
                 "so running tests is not possible.")
         self.fork()
-        threading.Thread.start(self)
+        super(ProcessRunner, self).start()
 
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
@@ -443,7 +447,7 @@ class DitgRunner(ProcessRunner):
     supports_remote = False
 
     def __init__(self, duration, interval, **kwargs):
-        ProcessRunner.__init__(self, **kwargs)
+        super(DitgRunner, self).__init__(**kwargs)
         if 'control_host' in kwargs:
             control_host = kwargs['control_host']
         else:
@@ -483,7 +487,8 @@ class DitgRunner(ProcessRunner):
         self.command = self.command.format(
             signal_port=params['port'], dest_port=params['port'] + 1)
         self.args = shlex.split(self.command)
-        ProcessRunner.start(self)
+
+        super(DitgRunner, self).start()
 
     def parse(self, output):
         data = ""
@@ -787,7 +792,7 @@ class IperfCsvRunner(ProcessRunner):
             del kwargs['udp']
         else:
             self.udp = False
-        ProcessRunner.__init__(self, **kwargs)
+        super(IperfCsvRunner, self).__init__(**kwargs)
 
     def parse(self, output):
         result = []
@@ -1121,7 +1126,8 @@ class WifiStatsRunner(ProcessRunner):
             del kwargs['stations']
         else:
             self.stations = []
-        ProcessRunner.__init__(self, **kwargs)
+
+        super(WifiStatsRunner, self).__init__(**kwargs)
 
     def parse(self, output):
         results = {}
@@ -1280,7 +1286,7 @@ class ComputingRunner(RunnerBase):
     copied_meta = ['UNITS']
 
     def __init__(self, apply_to=None, post=False, **kwargs):
-        RunnerBase.__init__(self, **kwargs)
+        super(ComputingRunner, self).__init__(**kwargs)
         if apply_to is None:
             self.keys = []
         else:
@@ -1345,7 +1351,7 @@ class SmoothAverageRunner(ComputingRunner):
     command = "Smooth average (computed)"
 
     def __init__(self, smooth_steps=5, **kwargs):
-        ComputingRunner.__init__(self, **kwargs)
+        super(SmoothAverageRunner, self).__init__(**kwargs)
         self._smooth_steps = smooth_steps
         self._avg_values = []
 

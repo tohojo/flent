@@ -140,7 +140,7 @@ class Aggregator(object):
                     watchdog.start()
             shutting_down = False
             for n, t in list(self.threads.items()):
-                while t.isAlive():
+                while t.is_alive():
                     try:
                         t.join(1)
                     except GracefulShutdown:
