@@ -21,7 +21,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import collections
 import math
 import pprint
 import signal
@@ -169,13 +168,12 @@ class Aggregator(object):
                 if t.raw_values:
                     raw_values[n] = t.raw_values
 
-                if t.result is None:
+                if hasattr(t, 'compute_result'):
+                    # The runner is a post-processor(Avg etc), and should be run
+                    # as such (by the postprocess() method)
+                    self.postprocessors.append(t.compute_result)
+                elif t.result is None:
                     continue
-                elif isinstance(t.result, collections.Callable):
-                    # If the result is callable, the runner is really a
-                    # post-processor (Avg etc), and should be run as such (by the
-                    # postprocess() method)
-                    self.postprocessors.append(t.result)
                 elif hasattr(t.result, 'keys'):
                     if not t.result:
                         self.failed_runners += 1

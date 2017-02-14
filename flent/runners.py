@@ -105,9 +105,7 @@ class RunnerBase(object):
         self.returncode = 0
         self.out = self.err = ''
         self._parent = parent
-
-        if not hasattr(self, 'result'):
-            self.result = None
+        self.result = None
 
         self.start_event = start_event
         self.kill_event = kill_event if kill_event is not None else Event()
@@ -1359,7 +1357,7 @@ class ComputingRunner(RunnerBase):
             self.keys = apply_to
         self.metadata['COMPUTED_LATE'] = post
 
-    def result(self, res):
+    def compute_result(self, res):
         if not self.keys:
             return res
 
@@ -1438,7 +1436,7 @@ class SumRunner(ComputingRunner):
 class DiffMinRunner(ComputingRunner):
     command = "Diff from min (computed)"
 
-    def result(self, res):
+    def compute_result(self, res):
         if not self.keys:
             return res
 
