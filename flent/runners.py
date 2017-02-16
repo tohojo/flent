@@ -253,6 +253,13 @@ class ProcessRunner(RunnerBase, threading.Thread):
     def __init__(self, command, delay, remote_host, **kwargs):
         super(ProcessRunner, self).__init__(**kwargs)
 
+        if isinstance(command, dict):
+            self.command = self.find_binary(**command)
+            self.command_args = command
+        else:
+            self.command = command
+            self.command_args = {}
+
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
         # remote hosts. I.e. the same binaries must exist in the same places.
@@ -264,13 +271,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             command = "ssh %s '%s'" % (remote_host, command)
             self.metadata['REMOTE_HOST'] = remote_host
 
-        if isinstance(command, dict):
-            self.command = self.find_binary(**command)
-            self.command_args = command
-        else:
-            self.command = command
-            self.command_args = {}
-
+        self.remote_host = remote_host
         self.args = shlex.split(self.command)
         self.delay = delay
         self.killed = False
