@@ -165,8 +165,7 @@ class Aggregator(object):
                                 pass
                 if t.test_parameters:
                     metadata['test_parameters'].update(t.test_parameters)
-                if t.raw_values:
-                    raw_values[n] = t.raw_values
+                raw_values[n] = t.raw_values
 
                 if hasattr(t, 'compute_result'):
                     # The runner is a post-processor(Avg etc), and should be run
@@ -180,17 +179,24 @@ class Aggregator(object):
                     for k in t.result.keys():
                         key = "%s::%s" % (n, k)
                         result[key] = t.result[k]
-                        if key in self.instances and \
-                           'transformers' in self.instances[key]:
-                            for tr in self.instances[key]['transformers']:
-                                result[key] = tr(result[key])
                 else:
                     if not t.result:
                         self.failed_runners += 1
                     result[n] = t.result
-                    if 'transformers' in self.instances[n]:
-                        for tr in self.instances[n]['transformers']:
-                            result[n] = tr(result[n])
+
+                for c in t.child_results:
+                    for k, v in c.items():
+                        key = "%s::%s" % (n, k)
+                        if key in result:
+                            raise RuntimeError(
+                                "Duplicate key '%s' from child runner" % key)
+                        result[key] = v
+
+            for key in result.keys():
+                if key in self.instances and \
+                   'transformers' in self.instances[key]:
+                    for tr in self.instances[key]['transformers']:
+                        result[key] = tr(result[key])
 
         except KeyboardInterrupt:
             self.kill_runners()

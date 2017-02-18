@@ -100,7 +100,7 @@ class RunnerBase(object):
         self.settings = settings
         self.idx = idx
         self.test_parameters = {}
-        self.raw_values = []
+        self._raw_values = []
         self.command = None
         self.returncode = 0
         self.out = self.err = ''
@@ -187,6 +187,27 @@ class RunnerBase(object):
                 parent=self)
         self._child_runners.append(c)
 
+    @property
+    def child_results(self):
+        for c in self._child_runners:
+            res = c.result
+            if res and hasattr(res, 'items'):
+                yield res
+
+    def get_raw_values(self):
+        if not self._child_runners:
+            return self._raw_values
+
+        vals = list(self._raw_values)
+        for c in self._child_runners:
+            vals.extend(c.raw_values)
+        return sorted(vals, key=lambda v: v['t'])
+
+    def set_raw_values(self, val):
+        self._raw_values = val
+
+    raw_values = property(get_raw_values, set_raw_values)
+
 
 class TimerRunner(RunnerBase, threading.Thread):
 
@@ -232,7 +253,7 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
                         result.append((current_time, val))
                     except ValueError:
                         val = val.strip()
-                    self.raw_values.append({'t': current_time, 'val': val})
+                    self._raw_values.append({'t': current_time, 'val': val})
                 except IOError as e:
                     self.err += "Error opening file {}: {}\n".format(
                         self.filename, e)
@@ -261,7 +282,6 @@ class ProcessRunner(RunnerBase, threading.Thread):
         self.returncode = None
         self.kill_lock = threading.Lock()
         self.test_parameters = {}
-        self.raw_values = []
         self.stdout = None
         self.stderr = None
 
@@ -1089,7 +1109,7 @@ class TcRunner(ProcessRunner):
                 else:
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
-            self.raw_values.append(matches)
+            self._raw_values.append(matches)
         return results
 
     @classmethod
@@ -1158,7 +1178,7 @@ class CpuStatsRunner(ProcessRunner):
                 else:
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
-            self.raw_values.append(matches)
+            self._raw_values.append(matches)
         return results
 
     @classmethod
@@ -1264,7 +1284,7 @@ class WifiStatsRunner(ProcessRunner):
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
             matches['stations'] = stations
-            self.raw_values.append(matches)
+            self._raw_values.append(matches)
 
         if self.all_stations:
             self.test_parameters['wifi_stats_stations'] = ",".join(self.stations)
@@ -1332,7 +1352,7 @@ class NetstatRunner(ProcessRunner):
                 else:
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
-            self.raw_values.append(matches)
+            self._raw_values.append(matches)
         return results
 
     @classmethod
