@@ -685,8 +685,8 @@ class NetperfDemoRunner(ProcessRunner):
             args['format'] = "-f m"
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
-            "-H {control_host} -t {test} -l {length:d} {format} " \
-            "{control_local_bind} {extra_args} -- {socket_timeout} " \
+            "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
+            "{format} {control_local_bind} {extra_args} -- {socket_timeout} " \
             "{local_bind} -H {host} {extra_test_args}".format(**args)
 
 

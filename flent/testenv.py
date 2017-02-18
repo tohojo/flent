@@ -186,6 +186,7 @@ class TestEnvironment(object):
         args.setdefault('ip_version', self.env['IP_VERSION'])
         args.setdefault('interval', self.env['STEP_SIZE'])
         args.setdefault('control_host', self.env['CONTROL_HOST'] or host)
+        args.setdefault('control_port', self.env['NETPERF_CONTROL_PORT'])
         args.setdefault('local_bind', self.env['LOCAL_BIND'][
                         0] if self.env['LOCAL_BIND'] else "")
         args.setdefault('control_local_bind', self.env[
