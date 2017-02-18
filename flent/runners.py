@@ -176,6 +176,7 @@ class RunnerBase(object):
                      self.name, extra={'runner': self})
 
     def add_child(self, cls, *args):
+        logger.debug("%s: Adding child %s", self.name, cls.__name__)
         c = cls(*args,
                 name="%s :: child %d" % (self.name, len(self._child_runners)),
                 settings=self.settings,
