@@ -254,12 +254,28 @@ class ProcessRunner(RunnerBase, threading.Thread):
     def __init__(self, command, delay, remote_host, **kwargs):
         super(ProcessRunner, self).__init__(**kwargs)
 
+        self.remote_host = remote_host
+        self.delay = delay
+        self.killed = False
+        self.pid = None
+        self.returncode = None
+        self.kill_lock = threading.Lock()
+        self.test_parameters = {}
+        self.raw_values = []
+        self.stdout = None
+        self.stderr = None
+
+        if 'units' in kwargs:
+            self.metadata['UNITS'] = kwargs['units']
+
         if isinstance(command, dict):
             self.command = self.find_binary(**command)
             self.command_args = command
         else:
             self.command = command
             self.command_args = {}
+        self.args = shlex.split(self.command)
+        self.metadata['COMMAND'] = self.command
 
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
@@ -271,22 +287,6 @@ class ProcessRunner(RunnerBase, threading.Thread):
                         self.__class__.__name__, self.idx))
             command = "ssh %s '%s'" % (remote_host, command)
             self.metadata['REMOTE_HOST'] = remote_host
-
-        self.remote_host = remote_host
-        self.args = shlex.split(self.command)
-        self.delay = delay
-        self.killed = False
-        self.pid = None
-        self.returncode = None
-        self.kill_lock = threading.Lock()
-        self.metadata['COMMAND'] = command
-        self.test_parameters = {}
-        self.raw_values = []
-        self.stdout = None
-        self.stderr = None
-
-        if 'units' in kwargs:
-            self.metadata['UNITS'] = kwargs['units']
 
     def handle_usr2(self, signal, frame):
         if self.start_event is not None:
