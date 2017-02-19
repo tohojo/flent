@@ -367,6 +367,15 @@ test_group.add_argument(
     "netperf TCP_MAERTS and TCP_STREAM parameters, so only works for tests "
     "that employ these as their data transfer, and only for the TCP streams.")
 
+test_group.add_argument(
+    "--socket-stats",
+    action="store_true", dest="SOCKET_STATS",
+    help="Parse socket stats during test. This will capture and parse socket "
+    "statistics for all TCP upload flows during a test, adding TCP cwnd and RTT "
+    "values to the test data. Requires the 'ss' utility to be present on the "
+    "system, and can fail if there are too many simultaneous upload flows; which "
+    "is why this option is not enabled by default.")
+
 plot_group = parser.add_argument_group(
     "Plot configuration",
     "These options are used to configure the appearance of "

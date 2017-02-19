@@ -704,7 +704,7 @@ class NetperfDemoRunner(ProcessRunner):
         if args['test'] in ("TCP_STREAM", "TCP_MAERTS", "omni"):
             args['format'] = "-f m"
 
-            if args['test'] == 'TCP_STREAM':
+            if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
                 self.ctrl_port = args['control_port']
                 ss_args = {'host': self.remote_host or 'localhost',
                            'interval': args['interval'],
