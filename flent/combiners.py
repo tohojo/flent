@@ -548,8 +548,11 @@ class MeanZeroReducer(Reducer):
 
 class RawReducer(Reducer):
 
-    def _get_series(self, resultset, name):
+    def _get_series(self, resultset, name, ensure='val'):
         data = resultset.raw_values[name]
+        if ensure:
+            data = [d for d in data if ensure in d]
+
         if data and self.cutoff is not None:
             start, end = self.cutoff
             min_t = min((d['t'] for d in data))
@@ -559,6 +562,7 @@ class RawReducer(Reducer):
                 return [d for d in data if d['t'] > start_t and d['t'] < end_t]
             else:
                 return [d for d in data if d['t'] > start_t]
+
         return data
 
     def reduce(self, resultset, series, data=None):
@@ -596,7 +600,7 @@ class RawSeqLossReducer(RawReducer):
         if '::' in key:
             key = key.split("::")[0]
         try:
-            data = self._get_series(resultset, key)
+            data = self._get_series(resultset, key, ensure='seq')
             seqs = [d['seq'] for d in data]
 
             return 1 - len(seqs) / (max(seqs) - min(seqs) + 1)
