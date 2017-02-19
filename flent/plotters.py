@@ -1510,6 +1510,7 @@ class CdfPlotter(Plotter):
         for s in config['series']:
             if not s['data'] in results.series_names:
                 data.append([])
+                sizes.append(0)
                 continue
             s_data = results.series(s['data'])
             if 'cutoff' in config and config['cutoff']:
