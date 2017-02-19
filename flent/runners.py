@@ -1064,8 +1064,8 @@ class SsRunner(ProcessRunner):
         cwnd = int(cwnd.group('cwnd'))
         rtt, rtt_var = [float(x) for x in rtt.group('rtt').split('/')]
 
-        raw_values = {'t': timestamp, 'cwnd': cwnd,
-                      'rtt': rtt, 'rtt_var': rtt_var}
+        raw_values = {'t': timestamp, 'tcp_cwnd': cwnd,
+                      'tcp_rtt': rtt, 'tcp_rtt_var': rtt_var}
         self._raw_values.append(raw_values)
 
         return raw_values
