@@ -702,6 +702,14 @@ class NetperfDemoRunner(ProcessRunner):
             args['socket_timeout'] = ""
 
         if args['test'] in ("TCP_STREAM", "TCP_MAERTS", "omni"):
+            self.ctrl_port = args['control_port']
+            ss_args = {'host': self.remote_host or 'localhost',
+                       'interval': args['interval'],
+                       'length': args['length'],
+                       'target': args['host'],
+                       'ip_version': args['ip_version']}
+
+            self.add_child(SsRunner, ss_args, self.delay, None)
             args['format'] = "-f m"
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
@@ -970,6 +978,138 @@ class IperfCsvRunner(ProcessRunner):
                     "an --enhancedreport option. Not using.")
 
         raise RuntimeError("No suitable Iperf binary found.")
+
+
+class ParseException(Exception):
+    pass
+
+
+class SsRunner(ProcessRunner):
+    """Runner for iterated `ss -t -i -p`. Depends on same partitial output
+    separationa and time stamping as TcRunner."""
+
+    ip_v4_addr_sub_re = "([0-9]{1,3}.){3}[0-9]{1,3}(:\d+)"
+    # ref.: to commented, untinkered version: ISBN 978-0-596-52068-7
+    ip_v6_addr_sub_re = "(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
+                        "(?=(?:[A-F0-9]{0,4}:){0,7}[A-F0-9]{0,4})" \
+                        "(([0-9A-F]{1,4}:){1,7}|:)((:[0-9A-F]{1,4})" \
+                        "{1,7}|:))(:\d+)"
+
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    cwnd_re = re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE)
+    rtt_re = re.compile(r"rtt:(?P<rtt>\d+\.\d+/\d+\.\d+)", re.MULTILINE)
+    pid_re = re.compile(r"pid=(?P<pid>\d+)", re.MULTILINE)
+    ports_ipv4_re = re.compile(r"" + "(?P<src_p>" + ip_v4_addr_sub_re + ")" +
+                               "\s+" + "(?P<dst_p>" + ip_v4_addr_sub_re + ")")
+    ports_ipv6_re = re.compile(r"" + "(?P<src_p>" + ip_v6_addr_sub_re + ")" +
+                               "\s+" + "(?P<dst_p>" + ip_v6_addr_sub_re + ")",
+                               re.IGNORECASE)
+    ss_header_re = re.compile(r"" + "State\s+Recv-Q\s+Send-Q\s+Local")
+
+    src_p = []
+    dst_p = []
+    # ref.: upstream ss
+    ss_states = ["UNKNOWN", "ESTAB", "SYN-SENT", "SYN-RECV", "FIN-WAIT-1",
+                 "FIN-WAIT-2", "TIME-WAIT", "UNCONN", "CLOSE-WAIT", "LAST-ACK",
+                 "LISTEN", "CLOSING"]
+    ss_states_re = re.compile(r"|".join(ss_states))
+
+    def __init__(self, *args, **kwargs):
+        super(SsRunner, self).__init__(*args, **kwargs)
+        self.ctrl_port = str(self._parent.ctrl_port)
+
+    def filter_np_parent(self, part):
+        sub_part = []
+        sub_parts = self.ss_states_re.split(part)
+        sub_parts = [sp for sp in sub_parts if sp.strip()
+                     and not self.ss_header_re.search(sp)]
+
+        for sp in sub_parts:
+            pid = self.pid_re.search(sp)
+            if None is pid:
+                continue
+            pid_str = pid.group('pid')
+
+            f_ports = self.ports_ipv4_re.search(sp)
+            if None is f_ports:
+                f_ports = self.ports_ipv6_re.search(sp)
+
+            if None is f_ports:
+                raise ParseException()
+
+            dst_p = str(f_ports.group('dst_p').split(":")[-1])
+
+            if self.par_pid == pid_str and dst_p != self.ctrl_port:
+                sub_part.append(sp)
+
+        if 1 != len(sub_part):
+            raise ParseException()
+
+        return sub_part[0]
+
+    def parse_part(self, part):
+        sub_part = self.filter_np_parent(part)
+
+        timestamp = self.time_re.search(part)
+
+        cwnd = self.cwnd_re.search(sub_part)
+        rtt = self.rtt_re.search(sub_part)
+
+        if None in [timestamp, cwnd, rtt]:
+            raise ParseException()
+
+        timestamp = float(timestamp.group('timestamp'))
+        cwnd = int(cwnd.group('cwnd'))
+        rtt, rtt_var = [float(x) for x in rtt.group('rtt').split('/')]
+
+        raw_values = {'t': timestamp, 'cwnd': cwnd,
+                      'rtt': rtt, 'rtt_var': rtt_var}
+        self._raw_values.append(raw_values)
+
+        return raw_values
+
+    def parse(self, output):
+        self.par_pid = str(self._parent.pid)
+        results = {}
+        parts = output.split("\n---\n")
+        for part in parts:
+            try:
+                res_dict = self.parse_part(part)
+                t = res_dict['t']
+                for k, v in res_dict.items():
+                    if k == 't':
+                        continue
+                    if k not in results:
+                        results[k] = [[t, v]]
+                    else:
+                        results[k].append([t, v])
+
+            except ParseException:
+                continue
+
+        return results
+
+    def find_binary(self, ip_version, host, interval, length, target):
+        script = os.path.join(DATA_DIR, 'scripts', 'ss_iterate.sh')
+        if not os.path.exists(script):
+            raise RuntimeError("Cannot find ss_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RuntimeError("Socket stats requires a Bash shell.")
+
+        resol_target = util.lookup_host(target, ip_version)[4][0]
+        if ip_version == 6:
+            resol_target = "[" + str(resol_target) + "]"
+
+        return "{bash} {script} -I {interval:.2f} " \
+            "-c {count:.0f} -H {host} -t \"{target}\"".format(
+                bash=bash,
+                script=script,
+                interval=interval,
+                count=length // interval + 1,
+                host=host,
+                target=resol_target)
 
 
 class TcRunner(ProcessRunner):
