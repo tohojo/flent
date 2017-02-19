@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import argparse
 import bz2
+import fnmatch
 import gzip
 import io
 import os
@@ -34,7 +35,6 @@ from bisect import bisect_left
 from copy import copy
 from calendar import timegm
 from datetime import datetime
-from fnmatch import fnmatch
 from math import ceil, log10, exp, sqrt
 
 ENCODING = "UTF-8"
@@ -332,8 +332,13 @@ class Glob(object):
             pattern = self.pattern.format(**args)
         else:
             pattern = self.pattern
+
+        # Exclude colons from * matching
+        re_pat = fnmatch.translate(pattern).replace(".*", "[^:]*")
+        regex = re.compile(re_pat)
+
         exclude += self.exclude
-        return [x for x in values if fnmatch(x, pattern) and x not in exclude]
+        return [x for x in values if regex.match(x) and x not in exclude]
 
     def __iter__(self):
         return iter((self,))  # allow list(g) to return [g]
