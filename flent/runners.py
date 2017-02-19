@@ -424,8 +424,6 @@ class ProcessRunner(RunnerBase, threading.Thread):
                 pid, sts = os.waitpid(self.pid, os.WNOHANG)
 
         self.finish_event.set()
-        logger.debug("%s %s finished", self.__class__.__name__,
-                     self.name, extra={'runner': self})
 
         self.returncode = _handle_exitstatus(sts)
 
@@ -464,6 +462,9 @@ class ProcessRunner(RunnerBase, threading.Thread):
         if not self.result and not self.silent:
             logger.warning("Command produced no valid data.",
                            extra={'runner': self})
+
+        logger.debug("%s %s finished", self.__class__.__name__,
+                     self.name, extra={'runner': self})
 
     def parse(self, output):
         """Default parser returns the last (whitespace-separated) word of
