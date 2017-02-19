@@ -702,15 +702,17 @@ class NetperfDemoRunner(ProcessRunner):
             args['socket_timeout'] = ""
 
         if args['test'] in ("TCP_STREAM", "TCP_MAERTS", "omni"):
-            self.ctrl_port = args['control_port']
-            ss_args = {'host': self.remote_host or 'localhost',
-                       'interval': args['interval'],
-                       'length': args['length'],
-                       'target': args['host'],
-                       'ip_version': args['ip_version']}
-
-            self.add_child(SsRunner, ss_args, self.delay, None)
             args['format'] = "-f m"
+
+            if args['test'] == 'TCP_STREAM':
+                self.ctrl_port = args['control_port']
+                ss_args = {'host': self.remote_host or 'localhost',
+                           'interval': args['interval'],
+                           'length': args['length'],
+                           'target': args['host'],
+                           'ip_version': args['ip_version']}
+
+                self.add_child(SsRunner, ss_args, self.delay, None)
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
             "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
