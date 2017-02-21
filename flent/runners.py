@@ -991,6 +991,11 @@ class SsRunner(ProcessRunner):
     """Runner for iterated `ss -t -i -p`. Depends on same partitial output
     separationa and time stamping as TcRunner."""
 
+    # Keep track of runners to avoid duplicates (relies on this being a class
+    # variable, and so the same dictionary instance across all instances of the
+    # class).
+    _duplicate_map = {}
+
     ip_v4_addr_sub_re = "([0-9]{1,3}.){3}[0-9]{1,3}(:\d+)"
     # ref.: to commented, untinkered version: ISBN 978-0-596-52068-7
     ip_v6_addr_sub_re = "(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
@@ -1017,9 +1022,42 @@ class SsRunner(ProcessRunner):
                  "LISTEN", "CLOSING"]
     ss_states_re = re.compile(r"|".join(ss_states))
 
-    def __init__(self, exclude_ports, *args, **kwargs):
+    def __init__(self, exclude_ports, cmdargs, *args, **kwargs):
         self.exclude_ports = exclude_ports
-        super(SsRunner, self).__init__(*args, **kwargs)
+        super(SsRunner, self).__init__(cmdargs, *args, **kwargs)
+
+        dup_key = (cmdargs['host'], cmdargs['interval'], cmdargs['length'],
+                   cmdargs['target'], cmdargs['ip_version'],
+                   tuple(self.exclude_ports))
+
+        if dup_key in self._duplicate_map:
+            logger.debug("Found duplicate SsRunner, reusing output")
+            self._dup_runner = self._duplicate_map[dup_key]
+            self.command = "%s (duplicate)" % self.command
+        else:
+            self._dup_runner = None
+            self._duplicate_map[dup_key] = self
+
+    def fork(self):
+        if self._dup_runner is None:
+            super(SsRunner, self).fork()
+
+    def run(self):
+        if self._dup_runner is None:
+            super(SsRunner, self).run()
+            return
+
+        self._dup_runner.join()
+        logger.debug("%s %s finished", self.__class__.__name__,
+                     self.name, extra={'runner': self})
+
+        self.out = self._dup_runner.out
+        self.err = self._dup_runner.err
+
+        self.result = self.parse(self.out)
+        if not self.result and not self.silent:
+            logger.warning("Command produced no valid data.",
+                           extra={'runner': self})
 
     def filter_np_parent(self, part):
         sub_part = []
