@@ -706,14 +706,14 @@ class NetperfDemoRunner(ProcessRunner):
             args['format'] = "-f m"
 
             if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
-                self.ctrl_port = args['control_port']
                 ss_args = {'host': self.remote_host or 'localhost',
                            'interval': args['interval'],
                            'length': args['length'],
                            'target': args['host'],
                            'ip_version': args['ip_version']}
 
-                self.add_child(SsRunner, ss_args, self.delay, None)
+                self.add_child(SsRunner, [args['control_port']],
+                               ss_args, self.delay, None)
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
             "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
@@ -1017,9 +1017,9 @@ class SsRunner(ProcessRunner):
                  "LISTEN", "CLOSING"]
     ss_states_re = re.compile(r"|".join(ss_states))
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, exclude_ports, *args, **kwargs):
+        self.exclude_ports = exclude_ports
         super(SsRunner, self).__init__(*args, **kwargs)
-        self.ctrl_port = str(self._parent.ctrl_port)
 
     def filter_np_parent(self, part):
         sub_part = []
@@ -1040,9 +1040,9 @@ class SsRunner(ProcessRunner):
             if None is f_ports:
                 raise ParseException()
 
-            dst_p = str(f_ports.group('dst_p').split(":")[-1])
+            dst_p = int(f_ports.group('dst_p').split(":")[-1])
 
-            if self.par_pid == pid_str and dst_p != self.ctrl_port:
+            if self.par_pid == pid_str and dst_p not in self.exclude_ports:
                 sub_part.append(sp)
 
         if 1 != len(sub_part):
@@ -1105,14 +1105,19 @@ class SsRunner(ProcessRunner):
         if ip_version == 6:
             resol_target = "[" + str(resol_target) + "]"
 
+        filt = ""
+        for p in self.exclude_ports:
+            filt = "{} and dport != {}".format(filt, p)
+
         return "{bash} {script} -I {interval:.2f} " \
-            "-c {count:.0f} -H {host} -t \"{target}\"".format(
+            "-c {count:.0f} -H {host} -t '{target}' -f '{filt}'".format(
                 bash=bash,
                 script=script,
                 interval=interval,
                 count=length // interval + 1,
                 host=host,
-                target=resol_target)
+                target=resol_target,
+                filt=filt)
 
 
 class TcRunner(ProcessRunner):

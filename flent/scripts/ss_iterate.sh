@@ -17,18 +17,20 @@
 count=10
 interval=0.1
 host=localhost
+filter=""
 
 usage()
 {
     echo "$0 -c count -I interval -H host -t target"
 }
 
-while getopts "c:I:H:t:p:" opt; do
+while getopts "c:I:H:t:p:f:" opt; do
     case $opt in
         c) count="$OPTARG" ;;
         I) interval="$OPTARG" ;;
         H) host="$OPTARG" ;;
         t) target="$OPTARG" ;;
+        f) filter="$OPTARG" ;;
     esac
 done
 
@@ -40,7 +42,7 @@ fi
 
 command_string=$(cat <<EOF
 for i in \$(seq $count); do
-    ss -t -i -p -n state connected dst "$target"
+    ss -t -i -p -n state connected "dst $target $filter"
     date '+Time: %s.%N';
     echo "---";
     sleep $interval || exit 1;
