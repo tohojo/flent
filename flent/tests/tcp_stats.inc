@@ -30,7 +30,7 @@ PLOTS['tcp_rtt_cdf'] = {'description': 'TCP RTT statistics',
 new_sets = {}
 for k, v in DATA_SETS.items():
     if v['runner'] == 'netperf_demo':
-        if 'dupliates' in v:
+        if 'duplicates' in v:
             for i in range(v['duplicates']):
                 new_sets["%s::%d::tcp_cwnd" % (k, i+1)] = {'runner': 'null',
                                                            'units': 'packets',
