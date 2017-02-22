@@ -27,6 +27,7 @@ import sys
 from logging import StreamHandler, FileHandler, Formatter
 
 err_handler = out_handler = cache_handler = None
+logfiles = set()
 START_MARKER = "-- OUTPUT START -->"
 END_MARKER = "<-- OUTPUT END --"
 
@@ -220,6 +221,10 @@ def add_common_filters(handler):
 
 
 def setup_logfile(filename, level=DEBUG, maxlevel=None):
+    if filename in logfiles:
+        return
+    logfiles.add(filename)
+
     logger = logging.getLogger()
 
     handler = FileHandler(filename, encoding='utf-8')
