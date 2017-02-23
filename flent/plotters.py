@@ -841,7 +841,6 @@ class Plotter(ArgParam):
             art = self.figure.suptitle(self.override_title,
                                        fontsize=14, y=title_y)
             titles.append(art)
-            self.top_artists.append(art)
             self.title = self.override_title
         elif self.print_title:
             plot_title = self.description
@@ -1338,7 +1337,6 @@ class BoxPlotter(TimeseriesPlotter):
             t.set_position((x, max_y + abs(max_y - min_y) * mult))
 
         self.artists.extend(texts)
-        self.top_artists = texts
 
         axis.set_xlim(0, pos - 1)
         axis.set_xticks(ticks)
@@ -1459,7 +1457,6 @@ class BarPlotter(BoxPlotter):
             axis.set_xticklabels([])
 
         self.artists.extend(texts)
-        self.top_artists = texts
 
 
 class BarCombinePlotter(CombineManyPlotter, BarPlotter):
