@@ -1022,12 +1022,12 @@ class SsRunner(ProcessRunner):
                  "LISTEN", "CLOSING"]
     ss_states_re = re.compile(r"|".join(ss_states))
 
-    def __init__(self, exclude_ports, cmdargs, *args, **kwargs):
+    def __init__(self, exclude_ports, command, *args, **kwargs):
         self.exclude_ports = exclude_ports
-        super(SsRunner, self).__init__(cmdargs, *args, **kwargs)
+        super(SsRunner, self).__init__(command, *args, **kwargs)
 
-        dup_key = (cmdargs['host'], cmdargs['interval'], cmdargs['length'],
-                   cmdargs['target'], cmdargs['ip_version'],
+        dup_key = (command['host'], command['interval'], command['length'],
+                   command['target'], command['ip_version'],
                    tuple(self.exclude_ports))
 
         if dup_key in self._duplicate_map:
