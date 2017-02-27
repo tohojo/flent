@@ -478,8 +478,9 @@ class ResultSet(object):
             r._loaded_from = os.path.realpath(filename)
             fp.close()
             return r
-        except IOError:
-            raise RuntimeError("Unable to read input file: '%s'" % filename)
+        except IOError as e:
+            raise RuntimeError("Unable to read input file '%s': %s"
+                               % (filename, e))
 
     @classmethod
     def loads(cls, s):
