@@ -134,7 +134,7 @@ if PY2:
             return x
 
     LINESTYLES = list(map(filt, LINESTYLES))
-    MARKERS = list(map(filt, LINESTYLES))
+    MARKERS = list(map(filt, MARKERS))
     COLOURS = list(map(filt, COLOURS))
 
     for k, v in MATPLOTLIB_STYLES.items():
