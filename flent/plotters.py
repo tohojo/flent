@@ -1012,6 +1012,28 @@ class Plotter(ArgParam):
         idx = int(len(lst) * (q / 100.0))
         return numpy.sort(lst)[idx]
 
+    def get_series(self, series, results, config, norm=None):
+        if 'smoothing' in series:
+            smooth = series['smoothing']
+        else:
+            smooth = False
+
+        if 'stacked' in config and config['stacked']:
+            data = numpy.array((results.x_values,
+                               results.series(series['data'], smooth)))
+
+        data = numpy.array(results.raw_series(series['data'], smooth,
+                                              raw_key=series.get('raw_key')))
+        print(data)
+
+        if norm:
+            y_values = [y / norm if y is not None else None
+                        for y in y_values]
+
+        return data
+
+
+
 
 class CombineManyPlotter(object):
 
@@ -1101,19 +1123,14 @@ class TimeseriesPlotter(Plotter):
 
         stack = 'stacked' in config and config['stacked']
 
-        xlim = axis.get_xlim()
-        axis.set_xlim(
-            min(results.x_values + [xlim[0]]
-                ) if xlim[0] > 0 else min(results.x_values),
-            max(results.x_values + [self.metadata['TOTAL_LENGTH'], xlim[1]])
-        )
+        x_min = x_max = 0
 
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
-            norms = None
+            norms = [None] * len(config['series'])
 
-        data = []
+        alldata = numpy.array(dtype=float)
         for i in range(len(config['axes'])):
             data.append([])
 
@@ -1123,12 +1140,13 @@ class TimeseriesPlotter(Plotter):
             sums = numpy.zeros(len(results.x_values))
 
         for i, s in enumerate(config['series']):
-            if not s['data'] in results.series_names:
+            data = self.get_series(s, results, config, norm=norms[i])
+            if data is None:
                 continue
-            if 'smoothing' in s:
-                smooth = s['smoothing']
-            else:
-                smooth = False
+
+            x_min = min(data[0].min(), x_min)
+            x_max = max(data[0].max(), x_max)
+
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
@@ -1142,10 +1160,6 @@ class TimeseriesPlotter(Plotter):
 
             kwargs.update(extra_kwargs)
 
-            y_values = results.series(s['data'], smooth)
-            if norms is not None:
-                y_values = [y / norms[i] if y is not None else None
-                            for y in y_values]
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
@@ -1155,18 +1169,22 @@ class TimeseriesPlotter(Plotter):
                 kwargs['facecolor'] = kwargs['color']
                 kwargs['edgecolor'] = 'none'
                 del kwargs['color']
-                y_values = numpy.array(y_values, dtype=float)
 
                 config['axes'][a].fill_between(
-                    results.x_values, sums, y_values + sums, **kwargs)
-                sums += y_values
+                    data[0], sums, data[1] + sums, **kwargs)
+                sums += data[1]
             else:
                 data[a] += y_values
                 for r in self.scale_data + extra_scale_data:
-                    data[a] += r.series(s['data'], smooth)
-                self.data_artists.extend(config['axes'][a].plot(results.x_values,
-                                                                y_values,
+                    _, d = r.raw_series(s['data'], smooth)
+                    data[a] += d
+                self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
+
+        xlim = axis.get_xlim()
+        axis.set_xlim(
+            min(x_min, xlim[0]) if xlim[0] > 0 else x_min,
+            max(x_max, self.metadata['TOTAL_LENGTH'], xlim[1]))
 
         if 'scaling' in config:
             btm, top = config['scaling']
@@ -1174,16 +1192,16 @@ class TimeseriesPlotter(Plotter):
             btm, top = 0, 100
 
         for a in range(len(config['axes'])):
-            if data[a]:
-                self._do_scaling(config['axes'][a], data[
-                                 a], btm, top, config['units'][a])
+#            if data[a]:
+#                self._do_scaling(config['axes'][a], data[
+#                                 a], btm, top, config['units'][a])
 
             # Handle cut-off data sets. If the x-axis difference between the
             # largest data point and the TOTAL_LENGTH from settings, scale to
             # the data values, but round to nearest 10 above that value.
             try:
                 max_xdata = max([l.get_xdata()[-1]
-                                 for l in config['axes'][a].get_lines()])
+                                 for l in config['axes'][a].get_lines() if l.get_xdata()])
                 if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
                     config['axes'][a].set_xlim(
                         right=(max_xdata + (10 - max_xdata % 10)))
