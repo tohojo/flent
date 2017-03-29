@@ -790,13 +790,14 @@ class Plotter(ArgParam):
                         1 - (bbox.x1 - fig_bbox.x1) / w,
                         1 - (bbox.y1 - fig_bbox.y1) / h]
 
-
                 self.figure.tight_layout(pad=0.5, rect=rect)
                 args = {}
-        except (AttributeError, ImportError):
-            pass
+        except (AttributeError, ImportError, ValueError) as e:
+            logger.warning("Unable to build our own tight layout: %s", e)
+
         # Fall back to the regular bbox_extra_artists output feature
         if args is None:
+            logger.debug("Falling back to bbox_inches=tight layout")
             args = {'bbox_extra_artists': artists, 'bbox_inches': 'tight'}
         return args
 
