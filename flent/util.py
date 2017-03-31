@@ -327,6 +327,9 @@ class Glob(object):
             self.exclude = exclude
         self.pattern = pattern
 
+    def __repr__(self):
+        return "<Glob: %s (excl: %s)>" % (self.pattern, ",".join(self.exclude))
+
     def filter(self, values, exclude, args=None):
         if args is not None:
             pattern = self.pattern.format(**args)
