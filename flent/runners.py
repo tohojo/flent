@@ -1037,6 +1037,7 @@ class SsRunner(ProcessRunner):
         else:
             self._dup_runner = None
             self._duplicate_map[dup_key] = self
+            self._dup_key = dup_key
 
     def fork(self):
         if self._dup_runner is None:
@@ -1045,6 +1046,7 @@ class SsRunner(ProcessRunner):
     def run(self):
         if self._dup_runner is None:
             super(SsRunner, self).run()
+            del self._duplicate_map[self._dup_key]
             return
 
         self._dup_runner.join()
