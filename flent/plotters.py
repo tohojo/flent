@@ -25,7 +25,7 @@ import inspect
 import io
 import re
 
-from flent import combiners
+from flent import combiners, transformers
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
@@ -598,9 +598,11 @@ class Plotter(ArgParam):
                         new_series.append(dict(s, data=d))
             else:
                 new_series.append(s)
+
         if self.filter_series:
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
+
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
@@ -966,8 +968,11 @@ class Plotter(ArgParam):
 
     def _do_scaling(self, axis, data, btm, top, unit=None, allow_log=True):
         """Scale the axis to the selected bottom/top percentile"""
-        data = [x for x in data if x is not None]
-        if not data:
+
+        if not hasattr(data, 'shape'):
+            data = numpy.array(data, dtype=float)
+
+        if not data.any():
             return
 
         top_percentile = self._percentile(data, top)
@@ -997,20 +1002,23 @@ class Plotter(ArgParam):
         if self.invert_y and unit in self.inverted_units:
             axis.invert_yaxis()
 
-    def _percentile(self, lst, q):
-        """Primitive percentile calculation for axis scaling.
+    def _percentile(self, a, q):
+        """Percentile calculation for axis scaling.
 
-        Implemented here since old versions of numpy don't include
-        the percentile function."""
-        q = int(q)
-        if q == 0:
-            return min(lst)
-        elif q == 100:
-            return max(lst)
-        elif q < 0 or q > 100:
-            raise ValueError("Invalid percentile: %s" % q)
-        idx = int(len(lst) * (q / 100.0))
-        return numpy.sort(lst)[idx]
+        Compatibility for versions of numpy that do not have nanpercentile."""
+
+        # nanpercentile was only added in numpy 1.9
+        if hasattr(numpy, 'nanpercentile'):
+            return numpy.nanpercentile(a, q)
+
+        a = numpy.ma.compressed(numpy.ma.masked_invalid(a))
+        return numpy.percentile(a, q)
+
+    def _transform_data(self, data, t):
+        t = t.strip()
+        if hasattr(transformers, t):
+            data = getattr(transformers, t)(data)
+        return data
 
     def get_series(self, series, results, config, norm=None):
         if 'smoothing' in series:
@@ -1021,14 +1029,19 @@ class Plotter(ArgParam):
         if 'stacked' in config and config['stacked']:
             data = numpy.array((results.x_values,
                                results.series(series['data'], smooth)))
+        else:
 
-        data = numpy.array(results.raw_series(series['data'], smooth,
-                                              raw_key=series.get('raw_key')))
-        #print(data)
+            data = numpy.array(results.raw_series(series['data'], smooth,
+                                                  raw_key=series.get('raw_key')),
+                               dtype=float)
+
+            dcfg = self.data_config[series['data']]
+            if 'data_transform' in dcfg \
+               and 'FAKE_RAW_VALUES' not in results.meta():
+                data[1] = self._transform_data(data[1], dcfg['data_transform'])
 
         if norm:
-            y_values = [y / norm if y is not None else None
-                        for y in y_values]
+            data[1] /= norm
 
         return data
 
@@ -1163,7 +1176,7 @@ class TimeseriesPlotter(Plotter):
             else:
                 a = 0
 
-            alldata[a] = numpy.append(alldata[a], data)
+            alldata[a] = numpy.append(alldata[a], data[1])
 
             if stack:
                 kwargs['facecolor'] = kwargs['color']
