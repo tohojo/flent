@@ -1024,7 +1024,7 @@ class Plotter(ArgParam):
 
         data = numpy.array(results.raw_series(series['data'], smooth,
                                               raw_key=series.get('raw_key')))
-        print(data)
+        #print(data)
 
         if norm:
             y_values = [y / norm if y is not None else None
@@ -1130,9 +1130,7 @@ class TimeseriesPlotter(Plotter):
         else:
             norms = [None] * len(config['series'])
 
-        alldata = numpy.array(dtype=float)
-        for i in range(len(config['axes'])):
-            data.append([])
+        alldata = [numpy.empty(0, dtype=float) for i in config['axes']]
 
         colours = cycle(self.colours)
 
@@ -1165,6 +1163,8 @@ class TimeseriesPlotter(Plotter):
             else:
                 a = 0
 
+            alldata[a] = numpy.append(alldata[a], data)
+
             if stack:
                 kwargs['facecolor'] = kwargs['color']
                 kwargs['edgecolor'] = 'none'
@@ -1174,10 +1174,9 @@ class TimeseriesPlotter(Plotter):
                     data[0], sums, data[1] + sums, **kwargs)
                 sums += data[1]
             else:
-                data[a] += y_values
                 for r in self.scale_data + extra_scale_data:
-                    _, d = r.raw_series(s['data'], smooth)
-                    data[a] += d
+                    d = self.get_series(s, r, config, norm=norms[i])
+                    alldata[a] = numpy.append(alldata[a], d[1])
                 self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
 
@@ -1192,9 +1191,9 @@ class TimeseriesPlotter(Plotter):
             btm, top = 0, 100
 
         for a in range(len(config['axes'])):
-#            if data[a]:
-#                self._do_scaling(config['axes'][a], data[
-#                                 a], btm, top, config['units'][a])
+            if len(alldata[a]) > 0:
+                self._do_scaling(config['axes'][a], alldata[
+                                 a], btm, top, config['units'][a])
 
             # Handle cut-off data sets. If the x-axis difference between the
             # largest data point and the TOTAL_LENGTH from settings, scale to
