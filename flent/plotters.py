@@ -479,6 +479,16 @@ def add_plotting_args(parser):
         "Use this if redrawing is too slow, or the highlighting is undesired "
         "for other reasons.")
 
+    parser.add_argument(
+        "--fallback-layout",
+        action="store_true", dest="FALLBACK_LAYOUT",
+        help="Use the fallback layout engine (tight_layout built in to "
+        "matplotlib). Use this if text is cut off on saved figures. The "
+        "downside to the fallback engine is that the size of the figure "
+        "(as specified by --figure-width and --figure-height) is no longer "
+        "kept constant.")
+
+
     return parser
 
 
@@ -755,32 +765,47 @@ class Plotter(ArgParam):
             # Some plot configurations are incompatible with tight_layout; this
             # test is from matplotlib's tight_layout() in figure.py
             from matplotlib.tight_layout import get_subplotspec_list
-            if None not in get_subplotspec_list(self.figure.axes):
+            if not self.fallback_layout and None not in \
+               get_subplotspec_list(self.figure.axes):
 
                 Bbox = matplotlib.transforms.Bbox
 
                 self.figure.savefig(io.BytesIO())
+
+                # The tight_layout expands the figure as much as possible before
+                # we begin messing with it
+                self.figure.tight_layout()
+
                 renderer = self.figure._cachedRenderer
                 fig_bbox = self.figure.get_tightbbox(renderer)
                 if isinstance(fig_bbox, matplotlib.transforms.TransformedBbox):
                     fig_bbox = fig_bbox._bbox
 
-                bbs = [a.get_window_extent(renderer) for a in artists] + [fig_bbox]
+                bbs = [fig_bbox]
 
-                # Just including the legend in the list of artists doesn't
-                # always work when it is placed outside the figure, so include a
-                # fake bbox the width of the legend to the right of the figure
-                # proper
-                if self.print_legend and not self.horizontal_legend \
-                   and not self.legend_placement:
-                    w = 0
-                    for l in self.legends:
-                        bbox = l.get_window_extent(renderer)
-                        w = max(w, bbox.width)
-                    if w > 0:
-                        bbs.append(Bbox.from_bounds(fig_bbox.x1, 0, w, 0))
+                for a in artists:
+                    bb = a.get_window_extent(renderer)
 
-                bbox = Bbox.union([b for b in bbs if b.height != 0 or b.width != 0])
+                    # Handle padding inside legends places outside the plot
+                    if hasattr(a, "offset_x"):
+                        offset = 2*(a.offset_x-1)
+                        x0 = fig_bbox.x1 + offset*fig_bbox.x1
+                        adj = x0-bb.x0
+                        bb.x0 = x0
+                        bb.x1 += adj
+
+                    # If an artist sticks above the figure, make sure it is
+                    # entirely above the figure. This fixes the title
+                    # overlapping the figure proper
+                    if bb.y1 > fig_bbox.y1 and bb.y0 < fig_bbox.y1:
+                        adj = fig_bbox.y1 - bb.y0
+                        bb.y0 += adj
+                        bb.y1 += adj
+
+                    bbs.append(bb)
+                bbox = Bbox.union([b for b in bbs
+                                   if b.height != 0 or b.width != 0])
+
 
                 h = fig_bbox.height
                 w = fig_bbox.width
@@ -790,7 +815,7 @@ class Plotter(ArgParam):
                         1 - (bbox.x1 - fig_bbox.x1) / w,
                         1 - (bbox.y1 - fig_bbox.y1) / h]
 
-                self.figure.tight_layout(pad=0.5, rect=rect)
+                self.figure.tight_layout(rect=rect)
                 args = {}
         except (AttributeError, ImportError, ValueError) as e:
             logger.warning("Unable to build our own tight layout: %s", e)
@@ -948,6 +973,8 @@ class Plotter(ArgParam):
                            prop={'size': 'small'},
                            ncol=self.legend_columns or ncol,
                            **kwargs)
+
+        l.offset_x = offset_x # We use this in build_tight_layout
 
         # Work around a bug in older versions of matplotlib where the
         # legend.get_window_extent method does not take any arguments, leading

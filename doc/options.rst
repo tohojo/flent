@@ -454,6 +454,13 @@ sense combined with :option:`-f` *plot*.
    Don't highlight data series on hover in interactive plot views. Use this if
    redrawing is too slow, or the highlighting is undesired for other reasons.
 
+.. option:: --fallback-layout
+
+   Use the fallback layout engine (tight_layout built in to matplotlib). Use
+   this if text is cut off on saved figures. The downside to the fallback engine
+   is that the size of the figure (as specified by :option:`--figure-width` and
+   :option:`--figure-height`) is no longer kept constant.)
+
 Test tool-related options
 -------------------------
 .. option:: --control-host=HOST

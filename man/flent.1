@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "January 16, 2017" "1.0.1-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "April 24, 2017" "1.0.1-git" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -326,6 +326,15 @@ Switch upstream and downstream directions for data transfer. This means that
 \fBTCP_MAERTS\fP and \fBTCP_STREAM\fP parameters, so only works for tests that employ
 these as their data transfer, and only for the TCP streams.
 .UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-socket\-stats
+Parse socket stats during test. This will capture and parse socket
+statistics for all TCP upload flows during a test, adding TCP cwnd and RTT
+values to the test data. Requires the \(aqss\(aq utility to be present on the
+system, and can fail if there are too many simultaneous upload flows; which
+is why this option is not enabled by default.
+.UNINDENT
 .SS Plot configuration options
 .sp
 These options are used to configure the appearance of plot output and only make
@@ -581,6 +590,14 @@ matplotlibrc fails and flent is inadvertently overriding rc values.
 .B \-\-no\-hover\-highlight
 Don\(aqt highlight data series on hover in interactive plot views. Use this if
 redrawing is too slow, or the highlighting is undesired for other reasons.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-fallback\-layout
+Use the fallback layout engine (tight_layout built in to matplotlib). Use
+this if text is cut off on saved figures. The downside to the fallback engine
+is that the size of the figure (as specified by \fI\%\-\-figure\-width\fP and
+\fI\%\-\-figure\-height\fP) is no longer kept constant.)
 .UNINDENT
 .SS Test tool\-related options
 .INDENT 0.0
