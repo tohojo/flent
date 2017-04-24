@@ -632,8 +632,8 @@ class Plotter(ArgParam):
         skip_title = len(results) > 1
 
         artists = self.artists
-        all_legends = []
-        if not self.legends:
+        all_legends = self.legends
+        if not all_legends:
             for c in self.configs:
                 legends = self._do_legend(c)
                 if legends:
