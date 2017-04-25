@@ -1,0 +1,13 @@
+.screenshot {
+    float: right;
+    max-width: 50%;
+    margin-left: 15px;
+}
+
+h2 {
+    clear: both;
+}
+
+div.content ul.front > li {
+    margin-bottom: 15px;
+}

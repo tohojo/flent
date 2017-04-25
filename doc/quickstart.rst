@@ -4,8 +4,8 @@ Installing Flent can be done in several ways, depending on your operating system
 
 - **Ubuntu users:** Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
 
-- **Debian users:** Use the `packages from the Open Build Service
-  <https://software.opensuse.org/download.html?project=home:tohojo:flent&package=flent>`_.
+- **Debian users:** Use the `package included in Debian
+  Stretch <https://packages.debian.org/stretch/flent>`_ and later.
 
 - **Arch Linux users:** Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
 
