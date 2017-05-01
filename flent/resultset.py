@@ -237,6 +237,12 @@ class ResultSet(object):
         self.t0 = timegm(self.metadata['T0'].timetuple(
         )) + self.metadata['T0'].microsecond / 1000000.0
 
+    def raw_keys(self, name):
+        try:
+            return self.raw_values[name][0].keys()
+        except:
+            logger.warning("Missing data keys for series '%s' - no values", name)
+
     def raw_series(self, name, smooth=None, absolute=False, raw_key=None):
         if name not in self.raw_values or not self.raw_values[name]:
             if name in self._results:

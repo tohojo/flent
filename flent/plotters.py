@@ -1020,7 +1020,7 @@ class Plotter(ArgParam):
             data = getattr(transformers, t)(data)
         return data
 
-    def get_series(self, series, results, config, norm=None):
+    def get_series(self, series, results, config, _raw_key, norm=None):
         if 'smoothing' in series:
             smooth = series['smoothing']
         else:
@@ -1032,7 +1032,7 @@ class Plotter(ArgParam):
         else:
 
             data = numpy.array(results.raw_series(series['data'], smooth,
-                                                  raw_key=series.get('raw_key')),
+                                                  raw_key=_raw_key),
                                dtype=float)
 
             dcfg = self.data_config[series['data']]
@@ -1044,8 +1044,6 @@ class Plotter(ArgParam):
             data[1] /= norm
 
         return data
-
-
 
 
 class CombineManyPlotter(object):
@@ -1151,79 +1149,85 @@ class TimeseriesPlotter(Plotter):
             sums = numpy.zeros(len(results.x_values))
 
         for i, s in enumerate(config['series']):
-            data = self.get_series(s, results, config, norm=norms[i])
-            if data is None:
-                continue
+            plot_raw_keys = Glob.expand_list(s.get('raw_key'),
+                                             results.raw_keys(s['data']))
+            if not plot_raw_keys:
+                plot_raw_keys.append(None)
 
-            x_min = min(data[0].min(), x_min)
-            x_max = max(data[0].max(), x_max)
+            for raw_key in plot_raw_keys:
+                data = self.get_series(s, results, config, raw_key, norm=norms[i])
+                if data is None:
+                    continue
 
-            kwargs = {}
-            for k in PLOT_KWARGS:
-                if k in s:
-                    kwargs[k] = s[k]
+                x_min = min(data[0].min(), x_min)
+                x_max = max(data[0].max(), x_max)
 
-            if 'label' in kwargs:
-                kwargs['label'] += postfix
+                kwargs = {}
+                for k in PLOT_KWARGS:
+                    if k in s:
+                        kwargs[k] = s[k]
 
-            if 'color' not in kwargs:
-                kwargs['color'] = next(colours)
+                if 'label' in kwargs:
+                    kwargs['label'] += postfix
 
-            kwargs.update(extra_kwargs)
+                if 'color' not in kwargs:
+                    kwargs['color'] = next(colours)
 
-            if 'axis' in s and s['axis'] == 2:
-                a = 1
+                kwargs.update(extra_kwargs)
+
+                if 'axis' in s and s['axis'] == 2:
+                    a = 1
+                else:
+                    a = 0
+
+                alldata[a] = numpy.append(alldata[a], data[1])
+
+                if stack:
+                    kwargs['facecolor'] = kwargs['color']
+                    kwargs['edgecolor'] = 'none'
+                    del kwargs['color']
+
+                    config['axes'][a].fill_between(
+                        data[0], sums, data[1] + sums, **kwargs)
+                    sums += data[1]
+                else:
+                    for r in self.scale_data + extra_scale_data:
+                        d = self.get_series(s, r, config, norm=norms[i])
+                        alldata[a] = numpy.append(alldata[a], d[1])
+                    self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
+                                                                    **kwargs))
+
+            xlim = axis.get_xlim()
+            axis.set_xlim(
+                min(x_min, xlim[0]) if xlim[0] > 0 else x_min,
+                max(x_max, self.metadata['TOTAL_LENGTH'], xlim[1]))
+
+            if 'scaling' in config:
+                btm, top = config['scaling']
             else:
-                a = 0
+                btm, top = 0, 100
 
-            alldata[a] = numpy.append(alldata[a], data[1])
+            for a in range(len(config['axes'])):
+                if len(alldata[a]) > 0:
+                    self._do_scaling(config['axes'][a], alldata[
+                                     a], btm, top, config['units'][a])
 
-            if stack:
-                kwargs['facecolor'] = kwargs['color']
-                kwargs['edgecolor'] = 'none'
-                del kwargs['color']
+                # Handle cut-off data sets. If the x-axis difference between the
+                # largest data point and the TOTAL_LENGTH from settings, scale to
+                # the data values, but round to nearest 10 above that value.
+                try:
+                    max_xdata = max([l.get_xdata()[-1]
+                                     for l in config['axes'][a].get_lines() if l.get_xdata()])
+                    if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
+                        config['axes'][a].set_xlim(
+                            right=(max_xdata + (10 - max_xdata % 10)))
+                except ValueError:
+                    pass
 
-                config['axes'][a].fill_between(
-                    data[0], sums, data[1] + sums, **kwargs)
-                sums += data[1]
-            else:
-                for r in self.scale_data + extra_scale_data:
-                    d = self.get_series(s, r, config, norm=norms[i])
-                    alldata[a] = numpy.append(alldata[a], d[1])
-                self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
-                                                                **kwargs))
-
-        xlim = axis.get_xlim()
-        axis.set_xlim(
-            min(x_min, xlim[0]) if xlim[0] > 0 else x_min,
-            max(x_max, self.metadata['TOTAL_LENGTH'], xlim[1]))
-
-        if 'scaling' in config:
-            btm, top = config['scaling']
-        else:
-            btm, top = 0, 100
-
-        for a in range(len(config['axes'])):
-            if len(alldata[a]) > 0:
-                self._do_scaling(config['axes'][a], alldata[
-                                 a], btm, top, config['units'][a])
-
-            # Handle cut-off data sets. If the x-axis difference between the
-            # largest data point and the TOTAL_LENGTH from settings, scale to
-            # the data values, but round to nearest 10 above that value.
-            try:
-                max_xdata = max([l.get_xdata()[-1]
-                                 for l in config['axes'][a].get_lines() if l.get_xdata()])
-                if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
-                    config['axes'][a].set_xlim(
-                        right=(max_xdata + (10 - max_xdata % 10)))
-            except ValueError:
-                pass
-
-        for a, b in zip(config['axes'], self.bounds_x):
-            a.set_xbound(b)
-        for a, b in zip(config['axes'], self.bounds_y):
-            a.set_ybound(b)
+            for a, b in zip(config['axes'], self.bounds_x):
+                a.set_xbound(b)
+            for a, b in zip(config['axes'], self.bounds_y):
+                a.set_ybound(b)
 
 
 class TimeseriesCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
