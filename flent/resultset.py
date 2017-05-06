@@ -237,16 +237,24 @@ class ResultSet(object):
         self.t0 = timegm(self.metadata['T0'].timetuple(
         )) + self.metadata['T0'].microsecond / 1000000.0
 
-    def raw_series(self, name, smooth=None, absolute=False):
-        if name not in self.raw_values:
+    def raw_series(self, name, smooth=None, absolute=False, raw_key=None):
+        if name not in self.raw_values or not self.raw_values[name]:
+            if name in self._results:
+                return self.x_values, self.series(name, smooth)
             logger.warning("Missing data points for series '%s'", name)
             return ([], [])
+
+        if raw_key is None:
+            raw_key = 'val'
+
         if self.t0 is None:
             self._calculate_t0()
         x_values, y_values = [], []
         for i in self.raw_values[name]:
+            if raw_key not in i:
+                continue
             x_values.append(i['t'] if absolute else i['t'] - self.t0)
-            y_values.append(i['val'])
+            y_values.append(i[raw_key])
         if smooth:
             y_values = self.smoothed(y_values, smooth)
         return x_values, y_values

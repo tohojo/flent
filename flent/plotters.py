@@ -25,7 +25,7 @@ import inspect
 import io
 import re
 
-from flent import combiners
+from flent import combiners, transformers
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
@@ -608,9 +608,11 @@ class Plotter(ArgParam):
                         new_series.append(dict(s, data=d))
             else:
                 new_series.append(s)
+
         if self.filter_series:
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
+
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
@@ -993,8 +995,11 @@ class Plotter(ArgParam):
 
     def _do_scaling(self, axis, data, btm, top, unit=None, allow_log=True):
         """Scale the axis to the selected bottom/top percentile"""
-        data = [x for x in data if x is not None]
-        if not data:
+
+        if not hasattr(data, 'shape'):
+            data = numpy.array(data, dtype=float)
+
+        if not data.any():
             return
 
         top_percentile = self._percentile(data, top)
@@ -1024,20 +1029,50 @@ class Plotter(ArgParam):
         if self.invert_y and unit in self.inverted_units:
             axis.invert_yaxis()
 
-    def _percentile(self, lst, q):
-        """Primitive percentile calculation for axis scaling.
+    def _percentile(self, a, q):
+        """Percentile calculation for axis scaling.
 
-        Implemented here since old versions of numpy don't include
-        the percentile function."""
-        q = int(q)
-        if q == 0:
-            return min(lst)
-        elif q == 100:
-            return max(lst)
-        elif q < 0 or q > 100:
-            raise ValueError("Invalid percentile: %s" % q)
-        idx = int(len(lst) * (q / 100.0))
-        return numpy.sort(lst)[idx]
+        Compatibility for versions of numpy that do not have nanpercentile."""
+
+        # nanpercentile was only added in numpy 1.9
+        if hasattr(numpy, 'nanpercentile'):
+            return numpy.nanpercentile(a, q)
+
+        a = numpy.ma.compressed(numpy.ma.masked_invalid(a))
+        return numpy.percentile(a, q)
+
+    def _transform_data(self, data, t):
+        t = t.strip()
+        if hasattr(transformers, t):
+            data = getattr(transformers, t)(data)
+        return data
+
+    def get_series(self, series, results, config, norm=None):
+        if 'smoothing' in series:
+            smooth = series['smoothing']
+        else:
+            smooth = False
+
+        if 'stacked' in config and config['stacked']:
+            data = numpy.array((results.x_values,
+                               results.series(series['data'], smooth)))
+        else:
+
+            data = numpy.array(results.raw_series(series['data'], smooth,
+                                                  raw_key=series.get('raw_key')),
+                               dtype=float)
+
+            dcfg = self.data_config[series['data']]
+            if 'data_transform' in dcfg \
+               and 'FAKE_RAW_VALUES' not in results.meta():
+                data[1] = self._transform_data(data[1], dcfg['data_transform'])
+
+        if norm:
+            data[1] /= norm
+
+        return data
+
+
 
 
 class CombineManyPlotter(object):
@@ -1128,21 +1163,14 @@ class TimeseriesPlotter(Plotter):
 
         stack = 'stacked' in config and config['stacked']
 
-        xlim = axis.get_xlim()
-        axis.set_xlim(
-            min(results.x_values + [xlim[0]]
-                ) if xlim[0] > 0 else min(results.x_values),
-            max(results.x_values + [self.metadata['TOTAL_LENGTH'], xlim[1]])
-        )
+        x_min = x_max = 0
 
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
-            norms = None
+            norms = [None] * len(config['series'])
 
-        data = []
-        for i in range(len(config['axes'])):
-            data.append([])
+        alldata = [numpy.empty(0, dtype=float) for i in config['axes']]
 
         colours = cycle(self.colours)
 
@@ -1150,12 +1178,13 @@ class TimeseriesPlotter(Plotter):
             sums = numpy.zeros(len(results.x_values))
 
         for i, s in enumerate(config['series']):
-            if not s['data'] in results.series_names:
+            data = self.get_series(s, results, config, norm=norms[i])
+            if data is None:
                 continue
-            if 'smoothing' in s:
-                smooth = s['smoothing']
-            else:
-                smooth = False
+
+            x_min = min(data[0].min(), x_min)
+            x_max = max(data[0].max(), x_max)
+
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
@@ -1169,31 +1198,32 @@ class TimeseriesPlotter(Plotter):
 
             kwargs.update(extra_kwargs)
 
-            y_values = results.series(s['data'], smooth)
-            if norms is not None:
-                y_values = [y / norms[i] if y is not None else None
-                            for y in y_values]
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
                 a = 0
 
+            alldata[a] = numpy.append(alldata[a], data[1])
+
             if stack:
                 kwargs['facecolor'] = kwargs['color']
                 kwargs['edgecolor'] = 'none'
                 del kwargs['color']
-                y_values = numpy.array(y_values, dtype=float)
 
                 config['axes'][a].fill_between(
-                    results.x_values, sums, y_values + sums, **kwargs)
-                sums += y_values
+                    data[0], sums, data[1] + sums, **kwargs)
+                sums += data[1]
             else:
-                data[a] += y_values
                 for r in self.scale_data + extra_scale_data:
-                    data[a] += r.series(s['data'], smooth)
-                self.data_artists.extend(config['axes'][a].plot(results.x_values,
-                                                                y_values,
+                    d = self.get_series(s, r, config, norm=norms[i])
+                    alldata[a] = numpy.append(alldata[a], d[1])
+                self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
+
+        xlim = axis.get_xlim()
+        axis.set_xlim(
+            min(x_min, xlim[0]) if xlim[0] > 0 else x_min,
+            max(x_max, self.metadata['TOTAL_LENGTH'], xlim[1]))
 
         if 'scaling' in config:
             btm, top = config['scaling']
@@ -1201,8 +1231,8 @@ class TimeseriesPlotter(Plotter):
             btm, top = 0, 100
 
         for a in range(len(config['axes'])):
-            if data[a]:
-                self._do_scaling(config['axes'][a], data[
+            if len(alldata[a]) > 0:
+                self._do_scaling(config['axes'][a], alldata[
                                  a], btm, top, config['units'][a])
 
             # Handle cut-off data sets. If the x-axis difference between the
@@ -1210,7 +1240,7 @@ class TimeseriesPlotter(Plotter):
             # the data values, but round to nearest 10 above that value.
             try:
                 max_xdata = max([l.get_xdata()[-1]
-                                 for l in config['axes'][a].get_lines()])
+                                 for l in config['axes'][a].get_lines() if l.get_xdata()])
                 if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
                     config['axes'][a].set_xlim(
                         right=(max_xdata + (10 - max_xdata % 10)))

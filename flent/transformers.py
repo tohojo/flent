@@ -21,6 +21,10 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+try:
+    import numpy as np
+except ImportError:
+    pass
 
 def transform_results(results, func):
     """Transform a list of (timestamp,value) pairs by applying a function to the
@@ -39,6 +43,10 @@ def transform_results(results, func):
 def rr_to_ms(results):
     """Transforms a transactions/second netperf RR measurement into ping times
     in milliseconds."""
+
+    if hasattr(results, "shape"):
+        return 1000 / results
+
     def safe_divide(x):
         if x == 0:
             return None
@@ -47,15 +55,22 @@ def rr_to_ms(results):
 
 
 def s_to_ms(results):
+    if hasattr(results, "shape"):
+        return results * 1000.0
     return transform_results(results, lambda x: x * 1000.0)
 
 
 def bits_to_mbits(results):
+    if hasattr(results, "shape"):
+        return results / 1000000.0
     return transform_results(results, lambda x: x / 1000000.0)
 
 
 def cumulative_to_events(results):
     """Transform cumulative counter values into the increasing events."""
+    if hasattr(results, "shape") and np is not None:
+        return np.diff(results)
+
     try:
         current = results[0][1]
         res = []
