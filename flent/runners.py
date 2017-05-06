@@ -1006,6 +1006,13 @@ class SsRunner(ProcessRunner):
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     cwnd_re = re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE)
     rtt_re = re.compile(r"rtt:(?P<rtt>\d+\.\d+/\d+\.\d+)", re.MULTILINE)
+
+    bbr_re_str = "bbr:\(bw:(?P<bbr_bw>\d+\.\d+)(?P<bbr_bw_scale>.bps),"\
+                 "mrtt:(?P<bbr_mrtt>\d+\.\d+),"\
+                 "pacing_gain:(?P<bbr_pacing_gain>\d+\.\d+),"\
+                 "cwnd_gain:(?P<bbr_cwnd_gain>\d+)\)"
+    bbr_re = re.compile(r"" + bbr_re_str, re.MULTILINE | re.IGNORECASE)
+
     pid_re = re.compile(r"pid=(?P<pid>\d+)", re.MULTILINE)
     ports_ipv4_re = re.compile(r"" + "(?P<src_p>" + ip_v4_addr_sub_re + ")" +
                                "\s+" + "(?P<dst_p>" + ip_v4_addr_sub_re + ")")
@@ -1112,22 +1119,45 @@ class SsRunner(ProcessRunner):
             if 1 != len(sub_parts):
                 raise ParseException()
 
-    def form_sub_raw_vals(self, cwnd, rtt, rtt_var, flow_spec):
+    def form_sub_raw_vals(self, cwnd, rtt, rtt_var, bbr_dict, flow_spec):
         if self.ext_run:
             sub_raw_val = {}
             for k, val in zip(['cwnd', 'rtt', 'rtt_var'], [cwnd, rtt, rtt_var]):
                 key = "{1}#{2}::tcp_{0}".format(k, *flow_spec)
                 sub_raw_val[key] = val
 
+                if bbr_dict:
+                    for k, val in bbr_dict.items():
+                        key = "{1}#{2}::tcp_{0}".format(k, *flow_spec)
+                        sub_raw_val[key] = val
+
             return sub_raw_val
         else:
-            return {'tcp_cwnd': cwnd,
-                    'tcp_rtt': rtt, 'tcp_rtt_var': rtt_var}
+            out = {'tcp_cwnd': cwnd,
+                   'tcp_rtt': rtt, 'tcp_rtt_var': rtt_var}
+            if bbr_dict:
+                for k, val in bbr_dict.items():
+                    out[k] = val
+
+            return out
+
+    def _parse_normalize_bbr_bw(self, bw, scale):
+        bw = float(bw)
+        if scale == "Kbps":
+            return bw
+        elif scale == "Mbps":
+            return 1000 * bw
+        else:
+            raise RuntimeError("unexpected scale")
 
     def parse_subpart(self, sub_part, **kwargs):
 
         cwnd = self.cwnd_re.search(sub_part)
         rtt = self.rtt_re.search(sub_part)
+
+        # non bbr non critical
+        bbr = self.bbr_re.search(sub_part)
+        bbr_re_dict = None
 
         if None in [cwnd, rtt]:
             raise ParseException()
@@ -1135,7 +1165,16 @@ class SsRunner(ProcessRunner):
         cwnd = int(cwnd.group('cwnd'))
         rtt, rtt_var = [float(x) for x in rtt.group('rtt').split('/')]
 
-        sub_raw_values = self.form_sub_raw_vals(cwnd, rtt, rtt_var,
+        if bbr:
+            bbr_re_dict = bbr.groupdict()
+            scale_val = bbr_re_dict.pop('bbr_bw_scale')
+            for k, v in bbr_re_dict.items():
+                if k == 'bbr_bw':
+                    bbr_re_dict[k] = self._parse_normalize_bbr_bw(bbr.group(k), scale_val)
+
+                bbr_re_dict[k] = float(bbr_re_dict[k])
+
+        sub_raw_values = self.form_sub_raw_vals(cwnd, rtt, rtt_var, bbr_re_dict,
                                                 kwargs['flow_spec'])
 
         return sub_raw_values
