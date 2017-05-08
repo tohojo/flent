@@ -949,12 +949,8 @@ class Plotter(ArgParam):
         elif 'legend_title' in config:
             kwargs['title'] = config['legend_title']
 
-        if len(axes) > 1:
-            offset_x = 1.11
-        else:
-            offset_x = 1.02
-
         legends = []
+        offset_x = None
         if self.horizontal_legend:
             bbox = (0.5, -0.15)
             ncol = len(labels)
@@ -964,6 +960,11 @@ class Plotter(ArgParam):
             ncol = 1
             loc = self.legend_placement
         else:
+            if len(axes) > 1:
+                offset_x = 1.11
+            else:
+                offset_x = 1.02
+
             bbox = (offset_x, 1.0)
             ncol = 1
             loc = 'upper left'
@@ -974,7 +975,8 @@ class Plotter(ArgParam):
                            ncol=self.legend_columns or ncol,
                            **kwargs)
 
-        l.offset_x = offset_x # We use this in build_tight_layout
+        if offset_x is not None:
+            l.offset_x = offset_x  # We use this in build_tight_layout
 
         # Work around a bug in older versions of matplotlib where the
         # legend.get_window_extent method does not take any arguments, leading
