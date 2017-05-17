@@ -710,10 +710,10 @@ class NetperfDemoRunner(ProcessRunner):
                            'interval': args['interval'],
                            'length': args['length'],
                            'target': args['host'],
-                           'ip_version': args['ip_version']}
+                           'ip_version': args['ip_version'],
+                           'exclude_ports': [args['control_port']]}
 
-                self.add_child(SsRunner, [args['control_port']],
-                               ss_args, self.delay, None)
+                self.add_child(SsRunner, ss_args, self.delay, None)
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
             "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
@@ -1006,6 +1006,13 @@ class SsRunner(ProcessRunner):
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     cwnd_re = re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE)
     rtt_re = re.compile(r"rtt:(?P<rtt>\d+\.\d+/\d+\.\d+)", re.MULTILINE)
+
+    bbr_re_str = "bbr:\(bw:(?P<bbr_bw>\d+\.\d+)(?P<bbr_bw_scale>.bps),"\
+                 "mrtt:(?P<bbr_mrtt>\d+\.\d+),"\
+                 "pacing_gain:(?P<bbr_pacing_gain>\d+\.\d+),"\
+                 "cwnd_gain:(?P<bbr_cwnd_gain>\d+)\)"
+    bbr_re = re.compile(r"" + bbr_re_str, re.MULTILINE | re.IGNORECASE)
+
     pid_re = re.compile(r"pid=(?P<pid>\d+)", re.MULTILINE)
     ports_ipv4_re = re.compile(r"" + "(?P<src_p>" + ip_v4_addr_sub_re + ")" +
                                "\s+" + "(?P<dst_p>" + ip_v4_addr_sub_re + ")")
@@ -1022,8 +1029,16 @@ class SsRunner(ProcessRunner):
                  "LISTEN", "CLOSING"]
     ss_states_re = re.compile(r"|".join(ss_states))
 
-    def __init__(self, exclude_ports, command, *args, **kwargs):
-        self.exclude_ports = exclude_ports
+    def __init__(self, command, *args, **kwargs):
+        if 'exclude_ports' in command:
+            self.exclude_ports = command['exclude_ports']
+            self.ext_run = False
+            del command['exclude_ports']
+        else:
+            self._pid = kwargs['name'].split("::")[1]
+            self.exclude_ports = []
+            self.ext_run = True
+
         super(SsRunner, self).__init__(command, *args, **kwargs)
 
         dup_key = (command['host'], command['interval'], command['length'],
@@ -1062,7 +1077,7 @@ class SsRunner(ProcessRunner):
                            extra={'runner': self})
 
     def filter_np_parent(self, part):
-        sub_part = []
+        sub_parts_res = []
         sub_parts = self.ss_states_re.split(part)
         sub_parts = [sp for sp in sub_parts if sp.strip()
                      and not self.ss_header_re.search(sp)]
@@ -1080,39 +1095,111 @@ class SsRunner(ProcessRunner):
             if None is f_ports:
                 raise ParseException()
 
-            dst_p = int(f_ports.group('dst_p').split(":")[-1])
+            dst_shards = f_ports.group('dst_p').split(":")
+            # cure by checking ip_version
+            dst_addr = ""
+            if len(dst_shards) > 2:
+                dst_addr = ":".join(dst_shards[:-1])
+            else:
+                dst_addr = ".".join(dst_shards[:-1])
 
-            if self.par_pid == pid_str and dst_p not in self.exclude_ports:
-                sub_part.append(sp)
+            dst_p = dst_shards[-1]
 
-        if 1 != len(sub_part):
-            raise ParseException()
+            if self.filt_pid == pid_str and dst_p not in self.exclude_ports:
+                sub_parts_res.append((sp, (dst_addr, dst_p)))
 
-        return sub_part[0]
+        self.post_filter_pred(sub_parts_res)
 
-    def parse_part(self, part):
-        sub_part = self.filter_np_parent(part)
+        return sub_parts_res
 
-        timestamp = self.time_re.search(part)
+    def post_filter_pred(self, sub_parts):
+        if self.ext_run:
+            pass
+        else:
+            if 1 != len(sub_parts):
+                raise ParseException()
+
+    def form_sub_raw_vals(self, cwnd, rtt, rtt_var, bbr_dict, flow_spec):
+        if self.ext_run:
+            sub_raw_val = {}
+            for k, val in zip(['cwnd', 'rtt', 'rtt_var'], [cwnd, rtt, rtt_var]):
+                key = "{1}#{2}::tcp_{0}".format(k, *flow_spec)
+                sub_raw_val[key] = val
+
+                if bbr_dict:
+                    for k, val in bbr_dict.items():
+                        key = "{1}#{2}::tcp_{0}".format(k, *flow_spec)
+                        sub_raw_val[key] = val
+
+            return sub_raw_val
+        else:
+            out = {'tcp_cwnd': cwnd,
+                   'tcp_rtt': rtt, 'tcp_rtt_var': rtt_var}
+            if bbr_dict:
+                for k, val in bbr_dict.items():
+                    out[k] = val
+
+            return out
+
+    def _parse_normalize_bbr_bw(self, bw, scale):
+        bw = float(bw)
+        if scale == "Kbps":
+            return bw
+        elif scale == "Mbps":
+            return 1000 * bw
+        else:
+            raise RuntimeError("unexpected scale")
+
+    def parse_subpart(self, sub_part, **kwargs):
 
         cwnd = self.cwnd_re.search(sub_part)
         rtt = self.rtt_re.search(sub_part)
 
-        if None in [timestamp, cwnd, rtt]:
+        # non bbr non critical
+        bbr = self.bbr_re.search(sub_part)
+        bbr_re_dict = None
+
+        if None in [cwnd, rtt]:
             raise ParseException()
 
-        timestamp = float(timestamp.group('timestamp'))
         cwnd = int(cwnd.group('cwnd'))
         rtt, rtt_var = [float(x) for x in rtt.group('rtt').split('/')]
 
-        raw_values = {'t': timestamp, 'tcp_cwnd': cwnd,
-                      'tcp_rtt': rtt, 'tcp_rtt_var': rtt_var}
+        if bbr:
+            bbr_re_dict = bbr.groupdict()
+            scale_val = bbr_re_dict.pop('bbr_bw_scale')
+            for k, v in bbr_re_dict.items():
+                if k == 'bbr_bw':
+                    bbr_re_dict[k] = self._parse_normalize_bbr_bw(bbr.group(k), scale_val)
+
+                bbr_re_dict[k] = float(bbr_re_dict[k])
+
+        sub_raw_values = self.form_sub_raw_vals(cwnd, rtt, rtt_var, bbr_re_dict,
+                                                kwargs['flow_spec'])
+
+        return sub_raw_values
+
+    def parse_part(self, part):
+        raw_values = {}
+        timestamp = self.time_re.search(part)
+        if None is timestamp:
+            raise ParseException()
+        timestamp = float(timestamp.group('timestamp'))
+
+        sub_parts = self.filter_np_parent(part)
+
+        for sp, flow_s in sub_parts:
+            sub_raw_values = self.parse_subpart(sp, flow_spec=flow_s)
+            for k, v in sub_raw_values.items():
+                raw_values[k] = v
+
+        raw_values['t'] = timestamp
         self._raw_values.append(raw_values)
 
         return raw_values
 
     def parse(self, output):
-        self.par_pid = str(self._parent.pid)
+        self.filt_pid = self.determine_pid()
         results = {}
         parts = output.split("\n---\n")
         for part in parts:
@@ -1132,7 +1219,13 @@ class SsRunner(ProcessRunner):
 
         return results
 
-    def find_binary(self, ip_version, host, interval, length, target):
+    def determine_pid(self):
+        if self.ext_run:
+            return self._pid
+        else:
+            return str(self._parent.pid)
+
+    def find_binary(self, ip_version, host, interval, length, target=None):
         script = os.path.join(DATA_DIR, 'scripts', 'ss_iterate.sh')
         if not os.path.exists(script):
             raise RuntimeError("Cannot find ss_iterate.sh.")
@@ -1141,23 +1234,37 @@ class SsRunner(ProcessRunner):
         if not bash:
             raise RuntimeError("Socket stats requires a Bash shell.")
 
-        resol_target = util.lookup_host(target, ip_version)[4][0]
-        if ip_version == 6:
-            resol_target = "[" + str(resol_target) + "]"
+        ss_invoke = "{bash} {script} -I {interval:.2f} " \
+                    "-c {count:.0f} -H {host}".format(
+                        bash=bash,
+                        script=script,
+                        interval=interval,
+                        count=length // interval + 1,
+                        host=host)
+
+        if target:
+            resol_target = util.lookup_host(target, ip_version)[4][0]
+            if ip_version == 6:
+                resol_target = "[" + str(resol_target) + "]"
+
+            ss_invoke = "{ss_invoke} -t '{target}'".format(
+                        ss_invoke=ss_invoke,
+                        target=resol_target)
+        else:
+            ss_invoke = "{ss_invoke} -s '{surveil}'".format(
+                        ss_invoke=ss_invoke,
+                        surveil=1)
 
         filt = ""
         for p in self.exclude_ports:
             filt = "{} and dport != {}".format(filt, p)
 
-        return "{bash} {script} -I {interval:.2f} " \
-            "-c {count:.0f} -H {host} -t '{target}' -f '{filt}'".format(
-                bash=bash,
-                script=script,
-                interval=interval,
-                count=length // interval + 1,
-                host=host,
-                target=resol_target,
-                filt=filt)
+        if filt:
+            ss_invoke = "{ss_invoke} -f '{filt}'".format(
+                        ss_invoke=ss_invoke,
+                        filt=filt)
+
+        return ss_invoke
 
 
 class TcRunner(ProcessRunner):

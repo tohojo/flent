@@ -70,6 +70,7 @@ class TestEnvironment(object):
             'find_itgsend': self.find_itgsend,
             'find_http_getter': self.find_http_getter,
             'find_tc_iterate': self.find_tc_iterate,
+            'find_ss_iterate': self.find_ss_iterate,
             'find_stat_iterate': self.find_stat_iterate,
             'find_wifistats_iterate': self.find_wifistats_iterate,
             'find_netstat_iterate': self.find_netstat_iterate,
@@ -281,6 +282,18 @@ class TestEnvironment(object):
         """Find a suitable tc_iterate script."""
 
         return runners.TcRunner.find_binary(*args, **kwargs)
+
+    @finder
+    def find_ss_iterate(self, *args, **kwargs):
+        """Find a suitable ss_iterate script."""
+
+        kwargs.setdefault('ip_version', self.env['IP_VERSION'])
+        kwargs.setdefault('interval', self.env['STEP_SIZE'])
+        kwargs.setdefault('host', self.env['HOST'])
+        kwargs.setdefault('length', self.env['LENGTH'])
+        kwargs.setdefault('target', None)
+
+        return kwargs
 
     @finder
     def find_stat_iterate(self, *args, **kwargs):
