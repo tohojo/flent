@@ -444,7 +444,7 @@ class Reducer(object):
         if data is None:
             data = resultset[series['data']]
 
-        if 'norm_by' in series:
+        if series and 'norm_by' in series:
             norm_series = series['norm_by'].format(**series)
             norm_data = resultset[norm_series]
         else:

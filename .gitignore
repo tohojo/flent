@@ -35,7 +35,7 @@ pip-log.txt
 *.flent.bz2
 *.csv
 *.pdf
-*.png
+/*.png
 *.svg
 data/
 

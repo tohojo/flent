@@ -37,6 +37,8 @@ from calendar import timegm
 from datetime import datetime
 from math import ceil, log10, exp, sqrt
 
+from flent.loggers import get_logger
+
 ENCODING = "UTF-8"
 try:
     import locale
@@ -49,6 +51,7 @@ try:
 except ImportError:
     import ConfigParser as configparser
 
+logger = get_logger(__name__)
 
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
@@ -160,12 +163,17 @@ def which(executable, fail=False):
     pathname, filename = os.path.split(executable)
     if pathname:
         if is_executable(executable):
+            logger.debug("which: %s is a full path and executable", executable)
             return executable
     else:
         for path in [i.strip('""') for i in os.environ["PATH"].split(os.pathsep)]:
             filename = os.path.join(path, executable)
             if is_executable(filename):
+                logger.debug("which: Found %s executable at %s",
+                             executable, filename)
                 return filename
+            else:
+                logger.debug("which: %s is not an executable file", filename)
 
     if fail:
         raise RuntimeError("No %s binary found in PATH." % executable)
@@ -326,6 +334,9 @@ class Glob(object):
         else:
             self.exclude = exclude
         self.pattern = pattern
+
+    def __repr__(self):
+        return "<Glob: %s (excl: %s)>" % (self.pattern, ",".join(self.exclude))
 
     def filter(self, values, exclude, args=None):
         if args is not None:

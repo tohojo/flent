@@ -620,7 +620,7 @@ class Settings(argparse.Namespace):
                     try:
                         runner = runner(name=dname, settings=self,
                                         post=True, **dvals)
-                        runner.result(results)
+                        runner.compute_result(results)
                     except Exception as e:
                         logger.exception("Unable to compute missing data "
                                          "series '%s': '%s'.", dname, e)
