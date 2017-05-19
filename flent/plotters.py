@@ -1056,6 +1056,15 @@ class Plotter(ArgParam):
                                               raw_key=series.get('raw_key')),
                            dtype=float)
 
+        if 'cutoff' in config:
+            min_x = data[0].min() + config['cutoff'][0]
+            max_x = data[0].max() + config['cutoff'][1]
+
+            min_idx = data[0].searchsorted(min_x, side='right')
+            max_idx = data[0].searchsorted(max_x, side='left')
+
+            data = data[:,min_idx:max_idx]
+
         if no_invalid:
             data = numpy.ma.compress_cols(numpy.ma.masked_invalid(data))
 
@@ -1557,6 +1566,12 @@ class CdfPlotter(Plotter):
         data = []
         sizes = []
         max_value = 0.0
+
+        if self.norm_factors:
+            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
+        else:
+            norms = [None] * len(config['series'])
+
         for s in config['series']:
             if not s['data'] in results.series_names:
                 data.append([])
@@ -1587,18 +1602,24 @@ class CdfPlotter(Plotter):
                     if d_s:
                         max_value = max([max_value] + d_s)
 
-        if max_value > 10:
-            # round up to nearest value divisible by 10
-            max_value += 10 - (max_value % 10)
-        axis.set_xlim(right=max_value)
+        max_value = 0
 
         for i, s in enumerate(config['series']):
-            if not data[i]:
+
+            data = self.get_series(s, results, config, norms[i], no_invalid=True)
+            if not data.any():
                 continue
-            max_val = max(data[i])
-            min_val = min(data[i])
-            step = (max_val - min_val) / 1000.0 if min_val != max_val else 1.0
-            x_values = list(frange(min_val - 2 * step, max_val + 2 * step, step))
+
+            hist, bins = numpy.histogram(data[1], bins='auto', density=True)
+
+            x_values = bins
+            y_values = numpy.zeros(len(bins))
+            y_values[1:] = hist * (bins[1] - bins[0])
+
+            m = data[1].max()
+            if m > max_value:
+                max_value = m
+
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
@@ -1608,21 +1629,14 @@ class CdfPlotter(Plotter):
             if 'color' not in kwargs:
                 kwargs['color'] = next(colours)
             kwargs.update(extra_kwargs)
-            y_values = [cum_prob(data[i], point, sizes[i]) for point in x_values]
-            if 1.0 in y_values:
-                idx_1 = y_values.index(1.0) + 1
-            else:
-                idx_1 = len(y_values)
-            idx_0 = 0
-            while y_values[idx_0 + 1] == 0.0:
-                idx_0 += 1
-
-            x_vals, y_vals = self._filter_dup_vals(
-                x_values[idx_0:idx_1], y_values[idx_0:idx_1])
-            self.data_artists.extend(axis.plot(x_vals,
-                                               y_vals,
+            self.data_artists.extend(axis.plot(x_values,
+                                               y_values.cumsum(),
                                                **kwargs))
 
+        if max_value > 10:
+            # round up to nearest value divisible by 10
+            max_value += 10 - (max_value % 10)
+        axis.set_xlim(right=max(max_value, axis.get_xlim()[1]))
         if self.zero_y:
             axis.set_xlim(left=0)
         elif self.min_vals:
