@@ -113,6 +113,17 @@ if WIFI_STATS_HOSTS:
                                               'combine_mode': 'fairness_mean'},
                                          ],
                                          'group_by': 'groups_concat'}
+    PLOTS['airtime_fairness_combine_bar'] = {'description': 'Combined airtime fairness bar plot',
+                                         'type': 'bar_combine',
+                                         'axis_labels': ['Fairness index'],
+                                         'cutoff': (DELAY,DELAY),
+                                         'series': [
+                                             {'data': glob('wifi_stats_*::airtime_fairness'),
+                                              'source': glob('wifi_stats_{id}::airtime_total::**'),
+                                              'label': 'Airtime fairness',
+                                              'combine_mode': 'fairness_mean'},
+                                         ],
+                                         'group_by': 'groups_concat'}
     PLOTS['airtime_fairness_combine_tx'] = {'description': 'Combined TX airtime fairness plot',
                                             'parent': 'airtime_fairness_combine',
                                             'series': [
