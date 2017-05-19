@@ -25,7 +25,7 @@ import inspect
 import io
 import re
 
-from flent import combiners
+from flent import combiners, transformers
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
@@ -613,9 +613,11 @@ class Plotter(ArgParam):
                         new_series.append(dict(s, data=d))
             else:
                 new_series.append(s)
+
         if self.filter_series:
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
+
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
@@ -1003,7 +1005,7 @@ class Plotter(ArgParam):
 
     def _do_scaling(self, axis, data, btm, top, unit=None, allow_log=True):
         """Scale the axis to the selected bottom/top percentile"""
-        if len(data) == 0:
+        if not data.any():
             return
 
         top_percentile = self._percentile(data, top)
@@ -1041,6 +1043,13 @@ class Plotter(ArgParam):
             ma = numpy.ma.masked_invalid(arr)
             return numpy.percentile(ma.compressed(), q)
 
+
+    def _transform_data(self, data, t):
+        t = t.strip()
+        if hasattr(transformers, t):
+            data = getattr(transformers, t)(data)
+        return data
+
     def get_series(self, series, results, config, norm=None, no_invalid=False):
         if 'smoothing' in series:
             smooth = series['smoothing']
@@ -1051,10 +1060,16 @@ class Plotter(ArgParam):
             data = numpy.array((results.x_values,
                                 results.series(series['data'], smooth)),
                                dtype=float)
+        else:
 
-        data = numpy.array(results.raw_series(series['data'], smooth,
-                                              raw_key=series.get('raw_key')),
-                           dtype=float)
+            data = numpy.array(results.raw_series(series['data'], smooth,
+                                                  raw_key=series.get('raw_key')),
+                               dtype=float)
+
+            dcfg = self.data_config[series['data']]
+            if 'data_transform' in dcfg \
+               and 'FAKE_RAW_VALUES' not in results.meta():
+                data[1] = self._transform_data(data[1], dcfg['data_transform'])
 
         if 'cutoff' in config:
             min_x = data[0].min() + config['cutoff'][0]
@@ -1203,6 +1218,8 @@ class TimeseriesPlotter(Plotter):
                 a = 1
             else:
                 a = 0
+
+            alldata[a] = numpy.append(alldata[a], data[1])
 
             if stack:
                 kwargs['facecolor'] = kwargs['color']
