@@ -413,6 +413,11 @@ def add_plotting_args(parser):
         help="Set the number of columns in the legend.")
 
     parser.add_argument(
+        "--reverse-legend",
+        action="store_true", dest="LEGEND_REVERSE",
+        help="Reverse the order of items in the legend.")
+
+    parser.add_argument(
         "--filter-legend",
         action="store_true", dest="FILTER_LEGEND",
         help="Filter legend labels by removing the longest common substring from "
@@ -940,6 +945,9 @@ class Plotter(ArgParam):
                                  [a.get_legend_handles_labels() for a in axes])
         if not labels:
             return []
+
+        if self.legend_reverse:
+            handles, labels = reversed(handles), reversed(labels)
 
         labels = self._filter_labels(labels)
 

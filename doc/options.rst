@@ -407,6 +407,11 @@ sense combined with :option:`-f` *plot*.
 .. option:: --legend-columns=LEGEND_COLUMNS
     Set the number of columns in the legend.
 
+.. option:: --reverse-legend
+
+   Reverse the order of items in the legend. This can be useful to make the
+   legend order match the data series in some cases.
+
 .. option:: --filter-legend
 
    Filter legend labels by removing the longest common substring from all
