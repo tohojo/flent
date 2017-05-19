@@ -1041,7 +1041,7 @@ class Plotter(ArgParam):
             ma = numpy.ma.masked_invalid(arr)
             return numpy.percentile(ma.compressed(), q)
 
-    def get_series(self, series, results, config, norm=None):
+    def get_series(self, series, results, config, norm=None, no_invalid=False):
         if 'smoothing' in series:
             smooth = series['smoothing']
         else:
@@ -1055,6 +1055,9 @@ class Plotter(ArgParam):
         data = numpy.array(results.raw_series(series['data'], smooth,
                                               raw_key=series.get('raw_key')),
                            dtype=float)
+
+        if no_invalid:
+            data = numpy.ma.compress_cols(numpy.ma.masked_invalid(data))
 
         if norm:
             data[1] /= norm
@@ -1312,7 +1315,7 @@ class BoxPlotter(TimeseriesPlotter):
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
-            norms = None
+            norms = [None] * len(config['series'])
 
         for i, s in enumerate(series):
             if split_results:
@@ -1322,16 +1325,19 @@ class BoxPlotter(TimeseriesPlotter):
             else:
                 a = 0
 
-            data = []
+            data = None
             for r in results:
-                d = [d for d in r.series(s['data']) if d is not None]
-                if norms is not None:
-                    d = [di / norms[i] for di in d]
-                all_data[a].extend(d)
-                if not d:
-                    data.append([0.0])
+                d = self.get_series(s, r, config, norm=norms[i], no_invalid=True)
+
+                if all_data[a] is None:
+                    all_data[a] = d[1].copy()
                 else:
-                    data.append(d)
+                    all_data[a] = numpy.concatenate((all_data[a], d[1]))
+
+                if data is None:
+                    data = d[1]
+                else:
+                    data = numpy.vstack((data, d[1]))
 
             if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
@@ -1343,7 +1349,7 @@ class BoxPlotter(TimeseriesPlotter):
             positions = range(pos, pos + group_size)
             ticks.extend(list(range(pos, pos + group_size)))
 
-            bp = config['axes'][a].boxplot(data,
+            bp = config['axes'][a].boxplot(data.transpose(),
                                            positions=positions, sym="b+")
             for j, r in enumerate(results):
                 pyplot.setp(bp['boxes'][j], color=colours[j])
@@ -1369,8 +1375,8 @@ class BoxPlotter(TimeseriesPlotter):
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size + 1
         for i, a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, config[
-                             'units'][i], allow_log=False)
+            self._do_scaling(a, all_data[i], 0, 100,
+                             config['units'][i], allow_log=False)
 
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
