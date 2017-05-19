@@ -979,6 +979,7 @@ class IperfCsvRunner(ProcessRunner):
                 logger.warning(
                     "Found iperf binary, but it does not have "
                     "an --enhancedreport option. Not using.")
+                logger.debug("Output of `iperf -h`: %s", err)
 
         raise RuntimeError("No suitable Iperf binary found.")
 
