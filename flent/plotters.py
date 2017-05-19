@@ -1057,15 +1057,15 @@ class Plotter(ArgParam):
 
         if 'stacked' in config and config['stacked']:
             data = numpy.array((results.x_values,
-                               results.series(series['data'], smooth)))
+                                results.series(series['data'], smooth)),
+                               dtype=float)
 
         data = numpy.array(results.raw_series(series['data'], smooth,
-                                              raw_key=series.get('raw_key')))
-        print(data)
+                                              raw_key=series.get('raw_key')),
+                           dtype=float)
 
         if norm:
-            y_values = [y / norm if y is not None else None
-                        for y in y_values]
+            data[1] /= norm
 
         return data
 
