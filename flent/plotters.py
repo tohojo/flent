@@ -1440,7 +1440,7 @@ class BarPlotter(BoxPlotter):
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
-            norms = None
+            norms = [None] * len(config['series'])
 
         for i, s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
@@ -1451,14 +1451,12 @@ class BarPlotter(BoxPlotter):
             data = []
             errors = []
             for r in results:
-                dp = [d for d in r.series(s['data']) if d is not None]
-                if norms is not None:
-                    dp = [d / norms[i] for d in dp]
-                if not dp and not self.skip_missing:
+                dp = self.get_series(s, r, config, norm=norms[i], no_invalid=True)
+                if not dp.any() and not self.skip_missing:
                     data.append(0.0)
                     errors.append(0.0)
                     all_data[a].append(0.0)
-                elif dp:
+                elif dp.any():
                     dp = numpy.array(dp)
                     data.append(dp.mean())
                     errors.append(dp.std())
