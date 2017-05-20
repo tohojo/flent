@@ -1625,7 +1625,7 @@ class CdfPlotter(Plotter):
             if not data.any():
                 continue
 
-            hist, bins = numpy.histogram(data[1], bins='auto', density=True)
+            hist, bins = numpy.histogram(data[1], bins=1000, density=True)
 
             x_values = bins
             y_values = numpy.zeros(len(bins))
