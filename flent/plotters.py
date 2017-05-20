@@ -1219,8 +1219,6 @@ class TimeseriesPlotter(Plotter):
             else:
                 a = 0
 
-            alldata[a] = numpy.append(alldata[a], data[1])
-
             if stack:
                 kwargs['facecolor'] = kwargs['color']
                 kwargs['edgecolor'] = 'none'
@@ -1233,10 +1231,10 @@ class TimeseriesPlotter(Plotter):
                 if all_data[a] is None:
                     all_data[a] = data[1].copy()
                 else:
-                    all_data[a] = numpy.concatenate((all_data[a], data[1]))
+                    all_data[a] = numpy.append(all_data[a], data[1])
                 for r in self.scale_data + extra_scale_data:
                     d = self.get_series(s, r, config, norms[i])
-                    all_data[a] = numpy.concatenate((all_data[a], d[1]))
+                    all_data[a] = numpy.append(all_data[a], d[1])
                 self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
 
@@ -1358,7 +1356,7 @@ class BoxPlotter(TimeseriesPlotter):
                 if all_data[a] is None:
                     all_data[a] = d[1].copy()
                 else:
-                    all_data[a] = numpy.concatenate((all_data[a], d[1]))
+                    all_data[a] = numpy.append(all_data[a], d[1])
 
                 if data is None:
                     data = d[1]
