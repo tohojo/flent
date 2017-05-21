@@ -1625,11 +1625,13 @@ class CdfPlotter(Plotter):
             if not data.any():
                 continue
 
-            hist, bins = numpy.histogram(data[1], bins=1000, density=True)
-
-            x_values = bins
-            y_values = numpy.zeros(len(bins))
-            y_values[1:] = hist * (bins[1] - bins[0])
+            # ECDF that avoids bias due to binning. See discussion at
+            # http://stackoverflow.com/a/11692365
+            #
+            # FIXME: Should we end below 1 for data series that have missing
+            # data points (and what does missing mean)?
+            x_values = numpy.sort(data[1])
+            y_values = numpy.linspace(0, 1, num=len(x_values), endpoint=False)
 
             m = data[1].max()
             if m > max_value:
@@ -1645,7 +1647,7 @@ class CdfPlotter(Plotter):
                 kwargs['color'] = next(colours)
             kwargs.update(extra_kwargs)
             self.data_artists.extend(axis.plot(x_values,
-                                               y_values.cumsum(),
+                                               y_values,
                                                **kwargs))
 
         if max_value > 10:
