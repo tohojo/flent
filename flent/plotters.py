@@ -1071,7 +1071,7 @@ class Plotter(ArgParam):
                and 'FAKE_RAW_VALUES' not in results.meta():
                 data[1] = self._transform_data(data[1], dcfg['data_transform'])
 
-        if 'cutoff' in config:
+        if 'cutoff' in config and config['cutoff']:
             min_x = data[0].min() + config['cutoff'][0]
             max_x = data[0].max() + config['cutoff'][1]
 
