@@ -240,6 +240,8 @@ class ResultSet(object):
     def raw_series(self, name, smooth=None, absolute=False, raw_key=None):
         if name not in self.raw_values or not self.raw_values[name]:
             if name in self._results:
+                logger.debug("No raw values for series '%s'. "
+                             "Falling back to computed values.", name)
                 return self.x_values, self.series(name, smooth)
             logger.warning("Missing data points for series '%s'", name)
             return ([], [])
