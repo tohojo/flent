@@ -1567,8 +1567,6 @@ class CdfPlotter(Plotter):
         axis.set_ylim(0, 1)
         axis.minorticks_on()
         config['axes'] = [axis]
-        self.medians = []
-        self.min_vals = []
 
     def _plot(self, results, config=None, axis=None, postfix="",
               extra_kwargs={}, extra_scale_data=[]):
@@ -1578,46 +1576,13 @@ class CdfPlotter(Plotter):
             axis = config['axes'][0]
 
         colours = cycle(self.colours)
-        data = []
-        sizes = []
         max_value = 0.0
+        min_value = float('inf')
 
         if self.norm_factors:
             norms = list(islice(cycle(self.norm_factors), len(config['series'])))
         else:
             norms = [None] * len(config['series'])
-
-        for s in config['series']:
-            if not s['data'] in results.series_names:
-                data.append([])
-                sizes.append(0)
-                continue
-            s_data = results.series(s['data'])
-            if 'cutoff' in config and config['cutoff']:
-                # cut off values from the beginning and end before doing the
-                # plot; for e.g. pings that run long than the streams, we don't
-                # want the unloaded ping values
-                start, end = config['cutoff']
-                end = int((self.metadata['TOTAL_LENGTH'] -
-                           end) / self.metadata['STEP_SIZE'])
-                start = int(start / self.metadata['STEP_SIZE'])
-                if end == 0:
-                    end = None
-                s_data = s_data[start:end]
-            sizes.append(float(len(s_data)))
-            d = sorted([x for x in s_data if x is not None])
-            data.append(d)
-            if d:
-                self.medians.append(numpy.median(d))
-                self.min_vals.append(min(d))
-                max_value = max([max_value] + d)
-
-                for r in self.scale_data + extra_scale_data:
-                    d_s = [x for x in r.series(s['data']) if x is not None]
-                    if d_s:
-                        max_value = max([max_value] + d_s)
-
-        max_value = 0
 
         for i, s in enumerate(config['series']):
 
@@ -1633,9 +1598,8 @@ class CdfPlotter(Plotter):
             x_values = numpy.sort(data[1])
             y_values = numpy.linspace(0, 1, num=len(x_values), endpoint=False)
 
-            m = data[1].max()
-            if m > max_value:
-                max_value = m
+            max_value = max(max_value, x_values[-1])
+            min_value = min(min_value, x_values[0])
 
             kwargs = {}
             for k in PLOT_KWARGS:
@@ -1656,40 +1620,18 @@ class CdfPlotter(Plotter):
         axis.set_xlim(right=max(max_value, axis.get_xlim()[1]))
         if self.zero_y:
             axis.set_xlim(left=0)
-        elif self.min_vals:
-            min_val = min(self.min_vals)
-            if min_val > 10:
-                min_val -= min_val % 10  # nearest value divisible by 10
-            if min_val > 100:
-                min_val -= min_val % 100
-            axis.set_xlim(left=min_val)
+        else:
+            if min_value > 10:
+                min_value -= min_value % 10  # nearest value divisible by 10
+            if min_value > 100:
+                min_value -= min_value % 100
+            axis.set_xlim(left=min(min_value, axis.get_xlim()[0]))
 
         if self.log_scale:
-            # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
 
         for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
-
-    def _filter_dup_vals(self, x_vals, y_vals):
-        """Filter out series of identical y-vals, also removing the corresponding
-        x-vals.
-
-        Lowers the amount of plotted points and avoids strings of markers on
-        CDFs.
-
-        """
-        x_vals = list(x_vals)
-        y_vals = list(y_vals)
-        i = 0
-        while i < len(x_vals) - 2:
-            while (i < len(y_vals) - 2 and
-                   y_vals[i] == y_vals[i + 1] and
-                   y_vals[i] == y_vals[i + 2]):
-                del x_vals[i + 1]
-                del y_vals[i + 1]
-            i += 1
-        return x_vals, y_vals
 
 
 class CdfCombinePlotter(CombineManyPlotter, CdfPlotter):
