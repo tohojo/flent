@@ -1592,11 +1592,10 @@ class CdfPlotter(Plotter):
 
             # ECDF that avoids bias due to binning. See discussion at
             # http://stackoverflow.com/a/11692365
-            #
-            # FIXME: Should we end below 1 for data series that have missing
-            # data points (and what does missing mean)?
             x_values = numpy.sort(data[1])
-            y_values = numpy.linspace(0, 1, num=len(x_values), endpoint=False)
+            missing = results.num_missing(s['data']) / len(x_values)
+            y_values = numpy.linspace(0, 1.0-missing,
+                                      num=len(x_values), endpoint=False)
 
             max_value = max(max_value, x_values[-1])
             min_value = min(min_value, x_values[0])
