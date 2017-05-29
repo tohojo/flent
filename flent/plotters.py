@@ -1067,7 +1067,10 @@ class Plotter(ArgParam):
                                                raw_key=series.get('raw_key')),
                             dtype=float)
 
-            dcfg = self.data_config[series['data']]
+            cfgname = "%s::%s" % (series['data'], series.get('raw_key'))
+            if not cfgname in self.data_config:
+                cfgname = series['data']
+            dcfg = self.data_config[cfgname]
             if 'data_transform' in dcfg \
                and 'FAKE_RAW_VALUES' not in results.meta():
                 data[1] = self._transform_data(data[1], dcfg['data_transform'])
