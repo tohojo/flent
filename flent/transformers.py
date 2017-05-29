@@ -70,9 +70,9 @@ def cumulative_to_events(results):
     """Transform cumulative counter values into the increasing events."""
     if hasattr(results, "shape") and np is not None:
         # Need output array same length as input array
-        arr = np.zeros(len(results)+1, dtype=float)
-        arr[1:] = results
-        return np.diff(arr)
+        arr = np.zeros(len(results), dtype=float)
+        arr[1:] = np.diff(results)
+        return arr
 
     try:
         current = results[0][1]
