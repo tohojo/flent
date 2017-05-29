@@ -1194,7 +1194,7 @@ class TimeseriesPlotter(Plotter):
 
         for i, s in enumerate(config['series']):
             data = self.get_series(s, results, config, norm=norms[i])
-            if data is None:
+            if not data.any():
                 continue
 
             x_min = min(data[0].min(), x_min)
