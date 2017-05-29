@@ -1043,20 +1043,20 @@ class Plotter(ArgParam):
             ma = numpy.ma.masked_invalid(arr)
             return numpy.percentile(ma.compressed(), q)
 
-
     def _transform_data(self, data, t):
         t = t.strip()
         if hasattr(transformers, t):
             data = getattr(transformers, t)(data)
         return data
 
-    def get_series(self, series, results, config, norm=None, no_invalid=False):
+    def get_series(self, series, results, config,
+                   norm=None, no_invalid=False, aligned=False):
         if 'smoothing' in series:
             smooth = series['smoothing']
         else:
             smooth = False
 
-        if 'stacked' in config and config['stacked']:
+        if aligned or ('stacked' in config and config['stacked']):
             data = numpy.array((results.x_values,
                                 results.series(series['data'], smooth)),
                                dtype=float)
@@ -1760,6 +1760,11 @@ class EllipsisPlotter(Plotter):
         if axis is None:
             axis = config['axes'][0]
 
+        if self.norm_factors:
+            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
+        else:
+            norms = [None] * len(config['series'])
+
         series = config['series']
 
         label = postfix.replace(" - ", "") if postfix else results.label()
@@ -1768,16 +1773,16 @@ class EllipsisPlotter(Plotter):
         if 'color' in extra_kwargs:
             carg['color'] = extra_kwargs['color']
 
-        x_values = results.series(series[0]['data'])
+        x_values = self.get_series(series[0], results, config, norms[0],
+                                   aligned=True)[1]
 
-        for s in series[1:]:
-            data = [i for i in zip(x_values, results.series(s['data'])) if i[
-                0] is not None and i[1] is not None]
-            if len(data) < 2:
-                points = numpy.array(data * 2)
-            else:
-                points = numpy.array(data)
-            x_values, y_values = zip(*data)
+        for s, n in zip(series[1:], norms[1:]):
+            y_values = self.get_series(s, results, config, n, aligned=True)[1]
+
+            points = numpy.stack((x_values, y_values))
+            points = numpy.transpose(
+                numpy.ma.compress_cols(numpy.ma.masked_invalid(points)))
+
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
             med = numpy.median(points, axis=0)
             self.xvals.append(el.center[0] - el.width / 2)
