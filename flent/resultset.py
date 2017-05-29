@@ -250,7 +250,7 @@ class ResultSet(object):
                 logger.debug("No raw values for series '%s'. "
                              "Falling back to computed values.", name)
                 return self.x_values, self.series(name, smooth)
-            logger.warning("Missing data points for series '%s'", name)
+            logger.debug("Missing data points for series '%s' key '%s'", name, raw_key)
             return ([], [])
 
         if raw_key is None:
