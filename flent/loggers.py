@@ -239,7 +239,7 @@ def setup_logfile(filename, level=DEBUG, maxlevel=None):
 
     handler = FileHandler(filename, encoding='utf-8')
     add_common_filters(handler)
-    handler.setLevel(DEBUG)
+    handler.setLevel(level)
     fmt = LogFormatter(
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         output_markers=(START_MARKER, END_MARKER))
