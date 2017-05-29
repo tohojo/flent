@@ -37,7 +37,7 @@ from collections import OrderedDict
 
 try:
     import matplotlib
-    import numpy
+    import numpy as np
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -193,7 +193,7 @@ def init_matplotlib(output, use_markers, load_rc):
 
     MATPLOTLIB_INIT = True
     logger.info("Initialised matplotlib v%s on numpy v%s.",
-                matplotlib.__version__, numpy.__version__)
+                matplotlib.__version__, np.__version__)
 
 
 def get_plotconfig(settings, plot=None):
@@ -1039,10 +1039,10 @@ class Plotter(ArgParam):
     def _percentile(self, arr, q):
         try:
             # nanpercentile was only introduced in numpy 1.9.0
-            return numpy.nanpercentile(arr, q)
+            return np.nanpercentile(arr, q)
         except AttributeError:
-            ma = numpy.ma.masked_invalid(arr)
-            return numpy.percentile(ma.compressed(), q)
+            ma = np.ma.masked_invalid(arr)
+            return np.percentile(ma.compressed(), q)
 
     def _transform_data(self, data, t):
         t = t.strip()
@@ -1058,14 +1058,14 @@ class Plotter(ArgParam):
             smooth = False
 
         if aligned or ('stacked' in config and config['stacked']):
-            data = numpy.array((results.x_values,
-                                results.series(series['data'], smooth)),
-                               dtype=float)
+            data = np.array((results.x_values,
+                             results.series(series['data'], smooth)),
+                            dtype=float)
         else:
 
-            data = numpy.array(results.raw_series(series['data'], smooth,
-                                                  raw_key=series.get('raw_key')),
-                               dtype=float)
+            data = np.array(results.raw_series(series['data'], smooth,
+                                               raw_key=series.get('raw_key')),
+                            dtype=float)
 
             dcfg = self.data_config[series['data']]
             if 'data_transform' in dcfg \
@@ -1082,7 +1082,7 @@ class Plotter(ArgParam):
             data = data[:,min_idx:max_idx]
 
         if no_invalid:
-            data = numpy.ma.compress_cols(numpy.ma.masked_invalid(data))
+            data = np.ma.compress_cols(np.ma.masked_invalid(data))
 
         if norm:
             data[1] /= norm
@@ -1188,7 +1188,7 @@ class TimeseriesPlotter(Plotter):
         colours = cycle(self.colours)
 
         if stack:
-            sums = numpy.zeros(len(results.x_values))
+            sums = np.zeros(len(results.x_values))
 
         all_data = [None] * len(config['axes'])
 
@@ -1230,10 +1230,10 @@ class TimeseriesPlotter(Plotter):
                 if all_data[a] is None:
                     all_data[a] = data[1].copy()
                 else:
-                    all_data[a] = numpy.append(all_data[a], data[1])
+                    all_data[a] = np.append(all_data[a], data[1])
                 for r in self.scale_data + extra_scale_data:
                     d = self.get_series(s, r, config, norms[i])
-                    all_data[a] = numpy.append(all_data[a], d[1])
+                    all_data[a] = np.append(all_data[a], d[1])
                 self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
 
@@ -1355,12 +1355,12 @@ class BoxPlotter(TimeseriesPlotter):
                 if all_data[a] is None:
                     all_data[a] = d[1].copy()
                 else:
-                    all_data[a] = numpy.append(all_data[a], d[1])
+                    all_data[a] = np.append(all_data[a], d[1])
 
                 if data is None:
                     data = d[1]
                 else:
-                    data = numpy.vstack((data, d[1]))
+                    data = np.vstack((data, d[1]))
 
             if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
@@ -1480,7 +1480,7 @@ class BarPlotter(BoxPlotter):
                     errors.append(0.0)
                     all_data[a].append(0.0)
                 elif dp.any():
-                    dp = numpy.array(dp)
+                    dp = np.array(dp)
                     data.append(dp.mean())
                     errors.append(dp.std())
                     all_data[a].append(data[-1] + errors[-1])
@@ -1591,9 +1591,9 @@ class CdfPlotter(Plotter):
 
             # ECDF that avoids bias due to binning. See discussion at
             # http://stackoverflow.com/a/11692365
-            x_values = numpy.sort(data[1])
+            x_values = np.sort(data[1])
             missing = results.num_missing(s['data']) / len(x_values)
-            y_values = numpy.linspace(0, 1.0-missing,
+            y_values = np.linspace(0, 1.0-missing,
                                       num=len(x_values), endpoint=False)
 
             max_value = max(max_value, x_values[-1])
@@ -1677,8 +1677,8 @@ class QqPlotter(Plotter):
         axis.set_ylim(min(y_values) * 0.99, max(y_values) * 1.01)
 
     def _equal_length(self, x, y):
-        x_values = numpy.sort([r for r in x if r is not None])
-        y_values = numpy.sort([r for r in y if r is not None])
+        x_values = np.sort([r for r in x if r is not None])
+        y_values = np.sort([r for r in y if r is not None])
 
         # If data sets are not of equal sample size, the larger one is shrunk by
         # interpolating values into the length of the smallest data set.
@@ -1701,16 +1701,16 @@ class QqPlotter(Plotter):
         # length of the longer data set, with n being equal to the number of
         # data points in the shorter data set.
         if len(x_values) < len(y_values):
-            y_values = numpy.interp(numpy.linspace(0, len(y_values),
-                                                   num=len(x_values),
-                                                   endpoint=False),
-                                    range(len(y_values)), y_values)
+            y_values = np.interp(np.linspace(0, len(y_values),
+                                             num=len(x_values),
+                                             endpoint=False),
+                                 range(len(y_values)), y_values)
 
         elif len(y_values) < len(x_values):
-            x_values = numpy.interp(numpy.linspace(0, len(x_values),
-                                                   num=len(y_values),
-                                                   endpoint=False),
-                                    range(len(x_values)), x_values)
+            x_values = np.interp(np.linspace(0, len(x_values),
+                                             num=len(y_values),
+                                             endpoint=False),
+                                 range(len(x_values)), x_values)
 
         return x_values, y_values
 
@@ -1778,12 +1778,12 @@ class EllipsisPlotter(Plotter):
         for s, n in zip(series[1:], norms[1:]):
             y_values = self.get_series(s, results, config, n, aligned=True)[1]
 
-            points = numpy.stack((x_values, y_values))
-            points = numpy.transpose(
-                numpy.ma.compress_cols(numpy.ma.masked_invalid(points)))
+            points = np.stack((x_values, y_values))
+            points = np.transpose(
+                np.ma.compress_cols(np.ma.masked_invalid(points)))
 
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
-            med = numpy.median(points, axis=0)
+            med = np.median(points, axis=0)
             self.xvals.append(el.center[0] - el.width / 2)
             self.xvals.append(el.center[0] + el.width / 2)
             self.yvals.append(el.center[1] - el.height / 2)
