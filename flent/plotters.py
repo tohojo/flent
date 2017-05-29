@@ -603,9 +603,10 @@ class Plotter(ArgParam):
         for s in config['series']:
             if isinstance(s['data'], Glob):
                 for d in Glob.expand_list(s['data'], data.keys()):
-                    if 'label' in s and 'id' in data[d]:
-                        ns = dict(s, data=d, id=data[d]['id'],
-                                  label='%s -- %s' % (s['label'], data[d]['id']))
+                    if 'label' in s:
+                        d_id = data[d]['id'] if 'id' in data[d] else d
+                        ns = dict(s, data=d, id=d_id,
+                                  label='%s -- %s' % (s['label'], d_id))
                         if 'parent_id' in data[d]:
                             ns['parent_id'] = data[d]['parent_id']
                         new_series.append(ns)
