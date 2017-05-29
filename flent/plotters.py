@@ -744,11 +744,13 @@ class Plotter(ArgParam):
 
         for a in hovered:
             a.set_linewidth(self.highlight_widths[a][1])
+            a.set_markeredgewidth(self.highlight_widths[a][1])
             try:
                 a.axes.draw_artist(a)
             except AttributeError:
                 pass
             a.set_linewidth(self.highlight_widths[a][0])
+            a.set_markeredgewidth(self.highlight_widths[a][0])
 
         for bbox in bboxes:
             self.figure.canvas.blit(bbox)
