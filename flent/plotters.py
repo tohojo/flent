@@ -26,7 +26,7 @@ import io
 import re
 
 from flent import combiners, transformers
-from flent.util import cum_prob, frange, classname, long_substr, format_date, \
+from flent.util import classname, long_substr, format_date, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
 from flent.loggers import get_logger

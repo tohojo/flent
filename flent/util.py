@@ -31,11 +31,10 @@ import re
 import socket
 import time
 
-from bisect import bisect_left
 from copy import copy
 from calendar import timegm
 from datetime import datetime
-from math import ceil, log10, exp, sqrt
+from math import log10, exp, sqrt
 
 from flent.loggers import get_logger
 
@@ -52,6 +51,7 @@ except ImportError:
     import ConfigParser as configparser
 
 logger = get_logger(__name__)
+
 
 def uscore_to_camel(s):
     """Turn a underscore style string (org_table) into a CamelCase style string
@@ -125,34 +125,6 @@ def long_substr(data, prefix_only=False):
                 if j > len(substr) and all(data[0][i:i + j] in x for x in data):
                     substr = data[0][i:i + j]
     return substr
-
-
-# Calculate discrete cdf function using bisect_left.
-def cum_prob(data, val, size):
-    return bisect_left(data, val) / size
-
-# from http://code.activestate.com/recipes/66472/
-
-
-def frange(limit1, limit2=None, increment=1.):
-    """
-    Range function that accepts floats (and integers).
-
-    Usage:
-    frange(-2, 2, 0.1)
-    frange(10)
-    frange(10, increment = 0.5)
-
-    The returned value is an iterator.  Use list(frange) for a list.
-    """
-
-    if limit2 is None:
-        limit2, limit1 = limit1, 0.
-    else:
-        limit1 = float(limit1)
-
-    count = int(ceil((limit2 - limit1) / increment))
-    return (limit1 + n * increment for n in range(count))
 
 
 def is_executable(filename):
