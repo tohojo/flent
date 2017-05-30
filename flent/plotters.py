@@ -1052,23 +1052,20 @@ class Plotter(ArgParam):
 
     def get_series(self, series, results, config,
                    norm=None, no_invalid=False, aligned=False):
-        if 'smoothing' in series:
-            smooth = series['smoothing']
-        else:
-            smooth = False
 
         if aligned or ('stacked' in config and config['stacked']):
             data = np.array((results.x_values,
-                             results.series(series['data'], smooth)),
+                             results.series(series['data'])),
                             dtype=float)
         else:
 
-            data = np.array(results.raw_series(series['data'], smooth,
-                                               raw_key=series.get('raw_key')),
-                            dtype=float)
+            data = np.array(
+                list(results.raw_series(series['data'],
+                                        raw_key=series.get('raw_key'))),
+                dtype=float).transpose()
 
             cfgname = "%s::%s" % (series['data'], series.get('raw_key'))
-            if not cfgname in self.data_config:
+            if cfgname not in self.data_config:
                 cfgname = series['data']
             dcfg = self.data_config[cfgname]
             if 'data_transform' in dcfg \
@@ -1082,13 +1079,21 @@ class Plotter(ArgParam):
             min_idx = data[0].searchsorted(min_x, side='right')
             max_idx = data[0].searchsorted(max_x, side='left')
 
-            data = data[:,min_idx:max_idx]
+            data = data[:, min_idx:max_idx]
 
         if no_invalid:
             data = np.ma.compress_cols(np.ma.masked_invalid(data))
 
         if norm:
             data[1] /= norm
+
+        if 'smoothing' in series and series['smoothing']:
+            l = series['smoothing']
+            if l % 2 != 1:
+                l += 1
+            kern = np.ones(l, dtype=float)
+            kern /= l
+            data[1] = np.convolve(data[1], kern, mode='same')
 
         return data
 

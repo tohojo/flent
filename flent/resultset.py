@@ -244,29 +244,28 @@ class ResultSet(object):
                 return 1 + max(seqnos) - len(seqnos)
         return 0
 
-    def raw_series(self, name, smooth=None, absolute=False, raw_key=None):
+    def raw_series(self, name, absolute=False, raw_key=None):
         if name not in self.raw_values or not self.raw_values[name]:
             if name in self._results and raw_key is None:
                 logger.debug("No raw values for series '%s'. "
                              "Falling back to computed values.", name)
-                return self.x_values, self.series(name, smooth)
-            logger.debug("Missing data points for series '%s' key '%s'", name, raw_key)
-            return ([], [])
+                for x, y in zip(self.x_values, self.series(name)):
+                    yield x, y
+            logger.debug("Missing data points for series '%s' key '%s'",
+                         name, raw_key)
+            return
 
         if raw_key is None:
             raw_key = 'val'
 
         if self.t0 is None:
             self._calculate_t0()
-        x_values, y_values = [], []
+
         for i in self.raw_values[name]:
             if raw_key not in i:
                 continue
-            x_values.append(i['t'] if absolute else i['t'] - self.t0)
-            y_values.append(i[raw_key])
-        if smooth:
-            y_values = self.smoothed(y_values, smooth)
-        return x_values, y_values
+            x = i['t'] if absolute else i['t'] - self.t0
+            yield x, i[raw_key]
 
     def __getitem__(self, name):
         return self.series(name)
