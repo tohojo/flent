@@ -619,6 +619,10 @@ class Plotter(ArgParam):
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
 
+        if self.norm_factors:
+            for n, s in zip(cycle(self.norm_factors), new_series):
+                s['norm_factor'] = n
+
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
@@ -813,7 +817,6 @@ class Plotter(ArgParam):
                     bbs.append(bb)
                 bbox = Bbox.union([b for b in bbs
                                    if b.height != 0 or b.width != 0])
-
 
                 h = fig_bbox.height
                 w = fig_bbox.width
@@ -1051,7 +1054,7 @@ class Plotter(ArgParam):
         return data
 
     def get_series(self, series, results, config,
-                   norm=None, no_invalid=False, aligned=False):
+                   no_invalid=False, aligned=False):
 
         if aligned or ('stacked' in config and config['stacked']):
             data = np.array((results.x_values,
@@ -1084,8 +1087,8 @@ class Plotter(ArgParam):
         if no_invalid:
             data = np.ma.compress_cols(np.ma.masked_invalid(data))
 
-        if norm:
-            data[1] /= norm
+        if 'norm_factor' in series:
+            data[1] /= series['norm_factor']
 
         if 'smoothing' in series and series['smoothing']:
             l = series['smoothing']
@@ -1188,11 +1191,6 @@ class TimeseriesPlotter(Plotter):
 
         x_min = x_max = 0
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = [None] * len(config['series'])
-
         colours = cycle(self.colours)
 
         if stack:
@@ -1201,7 +1199,7 @@ class TimeseriesPlotter(Plotter):
         all_data = [None] * len(config['axes'])
 
         for i, s in enumerate(config['series']):
-            data = self.get_series(s, results, config, norm=norms[i])
+            data = self.get_series(s, results, config)
             if not data.any():
                 continue
 
@@ -1240,7 +1238,7 @@ class TimeseriesPlotter(Plotter):
                 else:
                     all_data[a] = np.append(all_data[a], data[1])
                 for r in self.scale_data + extra_scale_data:
-                    d = self.get_series(s, r, config, norms[i])
+                    d = self.get_series(s, r, config)
                     all_data[a] = np.append(all_data[a], d[1])
                 self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
@@ -1343,11 +1341,6 @@ class BoxPlotter(TimeseriesPlotter):
         series_labels = self._filter_labels(
             [s['label'] for s in series])
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = [None] * len(config['series'])
-
         for i, s in enumerate(series):
             if split_results:
                 results = split_results[i]
@@ -1358,7 +1351,7 @@ class BoxPlotter(TimeseriesPlotter):
 
             data = None
             for r in results:
-                d = self.get_series(s, r, config, norm=norms[i], no_invalid=True)
+                d = self.get_series(s, r, config, no_invalid=True)
 
                 if all_data[a] is None:
                     all_data[a] = d[1].copy()
@@ -1468,11 +1461,6 @@ class BarPlotter(BoxPlotter):
             [s['label'] for s in config['series']])
         texts = []
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = [None] * len(config['series'])
-
         for i, s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
                 a = 1
@@ -1482,7 +1470,7 @@ class BarPlotter(BoxPlotter):
             data = []
             errors = []
             for r in results:
-                dp = self.get_series(s, r, config, norm=norms[i], no_invalid=True)
+                dp = self.get_series(s, r, config, no_invalid=True)
                 if not dp.any() and not self.skip_missing:
                     data.append(0.0)
                     errors.append(0.0)
@@ -1586,14 +1574,9 @@ class CdfPlotter(Plotter):
         max_value = 0.0
         min_value = float('inf')
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = [None] * len(config['series'])
-
         for i, s in enumerate(config['series']):
 
-            data = self.get_series(s, results, config, norms[i], no_invalid=True)
+            data = self.get_series(s, results, config, no_invalid=True)
             if not data.any():
                 continue
 
@@ -1767,11 +1750,6 @@ class EllipsisPlotter(Plotter):
         if axis is None:
             axis = config['axes'][0]
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = [None] * len(config['series'])
-
         series = config['series']
 
         label = postfix.replace(" - ", "") if postfix else results.label()
@@ -1780,11 +1758,10 @@ class EllipsisPlotter(Plotter):
         if 'color' in extra_kwargs:
             carg['color'] = extra_kwargs['color']
 
-        x_values = self.get_series(series[0], results, config, norms[0],
-                                   aligned=True)[1]
+        x_values = self.get_series(series[0], results, config, aligned=True)[1]
 
-        for s, n in zip(series[1:], norms[1:]):
-            y_values = self.get_series(s, results, config, n, aligned=True)[1]
+        for s in series[1:]:
+            y_values = self.get_series(s, results, config, aligned=True)[1]
 
             points = np.stack((x_values, y_values))
             points = np.transpose(
