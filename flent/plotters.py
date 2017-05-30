@@ -493,7 +493,6 @@ def add_plotting_args(parser):
         "(as specified by --figure-width and --figure-height) is no longer "
         "kept constant.")
 
-
     return parser
 
 
@@ -1255,14 +1254,16 @@ class TimeseriesPlotter(Plotter):
 
         for a in range(len(config['axes'])):
             if all_data[a] is not None:
-                self._do_scaling(config['axes'][a], all_data[a], btm, top, config['units'][a])
+                self._do_scaling(config['axes'][a], all_data[a], btm, top,
+                                 config['units'][a])
 
             # Handle cut-off data sets. If the x-axis difference between the
             # largest data point and the TOTAL_LENGTH from settings, scale to
             # the data values, but round to nearest 10 above that value.
             try:
                 max_xdata = max([l.get_xdata()[-1]
-                                 for l in config['axes'][a].get_lines() if l.get_xdata()])
+                                 for l in config['axes'][a].get_lines()
+                                 if l.get_xdata()])
                 if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
                     config['axes'][a].set_xlim(
                         right=(max_xdata + (10 - max_xdata % 10)))
@@ -1585,7 +1586,7 @@ class CdfPlotter(Plotter):
             x_values = np.sort(data[1])
             missing = results.num_missing(s['data']) / len(x_values)
             y_values = np.linspace(0, 1.0-missing,
-                                      num=len(x_values), endpoint=False)
+                                   num=len(x_values), endpoint=False)
 
             max_value = max(max_value, x_values[-1])
             min_value = min(min_value, x_values[0])
