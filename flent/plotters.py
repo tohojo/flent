@@ -1056,7 +1056,7 @@ class Plotter(ArgParam):
     def get_series(self, series, results, config,
                    no_invalid=False, aligned=False):
 
-        if aligned or ('stacked' in config and config['stacked']):
+        if aligned:
             data = np.array((results.x_values,
                              results.series(series['data'])),
                             dtype=float)
@@ -1199,7 +1199,7 @@ class TimeseriesPlotter(Plotter):
         all_data = [None] * len(config['axes'])
 
         for i, s in enumerate(config['series']):
-            data = self.get_series(s, results, config)
+            data = self.get_series(s, results, config, aligned=stack)
             if not data.any():
                 continue
 
