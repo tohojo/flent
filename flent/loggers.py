@@ -35,6 +35,13 @@ DEBUG = logging.DEBUG
 INFO = logging.INFO
 WARNING = logging.WARNING
 
+ENCODING = "UTF-8"
+try:
+    import locale
+    ENCODING = locale.getpreferredencoding(False)
+except:
+    pass
+
 
 class MaxFilter(object):
 
@@ -98,7 +105,10 @@ class LogFormatter(Formatter):
         if hasattr(record, 'output'):
             if s[-1:] != "\n":
                 s = s + "\n"
-            s = s + self.start_marker + record.output + self.end_marker
+            output = record.output
+            if hasattr(output, 'decode'):
+                output = output.decode(ENCODING)
+            s = s + self.start_marker + output + self.end_marker
 
         elif hasattr(record, 'runner'):
             if s[-1:] != "\n":
@@ -229,7 +239,7 @@ def setup_logfile(filename, level=DEBUG, maxlevel=None):
 
     handler = FileHandler(filename, encoding='utf-8')
     add_common_filters(handler)
-    handler.setLevel(DEBUG)
+    handler.setLevel(level)
     fmt = LogFormatter(
         fmt="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         output_markers=(START_MARKER, END_MARKER))

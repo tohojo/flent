@@ -27,6 +27,8 @@ import shutil
 import sys
 import tempfile
 import unittest
+import warnings
+import traceback
 
 from unittest.util import strclass
 from distutils.version import LooseVersion
@@ -54,7 +56,7 @@ except ImportError:
 
 from flent import plotters, resultset, formatters
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
-settings = parser.parse_args(namespace=Settings(DEFAULT_SETTINGS))
+settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
 if hasattr(plotters, 'matplotlib'):
     matplotlib_version = LooseVersion(plotters.matplotlib.__version__)
@@ -94,6 +96,12 @@ MATPLOTLIB_RC_VALUES = {
 }
 
 
+def setup_warnings():
+    warnings.filterwarnings('ignore',
+                            message="Matplotlib is building the font cache")
+    warnings.simplefilter('error', append=True)
+
+
 def prefork(method):
     def new_method(*args, **kwargs):
         pipe_r, pipe_w = os.pipe()
@@ -111,9 +119,12 @@ def prefork(method):
         else:
             os.close(pipe_r)
             try:
+                setup_warnings()
                 res = method(*args, **kwargs)
                 os.write(pipe_w, pickle.dumps(res))
             except Exception as e:
+                if not hasattr(e, 'orig_tb'):
+                    e.orig_tb = traceback.format_exc()
                 if HAS_TBLIB:
                     os.write(pipe_w, pickle.dumps(sys.exc_info()))
                 else:
@@ -295,11 +306,17 @@ class TestPlotting(unittest.TestCase):
         self.settings.FORMAT = 'plot'
 
         for p in self.settings.PLOTS.keys():
-            self.settings.PLOT = p
-            self.settings.OUTPUT = os.path.join(
-                self.output_dir, "%s.%s" % (p, self.fmt))
-            formatter = formatters.new(self.settings)
-            formatter.format([r])
+            try:
+                self.settings.PLOT = p
+                self.settings.OUTPUT = os.path.join(
+                    self.output_dir, "%s.%s" % (p, self.fmt))
+                formatter = formatters.new(self.settings)
+                formatter.format([r])
+            except Exception as e:
+                tb = traceback.format_exc()
+                new_exc = Exception("Error creating plot '%s'" % p)
+                new_exc.orig_tb = tb
+                raise new_exc
 
 
 dirname = os.path.join(os.path.dirname(__file__), "test_data")

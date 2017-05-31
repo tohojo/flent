@@ -77,7 +77,15 @@ PLOTS['voip_mos_upload']          = {'description': "VoIP MOS and upload through
                                      'series': [{'data': 'VoIP',
                                                  'label': 'MOS',
                                                  'combine_mode': 'mos'},
-                                                {'data': 'TCP upload sum',
+                                                # upload sum doesn't exist for
+                                                # single-flow tests, so use two
+                                                # globbing expressions to
+                                                # support both types of tests
+                                                {'data': glob('TCP upload sum'),
+                                                 'label': 'Upload',
+                                                 'combine_mode': 'meta:MEAN_VALUE',
+                                                 'axis': 2},
+                                                {'data': glob('TCP upload'),
                                                  'label': 'Upload',
                                                  'combine_mode': 'meta:MEAN_VALUE',
                                                  'axis': 2},

@@ -21,9 +21,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import inspect
 import io
 import re
+import warnings
 
 from flent import combiners, transformers
 from flent.util import classname, long_substr, format_date, \
@@ -152,6 +152,9 @@ def init_matplotlib(output, use_markers, load_rc):
 
     if MATPLOTLIB_INIT:
         return
+
+    # Old versions of matplotlib will trigger this
+    warnings.filterwarnings('ignore', message="elementwise == comparison failed")
 
     if output != "-":
         if output.endswith('.svg') or output.endswith('.svgz'):
@@ -750,11 +753,13 @@ class Plotter(ArgParam):
 
         for a in hovered:
             a.set_linewidth(self.highlight_widths[a][1])
+            a.set_markeredgewidth(self.highlight_widths[a][1])
             try:
                 a.axes.draw_artist(a)
             except AttributeError:
                 pass
             a.set_linewidth(self.highlight_widths[a][0])
+            a.set_markeredgewidth(self.highlight_widths[a][0])
 
         for bbox in bboxes:
             self.figure.canvas.blit(bbox)
@@ -763,12 +768,15 @@ class Plotter(ArgParam):
         self.bg_cache = {}
 
     def save_pdf(self, filename, data_filename, save_args):
-        with matplotlib.backends.backend_pdf.PdfPages(filename) as pdf:
+        pdf = matplotlib.backends.backend_pdf.PdfPages(filename)
+        try:
             pdf.infodict()['Producer'] = 'Flent v%s' % VERSION
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
             self.figure.savefig(pdf, dpi=self.fig_dpi, **save_args)
+        finally:
+            pdf.close()
 
     def build_tight_layout(self, artists):
         args = None
@@ -991,18 +999,6 @@ class Plotter(ArgParam):
         if offset_x is not None:
             l.offset_x = offset_x  # We use this in build_tight_layout
 
-        # Work around a bug in older versions of matplotlib where the
-        # legend.get_window_extent method does not take any arguments, leading
-        # to a crash when using bbox_extra_artists when saving the figure
-        #
-        # Simply check for either the right number of args, or a vararg
-        # specification, and if they are not present, attempt to monkey-patch
-        # the method if it does not accept any arguments.
-        a, v, _, _ = inspect.getargspec(l.get_window_extent)
-        if not self.in_worker and len(a) < 2 or v is None:
-            def get_window_extent(*args, **kwargs):
-                return l.legendPatch.get_window_extent(*args, **kwargs)
-            l.get_window_extent = get_window_extent
         legends.append(l)
         return legends
 
@@ -1408,7 +1404,7 @@ class BoxPlotter(TimeseriesPlotter):
                 ticklabels[i] = l[:self._max_label_length] + "..."
 
         for t in texts:
-            min_y, max_y = t.get_axes().get_ylim()
+            min_y, max_y = t.axes.get_ylim()
             x, y = t.get_position()
             mult = 0.1 if self.log_scale else 0.01
             t.set_position((x, max_y + abs(max_y - min_y) * mult))
@@ -1604,10 +1600,13 @@ class CdfPlotter(Plotter):
         if max_value > 10:
             # round up to nearest value divisible by 10
             max_value += 10 - (max_value % 10)
-        axis.set_xlim(right=max(max_value, axis.get_xlim()[1]))
+
+        if max_value > 0:
+            axis.set_xlim(right=max(max_value, axis.get_xlim()[1]))
+
         if self.zero_y:
             axis.set_xlim(left=0)
-        else:
+        elif min_value < max_value:
             if min_value > 10:
                 min_value -= min_value % 10  # nearest value divisible by 10
             if min_value > 100:

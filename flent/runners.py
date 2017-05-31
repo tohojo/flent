@@ -956,8 +956,10 @@ class IperfCsvRunner(ProcessRunner):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
+            if hasattr(err, 'decode'):
+                err = err.decode(ENCODING)
 
-            if "--enhancedreports" in str(err):
+            if "--enhancedreports" in err:
                 if udp:
                     udp_args = "--udp --bandwidth {}".format(bw if bw else "100M")
                 else:
@@ -976,10 +978,16 @@ class IperfCsvRunner(ProcessRunner):
                         no_delay="--nodelay" if no_delay else "",
                         udp=udp_args)
             else:
+                proc = subprocess.Popen([iperf, '-v'],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+                out, err = proc.communicate()
+                if hasattr(err, 'decode'):
+                    err = err.decode(ENCODING)
+
                 logger.warning(
-                    "Found iperf binary, but it does not have "
-                    "an --enhancedreport option. Not using.")
-                logger.debug("Output of `iperf -h`: %s", err)
+                    "Found iperf binary (%s), but it does not have "
+                    "an --enhancedreports option. Not using.", err.strip())
 
         raise RuntimeError("No suitable Iperf binary found.")
 
