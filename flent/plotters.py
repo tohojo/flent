@@ -762,12 +762,15 @@ class Plotter(ArgParam):
         self.bg_cache = {}
 
     def save_pdf(self, filename, data_filename, save_args):
-        with matplotlib.backends.backend_pdf.PdfPages(filename) as pdf:
+        pdf = matplotlib.backends.backend_pdf.PdfPages(filename)
+        try:
             pdf.infodict()['Producer'] = 'Flent v%s' % VERSION
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
             self.figure.savefig(pdf, dpi=self.fig_dpi, **save_args)
+        finally:
+            pdf.close()
 
     def build_tight_layout(self, artists):
         args = None
