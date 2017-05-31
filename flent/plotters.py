@@ -1586,7 +1586,9 @@ class CdfPlotter(Plotter):
         if max_value > 10:
             # round up to nearest value divisible by 10
             max_value += 10 - (max_value % 10)
-        axis.set_xlim(right=max_value)
+
+        if max_value > 0:
+            axis.set_xlim(right=max_value)
 
         for i, s in enumerate(config['series']):
             if not data[i]:
@@ -1627,7 +1629,8 @@ class CdfPlotter(Plotter):
                 min_val -= min_val % 10  # nearest value divisible by 10
             if min_val > 100:
                 min_val -= min_val % 100
-            axis.set_xlim(left=min_val)
+            if min_val < max_val:
+                axis.set_xlim(left=min_val)
 
         if self.log_scale:
             # More than an order of magnitude difference; switch to log scale
