@@ -113,7 +113,7 @@ def prefork(method):
         else:
             os.close(pipe_r)
             try:
-                warnings.simplefilter('error')
+                warnings.simplefilter('error', append=True)
                 res = method(*args, **kwargs)
                 os.write(pipe_w, pickle.dumps(res))
             except Exception as e:

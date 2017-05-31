@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import inspect
 import io
 import re
+import warnings
 
 from flent import combiners
 from flent.util import cum_prob, frange, classname, long_substr, format_date, \
@@ -157,6 +158,9 @@ def init_matplotlib(output, use_markers, load_rc):
 
     if MATPLOTLIB_INIT:
         return
+
+    # Old versions of matplotlib will trigger this
+    warnings.filterwarnings('ignore', message="elementwise == comparison failed")
 
     if output != "-":
         if output.endswith('.svg') or output.endswith('.svgz'):
