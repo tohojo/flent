@@ -96,6 +96,12 @@ MATPLOTLIB_RC_VALUES = {
 }
 
 
+def setup_warnings():
+    warnings.filterwarnings('ignore',
+                            message="Matplotlib is building the font cache")
+    warnings.simplefilter('error', append=True)
+
+
 def prefork(method):
     def new_method(*args, **kwargs):
         pipe_r, pipe_w = os.pipe()
@@ -113,7 +119,7 @@ def prefork(method):
         else:
             os.close(pipe_r)
             try:
-                warnings.simplefilter('error', append=True)
+                setup_warnings()
                 res = method(*args, **kwargs)
                 os.write(pipe_w, pickle.dumps(res))
             except Exception as e:
