@@ -36,6 +36,11 @@ from itertools import cycle, islice
 from collections import OrderedDict
 
 try:
+    getargspec = inspect.getfullargspec
+except AttributeError:
+    getargspec = inspect.getargspec
+
+try:
     import matplotlib
     import numpy
     HAS_MATPLOTLIB = True
@@ -995,7 +1000,8 @@ class Plotter(ArgParam):
         # Simply check for either the right number of args, or a vararg
         # specification, and if they are not present, attempt to monkey-patch
         # the method if it does not accept any arguments.
-        a, v, _, _ = inspect.getargspec(l.get_window_extent)
+        args = getargspec(l.get_window_extent)
+        a, v = args[:2]
         if not self.in_worker and len(a) < 2 or v is None:
             def get_window_extent(*args, **kwargs):
                 return l.legendPatch.get_window_extent(*args, **kwargs)
@@ -1374,7 +1380,7 @@ class BoxPlotter(TimeseriesPlotter):
                 ticklabels[i] = l[:self._max_label_length] + "..."
 
         for t in texts:
-            min_y, max_y = t.get_axes().get_ylim()
+            min_y, max_y = t.axes.get_ylim()
             x, y = t.get_position()
             mult = 0.1 if self.log_scale else 0.01
             t.set_position((x, max_y + abs(max_y - min_y) * mult))
