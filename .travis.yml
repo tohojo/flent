@@ -1,15 +1,27 @@
 language: python
+script: make test_long
+matrix:
+  exclude:
+    - python: "3.3"
+      env: MATPLOTLIB_VERSION=1.1
+    - python: "3.3"
+      env: MATPLOTLIB_VERSION=2.0
+    - python: "3.4"
+      env: MATPLOTLIB_VERSION=1.1
+    - python: "3.5"
+      env: MATPLOTLIB_VERSION=1.1
+    - python: "3.6"
+      env: MATPLOTLIB_VERSION=1.1
+
 python:
   - "2.7"
   - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
-script: make test_long
 env:
   - MATPLOTLIB_VERSION=1.1
   - MATPLOTLIB_VERSION=1.2
-  - MATPLOTLIB_VERSION=1.3
   - MATPLOTLIB_VERSION=1.4
   - MATPLOTLIB_VERSION=1.5
   - MATPLOTLIB_VERSION=2.0
