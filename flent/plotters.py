@@ -21,7 +21,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import inspect
 import io
 import re
 import warnings
@@ -35,11 +34,6 @@ from flent.loggers import get_logger
 from functools import reduce
 from itertools import cycle, islice
 from collections import OrderedDict
-
-try:
-    getargspec = inspect.getfullargspec
-except AttributeError:
-    getargspec = inspect.getargspec
 
 try:
     import matplotlib
@@ -997,19 +991,6 @@ class Plotter(ArgParam):
         if offset_x is not None:
             l.offset_x = offset_x  # We use this in build_tight_layout
 
-        # Work around a bug in older versions of matplotlib where the
-        # legend.get_window_extent method does not take any arguments, leading
-        # to a crash when using bbox_extra_artists when saving the figure
-        #
-        # Simply check for either the right number of args, or a vararg
-        # specification, and if they are not present, attempt to monkey-patch
-        # the method if it does not accept any arguments.
-        args = getargspec(l.get_window_extent)
-        a, v = args[:2]
-        if not self.in_worker and len(a) < 2 or v is None:
-            def get_window_extent(*args, **kwargs):
-                return l.legendPatch.get_window_extent(*args, **kwargs)
-            l.get_window_extent = get_window_extent
         legends.append(l)
         return legends
 
