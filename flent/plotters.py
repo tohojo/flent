@@ -1350,7 +1350,7 @@ class BoxPlotter(TimeseriesPlotter):
             else:
                 a = 0
 
-            data = None
+            data = []
             for r in results:
                 d = self.get_series(s, r, config, no_invalid=True)
 
@@ -1359,10 +1359,7 @@ class BoxPlotter(TimeseriesPlotter):
                 else:
                     all_data[a] = np.append(all_data[a], d[1])
 
-                if data is None:
-                    data = d[1]
-                else:
-                    data = np.vstack((data, d[1]))
+                data.append(d[1])
 
             if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
@@ -1374,7 +1371,7 @@ class BoxPlotter(TimeseriesPlotter):
             positions = range(pos, pos + group_size)
             ticks.extend(list(range(pos, pos + group_size)))
 
-            bp = config['axes'][a].boxplot(data.transpose(),
+            bp = config['axes'][a].boxplot(data,
                                            positions=positions, sym="b+")
             for j, r in enumerate(results):
                 pyplot.setp(bp['boxes'][j], color=colours[j])
