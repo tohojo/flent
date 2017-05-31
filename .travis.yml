@@ -15,4 +15,4 @@ env:
   - MATPLOTLIB_VERSION=2.0
 install:
   - pip install mock
-  - pip install matplotlib==$MATPLOTLIB_VERSION
+  - pip install matplotlib==${MATPLOTLIB_VERSION}.*
