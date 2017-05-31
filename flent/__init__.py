@@ -37,7 +37,10 @@ def run_flent(gui=False):
         sys.stderr.write("Sorry, Flent requires v2.7.3 or later of Python.\n")
         sys.exit(1)
     try:
-        locale.setlocale(locale.LC_ALL, '')
+        try:
+            locale.setlocale(locale.LC_ALL, '')
+        except locale.Error:
+            pass
         from flent import batch
         from flent.settings import load
         from flent.loggers import setup_console, get_logger
