@@ -27,6 +27,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+import warnings
 import traceback
 
 from unittest.util import strclass
@@ -112,6 +113,7 @@ def prefork(method):
         else:
             os.close(pipe_r)
             try:
+                warnings.simplefilter('error')
                 res = method(*args, **kwargs)
                 os.write(pipe_w, pickle.dumps(res))
             except Exception as e:
