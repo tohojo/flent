@@ -1079,6 +1079,9 @@ class Plotter(ArgParam):
 
             data = data[:, min_idx:max_idx]
 
+        if len(data) == 0:
+            return data
+
         if no_invalid:
             data = np.ma.compress_cols(np.ma.masked_invalid(data))
 
