@@ -1062,13 +1062,15 @@ class Plotter(ArgParam):
                                         raw_key=series.get('raw_key'))),
                 dtype=float).transpose()
 
-            cfgname = "%s::%s" % (series['data'], series.get('raw_key'))
-            if cfgname not in self.data_config:
-                cfgname = series['data']
-            dcfg = self.data_config[cfgname]
-            if 'data_transform' in dcfg \
-               and 'FAKE_RAW_VALUES' not in results.meta():
-                data[1] = self._transform_data(data[1], dcfg['data_transform'])
+            if 'FAKE_RAW_VALUES' not in results.meta():
+                cfgname = "%s::%s" % (series['data'], series.get('raw_key'))
+                if cfgname not in self.data_config:
+                    cfgname = series['data']
+                try:
+                    data[1] = self._transform_data(
+                        data[1], self.data_config[cfgname]['data_transform'])
+                except (KeyError, IndexError):
+                    pass
 
         if 'cutoff' in config and config['cutoff'] and data.any():
             min_x = data[0].min() + config['cutoff'][0]
