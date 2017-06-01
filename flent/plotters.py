@@ -598,6 +598,13 @@ class Plotter(ArgParam):
             self.config = config
         self.configs = [self.config]
 
+    def verify(self):
+        for a in self.figure.get_axes():
+            if len(a.get_lines()) > 0:
+                return True
+
+        return False
+
     def expand_plot_config(self, config, data):
         if 'series' not in config:
             return config

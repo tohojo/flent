@@ -312,6 +312,11 @@ class TestPlotting(unittest.TestCase):
                     self.output_dir, "%s.%s" % (p, self.fmt))
                 formatter = formatters.new(self.settings)
                 formatter.format([r])
+                if not formatter.verify():
+                    raise self.failureException(
+                        "Verification of plot '%s' failed" % p)
+            except self.failureException:
+                raise
             except Exception as e:
                 tb = traceback.format_exc()
                 new_exc = Exception("Error creating plot '%s'" % p)

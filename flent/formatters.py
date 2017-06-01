@@ -114,6 +114,9 @@ class Formatter(object):
         except BrokenPipeError:
             pass
 
+    def verify(self):
+        return True
+
 
 class NullFormatter(Formatter):
 
@@ -387,6 +390,8 @@ class PlotFormatter(Formatter):
         self.plotter.plot(results)
         self.plotter.save(results)
 
+    def verify(self):
+        return self.plotter.verify()
 
 class MetadataFormatter(Formatter):
 
