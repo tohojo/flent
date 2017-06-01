@@ -1764,6 +1764,9 @@ class EllipsisPlotter(Plotter):
             points = np.transpose(
                 np.ma.compress_cols(np.ma.masked_invalid(points)))
 
+            if len(points) < 2:
+                continue
+
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
             med = np.median(points, axis=0)
             self.xvals.append(el.center[0] - el.width / 2)
@@ -1775,6 +1778,9 @@ class EllipsisPlotter(Plotter):
             axis.plot(*med, marker='o', linestyle=" ", **carg)
             axis.annotate(label, med, ha='center', annotation_clip=True,
                           xytext=(0, 8), textcoords='offset points')
+
+        if len(self.yvals) == 0:
+            return
 
         if self.zero_y:
             self.xvals.append(0.0)
