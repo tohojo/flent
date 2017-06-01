@@ -324,7 +324,8 @@ class Glob(object):
         regex = re.compile(re_pat)
 
         exclude += self.exclude
-        return [x for x in values if regex.match(x) and x not in exclude]
+        return [x for x in values if regex.match(x) and
+                not any((fnmatch.fnmatch(x, e) for e in exclude))]
 
     def __iter__(self):
         return iter((self,))  # allow list(g) to return [g]
