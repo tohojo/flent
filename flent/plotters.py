@@ -1765,7 +1765,7 @@ class EllipsisPlotter(Plotter):
         for s in series[1:]:
             y_values = self.get_series(s, results, config, aligned=True)[1]
 
-            points = np.stack((x_values, y_values))
+            points = np.vstack((x_values, y_values))
             points = np.transpose(
                 np.ma.compress_cols(np.ma.masked_invalid(points)))
 
