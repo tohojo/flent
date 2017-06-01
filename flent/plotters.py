@@ -1096,7 +1096,7 @@ class Plotter(ArgParam):
                 l += 1
             kern = np.ones(l, dtype=float)
             kern /= l
-            data[1] = np.convolve(data[1], kern, mode='same')
+            data[1] = np.convolve(data[1], kern, mode=str('same'))
 
         return data
 
