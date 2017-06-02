@@ -1022,7 +1022,8 @@ class SsRunner(ProcessRunner):
     ss_header_re = re.compile(r"" + "State\s+Recv-Q\s+Send-Q\s+Local")
 
     data_res = [re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE),
-                re.compile(r"rtt:(?P<rtt>\d+\.\d+)/(?P<rtt_var>\d+\.\d+)", re.MULTILINE)]
+                re.compile(r"rtt:(?P<rtt>\d+\.\d+)/(?P<rtt_var>\d+\.\d+)", re.MULTILINE),
+                re.compile(r"pacing_rate (?P<pacing_rate>\d+(\.\d+)?[MK]?bps)", re.MULTILINE)]
 
     src_p = []
     dst_p = []
@@ -1100,6 +1101,15 @@ class SsRunner(ProcessRunner):
 
         return sub_part[0]
 
+    def parse_val(self, val):
+        if val.endswith("Mbps"):
+            return float(val[:-4])
+        if val.endswith("Kbps"):
+            return float(val[:-4])*1000
+        if val.endswith("bps"):
+            return float(val[:-3])*10**6
+        return float(val)
+
     def parse_part(self, part):
         sub_part = self.filter_np_parent(part)
 
@@ -1116,7 +1126,7 @@ class SsRunner(ProcessRunner):
                 d = m.groupdict()
                 for k, v in d.items():
                     try:
-                        vals['tcp_%s' % k] = float(v)
+                        vals['tcp_%s' % k] = self.parse_val(v)
                     except ValueError:
                         pass
 
