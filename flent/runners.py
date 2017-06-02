@@ -1013,8 +1013,6 @@ class SsRunner(ProcessRunner):
                         "{1,7}|:))(:\d+)"
 
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
-    cwnd_re = re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE)
-    rtt_re = re.compile(r"rtt:(?P<rtt>\d+\.\d+/\d+\.\d+)", re.MULTILINE)
     pid_re = re.compile(r"pid=(?P<pid>\d+)", re.MULTILINE)
     ports_ipv4_re = re.compile(r"" + "(?P<src_p>" + ip_v4_addr_sub_re + ")" +
                                "\s+" + "(?P<dst_p>" + ip_v4_addr_sub_re + ")")
@@ -1022,6 +1020,9 @@ class SsRunner(ProcessRunner):
                                "\s+" + "(?P<dst_p>" + ip_v6_addr_sub_re + ")",
                                re.IGNORECASE)
     ss_header_re = re.compile(r"" + "State\s+Recv-Q\s+Send-Q\s+Local")
+
+    data_res = [re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE),
+                re.compile(r"rtt:(?P<rtt>\d+\.\d+)/(?P<rtt_var>\d+\.\d+)", re.MULTILINE)]
 
     src_p = []
     dst_p = []
@@ -1103,22 +1104,28 @@ class SsRunner(ProcessRunner):
         sub_part = self.filter_np_parent(part)
 
         timestamp = self.time_re.search(part)
+        if timestamp is None:
+            raise ParseException()
+        timestamp = float(timestamp.group('timestamp'))
 
-        cwnd = self.cwnd_re.search(sub_part)
-        rtt = self.rtt_re.search(sub_part)
+        vals = {'t': timestamp}
 
-        if None in [timestamp, cwnd, rtt]:
+        for r in self.data_res:
+            m = r.search(sub_part)
+            if m is not None:
+                d = m.groupdict()
+                for k, v in d.items():
+                    try:
+                        vals['tcp_%s' % k] = float(v)
+                    except ValueError:
+                        pass
+
+        if len(vals.keys()) == 1:
             raise ParseException()
 
-        timestamp = float(timestamp.group('timestamp'))
-        cwnd = int(cwnd.group('cwnd'))
-        rtt, rtt_var = [float(x) for x in rtt.group('rtt').split('/')]
+        self._raw_values.append(vals)
 
-        raw_values = {'t': timestamp, 'tcp_cwnd': cwnd,
-                      'tcp_rtt': rtt, 'tcp_rtt_var': rtt_var}
-        self._raw_values.append(raw_values)
-
-        return raw_values
+        return vals
 
     def parse(self, output):
         self.par_pid = str(self._parent.pid)
