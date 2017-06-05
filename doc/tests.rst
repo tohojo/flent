@@ -43,6 +43,19 @@ behave. These are:
    These set the number of upload or download streams for the ``tcp_nup``,
    ``tcp_ndown`` and ``rrul_be_nflows`` tests.
 
+.. envvar:: tcp_cong_control
+
+   Set the congestion control used for TCP flows, for platforms that supports
+   setting it. This can be specified as a simple string to set the same value
+   for upstream and downstream, or two comma-separated values to set it
+   separately for the upstream and downstream directions. On Linux, any value in
+   the sysctl ``net.ipv4.tcp_allowed_congestion_control`` can be used.
+
+   If a congestion control is specified that is not available on the system
+   running the test, setting it will simply fail. In addition, some tests
+   override the congestion control for one or more flows. The actual congestion
+   control used is stored in the ``CONG_CONTROL`` per-test metadata field.
+
 .. envvar:: udp_bandwidth
 
    This sets the bandwidth of each UDP stream in the ``udp_*`` tests. The option

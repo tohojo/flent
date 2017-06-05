@@ -693,6 +693,9 @@ class NetperfDemoRunner(ProcessRunner):
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
 
+        if args['cong_control']:
+            args['cong_control'] = "-K {0}".format(args['cong_control'])
+
         for c in 'local_bind', 'control_local_bind':
             if args[c]:
                 args[c] = "-L {0}".format(args[c])
@@ -718,7 +721,8 @@ class NetperfDemoRunner(ProcessRunner):
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
             "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
             "{format} {control_local_bind} {extra_args} -- {socket_timeout} " \
-            "{local_bind} -H {host} {extra_test_args}".format(**args)
+            "{local_bind} -H {host} {cong_control} " \
+            "{extra_test_args}".format(**args)
 
 
 class RegexpRunner(ProcessRunner):
