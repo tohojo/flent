@@ -1022,8 +1022,17 @@ class SsRunner(ProcessRunner):
     ss_header_re = re.compile(r"" + "State\s+Recv-Q\s+Send-Q\s+Local")
 
     data_res = [re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE),
-                re.compile(r"rtt:(?P<rtt>\d+\.\d+)/(?P<rtt_var>\d+\.\d+)", re.MULTILINE),
-                re.compile(r"pacing_rate (?P<pacing_rate>\d+(\.\d+)?[MK]?bps)", re.MULTILINE)]
+                re.compile(r"rtt:(?P<rtt>\d+\.\d+)/(?P<rtt_var>\d+\.\d+)",
+                           re.MULTILINE),
+                re.compile(r"pacing_rate (?P<pacing_rate>\d+(\.\d+)?[MK]?bps)",
+                           re.MULTILINE),
+                re.compile(r"delivery_rate (?P<delivery_rate>\d+(\.\d+)?[MK]?bps)",
+                           re.MULTILINE),
+                re.compile(r"bbr:\(bw:(?P<bbr_bw>\d+(\.\d+)?[MK]?bps),"
+                           r"mrtt:(?P<bbr_mrtt>\d+\.\d+),"
+                           r"pacing_gain:(?P<bbr_pacing_gain>\d+(\.\d+)?),"
+                           r"cwnd_gain:(?P<bbr_cwnd_gain>\d+(\.\d+)?)\)",
+                           re.MULTILINE)]
 
     src_p = []
     dst_p = []
