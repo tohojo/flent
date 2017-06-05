@@ -612,6 +612,10 @@ class DitgRunner(ProcessRunner):
 class NetperfDemoRunner(ProcessRunner):
     """Runner for netperf demo mode."""
     transformed_metadata = ('MEAN_VALUE',)
+    output_vars = 'THROUGHPUT,LOCAL_CONG_CONTROL,REMOTE_CONG_CONTROL,' \
+                  'TRANSPORT_MSS,LOCAL_TRANSPORT_RETRANS,' \
+                  'REMOTE_TRANSPORT_RETRANS,LOCAL_SOCKET_TOS,' \
+                  'REMOTE_SOCKET_TOS,DIRECTION,ELAPSED_TIME,PROTOCOL'
     netperf = {}
 
     def parse(self, output):
@@ -623,9 +627,36 @@ class NetperfDemoRunner(ProcessRunner):
         lines = output.strip().splitlines()
         avg_dur = None
         alpha = 0.5
+        data_dict = {}
+
+        # We use the -k output option for netperf, so we will get data in
+        # KEY=VALUE lines. The interim points will be NETPERF_*[id] lines,
+        # end-of-test data points will be straight KEY=VAL lines
         for line in lines:
-            if line.startswith("Interim"):
-                parts = line.split()
+            line = line.strip()
+            try:
+                k, v = line.split("=", 1)
+                if k.endswith(']'):
+                    k, i = k.split('[', 1)
+                    i = i[:-1]
+                    if k not in data_dict:
+                        data_dict[k] = []
+                    data_dict[k].append(v)
+                else:
+                    if k in data_dict:
+                        logger.warning("Duplicate key in netperf results: %s", k)
+                    data_dict[k] = v
+            except ValueError:
+                pass
+
+        if data_dict:
+            for dur, t, value in zip(data_dict['NETPERF_INTERVAL'],
+                                     data_dict['NETPERF_ENDING'],
+                                     data_dict['NETPERF_INTERIM_RESULT']):
+
+                dur = float(dur)
+                t = float(t)
+                value = float(value)
 
                 # Calculate an EWMA of the netperf sampling duration and exclude
                 # data points from a sampling period that is more than an order
@@ -634,22 +665,37 @@ class NetperfDemoRunner(ProcessRunner):
                 # the end of a run after having lost the measurement flow during
                 # the run, or a very short interval giving a very high bandwidth
                 # measurement
-                dur = float(parts[5])
-                time = float(parts[9])
-                value = float(parts[2])
                 if avg_dur is None:
                     avg_dur = dur
 
-                raw_values.append({'dur': dur, 't': time, 'val': value})
-
                 if dur < avg_dur * 10.0 and dur > avg_dur / 10.0:
-                    result.append([time, value])
+                    raw_values.append({'dur': dur, 't': t, 'val': value})
+                    result.append([t, value])
                     avg_dur = alpha * avg_dur + (1.0 - alpha) * dur
+
+            try:
+                # The THROUGHPUT key contains the mean value even for UDP_RR tests
+                self.metadata['MEAN_VALUE'] = data_dict.get('THROUGHPUT')
+                self.metadata['UPSTREAM_TOS'] = data_dict.get('LOCAL_SOCKET_TOS')
+                self.metadata['DOWNSTREAM_TOS'] = data_dict.get(
+                    'REMOTE_SOCKET_TOS')
+
+                if data_dict['PROTOCOL'] == 'TCP':
+                    self.metadata['TCP_MSS'] = data_dict.get('TRANSPORT_MSS')
+                    if data_dict['DIRECTION'] == 'Send':
+                        self.metadata['CONG_CONTROL'] = data_dict.get(
+                            'LOCAL_CONG_CONTROL')
+                        self.metadata['TCP_RETRANSMIT'] = data_dict.get(
+                            'LOCAL_TRANSPORT_RETRANS')
+                    else:
+                        self.metadata['CONG_CONTROL'] = data_dict.get(
+                            'REMOTE_CONG_CONTROL')
+                        self.metadata['TCP_RETRANSMIT'] = data_dict.get(
+                            'REMOTE_TRANSPORT_RETRANS')
+            except KeyError as e:
+                logger.warning("Missing required netperf metadata: %s", e.args[0])
+
         self.raw_values = raw_values
-        try:
-            self.metadata['MEAN_VALUE'] = float(lines[-1])
-        except (ValueError, IndexError):
-            pass
 
         return result
 
@@ -689,6 +735,7 @@ class NetperfDemoRunner(ProcessRunner):
                 self.netperf['-e'] = True
 
         args['binary'] = self.netperf['executable']
+        args['output_vars'] = self.output_vars
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -721,7 +768,7 @@ class NetperfDemoRunner(ProcessRunner):
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
             "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
             "{format} {control_local_bind} {extra_args} -- {socket_timeout} " \
-            "{local_bind} -H {host} {cong_control} " \
+            "{local_bind} -H {host} -k {output_vars} {cong_control} " \
             "{extra_test_args}".format(**args)
 
 
