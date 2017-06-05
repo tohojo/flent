@@ -193,6 +193,8 @@ class TestEnvironment(object):
         args.setdefault('extra_test_args', "")
         args.setdefault('format', "")
         args.setdefault('marking', "")
+        args.setdefault('cong_control',
+                        self.get_test_parameter('tcp_cong_control', ''))
         args.setdefault('socket_timeout', self.env['SOCKET_TIMEOUT'])
 
         if self.env['SWAP_UPDOWN']:
