@@ -172,10 +172,12 @@ class TestEnvironment(object):
                                                   ip_version, udp=udp, bw=bw,
                                                   local_bind=local_bind)
 
-    @finder
     def find_netperf(self, test, length, host, **args):
         """Find a suitable netperf executable, and test for the required
         capabilities."""
+
+        if test.lower() == 'omni':
+            raise RuntimeError("Use of netperf 'omni' test is not supported")
 
         args.setdefault('ip_version', self.env['IP_VERSION'])
         args.setdefault('interval', self.env['STEP_SIZE'])

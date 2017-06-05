@@ -752,7 +752,7 @@ class NetperfDemoRunner(ProcessRunner):
         else:
             args['socket_timeout'] = ""
 
-        if args['test'] in ("TCP_STREAM", "TCP_MAERTS", "omni"):
+        if args['test'] in ("TCP_STREAM", "TCP_MAERTS"):
             args['format'] = "-f m"
 
             if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
