@@ -675,13 +675,14 @@ class NetperfDemoRunner(ProcessRunner):
 
             try:
                 # The THROUGHPUT key contains the mean value even for UDP_RR tests
-                self.metadata['MEAN_VALUE'] = data_dict.get('THROUGHPUT')
+                self.metadata['MEAN_VALUE'] = float(data_dict['THROUGHPUT'])
                 self.metadata['UPSTREAM_TOS'] = data_dict.get('LOCAL_SOCKET_TOS')
                 self.metadata['DOWNSTREAM_TOS'] = data_dict.get(
                     'REMOTE_SOCKET_TOS')
 
                 if data_dict['PROTOCOL'] == 'TCP':
-                    self.metadata['TCP_MSS'] = data_dict.get('TRANSPORT_MSS')
+                    self.metadata['TCP_MSS'] = int(data_dict.get('TRANSPORT_MSS',
+                                                                 0))
                     if data_dict['DIRECTION'] == 'Send':
                         self.metadata['CONG_CONTROL'] = data_dict.get(
                             'LOCAL_CONG_CONTROL')
@@ -690,8 +691,8 @@ class NetperfDemoRunner(ProcessRunner):
                     else:
                         self.metadata['CONG_CONTROL'] = data_dict.get(
                             'REMOTE_CONG_CONTROL')
-                        self.metadata['TCP_RETRANSMIT'] = data_dict.get(
-                            'REMOTE_TRANSPORT_RETRANS')
+                        self.metadata['TCP_RETRANSMIT'] = int(data_dict.get(
+                            'REMOTE_TRANSPORT_RETRANS', 0))
             except KeyError as e:
                 logger.warning("Missing required netperf metadata: %s", e.args[0])
 
