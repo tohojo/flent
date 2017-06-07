@@ -1239,7 +1239,8 @@ class TimeseriesPlotter(Plotter):
                     all_data[a] = np.append(all_data[a], data[1])
                 for r in self.scale_data + extra_scale_data:
                     d = self.get_series(s, r, config)
-                    all_data[a] = np.append(all_data[a], d[1])
+                    if d.any():
+                        all_data[a] = np.append(all_data[a], d[1])
                 self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
 
