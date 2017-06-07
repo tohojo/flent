@@ -649,7 +649,7 @@ class NetperfDemoRunner(ProcessRunner):
             except ValueError:
                 pass
 
-        if data_dict:
+        try:
             for dur, t, value in zip(data_dict['NETPERF_INTERVAL'],
                                      data_dict['NETPERF_ENDING'],
                                      data_dict['NETPERF_INTERIM_RESULT']):
@@ -695,6 +695,9 @@ class NetperfDemoRunner(ProcessRunner):
                             'REMOTE_TRANSPORT_RETRANS', 0))
             except KeyError as e:
                 logger.warning("Missing required netperf metadata: %s", e.args[0])
+
+        except KeyError:
+            pass  # No valid data
 
         self.raw_values = raw_values
 
