@@ -1583,7 +1583,7 @@ class CdfPlotter(Plotter):
             # ECDF that avoids bias due to binning. See discussion at
             # http://stackoverflow.com/a/11692365
             x_values = np.sort(data[1])
-            y_values = np.linspace(0, 1, num=len(x_values), endpoint=False)
+            y_values = np.arange(1, len(x_values)+1)/float(len(x_values))
 
             max_value = max(max_value, x_values[-1])
             min_value = min(min_value, x_values[0])
