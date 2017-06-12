@@ -1775,8 +1775,8 @@ class EllipsisPlotter(Plotter):
             points = np.transpose(
                 np.ma.compress_cols(np.ma.masked_invalid(points)))
 
-            if len(points) < 2:
-                continue
+            if len(points) == 1:
+                points = np.vstack((points, points))
 
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
             med = np.median(points, axis=0)
