@@ -23,3 +23,17 @@ PLOTS['tcp_rtt_cdf'] = {'description': 'TCP RTT statistics',
                         'axis_labels': ['Latency (ms)'],
                         'parent': 'tcp_rtt',
                         'cutoff': (DELAY,DELAY)}
+PLOTS['tcp_pacing'] = {'description': 'TCP pacing rate statistics',
+                    'type': 'timeseries',
+                    'axis_labels': ['Mbps'],
+                    'series': [
+                        {'data': glob('TCP*', exclude=['*fairness*']),
+                         'raw_key': 'tcp_pacing_rate',
+                         'label': 'Pacing rate'},
+                        {'data': glob('TCP*', exclude=['*fairness*']),
+                         'raw_key': 'tcp_delivery_rate',
+                         'label': 'Delivery rate'},
+                        {'data': glob('TCP*', exclude=['*fairness*']),
+                         'raw_key': 'tcp_bbr_bw',
+                         'label': 'BBR BW'},
+                    ]}
