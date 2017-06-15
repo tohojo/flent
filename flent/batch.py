@@ -166,8 +166,8 @@ class BatchRunner(object):
         return ret.replace("$$", "$")
 
     def apply_args(self, values, args={}, settings=None):
-        new = OrderedDict(args)
-        new.update(values)
+        new = OrderedDict(values)
+        new.update(args)
         for k, v in new.items():
             new[k] = self.interpolate(v, new, settings)
 
