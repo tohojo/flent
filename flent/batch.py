@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import itertools
 import os
 import pprint
+import random
 import re
 import signal
 import subprocess
@@ -266,9 +267,14 @@ class BatchRunner(object):
         return clean_path(filename)
 
     def expand_argsets(self, batch, argsets, batch_time, batch_name,
-                       print_status=True):
+                       print_status=True, no_shuffle=False):
 
-        for argset in itertools.product(*argsets):
+        sets = itertools.product(*argsets)
+        if self.settings.BATCH_SHUFFLE and not no_shuffle:
+            sets = list(sets)
+            random.shuffle(sets)
+
+        for argset in sets:
             rep = argset[-1]
             argset = argset[:-1]
             settings = self.settings.copy()
@@ -334,7 +340,8 @@ class BatchRunner(object):
         argsets = self.get_argsets(batch)
 
         for _, s in self.expand_argsets(batch, argsets, self.settings.TIME,
-                                        batch_name, False):
+                                        batch_name, print_status=False,
+                                        no_shuffle=True):
             total_time += s.TOTAL_LENGTH + int(batch.get('pause', 0))
             n += 1
 

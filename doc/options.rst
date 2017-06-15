@@ -123,6 +123,10 @@ General options
 
    Be verbose during batch run: Print all commands executed.
 
+.. option:: --batch-shuffle
+
+   Randomise the order of tests within each batch run.
+
 .. option:: --batch-repetitions=REPETITIONS
 
    Shorthand for :option:`--batch-override` ``'repetitions=REPETITIONS’``.

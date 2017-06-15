@@ -269,6 +269,11 @@ parser.add_argument(
     help="Be verbose during batch run: Print all commands executed.")
 
 parser.add_argument(
+    "--batch-shuffle",
+    action="store_true", dest="BATCH_SHUFFLE",
+    help="Randomise the order of test runs within each batch.")
+
+parser.add_argument(
     "--batch-repetitions", action="store", type=int, dest="BATCH_REPS",
     metavar="REPETITIONS",
     help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")
