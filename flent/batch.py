@@ -43,6 +43,7 @@ except ImportError:
 from flent import aggregators, formatters, resultset, loggers
 from flent.metadata import record_metadata, record_postrun_metadata
 from flent.util import clean_path, format_date
+from flent.settings import parser as SETTINGS_PARSER
 
 # Python2/3 compatibility
 try:
@@ -423,12 +424,12 @@ class BatchRunner(object):
                     os.path.join(output_path,
                                  "%s.log" % settings.DATA_FILENAME),
                     level=loggers.INFO)
-            if b.get('debug_log', False):
-                self.logfile_debug = loggers.setup_logfile(
-                    os.path.join(output_path,
-                                 "%s.debug.log" % settings.DATA_FILENAME),
-                    level=loggers.DEBUG,
-                    maxlevel=loggers.DEBUG)
+                if b.get('debug_log', False):
+                    self.logfile_debug = loggers.setup_logfile(
+                        os.path.join(output_path,
+                                     "%s.debug.log" % settings.DATA_FILENAME),
+                        level=loggers.DEBUG,
+                        maxlevel=loggers.DEBUG)
 
             if settings.DATA_FILENAME in filenames_seen:
                 logger.warning("Filename already seen in this run: %s",
@@ -445,7 +446,7 @@ class BatchRunner(object):
                         logger.info("  Running test '%s'.", settings.NAME)
                     logger.info("   data_filename=%s", settings.DATA_FILENAME)
                     for k in sorted(b.keys()):
-                        if k in settings.parser:
+                        if k.upper() in SETTINGS_PARSER:
                             logger.info("   %s=%s", k, b[k])
 
                 if settings.BATCH_DRY:
