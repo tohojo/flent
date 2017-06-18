@@ -1060,7 +1060,7 @@ class SsRunner(ProcessRunner):
     # class).
     _duplicate_map = {}
 
-    ip_v4_addr_sub_re = "([0-9]{1,3}.){3}[0-9]{1,3}(:\d+)"
+    ip_v4_addr_sub_re = "([0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)"
     # ref.: to commented, untinkered version: ISBN 978-0-596-52068-7
     ip_v6_addr_sub_re = "(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
                         "(?=(?:[A-F0-9]{0,4}:){0,7}[A-F0-9]{0,4})" \
