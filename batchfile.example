@@ -22,7 +22,8 @@
 # Any command. Subject to variable substitution - in this case ${filename} is
 # the filename Flent will generate for the test being run (sans the extension).
 exec = ./setup_qdisc.sh ${qdisc}
-type = pre # pre or post
+# type can be pre, post or monitor
+type = pre
 
 # An essential pre command will cause the test to be aborted if it fails
 # (returncode non-zero)
