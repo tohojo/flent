@@ -302,7 +302,7 @@ class BatchRunner(object):
 
             settings.load_rcvalues(b.items(), override=True)
             settings.NAME = b['test_name']
-            settings.load_test(informational=settings.BATCH_DRY)
+            settings.load_test(informational=True)
             settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
 
             yield b, settings
@@ -459,6 +459,9 @@ class BatchRunner(object):
                 if settings.BATCH_DRY:
                     self.tests_run += 1
                 else:
+                    # Load test again with informational=False to enable host
+                    # lookups and other actions that may fail
+                    settings.load_test(informational=False)
                     self.run_test(settings, output_path)
             except KeyboardInterrupt:
                 self.run_commands(commands, 'post', essential_only=True)
