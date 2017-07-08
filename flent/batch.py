@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import itertools
 import os
 import pprint
+import random
 import re
 import signal
 import subprocess
@@ -43,6 +44,7 @@ except ImportError:
 from flent import aggregators, formatters, resultset, loggers
 from flent.metadata import record_metadata, record_postrun_metadata
 from flent.util import clean_path, format_date
+from flent.settings import parser as SETTINGS_PARSER
 
 # Python2/3 compatibility
 try:
@@ -164,8 +166,8 @@ class BatchRunner(object):
         return ret.replace("$$", "$")
 
     def apply_args(self, values, args={}, settings=None):
-        new = OrderedDict(args)
-        new.update(values)
+        new = OrderedDict(values)
+        new.update(args)
         for k, v in new.items():
             new[k] = self.interpolate(v, new, settings)
 
@@ -265,9 +267,14 @@ class BatchRunner(object):
         return clean_path(filename)
 
     def expand_argsets(self, batch, argsets, batch_time, batch_name,
-                       print_status=True):
+                       print_status=True, no_shuffle=False):
 
-        for argset in itertools.product(*argsets):
+        sets = itertools.product(*argsets)
+        if self.settings.BATCH_SHUFFLE and not no_shuffle:
+            sets = list(sets)
+            random.shuffle(sets)
+
+        for argset in sets:
             rep = argset[-1]
             argset = argset[:-1]
             settings = self.settings.copy()
@@ -295,7 +302,7 @@ class BatchRunner(object):
 
             settings.load_rcvalues(b.items(), override=True)
             settings.NAME = b['test_name']
-            settings.load_test(informational=settings.BATCH_DRY)
+            settings.load_test(informational=True)
             settings.DATA_FILENAME = self.gen_filename(settings, b, argset, rep)
 
             yield b, settings
@@ -333,7 +340,8 @@ class BatchRunner(object):
         argsets = self.get_argsets(batch)
 
         for _, s in self.expand_argsets(batch, argsets, self.settings.TIME,
-                                        batch_name, False):
+                                        batch_name, print_status=False,
+                                        no_shuffle=True):
             total_time += s.TOTAL_LENGTH + int(batch.get('pause', 0))
             n += 1
 
@@ -423,12 +431,12 @@ class BatchRunner(object):
                     os.path.join(output_path,
                                  "%s.log" % settings.DATA_FILENAME),
                     level=loggers.INFO)
-            if b.get('debug_log', False):
-                self.logfile_debug = loggers.setup_logfile(
-                    os.path.join(output_path,
-                                 "%s.debug.log" % settings.DATA_FILENAME),
-                    level=loggers.DEBUG,
-                    maxlevel=loggers.DEBUG)
+                if b.get('debug_log', False):
+                    self.logfile_debug = loggers.setup_logfile(
+                        os.path.join(output_path,
+                                     "%s.debug.log" % settings.DATA_FILENAME),
+                        level=loggers.DEBUG,
+                        maxlevel=loggers.DEBUG)
 
             if settings.DATA_FILENAME in filenames_seen:
                 logger.warning("Filename already seen in this run: %s",
@@ -445,12 +453,15 @@ class BatchRunner(object):
                         logger.info("  Running test '%s'.", settings.NAME)
                     logger.info("   data_filename=%s", settings.DATA_FILENAME)
                     for k in sorted(b.keys()):
-                        if k in settings.parser:
+                        if k.upper() in SETTINGS_PARSER:
                             logger.info("   %s=%s", k, b[k])
 
                 if settings.BATCH_DRY:
                     self.tests_run += 1
                 else:
+                    # Load test again with informational=False to enable host
+                    # lookups and other actions that may fail
+                    settings.load_test(informational=False)
                     self.run_test(settings, output_path)
             except KeyboardInterrupt:
                 self.run_commands(commands, 'post', essential_only=True)
