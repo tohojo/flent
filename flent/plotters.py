@@ -665,7 +665,6 @@ class Plotter(ArgParam):
                     all_legends += legends
 
         artists += all_legends + self._annotate_plot(skip_title)
-        self.legends.extend(all_legends)
 
         # Since outputting image data to stdout does not make sense, we launch
         # the interactive matplotlib viewer if stdout is set for output.
