@@ -32,7 +32,7 @@ from flent.build_info import VERSION
 from flent.loggers import get_logger
 
 from functools import reduce
-from itertools import cycle, islice
+from itertools import cycle, islice, chain
 from collections import OrderedDict
 
 try:
@@ -722,6 +722,8 @@ class Plotter(ArgParam):
         self.callbacks.append(self.interactive_callback)
         self.callbacks.append(self.figure.canvas.mpl_connect(
             "draw_event", self.clear_bg_cache))
+        self.callbacks.append(self.figure.canvas.mpl_connect(
+            "button_press_event", self.on_click))
 
     def disconnect_callbacks(self):
         for c in self.callbacks:
@@ -743,6 +745,13 @@ class Plotter(ArgParam):
                     hovered.add(a)
 
         self.update_axes(hovered)
+
+    def on_click(self, event):
+        if event.dblclick:
+            for t in chain(*[(t for t in leg.get_texts())
+                             for leg in self.legends]):
+                if t.contains(event)[0]:
+                    return
 
     def update_axes(self, hovered):
         bboxes = set()
