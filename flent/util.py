@@ -480,7 +480,7 @@ def keyval(value):
             continue
         try:
             k, v = p.split('=', 1)
-            ret.update({k.strip(): v.strip()})
+            ret.update({k: v})
         except ValueError:
             raise argparse.ArgumentTypeError(
                 "Invalid value '%s' (missing =)" % p)
