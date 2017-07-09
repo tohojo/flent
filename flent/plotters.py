@@ -1924,6 +1924,6 @@ class SubplotCombinePlotter(MetaPlotter):
         if self.metadata is None:
             self.metadata = results[0].meta()
         self._init(len(results))
-        for s, r in zip(self.subplots, results):
-            s.plot([r])
-            self.legends.extend(s.do_legend())
+        for (p, a), r in zip(self.subplots, results):
+            p.plot([r])
+            self.legends.extend(p.do_legend())
