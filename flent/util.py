@@ -127,6 +127,16 @@ def long_substr(data, prefix_only=False):
     return substr
 
 
+def diff_parts(strings, sep):
+    """Return the unique parts of a set of strings by splitting on
+    a separator and pruning parts that are identical for all strings"""
+
+    parts = [s.split(sep) for s in strings]
+    np = [p for p in zip(*parts) if len(set(p)) > 1]
+
+    return [sep.join(p) for p in zip(*np)]
+
+
 def is_executable(filename):
     return os.path.isfile(filename) and os.access(filename, os.X_OK)
 

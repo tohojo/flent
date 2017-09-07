@@ -26,7 +26,7 @@ import re
 import warnings
 
 from flent import combiners, transformers
-from flent.util import classname, long_substr, format_date, \
+from flent.util import classname, long_substr, format_date, diff_parts, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
 from flent.loggers import get_logger
@@ -633,11 +633,16 @@ class Plotter(ArgParam):
                     return lambda x, y: x.union(y.get(k, set()))
 
                 for s in ns:
-                    rk = reduce(all_keys(s['data']),
-                                (r.raw_keys for r in results),
-                                set())
-                    for k in Glob.expand_list(s['raw_key'], sorted(rk)):
-                        nns.append(dict(s, raw_key=k))
+                    all_rks = sorted(reduce(all_keys(s['data']),
+                                            (r.raw_keys for r in results),
+                                            set()))
+                    rks = Glob.expand_list(s['raw_key'], all_rks)
+                    for k, n in zip(rks, diff_parts(rks, "::")):
+                        if 'label' in s:
+                            nns.append(dict(s, raw_key=k,
+                                            label="%s -- %s" % (s['label'], n)))
+                        else:
+                            nns.append(dict(s, raw_key=k))
 
                 ns = nns
 
