@@ -1102,6 +1102,9 @@ class Plotter(ArgParam):
                     list(results.raw_series(series['data'], raw_key=raw_key)),
                     dtype=float).transpose()
 
+                if not len(data):
+                    raise KeyError()
+
                 data_transform = series.get('data_transform')
 
                 if not data_transform and 'FAKE_RAW_VALUES' not in results.meta():
@@ -1115,10 +1118,7 @@ class Plotter(ArgParam):
                         pass
 
                 if data_transform:
-                    try:
-                        data[1] = self._transform_data(data[1], data_transform)
-                    except IndexError:
-                        pass
+                    data[1] = self._transform_data(data[1], data_transform)
             except KeyError:
                 if raw_key:
                     # No point in using synthesised results since those won't be
