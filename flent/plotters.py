@@ -616,18 +616,17 @@ class Plotter(ArgParam):
                 for d in Glob.expand_list(s['data'], data.keys()):
                     if 'label' in s:
                         d_id = data[d]['id'] if 'id' in data[d] else d
-                        s = dict(s, data=d, id=d_id,
-                                 label='%s -- %s' % (s['label'], d_id))
+                        ns.append(dict(s, data=d, id=d_id,
+                                       label='%s -- %s' % (s['label'], d_id)))
                         if 'parent_id' in data[d]:
-                            s['parent_id'] = data[d]['parent_id']
-                        ns.append(s)
+                            ns[-1]['parent_id'] = data[d]['parent_id']
                     else:
                         ns.append(dict(s, data=d))
 
             else:
                 ns.append(s)
 
-            if 'raw_key' in s and isinstance(s['raw_key'], Glob):
+            if results and 'raw_key' in s and isinstance(s['raw_key'], Glob):
                 nns = []
 
                 def all_keys(k):
@@ -637,7 +636,7 @@ class Plotter(ArgParam):
                     rk = reduce(all_keys(s['data']),
                                 (r.raw_keys for r in results),
                                 set())
-                    for k in Glob.expand_list(s['raw_key'], rk):
+                    for k in Glob.expand_list(s['raw_key'], sorted(rk)):
                         nns.append(dict(s, raw_key=k))
 
                 ns = nns
