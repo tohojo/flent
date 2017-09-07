@@ -647,11 +647,6 @@ class Plotter(ArgParam):
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
 
-        if results is not None:
-            rk = set()
-            for r in results:
-                rk = rk.union(r.raw_keys)
-
         if self.norm_factors:
             for n, s in zip(cycle(self.norm_factors), new_series):
                 s['norm_factor'] = n
