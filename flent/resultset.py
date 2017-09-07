@@ -95,8 +95,11 @@ def load(filename, absolute=False):
 class SeparatorDict(dict):
     "Dictionary that supports getting nested keys with a separator"
 
-    def __init__(self, *args, sep=None, **kwargs):
-        self._sep = sep
+    def __init__(self, *args, **kwargs):
+        self._sep = None
+        if 'sep' in kwargs:
+            self._sep = kwargs['sep']
+            del kwargs['sep']
         super(SeparatorDict, self).__init__(*args, **kwargs)
 
     def __getitem__(self, key):
