@@ -11,6 +11,7 @@ if WIFI_STATS_HOSTS:
         DATA_SETS['wifi_stats_%s' % host] = {'command': find_wifistats_iterate(iface, STEP_SIZE, TOTAL_LENGTH, host),
                                              'stations': WIFI_STATS_STATIONS.split(","),
                                              'units': 'misc',
+                                             'id': host,
                                              'runner': 'wifi_stats',}
         for station in WIFI_STATS_STATIONS.split(","):
             DATA_SETS['wifi_stats_%s::airtime_rx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
@@ -34,7 +35,9 @@ if WIFI_STATS_HOSTS:
                            'axis_labels': ['Microseconds'],
                            'legend_title': 'RX airtime',
                            'series': [
-                               {'data': glob('wifi_stats_*::airtime_rx::**'),
+                               {'data': glob('wifi_stats_*'),
+                                'data_transform': 'cumulative_to_events',
+                                'raw_key': glob('stations::**::airtime_rx'),
                                 'label': 'RX airtime'},
                            ]}
     PLOTS['airtime_rx_combine'] = {'description': 'Combined airtime RX plot (short timescale)',
@@ -52,7 +55,9 @@ if WIFI_STATS_HOSTS:
                            'axis_labels': ['Microseconds'],
                            'legend_title': 'TX airtime',
                            'series': [
-                               {'data': glob('wifi_stats_*::airtime_tx::**'),
+                               {'data': glob('wifi_stats_*'),
+                                'data_transform': 'cumulative_to_events',
+                                'raw_key': glob('stations::**::airtime_tx'),
                                 'label': 'TX airtime'},
                            ]}
     PLOTS['airtime_tx_combine'] = {'description': 'Combined airtime TX plot (short timescale)',
@@ -71,9 +76,11 @@ if WIFI_STATS_HOSTS:
 
     PLOTS['airtime_rx_stacked'] = {'description': 'WiFi RX airtime (stacked)',
                            'parent': 'airtime_rx',
+                           'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
                            'stacked': True}
     PLOTS['airtime_tx_stacked'] = {'description': 'WiFi TX airtime (stacked)',
                            'parent': 'airtime_tx',
+                           'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
                            'stacked': True}
     PLOTS['airtime_stacked'] = {'description': 'WiFi airtime (stacked)',
                         'type': 'meta',
