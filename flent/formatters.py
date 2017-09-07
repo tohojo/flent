@@ -352,19 +352,26 @@ class PlotFormatter(Formatter):
 
         self.figure = None
         self.plotter = None
-        self.init_plots()
 
-    def init_plots(self):
-        if self.figure is None:
-            self.plotter = self.plotters.new(self.settings)
-            self.plotter.init()
-            self.figure = self.plotter.figure
-        else:
+    def init_plots(self, results=None):
+        if self.figure is not None:
             self.figure.clear()
             self.plotter.disable_cleanup = True
             self.plotter.disconnect_callbacks()
-            self.plotter = self.plotters.new(self.settings, figure=self.figure)
-            self.plotter.init()
+
+        if self.settings.SUBPLOT_COMBINE:
+            self.plotter = self.plotters.new(self.settings,
+                                             plotter=self.plotters.get_plotter(
+                                                 "subplot_combine"),
+                                             figure=self.figure,
+                                             results=results)
+        else:
+            self.plotter = self.plotters.new(self.settings,
+                                             figure=self.figure,
+                                             results=results)
+
+        self.figure = self.plotter.figure
+        self.plotter.init()
 
     @property
     def disable_cleanup(self):
@@ -378,20 +385,13 @@ class PlotFormatter(Formatter):
         if not results[0]:
             return
 
-        if self.settings.SUBPLOT_COMBINE:
-            self.plotter.disable_cleanup = True
-            self.plotter.disconnect_callbacks()
-            self.figure.clear()
-            self.plotter = self.plotters.new(self.settings,
-                                             plotter=self.plotters.get_plotter(
-                                                 "subplot_combine"),
-                                             figure=self.figure)
-            self.plotter.init()
+        self.init_plots(results)
         self.plotter.plot(results)
         self.plotter.save(results)
 
     def verify(self):
         return self.plotter.verify()
+
 
 class MetadataFormatter(Formatter):
 

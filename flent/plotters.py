@@ -551,6 +551,7 @@ class Plotter(ArgParam):
                  gui=False,
                  description='',
                  figure=None,
+                 results=None,
                  in_worker=False,
                  **kwargs):
         super(Plotter, self).__init__(**kwargs)
@@ -573,7 +574,7 @@ class Plotter(ArgParam):
         if self.hover_highlight is not None:
             self.can_highlight = self.hover_highlight
 
-        self.config = self.expand_plot_config(plot_config, data_config)
+        self.config = self.expand_plot_config(plot_config, data_config, results)
         self.configs = [self.config]
         self.data_config = data_config
 
@@ -605,28 +606,52 @@ class Plotter(ArgParam):
 
         return False
 
-    def expand_plot_config(self, config, data):
+    def expand_plot_config(self, config, data, results=None):
         if 'series' not in config:
             return config
         new_series = []
         for s in config['series']:
+            ns = []
             if isinstance(s['data'], Glob):
                 for d in Glob.expand_list(s['data'], data.keys()):
                     if 'label' in s:
                         d_id = data[d]['id'] if 'id' in data[d] else d
-                        ns = dict(s, data=d, id=d_id,
-                                  label='%s -- %s' % (s['label'], d_id))
+                        s = dict(s, data=d, id=d_id,
+                                 label='%s -- %s' % (s['label'], d_id))
                         if 'parent_id' in data[d]:
-                            ns['parent_id'] = data[d]['parent_id']
-                        new_series.append(ns)
+                            s['parent_id'] = data[d]['parent_id']
+                        ns.append(s)
                     else:
-                        new_series.append(dict(s, data=d))
+                        ns.append(dict(s, data=d))
+
             else:
-                new_series.append(s)
+                ns.append(s)
+
+            if 'raw_key' in s and isinstance(s['raw_key'], Glob):
+                nns = []
+
+                def all_keys(k):
+                    return lambda x, y: x.union(y.get(k, set()))
+
+                for s in ns:
+                    rk = reduce(all_keys(s['data']),
+                                (r.raw_keys for r in results),
+                                set())
+                    for k in Glob.expand_list(s['raw_key'], rk):
+                        nns.append(dict(s, raw_key=k))
+
+                ns = nns
+
+            new_series.extend(ns)
 
         if self.filter_series:
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
+
+        if results is not None:
+            rk = set()
+            for r in results:
+                rk = rk.union(r.raw_keys)
 
         if self.norm_factors:
             for n, s in zip(cycle(self.norm_factors), new_series):
