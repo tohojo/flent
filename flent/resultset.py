@@ -92,6 +92,37 @@ def load(filename, absolute=False):
     return ResultSet.load_file(filename, absolute)
 
 
+class SeparatorDict(dict):
+    "Dictionary that supports getting nested keys with a separator"
+
+    def __init__(self, *args, sep=None, **kwargs):
+        self._sep = sep
+        super(SeparatorDict, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, key):
+        if key in self or self._sep is None or \
+           not hasattr(key, "split") or self._sep not in key:
+            return super(SeparatorDict, self).__getitem__(key)
+
+        # Try to walk the metadata structure by the :-separated keys in 'key'.
+        # This makes it possible to extract arbitrary metadata strings from
+        # the structure.
+        try:
+            parts = key.split(self._sep)
+            data = self[parts[0]]
+            parts = parts[1:]
+            while parts:
+                k = parts.pop(0)
+                try:
+                    i = int(k)
+                    data = data[i]
+                except ValueError:
+                    data = data[k]
+            return data
+        except (KeyError, IndexError, TypeError):
+            raise KeyError
+
+
 class ResultSet(object):
 
     def __init__(self, SUFFIX=SUFFIX, **kwargs):
@@ -102,7 +133,7 @@ class ResultSet(object):
         self._absolute = False
         self._raw_values = {}
         self._raw_keys = None
-        self.metadata = kwargs
+        self.metadata = SeparatorDict(kwargs, sep=":")
         self.SUFFIX = SUFFIX
         self.t0 = None
         if 'TIME' not in self.metadata or self.metadata['TIME'] is None:
@@ -132,25 +163,7 @@ class ResultSet(object):
         if key:
             if value is not _EMPTY:
                 self.metadata[key] = value
-            if key in self.metadata:
-                return self.metadata[key]
-            # Try to walk the metadata structure by the :-separated keys in 'key'.
-            # This makes it possible to extract arbitrary metadata strings from
-            # the structure.
-            try:
-                parts = key.split(":")
-                data = self.metadata[parts[0]]
-                parts = parts[1:]
-                while parts:
-                    k = parts.pop(0)
-                    try:
-                        i = int(k)
-                        data = data[i]
-                    except ValueError:
-                        data = data[k]
-                return data
-            except (KeyError, IndexError, TypeError):
-                raise KeyError
+            return self.metadata[key]
         return self.metadata
 
     def label(self):
@@ -176,7 +189,8 @@ class ResultSet(object):
         self._raw_values[name] = data
 
     def set_raw_values(self, raw_values):
-        self._raw_values = raw_values
+        self._raw_values = {k: [SeparatorDict(x, sep="::") for x in v]
+                            for k, v in raw_values.items()}
 
     def get_raw_values(self):
         return self._raw_values
@@ -256,10 +270,11 @@ class ResultSet(object):
             self._calculate_t0()
 
         for i in self.raw_values[name]:
-            if raw_key not in i:
-                continue
             x = i['t'] if absolute else i['t'] - self.t0
-            yield x, i[raw_key]
+            try:
+                yield x, i[raw_key]
+            except KeyError:
+                continue
 
     def __getitem__(self, name):
         return self.series(name)
