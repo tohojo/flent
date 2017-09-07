@@ -1099,17 +1099,25 @@ class Plotter(ArgParam):
             try:
 
                 data = np.array(
-                    list(results.raw_series(series['data'], raw_key)),
+                    list(results.raw_series(series['data'], raw_key=raw_key)),
                     dtype=float).transpose()
 
-                if 'FAKE_RAW_VALUES' not in results.meta():
-                    cfgname = "%s::%s" % (series['data'], raw_key)
-                    if cfgname not in self.data_config:
-                        cfgname = series['data']
+                data_transform = series.get('data_transform')
+
+                if not data_transform and 'FAKE_RAW_VALUES' not in results.meta():
+                    cfgn = "%s::%s" % (series['data'], raw_key)
+                    if cfgn not in self.data_config:
+                        cfgn = series['data']
+
                     try:
-                        data[1] = self._transform_data(
-                            data[1], self.data_config[cfgname]['data_transform'])
-                    except (KeyError, IndexError):
+                        data_transform = self.data_config[cfgn]['data_transform']
+                    except KeyError:
+                        pass
+
+                if data_transform:
+                    try:
+                        data[1] = self._transform_data(data[1], data_transform)
+                    except IndexError:
                         pass
             except KeyError:
                 if raw_key:
