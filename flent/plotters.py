@@ -1071,21 +1071,32 @@ class Plotter(ArgParam):
                              results.series(series['data'])),
                             dtype=float)
         else:
+            raw_key = series.get('raw_key')
+            try:
 
-            data = np.array(
-                list(results.raw_series(series['data'],
-                                        raw_key=series.get('raw_key'))),
-                dtype=float).transpose()
+                data = np.array(
+                    list(results.raw_series(series['data'], raw_key)),
+                    dtype=float).transpose()
 
-            if 'FAKE_RAW_VALUES' not in results.meta():
-                cfgname = "%s::%s" % (series['data'], series.get('raw_key'))
-                if cfgname not in self.data_config:
-                    cfgname = series['data']
-                try:
-                    data[1] = self._transform_data(
-                        data[1], self.data_config[cfgname]['data_transform'])
-                except (KeyError, IndexError):
-                    pass
+                if 'FAKE_RAW_VALUES' not in results.meta():
+                    cfgname = "%s::%s" % (series['data'], raw_key)
+                    if cfgname not in self.data_config:
+                        cfgname = series['data']
+                    try:
+                        data[1] = self._transform_data(
+                            data[1], self.data_config[cfgname]['data_transform'])
+                    except (KeyError, IndexError):
+                        pass
+            except KeyError:
+                if raw_key:
+                    # No point in using synthesised results since those won't be
+                    # correct when raw_key is set
+                    return np.array([], dtype=float)
+                logger.debug("No raw data found for series %s, "
+                             "falling back to computed values", series['data'])
+                data = np.array((results.x_values,
+                                 results.series(series['data'])),
+                                dtype=float)
 
         if 'cutoff' in config and config['cutoff'] and data.any():
             min_x = data[0].min() + config['cutoff'][0]

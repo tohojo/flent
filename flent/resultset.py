@@ -245,15 +245,8 @@ class ResultSet(object):
         return 0
 
     def raw_series(self, name, absolute=False, raw_key=None):
-        if name not in self.raw_values or not self.raw_values[name]:
-            if name in self._results and raw_key is None:
-                logger.debug("No raw values for series '%s'. "
-                             "Falling back to computed values.", name)
-                for x, y in zip(self.x_values, self.series(name)):
-                    yield x, y
-            logger.debug("Missing data points for series '%s' key '%s'",
-                         name, raw_key)
-            return
+        if name not in self.raw_values:
+            raise KeyError()
 
         if raw_key is None:
             raw_key = 'val'
