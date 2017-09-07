@@ -1895,7 +1895,8 @@ class MetaPlotter(Plotter):
             axis = self.figure.add_subplot(
                 rows, cols, i + 1, sharex=sharex, **subplot_params[i])
             cfg['axes'] = [axis]
-            cfg = self.expand_plot_config(cfg, self.data_config)
+            cfg = self.expand_plot_config(cfg, self.data_config,
+                                          results=self._kwargs.get("results"))
             self.configs.append(cfg)
             plotter = get_plotter(cfg['type'])(cfg, self.data_config,
                                                figure=self.figure, **self._kwargs)
