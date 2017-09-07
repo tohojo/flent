@@ -23,3 +23,9 @@ env:
 install:
   - pip install mock
   - pip install matplotlib==${MATPLOTLIB_VERSION}
+notifications:
+  pushover:
+    api_key:
+      secure: NVBdwHfLX60WsmuZGn8r4R/zBqR8t2eo8RYLBowWKMeUQZSY/9Pg7Esl2LrhSp3dktQJrocc656PXYDBI37C+2kj17c+XGtKMFiUvQACBuOc0088+8Riu91XqjExwP8wH0aEDpmKCzUL6/lGMLse2zuonxClflFFjYL9GPzxom4=
+    users:
+      secure: WZ9VqpD7SecslZMmft0yUgKgI5Y4ydXFHTfhm/xs37YuMig9fmJk88gony+s7HfmrIKl9KwXhIhe24k5dZsVgUTZ/UMTOyqt2lc7nNU+WftLBaCyoF73DJS6Hvx6Zd/AUllDJ8swtl2XyRVixn37tV1zF/5TS1r0EhwOJrQavZ0=
