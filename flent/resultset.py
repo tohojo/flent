@@ -101,6 +101,7 @@ class ResultSet(object):
         self._loaded_from = None
         self._absolute = False
         self._raw_values = {}
+        self._raw_keys = None
         self.metadata = kwargs
         self.SUFFIX = SUFFIX
         self.t0 = None
@@ -281,6 +282,29 @@ class ResultSet(object):
     @property
     def series_names(self):
         return list(self._results.keys())
+
+    @property
+    def raw_keys(self):
+        if self._raw_keys is not None:
+            return self._raw_keys
+
+        raw_keys = {}
+
+        def extract_keys(d, prefix=''):
+            keys = []
+            for k, v in d.items():
+                kn = prefix + k
+                keys.append(kn)
+                if hasattr(v, 'keys'):
+                    keys.extend(extract_keys(v, kn + '::'))
+            return keys
+
+        for k, v in self.raw_values.items():
+            rk = set()
+            for i in v:
+                rk = rk.union(extract_keys(i))
+            raw_keys[k] = rk
+        return raw_keys
 
     def zipped(self, keys=None):
         if keys is None:
