@@ -38,7 +38,7 @@ from flent.resultset import ResultSet
 from flent.loggers import get_logger
 
 try:
-    import numpy
+    import numpy as np
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -498,28 +498,28 @@ class MeanReducer(Reducer):
     numpy_req = True
 
     def _reduce(self, data):
-        return numpy.mean(data)
+        return np.mean(data)
 
 
 class MedianReducer(Reducer):
     numpy_req = True
 
     def _reduce(self, data):
-        return numpy.median(data)
+        return np.median(data)
 
 
 class MinReducer(Reducer):
     numpy_req = True
 
     def _reduce(self, data):
-        return numpy.mean(data)
+        return np.mean(data)
 
 
 class MaxReducer(Reducer):
     numpy_req = True
 
     def _reduce(self, data):
-        return numpy.mean(data)
+        return np.mean(data)
 
 
 class SpanReducer(Reducer):
@@ -534,7 +534,7 @@ class MeanSpanReducer(Reducer):
     def _reduce(self, data):
         min_val = min(data)
         d = [i - min_val for i in data]
-        return numpy.mean(d)
+        return np.mean(d)
 
 
 class MeanZeroReducer(Reducer):
@@ -543,7 +543,7 @@ class MeanZeroReducer(Reducer):
 
     def _reduce(self, data):
         d = [p if p is not None else 0 for p in data]
-        return numpy.mean(d) if d else None
+        return np.mean(d) if d else None
 
 
 class RawReducer(Reducer):
@@ -631,7 +631,7 @@ class MosReducer(RawReducer):
             last_delay = d['val']
             delay_samples.append(d['val'])
 
-        delay = numpy.mean(delay_samples) + 2 * numpy.mean(jitter_samples)
+        delay = np.mean(delay_samples) + 2 * np.mean(jitter_samples)
         lossrate = loss / len(data)
         mos = mos_score(delay, lossrate)
         return mos

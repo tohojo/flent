@@ -25,8 +25,8 @@ import io
 import re
 import warnings
 
-from flent import combiners
-from flent.util import cum_prob, frange, classname, long_substr, format_date, \
+from flent import combiners, transformers
+from flent.util import classname, long_substr, format_date, diff_parts, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
 from flent.loggers import get_logger
@@ -37,7 +37,7 @@ from collections import OrderedDict
 
 try:
     import matplotlib
-    import numpy
+    import numpy as np
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -196,7 +196,7 @@ def init_matplotlib(output, use_markers, load_rc):
 
     MATPLOTLIB_INIT = True
     logger.info("Initialised matplotlib v%s on numpy v%s.",
-                matplotlib.__version__, numpy.__version__)
+                matplotlib.__version__, np.__version__)
 
 
 def get_plotconfig(settings, plot=None):
@@ -496,7 +496,6 @@ def add_plotting_args(parser):
         "(as specified by --figure-width and --figure-height) is no longer "
         "kept constant.")
 
-
     return parser
 
 
@@ -552,6 +551,7 @@ class Plotter(ArgParam):
                  gui=False,
                  description='',
                  figure=None,
+                 results=None,
                  in_worker=False,
                  **kwargs):
         super(Plotter, self).__init__(**kwargs)
@@ -574,7 +574,7 @@ class Plotter(ArgParam):
         if self.hover_highlight is not None:
             self.can_highlight = self.hover_highlight
 
-        self.config = self.expand_plot_config(plot_config, data_config)
+        self.config = self.expand_plot_config(plot_config, data_config, results)
         self.configs = [self.config]
         self.data_config = data_config
 
@@ -606,26 +606,56 @@ class Plotter(ArgParam):
 
         return False
 
-    def expand_plot_config(self, config, data):
+    def expand_plot_config(self, config, data, results=None):
         if 'series' not in config:
             return config
         new_series = []
         for s in config['series']:
+            ns = []
             if isinstance(s['data'], Glob):
                 for d in Glob.expand_list(s['data'], data.keys()):
-                    if 'label' in s and 'id' in data[d]:
-                        ns = dict(s, data=d, id=data[d]['id'],
-                                  label='%s -- %s' % (s['label'], data[d]['id']))
+                    if 'label' in s:
+                        d_id = data[d]['id'] if 'id' in data[d] else d
+                        ns.append(dict(s, data=d, id=d_id,
+                                       label='%s -- %s' % (s['label'], d_id)))
                         if 'parent_id' in data[d]:
-                            ns['parent_id'] = data[d]['parent_id']
-                        new_series.append(ns)
+                            ns[-1]['parent_id'] = data[d]['parent_id']
                     else:
-                        new_series.append(dict(s, data=d))
+                        ns.append(dict(s, data=d))
+
             else:
-                new_series.append(s)
+                ns.append(s)
+
+            if results and 'raw_key' in s and isinstance(s['raw_key'], Glob):
+                nns = []
+
+                def all_keys(k):
+                    return lambda x, y: x.union(y.get(k, set()))
+
+                for s in ns:
+                    all_rks = sorted(reduce(all_keys(s['data']),
+                                            (r.raw_keys for r in results),
+                                            set()))
+                    rks = Glob.expand_list(s['raw_key'], all_rks)
+                    for k, n in zip(rks, diff_parts(rks, "::")):
+                        if 'label' in s:
+                            nns.append(dict(s, raw_key=k,
+                                            label="%s -- %s" % (s['label'], n)))
+                        else:
+                            nns.append(dict(s, raw_key=k))
+
+                ns = nns
+
+            new_series.extend(ns)
+
         if self.filter_series:
             new_series = [s for s in new_series if not s[
                 'data'] in self.filter_series]
+
+        if self.norm_factors:
+            for n, s in zip(cycle(self.norm_factors), new_series):
+                s['norm_factor'] = n
+
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
@@ -834,7 +864,6 @@ class Plotter(ArgParam):
                 bbox = Bbox.union([b for b in bbs
                                    if b.height != 0 or b.width != 0])
 
-
                 h = fig_bbox.height
                 w = fig_bbox.width
 
@@ -1014,8 +1043,7 @@ class Plotter(ArgParam):
 
     def _do_scaling(self, axis, data, btm, top, unit=None, allow_log=True):
         """Scale the axis to the selected bottom/top percentile"""
-        data = [x for x in data if x is not None]
-        if not data:
+        if not data.any():
             return
 
         top_percentile = self._percentile(data, top)
@@ -1045,20 +1073,90 @@ class Plotter(ArgParam):
         if self.invert_y and unit in self.inverted_units:
             axis.invert_yaxis()
 
-    def _percentile(self, lst, q):
-        """Primitive percentile calculation for axis scaling.
+    def _percentile(self, arr, q):
+        try:
+            # nanpercentile was only introduced in numpy 1.9.0
+            return np.nanpercentile(arr, q)
+        except AttributeError:
+            ma = np.ma.masked_invalid(arr)
+            return np.percentile(ma.compressed(), q)
 
-        Implemented here since old versions of numpy don't include
-        the percentile function."""
-        q = int(q)
-        if q == 0:
-            return min(lst)
-        elif q == 100:
-            return max(lst)
-        elif q < 0 or q > 100:
-            raise ValueError("Invalid percentile: %s" % q)
-        idx = int(len(lst) * (q / 100.0))
-        return numpy.sort(lst)[idx]
+    def _transform_data(self, data, t):
+        t = t.strip()
+        if hasattr(transformers, t):
+            data = getattr(transformers, t)(data)
+        return data
+
+    def get_series(self, series, results, config,
+                   no_invalid=False, aligned=False):
+
+        if aligned:
+            data = np.array((results.x_values,
+                             results.series(series['data'])),
+                            dtype=float)
+        else:
+            raw_key = series.get('raw_key')
+            try:
+
+                data = np.array(
+                    list(results.raw_series(series['data'], raw_key=raw_key)),
+                    dtype=float).transpose()
+
+                if not len(data):
+                    raise KeyError()
+
+                data_transform = series.get('data_transform')
+
+                if not data_transform and 'FAKE_RAW_VALUES' not in results.meta():
+                    cfgn = "%s::%s" % (series['data'], raw_key)
+                    if cfgn not in self.data_config:
+                        cfgn = series['data']
+
+                    try:
+                        data_transform = self.data_config[cfgn]['data_transform']
+                    except KeyError:
+                        pass
+
+                if data_transform:
+                    data[1] = self._transform_data(data[1], data_transform)
+            except KeyError:
+                if raw_key:
+                    # No point in using synthesised results since those won't be
+                    # correct when raw_key is set
+                    return np.array([], dtype=float)
+                logger.debug("No raw data found for series %s, "
+                             "falling back to computed values", series['data'])
+                data = np.array((results.x_values,
+                                 results.series(series['data'])),
+                                dtype=float)
+
+        if 'cutoff' in config and config['cutoff'] and data.any():
+            min_x = data[0].min() + config['cutoff'][0]
+            max_x = data[0].max() + config['cutoff'][1]
+
+            min_idx = data[0].searchsorted(min_x, side='right')
+            max_idx = data[0].searchsorted(max_x, side='left')
+
+            data = data[:, min_idx:max_idx]
+
+        if len(data) == 0:
+            return data
+
+        if no_invalid:
+            data = np.ma.compress_cols(np.ma.masked_invalid(data))
+
+        if 'norm_factor' in series:
+            data[1] /= series['norm_factor']
+
+        if 'smoothing' in series and series['smoothing']:
+            l = series['smoothing']
+            if l % 2 != 1:
+                l += 1
+            kern = np.ones(l, dtype=float)
+            kern /= l
+            data[1] = np.convolve(data[1], kern, mode=str('same'))
+
+        return data
 
 
 class CombineManyPlotter(object):
@@ -1149,34 +1247,23 @@ class TimeseriesPlotter(Plotter):
 
         stack = 'stacked' in config and config['stacked']
 
-        xlim = axis.get_xlim()
-        axis.set_xlim(
-            min(results.x_values + [xlim[0]]
-                ) if xlim[0] > 0 else min(results.x_values),
-            max(results.x_values + [self.metadata['TOTAL_LENGTH'], xlim[1]])
-        )
-
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = None
-
-        data = []
-        for i in range(len(config['axes'])):
-            data.append([])
+        x_min = x_max = 0
 
         colours = cycle(self.colours)
 
         if stack:
-            sums = numpy.zeros(len(results.x_values))
+            sums = np.zeros(len(results.x_values))
+
+        all_data = [None] * len(config['axes'])
 
         for i, s in enumerate(config['series']):
-            if not s['data'] in results.series_names:
+            data = self.get_series(s, results, config, aligned=stack)
+            if not data.any():
                 continue
-            if 'smoothing' in s:
-                smooth = s['smoothing']
-            else:
-                smooth = False
+
+            x_min = min(data[0].min(), x_min)
+            x_max = max(data[0].max(), x_max)
+
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
@@ -1190,10 +1277,6 @@ class TimeseriesPlotter(Plotter):
 
             kwargs.update(extra_kwargs)
 
-            y_values = results.series(s['data'], smooth)
-            if norms is not None:
-                y_values = [y / norms[i] if y is not None else None
-                            for y in y_values]
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
@@ -1203,18 +1286,26 @@ class TimeseriesPlotter(Plotter):
                 kwargs['facecolor'] = kwargs['color']
                 kwargs['edgecolor'] = 'none'
                 del kwargs['color']
-                y_values = numpy.array(y_values, dtype=float)
 
                 config['axes'][a].fill_between(
-                    results.x_values, sums, y_values + sums, **kwargs)
-                sums += y_values
+                    data[0], sums, data[1] + sums, **kwargs)
+                sums += data[1]
             else:
-                data[a] += y_values
+                if all_data[a] is None:
+                    all_data[a] = data[1].copy()
+                else:
+                    all_data[a] = np.append(all_data[a], data[1])
                 for r in self.scale_data + extra_scale_data:
-                    data[a] += r.series(s['data'], smooth)
-                self.data_artists.extend(config['axes'][a].plot(results.x_values,
-                                                                y_values,
+                    d = self.get_series(s, r, config)
+                    if d.any():
+                        all_data[a] = np.append(all_data[a], d[1])
+                self.data_artists.extend(config['axes'][a].plot(data[0], data[1],
                                                                 **kwargs))
+
+        xlim = axis.get_xlim()
+        axis.set_xlim(
+            min(x_min, xlim[0]) if xlim[0] > 0 else x_min,
+            max(x_max, self.metadata['TOTAL_LENGTH'], xlim[1]))
 
         if 'scaling' in config:
             btm, top = config['scaling']
@@ -1222,16 +1313,17 @@ class TimeseriesPlotter(Plotter):
             btm, top = 0, 100
 
         for a in range(len(config['axes'])):
-            if data[a]:
-                self._do_scaling(config['axes'][a], data[
-                                 a], btm, top, config['units'][a])
+            if all_data[a] is not None:
+                self._do_scaling(config['axes'][a], all_data[a], btm, top,
+                                 config['units'][a])
 
             # Handle cut-off data sets. If the x-axis difference between the
             # largest data point and the TOTAL_LENGTH from settings, scale to
             # the data values, but round to nearest 10 above that value.
             try:
                 max_xdata = max([l.get_xdata()[-1]
-                                 for l in config['axes'][a].get_lines()])
+                                 for l in config['axes'][a].get_lines()
+                                 if l.get_xdata()])
                 if abs(self.metadata['TOTAL_LENGTH'] - max_xdata) > 10:
                     config['axes'][a].set_xlim(
                         right=(max_xdata + (10 - max_xdata % 10)))
@@ -1283,9 +1375,7 @@ class BoxPlotter(TimeseriesPlotter):
         ticks = []
         texts = []
         pos = 1
-        all_data = []
-        for a in config['axes']:
-            all_data.append([])
+        all_data = [None] * len(config['axes'])
 
         if self.split_groups:
             if len(results) % len(self.split_groups) > 0:
@@ -1312,11 +1402,6 @@ class BoxPlotter(TimeseriesPlotter):
         series_labels = self._filter_labels(
             [s['label'] for s in series])
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = None
-
         for i, s in enumerate(series):
             if split_results:
                 results = split_results[i]
@@ -1327,14 +1412,14 @@ class BoxPlotter(TimeseriesPlotter):
 
             data = []
             for r in results:
-                d = [d for d in r.series(s['data']) if d is not None]
-                if norms is not None:
-                    d = [di / norms[i] for di in d]
-                all_data[a].extend(d)
-                if not d:
-                    data.append([0.0])
+                d = self.get_series(s, r, config, no_invalid=True)
+
+                if all_data[a] is None:
+                    all_data[a] = d[1].copy()
                 else:
-                    data.append(d)
+                    all_data[a] = np.append(all_data[a], d[1])
+
+                data.append(d[1])
 
             if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
@@ -1372,8 +1457,8 @@ class BoxPlotter(TimeseriesPlotter):
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size + 1
         for i, a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100, config[
-                             'units'][i], allow_log=False)
+            self._do_scaling(a, all_data[i], 0, 100,
+                             config['units'][i], allow_log=False)
 
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
@@ -1434,11 +1519,6 @@ class BarPlotter(BoxPlotter):
             [s['label'] for s in config['series']])
         texts = []
 
-        if self.norm_factors:
-            norms = list(islice(cycle(self.norm_factors), len(config['series'])))
-        else:
-            norms = None
-
         for i, s in enumerate(config['series']):
             if 'axis' in s and s['axis'] == 2:
                 a = 1
@@ -1448,15 +1528,13 @@ class BarPlotter(BoxPlotter):
             data = []
             errors = []
             for r in results:
-                dp = [d for d in r.series(s['data']) if d is not None]
-                if norms is not None:
-                    dp = [d / norms[i] for d in dp]
-                if not dp and not self.skip_missing:
+                dp = self.get_series(s, r, config, no_invalid=True)
+                if not dp.any() and not self.skip_missing:
                     data.append(0.0)
                     errors.append(0.0)
                     all_data[a].append(0.0)
-                elif dp:
-                    dp = numpy.array(dp)
+                elif dp.any():
+                    dp = np.array(dp)
                     data.append(dp.mean())
                     errors.append(dp.std())
                     all_data[a].append(data[-1] + errors[-1])
@@ -1542,8 +1620,6 @@ class CdfPlotter(Plotter):
         axis.set_ylim(0, 1)
         axis.minorticks_on()
         config['axes'] = [axis]
-        self.medians = []
-        self.min_vals = []
 
     def _plot(self, results, config=None, axis=None, postfix="",
               extra_kwargs={}, extra_scale_data=[]):
@@ -1553,53 +1629,23 @@ class CdfPlotter(Plotter):
             axis = config['axes'][0]
 
         colours = cycle(self.colours)
-        data = []
-        sizes = []
         max_value = 0.0
-        for s in config['series']:
-            if not s['data'] in results.series_names:
-                data.append([])
-                sizes.append(0)
-                continue
-            s_data = results.series(s['data'])
-            if 'cutoff' in config and config['cutoff']:
-                # cut off values from the beginning and end before doing the
-                # plot; for e.g. pings that run long than the streams, we don't
-                # want the unloaded ping values
-                start, end = config['cutoff']
-                end = int((self.metadata['TOTAL_LENGTH'] -
-                           end) / self.metadata['STEP_SIZE'])
-                start = int(start / self.metadata['STEP_SIZE'])
-                if end == 0:
-                    end = None
-                s_data = s_data[start:end]
-            sizes.append(float(len(s_data)))
-            d = sorted([x for x in s_data if x is not None])
-            data.append(d)
-            if d:
-                self.medians.append(numpy.median(d))
-                self.min_vals.append(min(d))
-                max_value = max([max_value] + d)
-
-                for r in self.scale_data + extra_scale_data:
-                    d_s = [x for x in r.series(s['data']) if x is not None]
-                    if d_s:
-                        max_value = max([max_value] + d_s)
-
-        if max_value > 10:
-            # round up to nearest value divisible by 10
-            max_value += 10 - (max_value % 10)
-
-        if max_value > 0:
-            axis.set_xlim(right=max_value)
+        min_value = float('inf')
 
         for i, s in enumerate(config['series']):
-            if not data[i]:
+
+            data = self.get_series(s, results, config, no_invalid=True)
+            if not data.any():
                 continue
-            max_val = max(data[i])
-            min_val = min(data[i])
-            step = (max_val - min_val) / 1000.0 if min_val != max_val else 1.0
-            x_values = list(frange(min_val - 2 * step, max_val + 2 * step, step))
+
+            # ECDF that avoids bias due to binning. See discussion at
+            # http://stackoverflow.com/a/11692365
+            x_values = np.sort(data[1])
+            y_values = np.arange(1, len(x_values)+1)/float(len(x_values))
+
+            max_value = max(max_value, x_values[-1])
+            min_value = min(min_value, x_values[0])
+
             kwargs = {}
             for k in PLOT_KWARGS:
                 if k in s:
@@ -1609,58 +1655,31 @@ class CdfPlotter(Plotter):
             if 'color' not in kwargs:
                 kwargs['color'] = next(colours)
             kwargs.update(extra_kwargs)
-            y_values = [cum_prob(data[i], point, sizes[i]) for point in x_values]
-            if 1.0 in y_values:
-                idx_1 = y_values.index(1.0) + 1
-            else:
-                idx_1 = len(y_values)
-            idx_0 = 0
-            while y_values[idx_0 + 1] == 0.0:
-                idx_0 += 1
-
-            x_vals, y_vals = self._filter_dup_vals(
-                x_values[idx_0:idx_1], y_values[idx_0:idx_1])
-            self.data_artists.extend(axis.plot(x_vals,
-                                               y_vals,
+            self.data_artists.extend(axis.plot(x_values,
+                                               y_values,
                                                **kwargs))
+
+        if max_value > 10:
+            # round up to nearest value divisible by 10
+            max_value += 10 - (max_value % 10)
+
+        if max_value > 0:
+            axis.set_xlim(right=max(max_value, axis.get_xlim()[1]))
 
         if self.zero_y:
             axis.set_xlim(left=0)
-        elif self.min_vals:
-            min_val = min(self.min_vals)
-            if min_val > 10:
-                min_val -= min_val % 10  # nearest value divisible by 10
-            if min_val > 100:
-                min_val -= min_val % 100
-            if min_val < max_val:
-                axis.set_xlim(left=min_val)
+        elif min_value < max_value:
+            if min_value > 10:
+                min_value -= min_value % 10  # nearest value divisible by 10
+            if min_value > 100:
+                min_value -= min_value % 100
+            axis.set_xlim(left=min(min_value, axis.get_xlim()[0]))
 
         if self.log_scale:
-            # More than an order of magnitude difference; switch to log scale
             axis.set_xscale('log')
 
         for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
-
-    def _filter_dup_vals(self, x_vals, y_vals):
-        """Filter out series of identical y-vals, also removing the corresponding
-        x-vals.
-
-        Lowers the amount of plotted points and avoids strings of markers on
-        CDFs.
-
-        """
-        x_vals = list(x_vals)
-        y_vals = list(y_vals)
-        i = 0
-        while i < len(x_vals) - 2:
-            while (i < len(y_vals) - 2 and
-                   y_vals[i] == y_vals[i + 1] and
-                   y_vals[i] == y_vals[i + 2]):
-                del x_vals[i + 1]
-                del y_vals[i + 1]
-            i += 1
-        return x_vals, y_vals
 
 
 class CdfCombinePlotter(CombineManyPlotter, CdfPlotter):
@@ -1708,8 +1727,8 @@ class QqPlotter(Plotter):
         axis.set_ylim(min(y_values) * 0.99, max(y_values) * 1.01)
 
     def _equal_length(self, x, y):
-        x_values = numpy.sort([r for r in x if r is not None])
-        y_values = numpy.sort([r for r in y if r is not None])
+        x_values = np.sort([r for r in x if r is not None])
+        y_values = np.sort([r for r in y if r is not None])
 
         # If data sets are not of equal sample size, the larger one is shrunk by
         # interpolating values into the length of the smallest data set.
@@ -1732,16 +1751,16 @@ class QqPlotter(Plotter):
         # length of the longer data set, with n being equal to the number of
         # data points in the shorter data set.
         if len(x_values) < len(y_values):
-            y_values = numpy.interp(numpy.linspace(0, len(y_values),
-                                                   num=len(x_values),
-                                                   endpoint=False),
-                                    range(len(y_values)), y_values)
+            y_values = np.interp(np.linspace(0, len(y_values),
+                                             num=len(x_values),
+                                             endpoint=False),
+                                 range(len(y_values)), y_values)
 
         elif len(y_values) < len(x_values):
-            x_values = numpy.interp(numpy.linspace(0, len(x_values),
-                                                   num=len(y_values),
-                                                   endpoint=False),
-                                    range(len(x_values)), x_values)
+            x_values = np.interp(np.linspace(0, len(x_values),
+                                             num=len(y_values),
+                                             endpoint=False),
+                                 range(len(x_values)), x_values)
 
         return x_values, y_values
 
@@ -1798,18 +1817,20 @@ class EllipsisPlotter(Plotter):
         if 'color' in extra_kwargs:
             carg['color'] = extra_kwargs['color']
 
-        x_values = results.series(series[0]['data'])
+        x_values = self.get_series(series[0], results, config, aligned=True)[1]
 
         for s in series[1:]:
-            data = [i for i in zip(x_values, results.series(s['data'])) if i[
-                0] is not None and i[1] is not None]
-            if len(data) < 2:
-                points = numpy.array(data * 2)
-            else:
-                points = numpy.array(data)
-            x_values, y_values = zip(*data)
+            y_values = self.get_series(s, results, config, aligned=True)[1]
+
+            points = np.vstack((x_values, y_values))
+            points = np.transpose(
+                np.ma.compress_cols(np.ma.masked_invalid(points)))
+
+            if len(points) == 1:
+                points = np.vstack((points, points))
+
             el = self.plot_point_cov(points, ax=axis, alpha=0.5, **carg)
-            med = numpy.median(points, axis=0)
+            med = np.median(points, axis=0)
             self.xvals.append(el.center[0] - el.width / 2)
             self.xvals.append(el.center[0] + el.width / 2)
             self.yvals.append(el.center[1] - el.height / 2)
@@ -1819,6 +1840,9 @@ class EllipsisPlotter(Plotter):
             axis.plot(*med, marker='o', linestyle=" ", **carg)
             axis.annotate(label, med, ha='center', annotation_clip=True,
                           xytext=(0, 8), textcoords='offset points')
+
+        if len(self.yvals) == 0:
+            return
 
         if self.zero_y:
             self.xvals.append(0.0)
@@ -1876,7 +1900,8 @@ class MetaPlotter(Plotter):
             axis = self.figure.add_subplot(
                 rows, cols, i + 1, sharex=sharex, **subplot_params[i])
             cfg['axes'] = [axis]
-            cfg = self.expand_plot_config(cfg, self.data_config)
+            cfg = self.expand_plot_config(cfg, self.data_config,
+                                          results=self._kwargs.get("results"))
             self.configs.append(cfg)
             plotter = get_plotter(cfg['type'])(cfg, self.data_config,
                                                figure=self.figure, **self._kwargs)
