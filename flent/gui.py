@@ -66,7 +66,7 @@ except NotImplementedError:
     CPU_COUNT = 1
 
 
-FORCE_QT4 = False
+FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
 try:
     import matplotlib
     ver = tuple([int(i) for i in matplotlib.__version__.split(".")[:2]])
