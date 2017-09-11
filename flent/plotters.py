@@ -419,7 +419,7 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--legend-columns",
-        action="store", type=int, dest="LEGEND_COLUMNS",
+        action="store", type=int, dest="LEGEND_COLUMNS", default=1,
         help="Legend columns. Set the number of columns in the legend.")
 
     parser.add_argument(
@@ -462,19 +462,19 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--figure-width", "--fig-width",
-        action="store", type=float, dest="FIG_WIDTH",
+        action="store", type=float, dest="FIG_WIDTH", default=6.4,
         help="Figure width in inches. Used when saving plots to file and for "
         "default size of the interactive plot window.")
 
     parser.add_argument(
         "--figure-height", "--fig-height",
-        action="store", type=float, dest="FIG_HEIGHT",
+        action="store", type=float, dest="FIG_HEIGHT", default=4.8,
         help="Figure height in inches. Used when saving plots to file and for "
         "default size of the interactive plot window.")
 
     parser.add_argument(
         "--figure-dpi", "--fig-dpi",
-        action="store", type=float, dest="FIG_DPI",
+        action="store", type=float, dest="FIG_DPI", default=100,
         help="Figure DPI. Used when saving plots to raster format files.")
 
     parser.add_argument(
