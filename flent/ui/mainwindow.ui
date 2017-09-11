@@ -73,6 +73,7 @@
     <addaction name="actionMetadata"/>
     <addaction name="actionOpenFiles"/>
     <addaction name="actionLogEntries"/>
+    <addaction name="actionPlotSettings"/>
     <addaction name="separator"/>
     <addaction name="actionNextTab"/>
     <addaction name="actionPrevTab"/>
@@ -156,7 +157,7 @@
     <bool>false</bool>
    </property>
    <property name="windowTitle">
-    <string>Metadata</string>
+    <string>&amp;Metadata</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -175,7 +176,7 @@
   </widget>
   <widget class="QDockWidget" name="openFilesDock">
    <property name="windowTitle">
-    <string>Open files</string>
+    <string>Ope&amp;n files</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -186,12 +187,21 @@
   </widget>
   <widget class="QDockWidget" name="logEntriesDock">
    <property name="windowTitle">
-    <string>Log entries</string>
+    <string>&amp;Log entries</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4"/>
+  </widget>
+  <widget class="QDockWidget" name="plotSettingsDock">
+   <property name="windowTitle">
+    <string>Plot settings</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -275,7 +285,7 @@
   </action>
   <action name="actionPrevTab">
    <property name="text">
-    <string>P&amp;revious tab</string>
+    <string>Pr&amp;evious tab</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Backtab</string>
@@ -463,6 +473,14 @@
     <string>Report a &amp;bug</string>
    </property>
   </action>
+  <action name="actionPlotSettings">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Plot &amp;settings</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>
@@ -543,6 +561,22 @@
     <hint type="destinationlabel">
      <x>1093</x>
      <y>711</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionPlotSettings</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>plotSettingsDock</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1005</x>
+     <y>645</y>
     </hint>
    </hints>
   </connection>

@@ -43,7 +43,7 @@ from flent.build_info import DATA_DIR, VERSION
 from flent.loggers import get_logger, add_log_handler, remove_log_handler, \
     set_queue_handler
 from flent.resultset import ResultSet
-from flent.settings import ListTests, new as new_settings
+from flent.settings import ListTests, new as new_settings, plot_group
 
 logger = get_logger(__name__)
 
@@ -87,7 +87,7 @@ try:
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
-        QVBoxLayout, QApplication, QPlainTextEdit
+        QVBoxLayout, QApplication, QPlainTextEdit, QWidget, QFormLayout
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices
@@ -112,7 +112,7 @@ except ImportError:
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
             QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
             QApplication, QStringListModel, QKeySequence, QResizeEvent, \
-            QPlainTextEdit, QDesktopServices
+            QPlainTextEdit, QDesktopServices, QWidget, QFormLayout
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -328,6 +328,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
+        self.plotSettingsDock.visibilityChanged.connect(self.plot_settings_visibility)
         self.openFilesDock.visibilityChanged.connect(self.open_files_visibility)
         self.logEntriesDock.visibilityChanged.connect(self.log_entries_visibility)
         self.expandButton.clicked.connect(self.metadata_column_resize)
@@ -362,6 +363,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.tabifyDockWidget(self.openFilesDock, self.metadataDock)
         self.tabifyDockWidget(self.openFilesDock, self.logEntriesDock)
         self.openFilesDock.raise_()
+        self.tabifyDockWidget(self.plotDock, self.plotSettingsDock)
+        self.plotDock.raise_()
         self.open_files = OpenFilesModel(self)
         self.openFilesView = OpenFilesView(self.openFilesDock)
         self.openFilesDock.setWidget(self.openFilesView)
@@ -372,6 +375,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataView.entered.connect(self.update_statusbar)
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
+
+        self.plotSettingsWidget = SettingsWidget(self, plot_group)
+        self.plotSettingsDock.setWidget(self.plotSettingsWidget)
 
         self.logEntries = QPlainTextLogger(self, logging.DEBUG,
                                            statusbar=self.statusBar())
@@ -429,6 +435,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             self.restoreState(winstate)
             self.metadata_visibility()
             self.plot_visibility()
+            self.plot_settings_visibility()
             self.open_files_visibility()
         if settings.contains("open_files/columns"):
             value = settings.value("open_files/columns")
@@ -474,6 +481,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
+
+    def plot_settings_visibility(self):
+        self.actionPlotSettings.setChecked(not self.plotSettingsDock.isHidden())
 
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
@@ -1242,6 +1252,15 @@ class MetadataView(QTreeView):
                                      ":".join(map(str, pin)), e)
                     break
 
+
+class SettingsWidget(QWidget):
+
+    def __init__(self, parent, options):
+        super(SettingsWidget, self).__init__(parent)
+        self.init_options(options)
+
+    def init_options(self, options):
+        pass
 
 class ResultsetStore(object):
 
