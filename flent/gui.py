@@ -87,7 +87,8 @@ try:
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
-        QVBoxLayout, QApplication, QPlainTextEdit, QWidget, QFormLayout
+        QVBoxLayout, QApplication, QPlainTextEdit, QWidget, QFormLayout, \
+        QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices
@@ -112,7 +113,8 @@ except ImportError:
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
             QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
             QApplication, QStringListModel, QKeySequence, QResizeEvent, \
-            QPlainTextEdit, QDesktopServices, QWidget, QFormLayout
+            QPlainTextEdit, QDesktopServices, QWidget, QFormLayout, QLineEdit, \
+            QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -376,7 +378,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
 
-        self.plotSettingsWidget = SettingsWidget(self, plot_group)
+        self.plotSettingsWidget = SettingsWidget(self, plot_group, compact=True)
         self.plotSettingsDock.setWidget(self.plotSettingsWidget)
 
         self.logEntries = QPlainTextLogger(self, logging.DEBUG,
@@ -1253,14 +1255,80 @@ class MetadataView(QTreeView):
                     break
 
 
-class SettingsWidget(QWidget):
+class ActionWidget(object):
 
-    def __init__(self, parent, options):
+    def __init__(self, action):
+        self.action = action
+
+
+class BooleanActionWidget(ActionWidget, QComboBox):
+
+    def __init__(self, parent, action):
+        ActionWidget.__init__(self, action)
+        QComboBox.__init__(self, parent)
+
+        self.insertItems(0, ["Disabled", "Enabled"])
+
+
+class IntActionWidget(ActionWidget, QSpinBox):
+
+    def __init__(self, parent, action):
+        ActionWidget.__init__(self, action)
+        QSpinBox.__init__(self, parent)
+
+
+class FloatActionWidget(ActionWidget, QDoubleSpinBox):
+
+    def __init__(self, parent, action):
+        ActionWidget.__init__(self, action)
+        QDoubleSpinBox.__init__(self, parent)
+
+
+class DefaultActionWidget(ActionWidget, QLineEdit):
+
+    def __init__(self, parent, action):
+        ActionWidget.__init__(self, action)
+        QLineEdit.__init__(self, parent)
+
+        print(action, action.type, action.const)
+
+
+class SettingsWidget(QScrollArea):
+
+    def __init__(self, parent, options, compact=False):
         super(SettingsWidget, self).__init__(parent)
-        self.init_options(options)
+        self.init_options(options, compact)
 
-    def init_options(self, options):
-        pass
+    def init_options(self, options, compact):
+        self._widget = QWidget(self)
+        self._layout = QFormLayout()
+
+        for a in options._group_actions:
+            self._layout.addRow(self._action_name(a), self._action_widget(a))
+
+        if compact:
+            self._layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
+
+        self._widget.setLayout(self._layout)
+        self.setWidget(self._widget)
+
+    def _action_name(self, action):
+        if hasattr(action, "help"):
+            return action.help.split(".")[0]
+        return action.option_strings[-1]
+
+    def _action_widget(self, action):
+        if action.type is None and type(action.const) == bool:
+            return BooleanActionWidget(self, action)
+
+        cn = action.__class__.__name__
+        if cn == "_StoreAction":
+            if action.type == int:
+                return IntActionWidget(self, action)
+            elif action.type == float:
+                return FloatActionWidget(self, action)
+        return DefaultActionWidget(self, action)
+
 
 class ResultsetStore(object):
 
