@@ -1257,38 +1257,55 @@ class MetadataView(QTreeView):
 
 class ActionWidget(object):
 
-    def __init__(self, action):
+    def __init__(self, parent, action):
         self.action = action
+        super(ActionWidget, self).__init__(parent)
+
+        self.setToolTip(action.help.split(".", 1)[1].strip())
+
+    def current_value(self):
+        raise NotImplementedError()
 
 
 class BooleanActionWidget(ActionWidget, QComboBox):
 
     def __init__(self, parent, action):
-        ActionWidget.__init__(self, action)
-        QComboBox.__init__(self, parent)
+        super(BooleanActionWidget, self).__init__(parent, action)
 
         self.insertItems(0, ["Disabled", "Enabled"])
+
+    def current_value(self):
+        # These can be store_true as well as store_false actions, so set the
+        # actual boolean of the derived variable depends on the default
+        return self.currentIndex() == int(self.action.default)
 
 
 class IntActionWidget(ActionWidget, QSpinBox):
 
     def __init__(self, parent, action):
-        ActionWidget.__init__(self, action)
-        QSpinBox.__init__(self, parent)
+        super(IntActionWidget, self).__init__(parent, action)
+
+        self.setRange(0, 1000)
+
+        if action.default:
+            self.setValue(action.default)
 
 
 class FloatActionWidget(ActionWidget, QDoubleSpinBox):
 
     def __init__(self, parent, action):
-        ActionWidget.__init__(self, action)
-        QDoubleSpinBox.__init__(self, parent)
+        super(FloatActionWidget, self).__init__(parent, action)
+
+        self.setRange(0, 1000)
+
+        if action.default:
+            self.setValue(action.default)
 
 
 class DefaultActionWidget(ActionWidget, QLineEdit):
 
     def __init__(self, parent, action):
-        ActionWidget.__init__(self, action)
-        QLineEdit.__init__(self, parent)
+        super(DefaultActionWidget, self).__init__(parent, action)
 
         print(action, action.type, action.const)
 
