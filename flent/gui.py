@@ -1488,8 +1488,7 @@ class SettingsWidget(QScrollArea):
                         util.float_pair: FloatPairActionWidget,
                         util.comma_list: MultiValWidget,
                         util.keyval: TextPairActionWidget,
-                        str: DefaultActionWidget,
-                        None: DefaultActionWidget}
+                        unicode: DefaultActionWidget}
 
     def __init__(self, parent, options, compact=False):
         super(SettingsWidget, self).__init__(parent)
@@ -1521,7 +1520,11 @@ class SettingsWidget(QScrollArea):
             return BooleanActionWidget(self, action)
 
         cn = action.__class__.__name__
-        widget = self._widget_type_map[action.type]
+        try:
+            widget = self._widget_type_map[action.type]
+        except KeyError:
+            raise RuntimeError("Unknown type %s for option %s" % (
+                action.type, action.dest))
         if cn == "_StoreAction":
             return widget(self, action)
         elif cn == "_AppendAction":

@@ -259,13 +259,13 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--label-x",
-        action="append", dest="LABEL_X", default=[],
+        action="append", dest="LABEL_X", type=unicode, default=[],
         help="Override X axis label. "
         "Can be specified twice, corresponding to figures with multiple axes.")
 
     parser.add_argument(
         "--label-y",
-        action="append", dest="LABEL_Y", default=[],
+        action="append", dest="LABEL_Y", type=unicode, default=[],
         help="Override Y axis label. "
         "Can be specified twice, corresponding to figures with multiple axes.")
 
@@ -407,12 +407,12 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--legend-title",
-        action="store", dest="LEGEND_TITLE",
+        action="store", type=unicode, dest="LEGEND_TITLE",
         help="Override legend title.")
 
     parser.add_argument(
         "--legend-placement",
-        action="store", dest="LEGEND_PLACEMENT",
+        action="store", type=unicode, dest="LEGEND_PLACEMENT",
         help="Control legend placement. Enabling this option will place the "
         "legend inside the plot at the specified location. Use 'best' to let "
         "matplotlib decide.")
@@ -436,14 +436,14 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--filter-regexp",
-        action="append", dest="FILTER_REGEXP", metavar="REGEXP", default=[],
+        action="append", type=unicode, dest="FILTER_REGEXP", metavar="REGEXP", default=[],
         help="Filter regex. Filter out supplied regular expression from label names. "
         "Can be specified multiple times, in which case the regular expressions will be "
         "filtered in the order specified.")
 
     parser.add_argument(
         "--filter-series",
-        action="append", dest="FILTER_SERIES", metavar="SERIES", default=[],
+        action="append", type=unicode, dest="FILTER_SERIES", metavar="SERIES", default=[],
         help="Filter data series. Filters out specified series name from the plot. "
         "Can be specified multiple times.")
 
