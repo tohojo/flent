@@ -92,7 +92,7 @@ try:
         QPushButton
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
-        QResizeEvent, QDesktopServices
+        QResizeEvent, QDesktopServices, QValidator
 
     from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -116,7 +116,7 @@ except ImportError:
             QItemSelectionModel, QMouseEvent, QApplication, QStringListModel, \
             QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
             QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea,\
-            QPushButton
+            QPushButton, QValidator
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -380,7 +380,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
 
-        self.plotSettingsWidget = SettingsWidget(self, plot_group, compact=True)
+        self.plotSettingsWidget = SettingsWidget(self, plot_group, settings,
+                                                 compact=True)
         self.plotSettingsDock.setWidget(self.plotSettingsWidget)
 
         self.logEntries = QPlainTextLogger(self, logging.DEBUG,
@@ -1261,8 +1262,9 @@ class ActionWidget(object):
 
     value_changed = pyqtSignal()
 
-    def __init__(self, parent, action):
+    def __init__(self, parent, action, default=None):
         self.action = action
+        self.default = default
         super(ActionWidget, self).__init__(parent)
 
         self.setToolTip(action.help.split(".", 1)[1].strip())
@@ -1273,11 +1275,12 @@ class ActionWidget(object):
 
 class BooleanActionWidget(ActionWidget, QComboBox):
 
-    def __init__(self, parent, action):
-        super(BooleanActionWidget, self).__init__(parent, action)
+    def __init__(self, *args, **kwargs):
+        super(BooleanActionWidget, self).__init__(*args, **kwargs)
 
         self.insertItems(0, ["Disabled", "Enabled"])
         self.currentIndexChanged.connect(self.value_changed)
+        self.clear()
 
     def value(self):
         # These can be store_true as well as store_false actions, so set the
@@ -1285,13 +1288,61 @@ class BooleanActionWidget(ActionWidget, QComboBox):
         return self.currentIndex() == int(self.action.const)
 
     def clear(self):
-        self.setCurrentIndex(int(not self.action.const))
+        if self.default:
+            self.setCurrentIndex(int(self.action.const == self.default))
+        else:
+            self.setCurrentIndex(int(not self.action.const))
 
 
-class IntActionWidget(ActionWidget, QSpinBox):
+class NoneSpinBoxMixin(object):
 
-    def __init__(self, parent, action):
-        super(IntActionWidget, self).__init__(parent, action)
+    def __init__(self, *args, **kwargs):
+        super(NoneSpinBoxMixin, self).__init__(*args, **kwargs)
+        self.setSpecialValueText("Unset")
+
+    def value(self):
+        v = super(NoneSpinBoxMixin, self).value()
+        if v == self.minimum():
+            return None
+        return v
+
+    def valueFromText(self, text):
+        if not text:
+            return self.minimum()
+        return super(NoneSpinBoxMixin, self).valueFromText(text)
+
+    def validate(self, text, pos):
+        if not text:
+            return QValidator.Acceptable, text, pos
+        return super(NoneSpinBoxMixin, self).validate(text, pos)
+
+
+class NoneDoubleSpinBox(NoneSpinBoxMixin, QDoubleSpinBox):
+    pass
+
+
+class IntActionWidget(ActionWidget, NoneSpinBoxMixin, QSpinBox):
+
+    def __init__(self, *args, **kwargs):
+        super(IntActionWidget, self).__init__(*args, **kwargs)
+
+        self.setRange(0, 1000)
+        self.clear()
+
+        self.setSpecialValueText("Unset")
+        self.editingFinished.connect(self.value_changed)
+
+    def clear(self):
+        if self.default:
+            self.setValue(self.default)
+        else:
+            self.setValue(self.minimum())
+
+
+class FloatActionWidget(ActionWidget, NoneSpinBoxMixin, QDoubleSpinBox):
+
+    def __init__(self, *args, **kwargs):
+        super(FloatActionWidget, self).__init__(*args, **kwargs)
 
         self.setRange(0, 1000)
         self.clear()
@@ -1299,33 +1350,16 @@ class IntActionWidget(ActionWidget, QSpinBox):
         self.editingFinished.connect(self.value_changed)
 
     def clear(self):
-        if self.action.default:
-            self.setValue(self.action.default)
+        if self.default:
+            self.setValue(self.default)
         else:
-            self.setValue(0)
-
-
-class FloatActionWidget(ActionWidget, QDoubleSpinBox):
-
-    def __init__(self, parent, action):
-        super(FloatActionWidget, self).__init__(parent, action)
-
-        self.setRange(0, 1000)
-        self.clear()
-
-        self.editingFinished.connect(self.value_changed)
-
-    def clear(self):
-        if self.action.default:
-            self.setValue(self.action.default)
-        else:
-            self.setValue(0)
+            self.setValue(self.minimum())
 
 
 class PairActionWidget(ActionWidget, QWidget):
 
-    def __init__(self, parent, action, widget):
-        super(PairActionWidget, self).__init__(parent, action)
+    def __init__(self, parent, action, widget=QLineEdit, **kwargs):
+        super(PairActionWidget, self).__init__(parent, action, **kwargs)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1334,34 +1368,10 @@ class PairActionWidget(ActionWidget, QWidget):
         layout.addWidget(self._left)
         layout.addWidget(self._right)
         self.setLayout(layout)
+        self.clear()
 
         self._left.editingFinished.connect(self.value_changed)
         self._right.editingFinished.connect(self.value_changed)
-
-    def value(self):
-        pass
-
-    def clear(self):
-        pass
-
-
-class FloatPairActionWidget(PairActionWidget):
-
-    def __init__(self, parent, action):
-        super(FloatPairActionWidget, self).__init__(parent, action, QDoubleSpinBox)
-
-    def value(self):
-        return (self._left.value(), self._right.value())
-
-    def clear(self):
-        self._left.setValue(0)
-        self._right.setValue(0)
-
-
-class TextPairActionWidget(PairActionWidget):
-
-    def __init__(self, parent, action):
-        super(TextPairActionWidget, self).__init__(parent, action, QLineEdit)
 
     def value(self):
         return (self._left.text(), self._right.text())
@@ -1371,10 +1381,37 @@ class TextPairActionWidget(PairActionWidget):
         self._right.setText("")
 
 
+class TextPairActionWidget(PairActionWidget):
+    pass
+
+
+class FloatPairActionWidget(PairActionWidget):
+
+    def __init__(self, *args, **kwargs):
+        kwargs["widget"] = NoneDoubleSpinBox
+        super(FloatPairActionWidget, self).__init__(*args, **kwargs)
+        self._left.setSpecialValueText("Unset")
+        self._left.setRange(-1000, 100000)
+        self._right.setSpecialValueText("Unset")
+        self._right.setRange(-1000, 100000)
+        self.clear()
+
+    def value(self):
+        return (self._left.value(), self._right.value())
+
+    def clear(self):
+        if self.default:
+            self._left.setValue(self.default[0] or self._left.minimum())
+            self._right.setValue(self.default[1] or self._left.minimum())
+        else:
+            self._left.setValue(self._left.minimum())
+            self._right.setValue(self._left.minimum())
+
+
 class DefaultActionWidget(ActionWidget, QLineEdit):
 
-    def __init__(self, parent, action):
-        super(DefaultActionWidget, self).__init__(parent, action)
+    def __init__(self, *args, **kwargs):
+        super(DefaultActionWidget, self).__init__(*args, **kwargs)
 
         self.editingFinished.connect(self.value_changed)
 
@@ -1424,11 +1461,11 @@ class AddRemoveWidget(QWidget):
 
 class MultiValWidget(ActionWidget, QWidget):
 
-    def __init__(self, parent, action,
-                 subwidget=DefaultActionWidget, combiner_func=list):
-        super(MultiValWidget, self).__init__(parent, action)
+    def __init__(self, *args,
+                 widget=DefaultActionWidget, combiner_func=list, **kwargs):
+        super(MultiValWidget, self).__init__(*args, **kwargs)
 
-        self._widget_class = subwidget
+        self._widget_class = widget
         self._combiner_func = combiner_func
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1437,15 +1474,22 @@ class MultiValWidget(ActionWidget, QWidget):
 
     def create_widget(self):
 
-        sw = self._widget_class(self, self.action)
+        count = self.layout().count()
+        if count > 0:
+            self.layout().itemAt(count - 1).widget().set_add_button(False)
+
+        if count < len(self.default):
+            default = self.default[count]
+        else:
+            default = None
+
+        sw = self._widget_class(self, self.action, default=default)
         sw.value_changed.connect(self.value_changed)
+
         wdgt = AddRemoveWidget(self, sw)
         wdgt.remove_pressed.connect(self.destroy_widget)
         wdgt.add_pressed.connect(self.create_widget)
 
-        count = self.layout().count()
-        if count > 0:
-            self.layout().itemAt(count - 1).widget().set_add_button(False)
         self.layout().addWidget(wdgt)
 
         self.value_changed.emit()
@@ -1490,16 +1534,14 @@ class SettingsWidget(QScrollArea):
                         util.keyval: TextPairActionWidget,
                         unicode: DefaultActionWidget}
 
-    def __init__(self, parent, options, compact=False):
+    def __init__(self, parent, options, settings, compact=False):
         super(SettingsWidget, self).__init__(parent)
-        self.init_options(options, compact)
 
-    def init_options(self, options, compact):
         self._widget = QWidget(self)
         self._layout = QFormLayout()
 
         for a in options._group_actions:
-            wdgt = self._action_widget(a)
+            wdgt = self._action_widget(a, getattr(settings, a.dest))
             wdgt.value_changed.connect(self.value_changed)
             self._layout.addRow(self._action_name(a), wdgt)
 
@@ -1515,9 +1557,9 @@ class SettingsWidget(QScrollArea):
             return action.help.split(".")[0]
         return action.option_strings[-1]
 
-    def _action_widget(self, action):
+    def _action_widget(self, action, default):
         if action.type is None and type(action.const) == bool:
-            return BooleanActionWidget(self, action)
+            return BooleanActionWidget(self, action, default=default)
 
         cn = action.__class__.__name__
         try:
@@ -1526,11 +1568,12 @@ class SettingsWidget(QScrollArea):
             raise RuntimeError("Unknown type %s for option %s" % (
                 action.type, action.dest))
         if cn == "_StoreAction":
-            return widget(self, action)
+            return widget(self, action, default=default)
         elif cn == "_AppendAction":
-            return MultiValWidget(self, action, widget)
+            return MultiValWidget(self, action, widget=widget, default=default)
         elif cn == "Update":
-            return MultiValWidget(self, action, widget, dict)
+            return MultiValWidget(self, action, widget=widget, default=default,
+                                  combiner_func=dict)
         else:
             raise RuntimeError("Unknown class: %s" % cn)
 
