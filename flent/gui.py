@@ -1381,10 +1381,6 @@ class PairActionWidget(ActionWidget, QWidget):
         self._right.setText("")
 
 
-class TextPairActionWidget(PairActionWidget):
-    pass
-
-
 class FloatPairActionWidget(PairActionWidget):
 
     def __init__(self, *args, **kwargs):
@@ -1531,7 +1527,7 @@ class SettingsWidget(QScrollArea):
                         float: FloatActionWidget,
                         util.float_pair: FloatPairActionWidget,
                         util.comma_list: MultiValWidget,
-                        util.keyval: TextPairActionWidget,
+                        util.keyval: PairActionWidget,
                         unicode: DefaultActionWidget}
 
     def __init__(self, parent, options, settings, compact=False):
