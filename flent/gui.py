@@ -383,6 +383,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.plotSettingsWidget = SettingsWidget(self, plot_group, settings,
                                                  compact=True)
         self.plotSettingsDock.setWidget(self.plotSettingsWidget)
+        self.plotSettingsWidget.values_changed.connect(self.update_settings)
 
         self.logEntries = QPlainTextLogger(self, logging.DEBUG,
                                            statusbar=self.statusBar())
@@ -752,6 +753,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget.metadataSelectionModel is not None:
             self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
+        self.update_settings(widget)
         self.update_save(widget)
         widget.activate()
         self.open_files.set_active_widget(widget)
@@ -761,6 +763,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget = self.viewArea.currentWidget()
         if widget:
             self.actionSavePlot.setEnabled(widget.can_save)
+
+    def update_settings(self, widget=None):
+        if widget is None:
+            widget = self.viewArea.currentWidget()
+        if widget:
+            widget.update_settings(self.plotSettingsWidget.values())
 
     def update_plots(self, testname, plotname):
         for i in range(self.viewArea.count()):
@@ -1521,7 +1529,7 @@ class MultiValWidget(ActionWidget, QWidget):
 
 class SettingsWidget(QScrollArea):
 
-    value_changed = pyqtSignal()
+    values_changed = pyqtSignal()
 
     _widget_type_map = {int: IntActionWidget,
                         float: FloatActionWidget,
@@ -1538,7 +1546,7 @@ class SettingsWidget(QScrollArea):
 
         for a in options._group_actions:
             wdgt = self._action_widget(a, getattr(settings, a.dest))
-            wdgt.value_changed.connect(self.value_changed)
+            wdgt.value_changed.connect(self.values_changed)
             self._layout.addRow(self._action_name(a), wdgt)
 
         if compact:
@@ -2187,6 +2195,11 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def zoom(self, axis, direction='in'):
         if self.plotter:
             self.plotter.zoom(axis, direction)
+
+    def update_settings(self, values):
+        print(values)
+        if self.settings.update(values):
+            self.update()
 
     def change_plot(self, plot_name):
         if not self.plotter:
