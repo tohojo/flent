@@ -1382,7 +1382,9 @@ class PairActionWidget(ActionWidget, QWidget):
         self._right.editingFinished.connect(self.value_changed)
 
     def value(self):
-        return (self._left.text(), self._right.text())
+        if self._left.text() or self._right.text():
+            return (self._left.text(), self._right.text())
+        return None
 
     def clear(self):
         self._left.setText("")
@@ -1401,7 +1403,10 @@ class FloatPairActionWidget(PairActionWidget):
         self.clear()
 
     def value(self):
-        return (self._left.value(), self._right.value())
+        v = (self._left.value(), self._right.value())
+        if v == (None, None):
+            return None
+        return v
 
     def clear(self):
         if self.default:
@@ -1412,18 +1417,21 @@ class FloatPairActionWidget(PairActionWidget):
             self._right.setValue(self._left.minimum())
 
 
-class DefaultActionWidget(ActionWidget, QLineEdit):
+class TextActionWidget(ActionWidget, QLineEdit):
 
     def __init__(self, *args, **kwargs):
-        super(DefaultActionWidget, self).__init__(*args, **kwargs)
+        super(TextActionWidget, self).__init__(*args, **kwargs)
 
+        self.clear()
         self.editingFinished.connect(self.value_changed)
 
     def value(self):
+        if not self.text():
+            return None
         return self.text()
 
     def clear(self):
-        self.setText("")
+        self.setText(self.default or None)
 
 
 class AddRemoveWidget(QWidget):
@@ -1466,7 +1474,7 @@ class AddRemoveWidget(QWidget):
 class MultiValWidget(ActionWidget, QWidget):
 
     def __init__(self, *args,
-                 widget=DefaultActionWidget, combiner_func=list, **kwargs):
+                 widget=TextActionWidget, combiner_func=list, **kwargs):
         super(MultiValWidget, self).__init__(*args, **kwargs)
 
         self._widget_class = widget
@@ -1474,7 +1482,8 @@ class MultiValWidget(ActionWidget, QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.create_widget()
+        for i in range(max(len(self.default or []), 1)):
+            self.create_widget()
 
     def create_widget(self):
 
@@ -1524,6 +1533,8 @@ class MultiValWidget(ActionWidget, QWidget):
                 yield itm.widget().value()
 
     def value(self):
+        if not any(self.value_iter()):
+            return self._combiner_func()
         return self._combiner_func(self.value_iter())
 
 
@@ -1536,7 +1547,7 @@ class SettingsWidget(QScrollArea):
                         util.float_pair: FloatPairActionWidget,
                         util.comma_list: MultiValWidget,
                         util.keyval: PairActionWidget,
-                        unicode: DefaultActionWidget}
+                        unicode: TextActionWidget}
 
     def __init__(self, parent, options, settings, compact=False):
         super(SettingsWidget, self).__init__(parent)
@@ -2197,7 +2208,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.plotter.zoom(axis, direction)
 
     def update_settings(self, values):
-        print(values)
         if self.settings.update(values):
             self.update()
 
