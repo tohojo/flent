@@ -88,7 +88,8 @@ try:
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
         QFormLayout, QHBoxLayout, QVBoxLayout, QApplication, QPlainTextEdit, \
-        QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
+        QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea, \
+        QPushButton
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices
@@ -114,7 +115,8 @@ except ImportError:
             QHeaderView, QFormLayout, QHBoxLayout, QVBoxLayout, \
             QItemSelectionModel, QMouseEvent, QApplication, QStringListModel, \
             QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
-            QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
+            QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea,\
+            QPushButton
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -1279,6 +1281,9 @@ class BooleanActionWidget(ActionWidget, QComboBox):
         # actual boolean of the derived variable depends on the default
         return self.currentIndex() == int(self.action.const)
 
+    def clear(self):
+        self.setCurrentIndex(int(not self.action.const))
+
 
 class IntActionWidget(ActionWidget, QSpinBox):
 
@@ -1286,9 +1291,13 @@ class IntActionWidget(ActionWidget, QSpinBox):
         super(IntActionWidget, self).__init__(parent, action)
 
         self.setRange(0, 1000)
+        self.clear()
 
-        if action.default:
-            self.setValue(action.default)
+    def clear(self):
+        if self.action.default:
+            self.setValue(self.action.default)
+        else:
+            self.setValue(0)
 
 
 class FloatActionWidget(ActionWidget, QDoubleSpinBox):
@@ -1297,9 +1306,13 @@ class FloatActionWidget(ActionWidget, QDoubleSpinBox):
         super(FloatActionWidget, self).__init__(parent, action)
 
         self.setRange(0, 1000)
+        self.clear()
 
-        if action.default:
-            self.setValue(action.default)
+    def clear(self):
+        if self.action.default:
+            self.setValue(self.action.default)
+        else:
+            self.setValue(0)
 
 
 class FloatPairActionWidget(ActionWidget, QWidget):
@@ -1308,6 +1321,7 @@ class FloatPairActionWidget(ActionWidget, QWidget):
         super(FloatPairActionWidget, self).__init__(parent, action)
 
         layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         self._left = QDoubleSpinBox()
         self._right = QDoubleSpinBox()
         layout.addWidget(self._left)
@@ -1317,24 +1331,110 @@ class FloatPairActionWidget(ActionWidget, QWidget):
     def value(self):
         return (self._left.value(), self._right.value())
 
+    def clear(self):
+        self._left.setValue(0)
+        self._right.setValue(0)
+
 
 class DefaultActionWidget(ActionWidget, QLineEdit):
 
     def __init__(self, parent, action):
         super(DefaultActionWidget, self).__init__(parent, action)
 
-        print(action, action.type, action.const)
-
     def value(self):
         return self.text()
+
+    def clear(self):
+        self.setText("")
+
+
+class AddRemoveWidget(QWidget):
+
+    add_pressed = pyqtSignal()
+    remove_pressed = pyqtSignal('QWidget')
+
+    def __init__(self, parent, subwidget):
+        super(AddRemoveWidget, self).__init__(parent)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(subwidget)
+        self._subwidget = subwidget
+        self._add_button = QPushButton("+", self)
+        self._add_button.setFixedSize(20, 20)
+        self._remove_button = QPushButton("-", self)
+        self._remove_button.setFixedSize(20, 20)
+
+        self._remove_button.clicked.connect(self.remove)
+        self._add_button.clicked.connect(self.add_pressed)
+
+        layout.addWidget(self._add_button)
+        layout.addWidget(self._remove_button)
+        self.setLayout(layout)
+
+    def set_add_button(self, visible):
+        self._add_button.setVisible(visible)
+
+    def remove(self):
+        self.remove_pressed.emit(self)
+
+    def clear(self):
+        self._subwidget.clear()
+
+    def value(self):
+        return self._subwidget.value()
 
 
 class MultiValWidget(ActionWidget, QWidget):
 
-    def __init__(self, parent, action, subwidget=None):
+    def __init__(self, parent, action,
+                 subwidget=DefaultActionWidget, combiner_func=list):
         super(MultiValWidget, self).__init__(parent, action)
 
-        self._widget = subwidget or DefaultActionWidget
+        self._widget_class = subwidget
+        self._combiner_func = combiner_func
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+        self.create_widget()
+
+    def create_widget(self):
+
+        wdgt = AddRemoveWidget(self, self._widget_class(self, self.action))
+        wdgt.remove_pressed.connect(self.destroy_widget)
+        wdgt.add_pressed.connect(self.create_widget)
+
+        count = self.layout().count()
+        if count > 0:
+            self.layout().itemAt(count - 1).widget().set_add_button(False)
+        self.layout().addWidget(wdgt)
+
+    def find_widget(self, widget):
+        for i in range(self.layout().count()):
+            itm = self.layout().itemAt(i)
+            if itm and itm.widget() == widget:
+                return i
+
+        return None
+
+    def destroy_widget(self, widget):
+        count = self.layout().count()
+        if count > 1:
+            if self.find_widget(widget) == count - 1:
+                self.layout().itemAt(count - 2).widget().set_add_button(True)
+            self.layout().removeWidget(widget)
+            widget.deleteLater()
+        else:
+            self.layout().itemAt(0).widget().clear()
+
+    def value_iter(self):
+        for i in range(self.layout().count()):
+            itm = self.layout().itemAt(i)
+            if itm and not itm.isEmpty():
+                yield itm.widget().value()
+
+    def value(self):
+        return self._combiner_func(self.value_iter())
 
 
 class SettingsWidget(QScrollArea):
@@ -1342,7 +1442,7 @@ class SettingsWidget(QScrollArea):
     _widget_type_map = {int: IntActionWidget,
                         float: FloatActionWidget,
                         util.float_pair: FloatPairActionWidget,
-                        util.comma_list: DefaultActionWidget,
+                        util.comma_list: MultiValWidget,
                         util.keyval: DefaultActionWidget,
                         str: DefaultActionWidget,
                         None: DefaultActionWidget}
@@ -1356,13 +1456,15 @@ class SettingsWidget(QScrollArea):
         self._layout = QFormLayout()
 
         for a in options._group_actions:
-            self._layout.addRow(self._action_name(a), self._action_widget(a))
+            wdgt = self._action_widget(a)
+            self._layout.addRow(self._action_name(a), wdgt)
 
         if compact:
             self._layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
 
         self._widget.setLayout(self._layout)
         self.setWidget(self._widget)
+        self.setWidgetResizable(True)
 
     def _action_name(self, action):
         if hasattr(action, "help"):
@@ -1378,16 +1480,32 @@ class SettingsWidget(QScrollArea):
         if cn == "_StoreAction":
             return widget(self, action)
         elif cn == "_AppendAction":
-            return widget(self, action)
+            return MultiValWidget(self, action, widget)
+
+    def child_updated(self, widget):
+        idx = self.find_widget(widget)
+        self._layout.invalidate()
+        return
+        if idx:
+            lbl = self._layout.labelForField(widget)
+            self._layout.takeRow(idx)
+            print(widget.sizeHint())
+            self._layout.addRow(lbl.text(), widget)
+
+    def find_widget(self, widget):
+        for i, w in self.widget_iter():
+            if w == widget:
+                return i
+        return None
 
     def widget_iter(self):
         for i in range(self._layout.rowCount()):
             itm = self._layout.itemAt(i, QFormLayout.FieldRole)
             if itm and not itm.isEmpty():
-                yield itm.widget()
+                yield i, itm.widget()
 
     def value_iter(self):
-        for w in self.widget_iter():
+        for i, w in self.widget_iter():
             yield (w.key(), w.value())
 
 
