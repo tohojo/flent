@@ -87,8 +87,8 @@ try:
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
-        QVBoxLayout, QApplication, QPlainTextEdit, QWidget, QFormLayout, \
-        QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
+        QFormLayout, QHBoxLayout, QVBoxLayout, QApplication, QPlainTextEdit, \
+        QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices
@@ -111,10 +111,10 @@ except ImportError:
 
         from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
-            QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
-            QApplication, QStringListModel, QKeySequence, QResizeEvent, \
-            QPlainTextEdit, QDesktopServices, QWidget, QFormLayout, QLineEdit, \
-            QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
+            QHeaderView, QFormLayout, QHBoxLayout, QVBoxLayout, \
+            QItemSelectionModel, QMouseEvent, QApplication, QStringListModel, \
+            QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
+            QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -1263,8 +1263,8 @@ class ActionWidget(object):
 
         self.setToolTip(action.help.split(".", 1)[1].strip())
 
-    def current_value(self):
-        raise NotImplementedError()
+    def key(self):
+        return self.action.dest
 
 
 class BooleanActionWidget(ActionWidget, QComboBox):
@@ -1274,10 +1274,10 @@ class BooleanActionWidget(ActionWidget, QComboBox):
 
         self.insertItems(0, ["Disabled", "Enabled"])
 
-    def current_value(self):
+    def value(self):
         # These can be store_true as well as store_false actions, so set the
         # actual boolean of the derived variable depends on the default
-        return self.currentIndex() == int(self.action.default)
+        return self.currentIndex() == int(self.action.const)
 
 
 class IntActionWidget(ActionWidget, QSpinBox):
@@ -1302,6 +1302,22 @@ class FloatActionWidget(ActionWidget, QDoubleSpinBox):
             self.setValue(action.default)
 
 
+class FloatPairActionWidget(ActionWidget, QWidget):
+
+    def __init__(self, parent, action):
+        super(FloatPairActionWidget, self).__init__(parent, action)
+
+        layout = QHBoxLayout()
+        self._left = QDoubleSpinBox()
+        self._right = QDoubleSpinBox()
+        layout.addWidget(self._left)
+        layout.addWidget(self._right)
+        self.setLayout(layout)
+
+    def value(self):
+        return (self._left.value(), self._right.value())
+
+
 class DefaultActionWidget(ActionWidget, QLineEdit):
 
     def __init__(self, parent, action):
@@ -1309,8 +1325,27 @@ class DefaultActionWidget(ActionWidget, QLineEdit):
 
         print(action, action.type, action.const)
 
+    def value(self):
+        return self.text()
+
+
+class MultiValWidget(ActionWidget, QWidget):
+
+    def __init__(self, parent, action, subwidget=None):
+        super(MultiValWidget, self).__init__(parent, action)
+
+        self._widget = subwidget or DefaultActionWidget
+
 
 class SettingsWidget(QScrollArea):
+
+    _widget_type_map = {int: IntActionWidget,
+                        float: FloatActionWidget,
+                        util.float_pair: FloatPairActionWidget,
+                        util.comma_list: DefaultActionWidget,
+                        util.keyval: DefaultActionWidget,
+                        str: DefaultActionWidget,
+                        None: DefaultActionWidget}
 
     def __init__(self, parent, options, compact=False):
         super(SettingsWidget, self).__init__(parent)
@@ -1339,12 +1374,21 @@ class SettingsWidget(QScrollArea):
             return BooleanActionWidget(self, action)
 
         cn = action.__class__.__name__
+        widget = self._widget_type_map[action.type]
         if cn == "_StoreAction":
-            if action.type == int:
-                return IntActionWidget(self, action)
-            elif action.type == float:
-                return FloatActionWidget(self, action)
-        return DefaultActionWidget(self, action)
+            return widget(self, action)
+        elif cn == "_AppendAction":
+            return widget(self, action)
+
+    def widget_iter(self):
+        for i in range(self._layout.rowCount()):
+            itm = self._layout.itemAt(i, QFormLayout.FieldRole)
+            if itm and not itm.isEmpty():
+                yield itm.widget()
+
+    def value_iter(self):
+        for w in self.widget_iter():
+            yield (w.key(), w.value())
 
 
 class ResultsetStore(object):
