@@ -653,8 +653,12 @@ class Settings(argparse.Namespace):
         object.__setattr__(self, k, v)
 
     def update(self, values):
+        updated = False
         for k, v in list(values.items()):
-            setattr(self, k, v)
+            if not hasattr(self, k) or getattr(self, k) != v:
+                updated = True
+                setattr(self, k, v)
+        return updated
 
     def items(self):
         return self.__dict__.items()
