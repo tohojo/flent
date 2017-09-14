@@ -1268,8 +1268,6 @@ class MetadataView(QTreeView):
 
 class ActionWidget(object):
 
-    value_changed = pyqtSignal()
-
     def __init__(self, parent, action, default=None):
         self.action = action
         self.default = default
@@ -1282,6 +1280,8 @@ class ActionWidget(object):
 
 
 class BooleanActionWidget(ActionWidget, QComboBox):
+
+    value_changed = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super(BooleanActionWidget, self).__init__(*args, **kwargs)
@@ -1326,10 +1326,12 @@ class NoneSpinBoxMixin(object):
 
 
 class NoneDoubleSpinBox(NoneSpinBoxMixin, QDoubleSpinBox):
-    pass
+    value_changed = pyqtSignal()
 
 
 class IntActionWidget(ActionWidget, NoneSpinBoxMixin, QSpinBox):
+
+    value_changed = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super(IntActionWidget, self).__init__(*args, **kwargs)
@@ -1349,6 +1351,8 @@ class IntActionWidget(ActionWidget, NoneSpinBoxMixin, QSpinBox):
 
 class FloatActionWidget(ActionWidget, NoneSpinBoxMixin, QDoubleSpinBox):
 
+    value_changed = pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         super(FloatActionWidget, self).__init__(*args, **kwargs)
 
@@ -1365,6 +1369,8 @@ class FloatActionWidget(ActionWidget, NoneSpinBoxMixin, QDoubleSpinBox):
 
 
 class PairActionWidget(ActionWidget, QWidget):
+
+    value_changed = pyqtSignal()
 
     def __init__(self, parent, action, widget=QLineEdit, **kwargs):
         super(PairActionWidget, self).__init__(parent, action, **kwargs)
@@ -1393,6 +1399,8 @@ class PairActionWidget(ActionWidget, QWidget):
 
 class FloatPairActionWidget(PairActionWidget):
 
+    value_changed = pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         kwargs["widget"] = NoneDoubleSpinBox
         super(FloatPairActionWidget, self).__init__(*args, **kwargs)
@@ -1419,6 +1427,8 @@ class FloatPairActionWidget(PairActionWidget):
 
 class TextActionWidget(ActionWidget, QLineEdit):
 
+    value_changed = pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         super(TextActionWidget, self).__init__(*args, **kwargs)
 
@@ -1438,6 +1448,7 @@ class AddRemoveWidget(QWidget):
 
     add_pressed = pyqtSignal()
     remove_pressed = pyqtSignal('QWidget')
+    value_changed = pyqtSignal()
 
     def __init__(self, parent, subwidget):
         super(AddRemoveWidget, self).__init__(parent)
@@ -1472,6 +1483,8 @@ class AddRemoveWidget(QWidget):
 
 
 class MultiValWidget(ActionWidget, QWidget):
+
+    value_changed = pyqtSignal()
 
     def __init__(self, *args,
                  widget=TextActionWidget, combiner_func=list, **kwargs):
