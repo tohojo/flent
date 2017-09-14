@@ -1557,6 +1557,8 @@ class SettingsWidget(QScrollArea):
         self._layout = QFormLayout()
 
         for a in options._group_actions:
+            if getattr(a, "hide_gui", False):
+                continue
             wdgt = self._action_widget(a, getattr(settings, a.dest))
             wdgt.value_changed.connect(self.values_changed)
             self._layout.addRow(self._action_name(a), wdgt)

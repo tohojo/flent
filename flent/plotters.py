@@ -293,7 +293,7 @@ def add_plotting_args(parser):
         "points by this value. Can be specified multiple times, in which case "
         "each value corresponds to a data series.")
 
-    parser.add_argument(
+    a = parser.add_argument(
         "--scale-data",
         action="append", type=unicode, dest="SCALE_DATA", default=[],
         help="Extra scale data. Additional data files to consider when scaling "
@@ -302,6 +302,7 @@ def add_plotting_args(parser):
         "only the first data set, but with axis scaling taking into account the "
         "additional data sets. Can be supplied multiple times; see also "
         "--scale-mode.")
+    a.hide_gui = True
 
     parser.add_argument(
         "-S", "--scale-mode",
@@ -338,13 +339,13 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--no-annotation",
         action="store_false", dest="ANNOTATE",
-        help="Exclude annotation. Exclude annotation with hostnames, time and test length from "
+        help="Hide annotation. Exclude annotation with hostnames, time and test length from "
         "plots.")
 
     parser.add_argument(
         "--no-title",
         action="store_false", dest="PRINT_TITLE",
-        help="Exclude title from plots.")
+        help="Hide plot title.")
 
     parser.add_argument(
         "--override-title",
@@ -365,13 +366,14 @@ def add_plotting_args(parser):
         help="Override group_by attribute. This changes the way combination plots are "
         "created by overriding the function that is used to combine several data series into one.")
 
-    parser.add_argument(
+    a = parser.add_argument(
         "--combine-save-dir",
         action="store", type=unicode, dest="COMBINE_SAVE_DIR",
         metavar="DIRNAME",
         help="Save intermediate combination data. When doing a combination plot "
         "save the intermediate data to DIRNAME. This can then be used for subsequent "
         "plotting to avoid having to load all the source data files again on each plot.")
+    a.hide_gui = True
 
     parser.add_argument(
         "--split-group",
@@ -390,12 +392,12 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--no-legend",
         action="store_false", dest="PRINT_LEGEND",
-        help="Exclude legend from plots.")
+        help="Hide plot legend.")
 
     parser.add_argument(
         "--no-labels",
         action="store_false", dest="PRINT_LABELS",
-        help="Exclude labels from plots.")
+        help="Hide plot labels.")
 
     parser.add_argument(
         "--horizontal-legend",
@@ -460,22 +462,25 @@ def add_plotting_args(parser):
         help="Replace legend text. Replaces 'src' with 'dst' in legends. Can be specified "
         "multiple times.")
 
-    parser.add_argument(
+    a = parser.add_argument(
         "--figure-width", "--fig-width",
         action="store", type=float, dest="FIG_WIDTH", default=6.4,
         help="Figure width in inches. Used when saving plots to file and for "
         "default size of the interactive plot window.")
+    a.hide_gui = True
 
-    parser.add_argument(
+    a = parser.add_argument(
         "--figure-height", "--fig-height",
         action="store", type=float, dest="FIG_HEIGHT", default=4.8,
         help="Figure height in inches. Used when saving plots to file and for "
         "default size of the interactive plot window.")
+    a.hide_gui = True
 
-    parser.add_argument(
+    a = parser.add_argument(
         "--figure-dpi", "--fig-dpi",
         action="store", type=float, dest="FIG_DPI", default=100,
         help="Figure DPI. Used when saving plots to raster format files.")
+    a.hide_gui = True
 
     parser.add_argument(
         "--figure-note", "--fig-note",
@@ -483,11 +488,12 @@ def add_plotting_args(parser):
         help="Figure note. Will be added to the bottom-left corner of the "
         "figure.")
 
-    parser.add_argument(
+    a = parser.add_argument(
         "--no-matplotlibrc",
         action="store_false", dest="LOAD_MATPLOTLIBRC",
         help="Don't use included matplotlib styles. Use this if you have "
         "configured custom matplotlib styles that you want Flent to use.")
+    a.hide_gui = True
 
     parser.add_argument(
         "--no-hover-highlight",
