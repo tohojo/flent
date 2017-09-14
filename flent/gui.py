@@ -1522,9 +1522,10 @@ class MultiValWidget(ActionWidget, QWidget):
                 self.layout().itemAt(count - 2).widget().set_add_button(True)
             self.layout().removeWidget(widget)
             widget.deleteLater()
-            self.value_changed.emit()
         else:
             self.layout().itemAt(0).widget().clear()
+
+        self.value_changed.emit()
 
     def value_iter(self):
         for i in range(self.layout().count()):
