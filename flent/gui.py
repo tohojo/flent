@@ -156,6 +156,7 @@ FILE_SELECTOR_STRING += ";;All files (*.*)"
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "flent-socket-"
 SOCKET_DIR = tempfile.gettempdir()
+WINDOW_STATE_VERSION = 1
 
 ABOUT_TEXT = """<p>Flent version {version}.<br>
 Copyright &copy; 2017 Toke Høiland-Jørgensen and contributors.<br>
@@ -434,20 +435,33 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if hasattr(geom, 'toByteArray'):
                 geom = geom.toByteArray()
             self.restoreGeometry(geom)
+
         if settings.contains("mainwindow/windowState"):
             winstate = settings.value("mainwindow/windowState")
             if hasattr(winstate, 'toByteArray'):
                 winstate = winstate.toByteArray()
-            self.restoreState(winstate)
-            self.metadata_visibility()
-            self.plot_visibility()
-            self.plot_settings_visibility()
-            self.open_files_visibility()
+
+            version = settings.value("mainwindow/windowStateVersion", 0)
+            if hasattr(version, "toInt"):
+                version = version.toInt()[0]
+            version = int(version)
+
+            if version == WINDOW_STATE_VERSION:
+                self.restoreState(winstate)
+                self.metadata_visibility()
+                self.plot_visibility()
+                self.plot_settings_visibility()
+                self.open_files_visibility()
+            else:
+                logger.debug("Discarding old window state (version %d!=%d)",
+                             version, WINDOW_STATE_VERSION)
+
         if settings.contains("open_files/columns"):
             value = settings.value("open_files/columns")
             if hasattr(value, 'toString'):
                 value = value.toString()
             self.open_files.restore_columns(value)
+
         if settings.contains("open_files/column_order"):
             value = settings.value("open_files/column_order")
             if hasattr(value, 'toByteArray'):
@@ -465,6 +479,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         settings = QSettings("Flent", "GUI")
         settings.setValue("mainwindow/geometry", self.saveGeometry())
         settings.setValue("mainwindow/windowState", self.saveState())
+        settings.setValue("mainwindow/windowStateVersion", WINDOW_STATE_VERSION)
         settings.setValue("open_files/columns", self.open_files.save_columns())
         settings.setValue("open_files/column_order",
                           self.openFilesView.horizontalHeader().saveState())
