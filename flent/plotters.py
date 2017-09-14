@@ -415,6 +415,17 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--legend-placement",
         action="store", type=unicode, dest="LEGEND_PLACEMENT",
+        choices=('best',
+                 'upper right',
+                 'upper left',
+                 'lower left',
+                 'lower right',
+                 'right',
+                 'center left',
+                 'center right',
+                 'lower center',
+                 'upper center',
+                 'center'),
         help="Control legend placement. Enabling this option will place the "
         "legend inside the plot at the specified location. Use 'best' to let "
         "matplotlib decide.")
