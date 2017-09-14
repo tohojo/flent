@@ -1613,21 +1613,21 @@ class SettingsWidget(QScrollArea):
     def __init__(self, parent, options, settings, compact=False):
         super(SettingsWidget, self).__init__(parent)
 
-        self._widget = QWidget(self)
-        self._layout = QFormLayout()
+        widget = QWidget(self)
+        layout = QFormLayout()
 
         for a in options._group_actions:
             if getattr(a, "hide_gui", False):
                 continue
             wdgt = self._action_widget(a, getattr(settings, a.dest))
             wdgt.value_changed.connect(self.values_changed)
-            self._layout.addRow(self._action_name(a), wdgt)
+            layout.addRow(self._action_name(a), wdgt)
 
-        if compact:
-            self._layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
+        layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
+        layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
 
-        self._widget.setLayout(self._layout)
-        self.setWidget(self._widget)
+        widget.setLayout(layout)
+        self.setWidget(widget)
         self.setWidgetResizable(True)
 
     def _action_name(self, action):
@@ -1660,8 +1660,9 @@ class SettingsWidget(QScrollArea):
             raise RuntimeError("Unknown class: %s" % cn)
 
     def widget_iter(self):
-        for i in range(self._layout.rowCount()):
-            itm = self._layout.itemAt(i, QFormLayout.FieldRole)
+        layout = self.widget().layout()
+        for i in range(layout.rowCount()):
+            itm = layout.itemAt(i, QFormLayout.FieldRole)
             if itm and itm.widget():
                 yield i, itm.widget()
 
