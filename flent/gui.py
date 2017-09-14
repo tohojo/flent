@@ -1476,6 +1476,8 @@ class TextActionWidget(ActionWidget, QLineEdit):
         self.clear()
         self.editingFinished.connect(self.value_changed)
 
+        self.setMinimumSize(self.sizeHint())
+
     def value(self):
         if not self.text():
             return None
