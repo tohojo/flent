@@ -1269,14 +1269,26 @@ class MetadataView(QTreeView):
 class ActionWidget(object):
 
     def __init__(self, parent, action, default=None):
+        super(ActionWidget, self).__init__(parent)
+
         self.action = action
         self.default = default
-        super(ActionWidget, self).__init__(parent)
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.value_changed)
+        self.value_changed.connect(self.timer.stop)
+        self.connect_timer(self)
 
         self.setToolTip(action.help.split(".", 1)[1].strip())
 
     def key(self):
         return self.action.dest
+
+    def connect_timer(self, widget):
+        for p in "valueChanged", "textChanged":
+            if hasattr(widget, p):
+                getattr(widget, p).connect(self.timer.start)
 
 
 class BooleanActionWidget(ActionWidget, QComboBox):
@@ -1386,6 +1398,9 @@ class PairActionWidget(ActionWidget, QWidget):
 
         self._left.editingFinished.connect(self.value_changed)
         self._right.editingFinished.connect(self.value_changed)
+
+        self.connect_timer(self._left)
+        self.connect_timer(self._right)
 
     def value(self):
         if self._left.text() or self._right.text():
