@@ -781,6 +781,12 @@ class Plotter(ArgParam):
         bboxes = set()
 
         for ax in reduce(lambda x, y: x + y, [i['axes'] for i in self.configs]):
+
+            # If the bbox has negative width or height abort rather than crash
+            # when trying to copy its content below
+            if ax.bbox.width < 0 or ax.bbox.height < 0:
+                return
+
             # If we don't have a background cache this is the first time we are
             # called after a redraw, so no modifications to artists have been
             # made. Hence, we just cache the background now.
