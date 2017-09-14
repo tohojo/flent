@@ -1298,7 +1298,7 @@ class BooleanActionWidget(ActionWidget, QComboBox):
     def __init__(self, *args, **kwargs):
         super(BooleanActionWidget, self).__init__(*args, **kwargs)
 
-        self.insertItems(0, ["Disabled", "Enabled"])
+        self.addItems(["Disabled", "Enabled"])
         self.currentIndexChanged.connect(self.value_changed)
         self.clear()
 
@@ -1312,6 +1312,30 @@ class BooleanActionWidget(ActionWidget, QComboBox):
             self.setCurrentIndex(int(self.action.const == self.default))
         else:
             self.setCurrentIndex(int(not self.action.const))
+
+
+class ChoicesActionWidget(ActionWidget, QComboBox):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(ChoicesActionWidget, self).__init__(*args, **kwargs)
+
+        self.addItem("Unset")
+        for itm in self.action.choices:
+            self.addItem(itm, itm)
+
+        self.currentIndexChanged.connect(self.value_changed)
+        self.clear()
+
+    def value(self):
+        return self.itemData(self.currentIndex())
+
+    def clear(self):
+        if self.default:
+            self.setCurrentIndex(self.findData(self.default))
+        else:
+            self.setCurrentIndex(0)
 
 
 class NoneSpinBoxMixin(object):
@@ -1608,11 +1632,15 @@ class SettingsWidget(QScrollArea):
             return BooleanActionWidget(self, action, default=default)
 
         cn = action.__class__.__name__
-        try:
-            widget = self._widget_type_map[action.type]
-        except KeyError:
-            raise RuntimeError("Unknown type %s for option %s" % (
-                action.type, action.dest))
+        if action.choices:
+            widget = ChoicesActionWidget
+        else:
+            try:
+                widget = self._widget_type_map[action.type]
+            except KeyError:
+                raise RuntimeError("Unknown type %s for option %s" % (
+                    action.type, action.dest))
+
         if cn == "_StoreAction":
             return widget(self, action, default=default)
         elif cn == "_AppendAction":
