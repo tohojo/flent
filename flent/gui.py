@@ -1322,18 +1322,20 @@ class ChoicesActionWidget(ActionWidget, QComboBox):
         super(ChoicesActionWidget, self).__init__(*args, **kwargs)
 
         self.addItem("Unset")
-        for itm in self.action.choices:
-            self.addItem(itm, itm)
+        self.addItems(self.action.choices)
 
         self.currentIndexChanged.connect(self.value_changed)
         self.clear()
 
     def value(self):
-        return self.itemData(self.currentIndex())
+        idx = self.currentIndex()
+        if idx == 0:
+            return None
+        return self.action.choices[idx-1]
 
     def clear(self):
         if self.default:
-            self.setCurrentIndex(self.findData(self.default))
+            self.setCurrentIndex(self.action.choices.index(self.default)+1)
         else:
             self.setCurrentIndex(0)
 
@@ -1480,7 +1482,7 @@ class TextActionWidget(ActionWidget, QLineEdit):
         return self.text()
 
     def clear(self):
-        self.setText(self.default or None)
+        self.setText(self.default or "")
 
 
 class AddRemoveWidget(QWidget):
@@ -1525,8 +1527,14 @@ class MultiValWidget(ActionWidget, QWidget):
 
     value_changed = pyqtSignal()
 
-    def __init__(self, *args,
-                 widget=TextActionWidget, combiner_func=list, **kwargs):
+    def __init__(self, *args, **kwargs):
+        widget = kwargs.get("widget", TextActionWidget)
+        combiner_func = kwargs.get("combiner_func", list)
+
+        for k in 'widget', 'combiner_func':
+            if k in kwargs:
+                del kwargs[k]
+
         super(MultiValWidget, self).__init__(*args, **kwargs)
 
         self._widget_class = widget
