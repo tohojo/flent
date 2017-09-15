@@ -338,29 +338,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.logEntriesDock.visibilityChanged.connect(self.log_entries_visibility)
         self.expandButton.clicked.connect(self.metadata_column_resize)
 
-        # Set initial value of checkboxes from settings
-        self.checkZeroY.setChecked(self.settings.ZERO_Y)
-        self.checkInvertY.setChecked(self.settings.INVERT_Y)
-        self.checkLogScale.setChecked(self.settings.LOG_SCALE)
-        self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
-        self.checkSubplotCombine.setChecked(self.settings.SUBPLOT_COMBINE)
-        self.checkAnnotation.setChecked(self.settings.ANNOTATE)
-        self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
-        self.checkTitle.setChecked(self.settings.PRINT_TITLE)
-        self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
         self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT)
         self.checkDebugLog.setChecked(loggers.out_handler.level == loggers.DEBUG)
         self.checkExceptionLog.setChecked(self.settings.DEBUG_ERROR)
 
-        self.checkZeroY.toggled.connect(self.update_checkboxes)
-        self.checkInvertY.toggled.connect(self.update_checkboxes)
-        self.checkLogScale.toggled.connect(self.update_checkboxes)
-        self.checkScaleMode.toggled.connect(self.update_checkboxes)
-        self.checkSubplotCombine.toggled.connect(self.update_checkboxes)
-        self.checkAnnotation.toggled.connect(self.update_checkboxes)
-        self.checkLegend.toggled.connect(self.update_checkboxes)
-        self.checkTitle.toggled.connect(self.update_checkboxes)
-        self.checkFilterLegend.toggled.connect(self.update_checkboxes)
         self.checkHighlight.toggled.connect(self.update_checkboxes)
         self.checkDebugLog.toggled.connect(self.update_checkboxes)
         self.checkExceptionLog.toggled.connect(self.update_checkboxes)
@@ -522,15 +503,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for i in range(self.viewArea.count()):
             widget = self.viewArea.widget(i)
             if widget is not None:
-                widget.zero_y(self.checkZeroY.isChecked())
-                widget.invert_y(self.checkInvertY.isChecked())
-                widget.log_scale(self.checkLogScale.isChecked())
-                widget.scale_mode(self.checkScaleMode.isChecked())
-                widget.subplot_combine(self.checkSubplotCombine.isChecked())
-                widget.draw_annotation(self.checkAnnotation.isChecked())
-                widget.draw_legend(self.checkLegend.isChecked())
-                widget.draw_title(self.checkTitle.isChecked())
-                widget.filter_legend(self.checkFilterLegend.isChecked())
                 widget.highlight(self.checkHighlight.isChecked())
 
         self.log_settings(self.checkDebugLog.isChecked(),
@@ -2233,60 +2205,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def save_plot(self):
         if self.can_save:
             self.toolbar.save_figure()
-
-    def zero_y(self, val=None):
-        if val is not None and val != self.settings.ZERO_Y:
-            self.settings.ZERO_Y = val
-            self.update()
-        return self.settings.ZERO_Y
-
-    def invert_y(self, val=None):
-        if val is not None and val != self.settings.INVERT_Y:
-            self.settings.INVERT_Y = val
-            self.update()
-        return self.settings.INVERT_Y
-
-    def log_scale(self, val=None):
-        if val is not None and val != self.settings.LOG_SCALE:
-            self.settings.LOG_SCALE = val
-            self.update()
-        return self.settings.LOG_SCALE
-
-    def scale_mode(self, val=None):
-        if val is not None and val != self.settings.SCALE_MODE:
-            self.settings.SCALE_MODE = val
-            self.update()
-        return self.settings.SCALE_MODE
-
-    def subplot_combine(self, val=None):
-        if val is not None and val != self.settings.SUBPLOT_COMBINE:
-            self.settings.SUBPLOT_COMBINE = val
-            self.update()
-        return self.settings.SUBPLOT_COMBINE
-
-    def draw_annotation(self, val=None):
-        if val is not None and val != self.settings.ANNOTATE:
-            self.settings.ANNOTATE = val
-            self.update()
-        return self.settings.ANNOTATE
-
-    def draw_legend(self, val=None):
-        if val is not None and val != self.settings.PRINT_LEGEND:
-            self.settings.PRINT_LEGEND = val
-            self.update()
-        return self.settings.PRINT_LEGEND
-
-    def draw_title(self, val=None):
-        if val is not None and val != self.settings.PRINT_TITLE:
-            self.settings.PRINT_TITLE = val
-            self.update()
-        return self.settings.PRINT_TITLE
-
-    def filter_legend(self, val=None):
-        if val is not None and val != self.settings.FILTER_LEGEND:
-            self.settings.FILTER_LEGEND = val
-            self.update()
-        return self.settings.FILTER_LEGEND
 
     def highlight(self, val=None):
         if val is not None and val != self.settings.HOVER_HIGHLIGHT:

@@ -94,21 +94,7 @@
     <property name="title">
      <string>&amp;Settings</string>
     </property>
-    <addaction name="checkZeroY"/>
-    <addaction name="checkInvertY"/>
-    <addaction name="checkLogScale"/>
-    <addaction name="separator"/>
-    <addaction name="checkScaleMode"/>
-    <addaction name="checkSubplotCombine"/>
-    <addaction name="separator"/>
-    <addaction name="checkAnnotation"/>
-    <addaction name="checkTitle"/>
-    <addaction name="checkLegend"/>
-    <addaction name="separator"/>
-    <addaction name="checkFilterLegend"/>
-    <addaction name="separator"/>
     <addaction name="checkHighlight"/>
-    <addaction name="separator"/>
     <addaction name="checkDebugLog"/>
     <addaction name="checkExceptionLog"/>
    </widget>
@@ -135,7 +121,7 @@
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
-    <string>Select plot</string>
+    <string>Sele&amp;ct plot</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -196,7 +182,7 @@
   </widget>
   <widget class="QDockWidget" name="plotSettingsDock">
    <property name="windowTitle">
-    <string>Plot settings</string>
+    <string>Plot settin&amp;gs</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
