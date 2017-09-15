@@ -1295,7 +1295,9 @@ class ActionWidget(object):
         self.value_changed.connect(self.timer.stop)
         self.connect_timer(self)
 
-        self.setToolTip(action.help.split(".", 1)[1].strip())
+        help = getattr(action, "gui_help", getattr(action, "help", ""))
+        if "." in help:
+            self.setToolTip(help.split(".", 1)[1].strip())
 
     def key(self):
         return self.action.dest
@@ -1318,13 +1320,15 @@ class BooleanActionWidget(ActionWidget, QComboBox):
         self.clear()
 
     def value(self):
-        # These can be store_true as well as store_false actions, so set the
-        # actual boolean of the derived variable depends on the default
-        return self.currentIndex() == int(self.action.const)
+        # This always shows boolean options (store_true and store_false) as
+        # their actual boolean values, not the possible reversed ones. Only
+        # works right if store_false options has a gui_help that fits to this
+        # usage (or the help text will not make sense).
+        return bool(self.currentIndex())
 
     def clear(self):
         if self.default:
-            self.setCurrentIndex(int(self.action.const == self.default))
+            self.setCurrentIndex(int(self.default))
         else:
             self.setCurrentIndex(int(not self.action.const))
 
@@ -1648,7 +1652,9 @@ class SettingsWidget(QScrollArea):
         self.setWidgetResizable(True)
 
     def _action_name(self, action):
-        if hasattr(action, "help"):
+        if hasattr(action, "gui_help"):
+            return action.gui_help.split(".")[0]
+        elif hasattr(action, "help"):
             return action.help.split(".")[0]
         return action.option_strings[-1]
 

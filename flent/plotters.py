@@ -232,6 +232,19 @@ def get_plotter(plot_type):
 
 
 def add_plotting_args(parser):
+    # Convenience helper functions to modify actions after they are defined.
+    # Prevents us from having to assign the return value of the add_argument
+    # calls below and modify it afterwards.
+    def hide_gui(a):
+        "Prevents action from being shown in the GUI option editor."
+        a.hide_gui = True
+        return a
+
+    def gui_help(a, help):
+        "Adds a second help text that takes precedence in the GUI editor."
+        a.gui_help = help
+        return a
+
     parser.add_argument(
         "-z", "--zero-y",
         action="store_true", dest="ZERO_Y",
@@ -293,7 +306,7 @@ def add_plotting_args(parser):
         "points by this value. Can be specified multiple times, in which case "
         "each value corresponds to a data series.")
 
-    a = parser.add_argument(
+    hide_gui(parser.add_argument(
         "--scale-data",
         action="append", type=unicode, dest="SCALE_DATA", default=[],
         help="Extra scale data. Additional data files to consider when scaling "
@@ -301,8 +314,7 @@ def add_plotting_args(parser):
         "(for plotting several plots with identical axes). Note, this displays "
         "only the first data set, but with axis scaling taking into account the "
         "additional data sets. Can be supplied multiple times; see also "
-        "--scale-mode.")
-    a.hide_gui = True
+        "--scale-mode."))
 
     parser.add_argument(
         "-S", "--scale-mode",
@@ -331,21 +343,26 @@ def add_plotting_args(parser):
         "subplot instead of combining them into one plot (not supported for all "
         "plot types).")
 
-    parser.add_argument(
+    gui_help(parser.add_argument(
         "--no-print-n",
         action="store_false", dest="COMBINE_PRINT_N",
-        help="No N values. Do not print the number of data points on combined plots.")
+        help="No N values. Do not print the number of data points on combined plots."),
+             "Print N values. Whether to print the number of data points used "
+             "for combination plots."
+    )
 
-    parser.add_argument(
+    gui_help(parser.add_argument(
         "--no-annotation",
         action="store_false", dest="ANNOTATE",
         help="Hide annotation. Exclude annotation with hostnames, time and test length from "
+        "plots."),
+             "Show annotation. Show annotation with hostnames, time and test length on "
         "plots.")
 
-    parser.add_argument(
+    gui_help(parser.add_argument(
         "--no-title",
         action="store_false", dest="PRINT_TITLE",
-        help="Hide plot title.")
+        help="Hide plot title."), "Show plot title.")
 
     parser.add_argument(
         "--override-title",
@@ -383,21 +400,22 @@ def add_plotting_args(parser):
         "times to define the new groups. The value of each option is the "
         "group name. This only works for box plots.")
 
-    parser.add_argument(
+    gui_help(parser.add_argument(
         "--no-markers",
         action="store_false", dest="USE_MARKERS",
         help="No line markers. Don't use line markers to differentiate data "
-        "series on plots.")
+        "series on plots."), "Use line markers. Whether to use line markers "
+             "(in addition to line style) to differentiate data series on plots")
 
-    parser.add_argument(
+    gui_help(parser.add_argument(
         "--no-legend",
         action="store_false", dest="PRINT_LEGEND",
-        help="Hide plot legend.")
+        help="Hide plot legend."), "Show plot legend.")
 
-    parser.add_argument(
+    gui_help(parser.add_argument(
         "--no-labels",
         action="store_false", dest="PRINT_LABELS",
-        help="Hide plot labels.")
+        help="Hide plot labels."), "Show plot labels.")
 
     parser.add_argument(
         "--horizontal-legend",
@@ -473,25 +491,22 @@ def add_plotting_args(parser):
         help="Replace legend text. Replaces 'src' with 'dst' in legends. Can be specified "
         "multiple times.")
 
-    a = parser.add_argument(
+    hide_gui(parser.add_argument(
         "--figure-width", "--fig-width",
         action="store", type=float, dest="FIG_WIDTH", default=6.4,
         help="Figure width in inches. Used when saving plots to file and for "
-        "default size of the interactive plot window.")
-    a.hide_gui = True
+        "default size of the interactive plot window."))
 
-    a = parser.add_argument(
+    hide_gui(parser.add_argument(
         "--figure-height", "--fig-height",
         action="store", type=float, dest="FIG_HEIGHT", default=4.8,
         help="Figure height in inches. Used when saving plots to file and for "
-        "default size of the interactive plot window.")
-    a.hide_gui = True
+        "default size of the interactive plot window."))
 
-    a = parser.add_argument(
+    hide_gui(parser.add_argument(
         "--figure-dpi", "--fig-dpi",
         action="store", type=float, dest="FIG_DPI", default=100,
-        help="Figure DPI. Used when saving plots to raster format files.")
-    a.hide_gui = True
+        help="Figure DPI. Used when saving plots to raster format files."))
 
     parser.add_argument(
         "--figure-note", "--fig-note",
@@ -499,20 +514,19 @@ def add_plotting_args(parser):
         help="Figure note. Will be added to the bottom-left corner of the "
         "figure.")
 
-    a = parser.add_argument(
+    hide_gui(parser.add_argument(
         "--no-matplotlibrc",
         action="store_false", dest="LOAD_MATPLOTLIBRC",
         help="Don't use included matplotlib styles. Use this if you have "
-        "configured custom matplotlib styles that you want Flent to use.")
-    a.hide_gui = True
+        "configured custom matplotlib styles that you want Flent to use."))
 
-    parser.add_argument(
+    hide_gui(parser.add_argument(
         "--no-hover-highlight",
         action="store_false", dest="HOVER_HIGHLIGHT", default=None,
         help="Don't highlight on hover. This disables highlighting of hovered "
         "data series in interactive plot views. "
         "Use this if redrawing is too slow, or the highlighting is undesired "
-        "for other reasons.")
+        "for other reasons."))
 
     parser.add_argument(
         "--fallback-layout",
