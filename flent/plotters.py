@@ -476,24 +476,26 @@ def add_plotting_args(parser):
         "top of the plot).")
 
     parser.add_argument(
-        "--override-group-by",
-        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
-        help="Override group_by attribute. This changes the way combination plots are "
-        "created by overriding the function that is used to combine several data series into one.")
-
-    parser.add_argument(
         "--colours",
         action="store", dest="COLOURS", type=comma_list, default=COLOURS,
         help="Override plot colours. Specify a comma-separated list of colours "
         "to be used for the plot colour cycle.")
+
+    parser.add_argument(
+        "--override-group-by",
+        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
+        help="Override group_by attribute. This changes the way combination "
+        "plots are created by overriding the function that is used to combine "
+        "several data series into one.")
 
     hide_gui(parser.add_argument(
         "--combine-save-dir",
         action="store", type=unicode, dest="COMBINE_SAVE_DIR",
         metavar="DIRNAME",
         help="Save intermediate combination data. When doing a combination plot "
-        "save the intermediate data to DIRNAME. This can then be used for subsequent "
-        "plotting to avoid having to load all the source data files again on each plot."))
+        "save the intermediate data to DIRNAME. This can then be used for "
+        "subsequent plotting to avoid having to load all the source data files "
+        "again on each plot."))
 
     hide_gui(parser.add_argument(
         "--figure-width", "--fig-width",
@@ -544,7 +546,6 @@ def add_plotting_args(parser):
         "only the first data set, but with axis scaling taking into account the "
         "additional data sets. Can be supplied multiple times; see also "
         "--scale-mode."))
-
 
     return parser
 
