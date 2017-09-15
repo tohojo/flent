@@ -34,6 +34,7 @@ try:
 except ImportError:
     import pickle
 
+from argparse import SUPPRESS
 from datetime import datetime
 from itertools import chain
 from multiprocessing import Pool, Queue
@@ -43,7 +44,7 @@ from flent.build_info import DATA_DIR, VERSION
 from flent.loggers import get_logger, add_log_handler, remove_log_handler, \
     set_queue_handler
 from flent.resultset import ResultSet
-from flent.settings import ListTests, new as new_settings
+from flent.settings import ListTests, new as new_settings, plot_group
 
 logger = get_logger(__name__)
 
@@ -87,10 +88,12 @@ try:
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
-        QVBoxLayout, QApplication, QPlainTextEdit
+        QFormLayout, QHBoxLayout, QVBoxLayout, QApplication, QPlainTextEdit, \
+        QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea, \
+        QPushButton
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
-        QResizeEvent, QDesktopServices
+        QResizeEvent, QDesktopServices, QValidator
 
     from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -110,9 +113,11 @@ except ImportError:
 
         from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
             QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
-            QHeaderView, QVBoxLayout, QItemSelectionModel, QMouseEvent, \
-            QApplication, QStringListModel, QKeySequence, QResizeEvent, \
-            QPlainTextEdit, QDesktopServices
+            QHeaderView, QFormLayout, QHBoxLayout, QVBoxLayout, \
+            QItemSelectionModel, QMouseEvent, QApplication, QStringListModel, \
+            QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
+            QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea,\
+            QPushButton, QValidator
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -152,6 +157,7 @@ FILE_SELECTOR_STRING += ";;All files (*.*)"
 # IPC socket parameters
 SOCKET_NAME_PREFIX = "flent-socket-"
 SOCKET_DIR = tempfile.gettempdir()
+WINDOW_STATE_VERSION = 1
 
 ABOUT_TEXT = """<p>Flent version {version}.<br>
 Copyright &copy; 2017 Toke Høiland-Jørgensen and contributors.<br>
@@ -328,33 +334,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
+        self.plotSettingsDock.visibilityChanged.connect(self.plot_settings_visibility)
         self.openFilesDock.visibilityChanged.connect(self.open_files_visibility)
         self.logEntriesDock.visibilityChanged.connect(self.log_entries_visibility)
         self.expandButton.clicked.connect(self.metadata_column_resize)
 
-        # Set initial value of checkboxes from settings
-        self.checkZeroY.setChecked(self.settings.ZERO_Y)
-        self.checkInvertY.setChecked(self.settings.INVERT_Y)
-        self.checkLogScale.setChecked(self.settings.LOG_SCALE)
-        self.checkScaleMode.setChecked(self.settings.SCALE_MODE)
-        self.checkSubplotCombine.setChecked(self.settings.SUBPLOT_COMBINE)
-        self.checkAnnotation.setChecked(self.settings.ANNOTATE)
-        self.checkLegend.setChecked(self.settings.PRINT_LEGEND)
-        self.checkTitle.setChecked(self.settings.PRINT_TITLE)
-        self.checkFilterLegend.setChecked(self.settings.FILTER_LEGEND)
         self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT)
         self.checkDebugLog.setChecked(loggers.out_handler.level == loggers.DEBUG)
         self.checkExceptionLog.setChecked(self.settings.DEBUG_ERROR)
 
-        self.checkZeroY.toggled.connect(self.update_checkboxes)
-        self.checkInvertY.toggled.connect(self.update_checkboxes)
-        self.checkLogScale.toggled.connect(self.update_checkboxes)
-        self.checkScaleMode.toggled.connect(self.update_checkboxes)
-        self.checkSubplotCombine.toggled.connect(self.update_checkboxes)
-        self.checkAnnotation.toggled.connect(self.update_checkboxes)
-        self.checkLegend.toggled.connect(self.update_checkboxes)
-        self.checkTitle.toggled.connect(self.update_checkboxes)
-        self.checkFilterLegend.toggled.connect(self.update_checkboxes)
         self.checkHighlight.toggled.connect(self.update_checkboxes)
         self.checkDebugLog.toggled.connect(self.update_checkboxes)
         self.checkExceptionLog.toggled.connect(self.update_checkboxes)
@@ -362,6 +350,8 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.tabifyDockWidget(self.openFilesDock, self.metadataDock)
         self.tabifyDockWidget(self.openFilesDock, self.logEntriesDock)
         self.openFilesDock.raise_()
+        self.tabifyDockWidget(self.plotDock, self.plotSettingsDock)
+        self.plotDock.raise_()
         self.open_files = OpenFilesModel(self)
         self.openFilesView = OpenFilesView(self.openFilesDock)
         self.openFilesDock.setWidget(self.openFilesView)
@@ -372,6 +362,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.metadataView.entered.connect(self.update_statusbar)
         self.metadataLayout.insertWidget(0, self.metadataView)
         self.expandButton.clicked.connect(self.metadataView.expandAll)
+
+        self.plotSettingsWidget = SettingsWidget(self, plot_group, settings,
+                                                 compact=True)
+        self.plotSettingsDock.setWidget(self.plotSettingsWidget)
+        self.plotSettingsWidget.values_changed.connect(self.update_settings)
 
         self.logEntries = QPlainTextLogger(self, logging.DEBUG,
                                            statusbar=self.statusBar())
@@ -422,19 +417,33 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             if hasattr(geom, 'toByteArray'):
                 geom = geom.toByteArray()
             self.restoreGeometry(geom)
+
         if settings.contains("mainwindow/windowState"):
             winstate = settings.value("mainwindow/windowState")
             if hasattr(winstate, 'toByteArray'):
                 winstate = winstate.toByteArray()
-            self.restoreState(winstate)
-            self.metadata_visibility()
-            self.plot_visibility()
-            self.open_files_visibility()
+
+            version = settings.value("mainwindow/windowStateVersion", 0)
+            if hasattr(version, "toInt"):
+                version = version.toInt()[0]
+            version = int(version)
+
+            if version == WINDOW_STATE_VERSION:
+                self.restoreState(winstate)
+                self.metadata_visibility()
+                self.plot_visibility()
+                self.plot_settings_visibility()
+                self.open_files_visibility()
+            else:
+                logger.debug("Discarding old window state (version %d!=%d)",
+                             version, WINDOW_STATE_VERSION)
+
         if settings.contains("open_files/columns"):
             value = settings.value("open_files/columns")
             if hasattr(value, 'toString'):
                 value = value.toString()
             self.open_files.restore_columns(value)
+
         if settings.contains("open_files/column_order"):
             value = settings.value("open_files/column_order")
             if hasattr(value, 'toByteArray'):
@@ -452,6 +461,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         settings = QSettings("Flent", "GUI")
         settings.setValue("mainwindow/geometry", self.saveGeometry())
         settings.setValue("mainwindow/windowState", self.saveState())
+        settings.setValue("mainwindow/windowStateVersion", WINDOW_STATE_VERSION)
         settings.setValue("open_files/columns", self.open_files.save_columns())
         settings.setValue("open_files/column_order",
                           self.openFilesView.horizontalHeader().saveState())
@@ -475,6 +485,9 @@ class MainWindow(get_ui_class("mainwindow.ui")):
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
 
+    def plot_settings_visibility(self):
+        self.actionPlotSettings.setChecked(not self.plotSettingsDock.isHidden())
+
     def metadata_visibility(self):
         self.actionMetadata.setChecked(not self.metadataDock.isHidden())
 
@@ -491,15 +504,6 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         for i in range(self.viewArea.count()):
             widget = self.viewArea.widget(i)
             if widget is not None:
-                widget.zero_y(self.checkZeroY.isChecked())
-                widget.invert_y(self.checkInvertY.isChecked())
-                widget.log_scale(self.checkLogScale.isChecked())
-                widget.scale_mode(self.checkScaleMode.isChecked())
-                widget.subplot_combine(self.checkSubplotCombine.isChecked())
-                widget.draw_annotation(self.checkAnnotation.isChecked())
-                widget.draw_legend(self.checkLegend.isChecked())
-                widget.draw_title(self.checkTitle.isChecked())
-                widget.filter_legend(self.checkFilterLegend.isChecked())
                 widget.highlight(self.checkHighlight.isChecked())
 
         self.log_settings(self.checkDebugLog.isChecked(),
@@ -737,6 +741,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if widget.metadataSelectionModel is not None:
             self.metadataView.setSelectionModel(widget.metadataSelectionModel)
         self.update_checkboxes()
+        self.update_settings(widget)
         self.update_save(widget)
         widget.activate()
         self.open_files.set_active_widget(widget)
@@ -746,6 +751,12 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             widget = self.viewArea.currentWidget()
         if widget:
             self.actionSavePlot.setEnabled(widget.can_save)
+
+    def update_settings(self, widget=None):
+        if widget is None:
+            widget = self.viewArea.currentWidget()
+        if widget:
+            widget.update_settings(self.plotSettingsWidget.values())
 
     def update_plots(self, testname, plotname):
         for i in range(self.viewArea.count()):
@@ -1241,6 +1252,422 @@ class MetadataView(QTreeView):
                     logger.exception("Restoring pin '%s' failed: %s.",
                                      ":".join(map(str, pin)), e)
                     break
+
+
+class ActionWidget(object):
+
+    def __init__(self, parent, action, default=None):
+        super(ActionWidget, self).__init__(parent)
+
+        self.action = action
+        self.default = default
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.value_changed)
+        self.value_changed.connect(self.timer.stop)
+        self.connect_timer(self)
+
+        help = getattr(action, "gui_help", getattr(action, "help", ""))
+        if "." in help:
+            self.setToolTip(help.split(".", 1)[1].strip())
+
+    def key(self):
+        return self.action.dest
+
+    def connect_timer(self, widget):
+        for p in "valueChanged", "textChanged":
+            if hasattr(widget, p):
+                getattr(widget, p).connect(self.timer.start)
+
+
+class BooleanActionWidget(ActionWidget, QComboBox):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(BooleanActionWidget, self).__init__(*args, **kwargs)
+
+        self.addItems(["Disabled", "Enabled"])
+        self.currentIndexChanged.connect(self.value_changed)
+        self.clear()
+
+    def value(self):
+        # This always shows boolean options (store_true and store_false) as
+        # their actual boolean values, not the possible reversed ones. Only
+        # works right if store_false options has a gui_help that fits to this
+        # usage (or the help text will not make sense).
+        return bool(self.currentIndex())
+
+    def clear(self):
+        if self.default is not None:
+            self.setCurrentIndex(int(self.default))
+        else:
+            self.setCurrentIndex(int(not self.action.const))
+
+
+class ChoicesActionWidget(ActionWidget, QComboBox):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(ChoicesActionWidget, self).__init__(*args, **kwargs)
+
+        self.addItem("Unset")
+        self.addItems(self.action.choices)
+
+        self.currentIndexChanged.connect(self.value_changed)
+        self.clear()
+
+    def value(self):
+        idx = self.currentIndex()
+        if idx == 0:
+            return None
+        return self.action.choices[idx-1]
+
+    def clear(self):
+        if self.default:
+            self.setCurrentIndex(self.action.choices.index(self.default)+1)
+        else:
+            self.setCurrentIndex(0)
+
+
+class NoneSpinBoxMixin(object):
+
+    def __init__(self, *args, **kwargs):
+        super(NoneSpinBoxMixin, self).__init__(*args, **kwargs)
+        self.setSpecialValueText("Unset")
+
+    def value(self):
+        v = super(NoneSpinBoxMixin, self).value()
+        if v == self.minimum():
+            return None
+        return v
+
+    def valueFromText(self, text):
+        if not text:
+            return self.minimum()
+        return super(NoneSpinBoxMixin, self).valueFromText(text)
+
+    def validate(self, text, pos):
+        if not text:
+            return QValidator.Acceptable, text, pos
+        return super(NoneSpinBoxMixin, self).validate(text, pos)
+
+
+class NoneDoubleSpinBox(NoneSpinBoxMixin, QDoubleSpinBox):
+    value_changed = pyqtSignal()
+
+
+class IntActionWidget(ActionWidget, NoneSpinBoxMixin, QSpinBox):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(IntActionWidget, self).__init__(*args, **kwargs)
+
+        self.setRange(0, 1000)
+        self.clear()
+
+        self.setSpecialValueText("Unset")
+        self.editingFinished.connect(self.value_changed)
+
+    def clear(self):
+        if self.default:
+            self.setValue(self.default)
+        else:
+            self.setValue(self.minimum())
+
+
+class FloatActionWidget(ActionWidget, NoneSpinBoxMixin, QDoubleSpinBox):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(FloatActionWidget, self).__init__(*args, **kwargs)
+
+        self.setRange(0, 1000)
+        self.clear()
+
+        self.editingFinished.connect(self.value_changed)
+
+    def clear(self):
+        if self.default:
+            self.setValue(self.default)
+        else:
+            self.setValue(self.minimum())
+
+
+class PairActionWidget(ActionWidget, QWidget):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, parent, action, widget=QLineEdit, **kwargs):
+        super(PairActionWidget, self).__init__(parent, action, **kwargs)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self._left = widget()
+        self._right = widget()
+        layout.addWidget(self._left)
+        layout.addWidget(self._right)
+        self.setLayout(layout)
+        self.clear()
+
+        self._left.editingFinished.connect(self.value_changed)
+        self._right.editingFinished.connect(self.value_changed)
+
+        self.connect_timer(self._left)
+        self.connect_timer(self._right)
+
+    def value(self):
+        if self._left.text() or self._right.text():
+            return (self._left.text(), self._right.text())
+        return None
+
+    def clear(self):
+        self._left.setText("")
+        self._right.setText("")
+
+
+class FloatPairActionWidget(PairActionWidget):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        kwargs["widget"] = NoneDoubleSpinBox
+        super(FloatPairActionWidget, self).__init__(*args, **kwargs)
+        self._left.setSpecialValueText("Unset")
+        self._left.setRange(-1000, 100000)
+        self._right.setSpecialValueText("Unset")
+        self._right.setRange(-1000, 100000)
+        self.clear()
+
+    def value(self):
+        v = (self._left.value(), self._right.value())
+        if v == (None, None):
+            return None
+        return v
+
+    def clear(self):
+        if self.default:
+            self._left.setValue(self.default[0] or self._left.minimum())
+            self._right.setValue(self.default[1] or self._left.minimum())
+        else:
+            self._left.setValue(self._left.minimum())
+            self._right.setValue(self._left.minimum())
+
+
+class TextActionWidget(ActionWidget, QLineEdit):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(TextActionWidget, self).__init__(*args, **kwargs)
+
+        self.clear()
+        self.editingFinished.connect(self.value_changed)
+
+        self.setMinimumSize(self.sizeHint())
+
+    def value(self):
+        if not self.text():
+            return None
+        return self.text()
+
+    def clear(self):
+        self.setText(self.default or "")
+
+
+class AddRemoveWidget(QWidget):
+
+    add_pressed = pyqtSignal()
+    remove_pressed = pyqtSignal('QWidget')
+    value_changed = pyqtSignal()
+
+    def __init__(self, parent, subwidget):
+        super(AddRemoveWidget, self).__init__(parent)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(subwidget)
+        self._subwidget = subwidget
+        self._add_button = QPushButton("+", self)
+        self._add_button.setFixedSize(20, 20)
+        self._remove_button = QPushButton("-", self)
+        self._remove_button.setFixedSize(20, 20)
+
+        self._remove_button.clicked.connect(self.remove)
+        self._add_button.clicked.connect(self.add_pressed)
+
+        layout.addWidget(self._add_button)
+        layout.addWidget(self._remove_button)
+        self.setLayout(layout)
+
+    def set_add_button(self, visible):
+        self._add_button.setVisible(visible)
+
+    def remove(self):
+        self.remove_pressed.emit(self)
+
+    def clear(self):
+        self._subwidget.clear()
+
+    def value(self):
+        return self._subwidget.value()
+
+
+class MultiValWidget(ActionWidget, QWidget):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        widget = kwargs.get("widget", TextActionWidget)
+        combiner_func = kwargs.get("combiner_func", list)
+
+        for k in 'widget', 'combiner_func':
+            if k in kwargs:
+                del kwargs[k]
+
+        super(MultiValWidget, self).__init__(*args, **kwargs)
+
+        self._widget_class = widget
+        self._combiner_func = combiner_func
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+        for i in range(max(len(self.default or []), 1)):
+            self.create_widget()
+
+    def create_widget(self):
+
+        count = self.layout().count()
+        if count > 0:
+            self.layout().itemAt(count - 1).widget().set_add_button(False)
+
+        if count < len(self.default):
+            default = self.default[count]
+        else:
+            default = None
+
+        sw = self._widget_class(self, self.action, default=default)
+        sw.value_changed.connect(self.value_changed)
+
+        wdgt = AddRemoveWidget(self, sw)
+        wdgt.remove_pressed.connect(self.destroy_widget)
+        wdgt.add_pressed.connect(self.create_widget)
+
+        self.layout().addWidget(wdgt)
+
+        self.value_changed.emit()
+
+    def find_widget(self, widget):
+        for i in range(self.layout().count()):
+            itm = self.layout().itemAt(i)
+            if itm and itm.widget() == widget:
+                return i
+
+        return None
+
+    def destroy_widget(self, widget):
+        count = self.layout().count()
+        if count > 1:
+            if self.find_widget(widget) == count - 1:
+                self.layout().itemAt(count - 2).widget().set_add_button(True)
+            self.layout().removeWidget(widget)
+            widget.deleteLater()
+        else:
+            self.layout().itemAt(0).widget().clear()
+
+        self.value_changed.emit()
+
+    def value_iter(self):
+        for i in range(self.layout().count()):
+            itm = self.layout().itemAt(i)
+            if itm and itm.widget():
+                yield itm.widget().value()
+
+    def value(self):
+        if not any(self.value_iter()):
+            return self._combiner_func()
+        return self._combiner_func(self.value_iter())
+
+
+class SettingsWidget(QScrollArea):
+
+    values_changed = pyqtSignal()
+
+    _widget_type_map = {int: IntActionWidget,
+                        float: FloatActionWidget,
+                        util.float_pair: FloatPairActionWidget,
+                        util.comma_list: MultiValWidget,
+                        util.keyval: PairActionWidget,
+                        unicode: TextActionWidget}
+
+    def __init__(self, parent, options, settings, compact=False):
+        super(SettingsWidget, self).__init__(parent)
+
+        widget = QWidget(self)
+        layout = QFormLayout()
+
+        for a in options._group_actions:
+            if getattr(a, "hide_gui", False) or a.help is SUPPRESS:
+                continue
+            wdgt = self._action_widget(a, getattr(settings, a.dest))
+            wdgt.value_changed.connect(self.values_changed)
+            layout.addRow(self._action_name(a), wdgt)
+
+        layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
+        layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
+
+        widget.setLayout(layout)
+        self.setWidget(widget)
+        self.setWidgetResizable(True)
+
+    def _action_name(self, action):
+        if hasattr(action, "gui_help"):
+            return action.gui_help.split(".")[0]
+        elif hasattr(action, "help"):
+            return action.help.split(".")[0]
+        return action.option_strings[-1]
+
+    def _action_widget(self, action, default):
+        if action.type is None and type(action.const) == bool:
+            return BooleanActionWidget(self, action, default=default)
+
+        cn = action.__class__.__name__
+        if action.choices:
+            widget = ChoicesActionWidget
+        else:
+            try:
+                widget = self._widget_type_map[action.type]
+            except KeyError:
+                raise RuntimeError("Unknown type %s for option %s" % (
+                    action.type, action.dest))
+
+        if cn == "_StoreAction":
+            return widget(self, action, default=default)
+        elif cn == "_AppendAction":
+            return MultiValWidget(self, action, widget=widget, default=default)
+        elif cn == "Update":
+            return MultiValWidget(self, action, widget=widget, default=default,
+                                  combiner_func=dict)
+        else:
+            raise RuntimeError("Unknown class: %s" % cn)
+
+    def widget_iter(self):
+        layout = self.widget().layout()
+        for i in range(layout.rowCount()):
+            itm = layout.itemAt(i, QFormLayout.FieldRole)
+            if itm and itm.widget():
+                yield i, itm.widget()
+
+    def value_iter(self):
+        for i, w in self.widget_iter():
+            yield (w.key(), w.value())
+
+    def values(self):
+        return dict(self.value_iter())
 
 
 class ResultsetStore(object):
@@ -1780,60 +2207,6 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         if self.can_save:
             self.toolbar.save_figure()
 
-    def zero_y(self, val=None):
-        if val is not None and val != self.settings.ZERO_Y:
-            self.settings.ZERO_Y = val
-            self.update()
-        return self.settings.ZERO_Y
-
-    def invert_y(self, val=None):
-        if val is not None and val != self.settings.INVERT_Y:
-            self.settings.INVERT_Y = val
-            self.update()
-        return self.settings.INVERT_Y
-
-    def log_scale(self, val=None):
-        if val is not None and val != self.settings.LOG_SCALE:
-            self.settings.LOG_SCALE = val
-            self.update()
-        return self.settings.LOG_SCALE
-
-    def scale_mode(self, val=None):
-        if val is not None and val != self.settings.SCALE_MODE:
-            self.settings.SCALE_MODE = val
-            self.update()
-        return self.settings.SCALE_MODE
-
-    def subplot_combine(self, val=None):
-        if val is not None and val != self.settings.SUBPLOT_COMBINE:
-            self.settings.SUBPLOT_COMBINE = val
-            self.update()
-        return self.settings.SUBPLOT_COMBINE
-
-    def draw_annotation(self, val=None):
-        if val is not None and val != self.settings.ANNOTATE:
-            self.settings.ANNOTATE = val
-            self.update()
-        return self.settings.ANNOTATE
-
-    def draw_legend(self, val=None):
-        if val is not None and val != self.settings.PRINT_LEGEND:
-            self.settings.PRINT_LEGEND = val
-            self.update()
-        return self.settings.PRINT_LEGEND
-
-    def draw_title(self, val=None):
-        if val is not None and val != self.settings.PRINT_TITLE:
-            self.settings.PRINT_TITLE = val
-            self.update()
-        return self.settings.PRINT_TITLE
-
-    def filter_legend(self, val=None):
-        if val is not None and val != self.settings.FILTER_LEGEND:
-            self.settings.FILTER_LEGEND = val
-            self.update()
-        return self.settings.FILTER_LEGEND
-
     def highlight(self, val=None):
         if val is not None and val != self.settings.HOVER_HIGHLIGHT:
             self.settings.HOVER_HIGHLIGHT = val
@@ -1843,6 +2216,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def zoom(self, axis, direction='in'):
         if self.plotter:
             self.plotter.zoom(axis, direction)
+
+    def update_settings(self, values):
+        if self.settings.update(values):
+            self.update()
 
     def change_plot(self, plot_name):
         if not self.plotter:

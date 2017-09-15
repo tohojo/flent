@@ -31,6 +31,7 @@ from flent.util import classname, long_substr, format_date, diff_parts, \
 from flent.build_info import VERSION
 from flent.loggers import get_logger
 
+from argparse import SUPPRESS
 from functools import reduce
 from itertools import cycle, islice, chain
 from collections import OrderedDict
@@ -232,17 +233,63 @@ def get_plotter(plot_type):
 
 
 def add_plotting_args(parser):
+    # Convenience helper functions to modify actions after they are defined.
+    # Prevents us from having to assign the return value of the add_argument
+    # calls below and modify it afterwards.
+    def hide_gui(a):
+        "Prevents action from being shown in the GUI option editor."
+        a.hide_gui = True
+        return a
+
+    def gui_help(a, gui_help):
+        "Adds a second help text that takes precedence in the GUI editor."
+        a.gui_help = gui_help
+        return a
+
+    parser.add_argument(
+        "--label-x",
+        action="append", dest="LABEL_X", type=unicode, default=[],
+        help="Override X axis labels. "
+        "Can be specified twice, corresponding to figures with multiple axes.")
+
+    parser.add_argument(
+        "--label-y",
+        action="append", dest="LABEL_Y", type=unicode, default=[],
+        help="Override Y axis labels. "
+        "Can be specified twice, corresponding to figures with multiple axes.")
+
+    parser.add_argument(
+        "-I", "--invert-latency-y",
+        action="store_true", dest="INVERT_Y",
+        help="Invert latency data axis. This inverts the latency data axis "
+        "(typically the Y axis), which makes plots show 'better' values upwards.")
+
     parser.add_argument(
         "-z", "--zero-y",
         action="store_true", dest="ZERO_Y",
-        help="Always start y axis of plot at zero, instead of auto-scaling the "
-        "axis (also disables log scales). Auto-scaling is still enabled for the "
-        "upper bound.")
+        help="Zero Y axis. Always start y axis of plot at zero, instead of "
+        "auto-scaling the axis. Auto-scaling is still enabled for the "
+        "upper bound. This also disables log scale.")
+
+    # --log-scale is old boolean option, kept for compatibility
+    parser.add_argument("--log-scale", action="store_const", dest="LOG_SCALE",
+                        const="log10", help=SUPPRESS)
+    parser.add_argument(
+        "--log-scale-y",
+        action="store", type=unicode, dest="LOG_SCALE", choices=("log2", "log10"),
+        help="Use logarithmic scale.")
+
+    parser.add_argument(
+        "--norm-factor",
+        action="append", type=float, dest="NORM_FACTORS", metavar="FACTOR",
+        default=[], help="Data normalisation factor. Divide all data "
+        "points by this value. Can be specified multiple times, in which case "
+        "each value corresponds to a data series.")
 
     parser.add_argument(
         "--bounds-x",
         action="append", dest="BOUNDS_X", type=float_pair, default=[],
-        help="Specify bounds of the plot X axis. If specifying one number, "
+        help="X axis bounds. If specifying one number, "
         "that will become the upper bound. Specify two numbers separated by "
         "a comma to specify both upper and lower bounds. To specify just the "
         "lower bound, add a comma afterwards. Can be specified twice, "
@@ -251,222 +298,61 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--bounds-y",
         action="append", dest="BOUNDS_Y", type=float_pair, default=[],
-        help="Specify bounds of the plot Y axis. If specifying one number, "
+        help="Y axis bounds. If specifying one number, "
         "that will become the upper bound. Specify two numbers separated by "
         "comma to specify both upper and lower bounds. To specify just the "
         "lower bound, add a comma afterwards. Can be specified twice, "
         "corresponding to figures with multiple axes.")
 
     parser.add_argument(
-        "--label-x",
-        action="append", dest="LABEL_X", default=[],
-        help="Override the X axis label. "
-        "Can be specified twice, corresponding to figures with multiple axes.")
-
-    parser.add_argument(
-        "--label-y",
-        action="append", dest="LABEL_Y", default=[],
-        help="Override the Y axis label. "
-        "Can be specified twice, corresponding to figures with multiple axes.")
-
-    parser.add_argument(
-        "--colours",
-        action="store", dest="COLOURS", type=comma_list, default=COLOURS,
-        help="Comma-separated list of colours to be used for the plot colour "
-        "cycle.")
-
-    parser.add_argument(
-        "-I", "--invert-latency-y",
-        action="store_true", dest="INVERT_Y",
-        help="Invert the y-axis for latency data series (making plots show "
-        "'better' values upwards).")
-
-    parser.add_argument(
-        "--log-scale",
-        action="store_true", dest="LOG_SCALE",
-        help="Use logarithmic scale on plots.")
-
-    parser.add_argument(
-        "--norm-factor",
-        action="append", type=float, dest="NORM_FACTORS", metavar="FACTOR",
-        default=[], help="Factor to normalise data by. I.e. divide all data "
-        "points by this value. Can be specified multiple times, in which case "
-        "each value corresponds to a data series.")
-
-    parser.add_argument(
-        "--scale-data",
-        action="append", type=unicode, dest="SCALE_DATA", default=[],
-        help="Additional data files to consider when scaling the plot axes "
-        "(for plotting several plots with identical axes). Note, this displays "
-        "only the first data set, but with axis scaling taking into account the "
-        "additional data sets. Can be supplied multiple times; see also "
-        "--scale-mode.")
-
-    parser.add_argument(
         "-S", "--scale-mode",
         action="store_true", dest="SCALE_MODE",
-        help="Treat file names (except for the first one) passed as unqualified "
-        "arguments as if passed as --scale-data (default as if passed as "
-        "--input).")
+        help="Scale mode. If enabled, secondary data sets are not plotted, but "
+        "are still taken into account when calculating axis bounds. Use this to "
+        "plot several datasets with the same axis scales.")
 
     parser.add_argument(
         "--concatenate",
         action="store_true", dest="CONCATENATE",
-        help="Concatenate multiple result sets into one data series.")
+        help="Concatenate datasets. Concatenates multiple result sets into a "
+        "single data series.")
 
     parser.add_argument(
         "--absolute-time",
         action="store_true", dest="ABSOLUTE_TIME",
-        help="Plot data points with absolute Unix time on the x-axis.")
+        help="Plot absolute times. Shows absolute Unix time on the x-axis instead"
+        " of relative time from the test start.")
 
     parser.add_argument(
         "--subplot-combine",
         action="store_true", dest="SUBPLOT_COMBINE",
-        help="When plotting multiple data series, plot each one on a separate "
+        help="Combine as subplots. When plotting multiple data series, plot "
+        "each one on a separate "
         "subplot instead of combining them into one plot (not supported for all "
         "plot types).")
 
     parser.add_argument(
-        "--no-print-n",
-        action="store_false", dest="COMBINE_PRINT_N",
-        help="Do not print the number of data points on combined plots.")
-
-    parser.add_argument(
-        "--no-annotation",
-        action="store_false", dest="ANNOTATE",
-        help="Exclude annotation with hostnames, time and test length from "
-        "plots.")
-
-    parser.add_argument(
-        "--no-title",
-        action="store_false", dest="PRINT_TITLE",
-        help="Exclude title from plots.")
-
-    parser.add_argument(
-        "--override-title",
-        action="store", type=unicode, dest="OVERRIDE_TITLE", metavar="TITLE",
-        help="Override plot title with this string. This parameter takes "
-        "precedence over --no-title.")
-
-    parser.add_argument(
-        "--override-label",
-        action="append", type=unicode, dest="OVERRIDE_LABELS", metavar="LABEL",
-        default=[],
-        help="Override dataset label. Must be specified multiple times "
-        "corresponding to the datasets being overridden.")
-
-    parser.add_argument(
-        "--override-group-by",
-        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
-        help="Override plot group_by attribute for combination plots.")
-
-    parser.add_argument(
-        "--combine-save-dir",
-        action="store", type=unicode, dest="COMBINE_SAVE_DIR",
-        metavar="DIRNAME",
-        help="When doing a combination plot save the intermediate data "
-        "to DIRNAME. This can then be used for subsequent plotting to "
-        "avoid having to load all the source data files again on each plot.")
-
-    parser.add_argument(
-        "--split-group",
-        action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
-        metavar="LABEL",
-        help="Split data sets into groups. Specify this option multiple "
-        "times to define the new groups. The value of each option is the "
-        "group name. This only works for box plots.")
-
-    parser.add_argument(
-        "--no-markers",
-        action="store_false", dest="USE_MARKERS",
-        help="Don't use line markers to differentiate data series on plots.")
-
-    parser.add_argument(
-        "--no-legend",
-        action="store_false", dest="PRINT_LEGEND",
-        help="Exclude legend from plots.")
-
-    parser.add_argument(
-        "--no-labels",
-        action="store_false", dest="PRINT_LABELS",
-        help="Exclude data series labels from plots.")
-
-    parser.add_argument(
-        "--horizontal-legend",
-        action="store_true", dest="HORIZONTAL_LEGEND",
-        help="Place a horizontal legend below the plot instead of a vertical one "
-        "next to it. Doesn't work well if there are too many items in the "
-        "legend.")
-
-    parser.add_argument(
-        "--legend-title",
-        action="store", dest="LEGEND_TITLE",
-        help="Override legend title on plot.")
-
-    parser.add_argument(
-        "--legend-placement",
-        action="store", dest="LEGEND_PLACEMENT",
-        help="Control legend placement. Enabling this option will place the "
-        "legend inside the plot at the specified location. Use 'best' to let "
-        "matplotlib decide.")
-
-    parser.add_argument(
-        "--legend-columns",
-        action="store", type=int, dest="LEGEND_COLUMNS",
-        help="Set the number of columns in the legend.")
-
-    parser.add_argument(
-        "--reverse-legend",
-        action="store_true", dest="LEGEND_REVERSE",
-        help="Reverse the order of items in the legend.")
-
-    parser.add_argument(
-        "--filter-legend",
-        action="store_true", dest="FILTER_LEGEND",
-        help="Filter legend labels by removing the longest common substring from "
-        "all entries.")
-
-    parser.add_argument(
-        "--filter-regexp",
-        action="append", dest="FILTER_REGEXP", metavar="REGEXP", default=[],
-        help="Filter out supplied regular expression from legend names. Can be "
-        "specified multiple times, in which case the regular expressions will be "
-        "filtered in the order specified.")
-
-    parser.add_argument(
-        "--filter-series",
-        action="append", dest="FILTER_SERIES", metavar="SERIES", default=[],
-        help="Filter out specified series from plot. Can be specified multiple "
-        "times.")
-
-    parser.add_argument(
         "--skip-missing-series",
         action="store_true", dest="SKIP_MISSING",
-        help="Skip missing series entirely from plots. Only works for bar plots.")
+        help="Skip missing on bar plots. If a series is missing, this option "
+        "skips it entirely from bar plots instead of having an empty slot for "
+        "it.")
 
-    parser.add_argument(
-        "--replace-legend",
-        action=Update, type=keyval, dest="REPLACE_LEGEND", metavar="src=dest",
-        default=OrderedDict(),
-        help="Replace 'src' with 'dst' in legends. Can be specified multiple "
-        "times.")
+    gui_help(parser.add_argument(
+        "--no-print-n",
+        action="store_false", dest="COMBINE_PRINT_N",
+        help="No N values. Do not print the number of data points on "
+        "combined plots."),
+             gui_help="Print N values. Whether to print the number of data "
+             "points used for combination plots.")
 
-    parser.add_argument(
-        "--figure-width", "--fig-width",
-        action="store", type=float, dest="FIG_WIDTH",
-        help="Figure width in inches. Used when saving plots to file and for "
-        "default size of the interactive plot window.")
-
-    parser.add_argument(
-        "--figure-height", "--fig-height",
-        action="store", type=float, dest="FIG_HEIGHT",
-        help="Figure height in inches. Used when saving plots to file and for "
-        "default size of the interactive plot window.")
-
-    parser.add_argument(
-        "--figure-dpi", "--fig-dpi",
-        action="store", type=float, dest="FIG_DPI",
-        help="Figure DPI. Used when saving plots to raster format files.")
+    gui_help(parser.add_argument(
+        "--no-annotation",
+        action="store_false", dest="ANNOTATE",
+        help="Hide annotation. Exclude annotation with hostnames, time and test "
+        "length from plots."),
+             gui_help="Show annotation. Show annotation with hostnames, time "
+             "and test length on plots.")
 
     parser.add_argument(
         "--figure-note", "--fig-note",
@@ -474,27 +360,192 @@ def add_plotting_args(parser):
         help="Figure note. Will be added to the bottom-left corner of the "
         "figure.")
 
+    gui_help(parser.add_argument(
+        "--no-title",
+        action="store_false", dest="PRINT_TITLE",
+        help="Hide plot title."), gui_help="Show plot title.")
+
     parser.add_argument(
+        "--override-title",
+        action="store", type=unicode, dest="OVERRIDE_TITLE", metavar="TITLE",
+        help="Override plot title. This parameter takes "
+        "precedence over --no-title.")
+
+    gui_help(parser.add_argument(
+        "--no-labels",
+        action="store_false", dest="PRINT_LABELS",
+        help="Hide tick labels. Hides tick labels from box and bar plots."),
+             gui_help="Show tick labels. Whether to show tick labels on "
+             "box and bar plots.")
+
+    gui_help(parser.add_argument(
+        "--no-markers",
+        action="store_false", dest="USE_MARKERS",
+        help="No line markers. Don't use line markers to differentiate data "
+        "series on plots."), gui_help="Use line markers. Whether to use line "
+             "markers (in addition to line style) to differentiate data series "
+             "on plots")
+
+    gui_help(parser.add_argument(
+        "--no-legend",
+        action="store_false", dest="PRINT_LEGEND",
+        help="Hide plot legend."), "Show plot legend.")
+
+    parser.add_argument(
+        "--horizontal-legend",
+        action="store_true", dest="HORIZONTAL_LEGEND",
+        help="Horizontal legend mode. Places a horizontal legend below the plot "
+        "instead of a vertical one "
+        "next to it. Doesn't work well if there are too many items in the "
+        "legend.")
+
+    parser.add_argument(
+        "--legend-title",
+        action="store", type=unicode, dest="LEGEND_TITLE",
+        help="Override legend title.")
+
+    parser.add_argument(
+        "--legend-placement",
+        action="store", type=unicode, dest="LEGEND_PLACEMENT",
+        choices=('best',
+                 'upper right',
+                 'upper left',
+                 'lower left',
+                 'lower right',
+                 'right',
+                 'center left',
+                 'center right',
+                 'lower center',
+                 'upper center',
+                 'center'),
+        help="Legend placement. Enabling this option will place the "
+        "legend inside the plot at the specified location. Use 'best' to let "
+        "matplotlib decide.")
+
+    parser.add_argument(
+        "--legend-columns",
+        action="store", type=int, dest="LEGEND_COLUMNS", default=1,
+        help="Legend columns. Set the number of columns in the legend.")
+
+    parser.add_argument(
+        "--reverse-legend",
+        action="store_true", dest="LEGEND_REVERSE",
+        help="Reverse legend order. Reverses the order of data series in "
+        "the legend.")
+
+    parser.add_argument(
+        "--filter-legend",
+        action="store_true", dest="FILTER_LEGEND",
+        help="Auto-filter legend text. Filters labels by removing the longest "
+        "common substring from all entries.")
+
+    parser.add_argument(
+        "--replace-legend",
+        action=Update, type=keyval, dest="REPLACE_LEGEND", metavar="src=dest",
+        default=OrderedDict(),
+        help="Replace legend text. Replaces 'src' with 'dst' in legends. Can be "
+        "specified multiple times.")
+
+    parser.add_argument(
+        "--filter-regexp",
+        action="append", type=unicode, dest="FILTER_REGEXP", metavar="REGEXP",
+        default=[], help="Filter labels (regex). Filter out supplied regular "
+        "expression from label names. Can be specified multiple times, in which "
+        "case the regular expressions will be filtered in the order specified.")
+
+    parser.add_argument(
+        "--override-label",
+        action="append", type=unicode, dest="OVERRIDE_LABELS", metavar="LABEL",
+        default=[],
+        help="Override dataset labels. Must be specified multiple times "
+        "corresponding to the datasets being overridden.")
+
+    parser.add_argument(
+        "--filter-series",
+        action="append", type=unicode, dest="FILTER_SERIES", metavar="SERIES",
+        default=[], help="Filter (hide) data series. Filters out specified "
+        "series names from the plot. Can be specified multiple times.")
+
+    parser.add_argument(
+        "--split-group",
+        action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
+        metavar="LABEL",
+        help="New groups for box plots. Specify this option multiple "
+        "times to define the new groups that data sets should be split into on "
+        "box plots. The value of each option is the group name (displayed at the "
+        "top of the plot).")
+
+    parser.add_argument(
+        "--colours",
+        action="store", dest="COLOURS", type=comma_list, default=COLOURS,
+        help="Override plot colours. Specify a comma-separated list of colours "
+        "to be used for the plot colour cycle.")
+
+    parser.add_argument(
+        "--override-group-by",
+        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
+        help="Override group_by attribute. This changes the way combination "
+        "plots are created by overriding the function that is used to combine "
+        "several data series into one.")
+
+    hide_gui(parser.add_argument(
+        "--combine-save-dir",
+        action="store", type=unicode, dest="COMBINE_SAVE_DIR",
+        metavar="DIRNAME",
+        help="Save intermediate combination data. When doing a combination plot "
+        "save the intermediate data to DIRNAME. This can then be used for "
+        "subsequent plotting to avoid having to load all the source data files "
+        "again on each plot."))
+
+    hide_gui(parser.add_argument(
+        "--figure-width", "--fig-width",
+        action="store", type=float, dest="FIG_WIDTH", default=6.4,
+        help="Figure width in inches. Used when saving plots to file and for "
+        "default size of the interactive plot window."))
+
+    hide_gui(parser.add_argument(
+        "--figure-height", "--fig-height",
+        action="store", type=float, dest="FIG_HEIGHT", default=4.8,
+        help="Figure height in inches. Used when saving plots to file and for "
+        "default size of the interactive plot window."))
+
+    hide_gui(parser.add_argument(
+        "--figure-dpi", "--fig-dpi",
+        action="store", type=float, dest="FIG_DPI", default=100,
+        help="Figure DPI. Used when saving plots to raster format files."))
+
+    hide_gui(parser.add_argument(
+        "--fallback-layout",
+        action="store_true", dest="FALLBACK_LAYOUT",
+        help="Use the fallback layout engine. Use the tight_layout engine built "
+        "in to matplotlib for laying out figures. Enable this option if text is "
+        "cut off on saved figures. The downside to the fallback engine is that "
+        "the size of the figure (as specified by --figure-width and "
+        "--figure-height) is no longer kept constant."))
+
+    hide_gui(parser.add_argument(
         "--no-matplotlibrc",
         action="store_false", dest="LOAD_MATPLOTLIBRC",
         help="Don't use included matplotlib styles. Use this if you have "
-        "configured custom matplotlib styles that you want Flent to use.")
+        "configured custom matplotlib styles that you want Flent to use."))
 
-    parser.add_argument(
+    hide_gui(parser.add_argument(
         "--no-hover-highlight",
         action="store_false", dest="HOVER_HIGHLIGHT", default=None,
-        help="Don't highlight data series on hover in interactive plot views. "
+        help="Don't highlight on hover. This disables highlighting of hovered "
+        "data series in interactive plot views. "
         "Use this if redrawing is too slow, or the highlighting is undesired "
-        "for other reasons.")
+        "for other reasons."))
 
-    parser.add_argument(
-        "--fallback-layout",
-        action="store_true", dest="FALLBACK_LAYOUT",
-        help="Use the fallback layout engine (tight_layout built in to "
-        "matplotlib). Use this if text is cut off on saved figures. The "
-        "downside to the fallback engine is that the size of the figure "
-        "(as specified by --figure-width and --figure-height) is no longer "
-        "kept constant.")
+    hide_gui(parser.add_argument(
+        "--scale-data",
+        action="append", type=unicode, dest="SCALE_DATA", default=[],
+        help="Extra scale data. Additional data files to consider when scaling "
+        "the plot axes "
+        "(for plotting several plots with identical axes). Note, this displays "
+        "only the first data set, but with axis scaling taking into account the "
+        "additional data sets. Can be supplied multiple times; see also "
+        "--scale-mode."))
 
     return parser
 
@@ -573,6 +624,11 @@ class Plotter(ArgParam):
         self.interactive_callback = self.resize_callback = None
         if self.hover_highlight is not None:
             self.can_highlight = self.hover_highlight
+
+        if self.log_scale and self.log_scale.startswith("log"):
+            self.log_base = int(self.log_scale.replace("log", ""))
+        else:
+            self.log_base = None
 
         self.config = self.expand_plot_config(plot_config, data_config, results)
         self.configs = [self.config]
@@ -658,6 +714,11 @@ class Plotter(ArgParam):
         if self.norm_factors:
             for n, s in zip(cycle(self.norm_factors), new_series):
                 s['norm_factor'] = n
+
+        if self.override_labels:
+            for l, s in zip(self.override_labels, new_series):
+                if l is not None:
+                    s['label'] = l
 
         return dict(config, series=new_series)
 
@@ -1096,8 +1157,8 @@ class Plotter(ArgParam):
             top_scale = top_percentile * 1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
-            if self.log_scale:
-                axis.set_yscale('log')
+            if self.log_base:
+                axis.set_yscale('log', basey=self.log_base)
                 axis.set_ylim(ymin=max(0, btm_scale), ymax=top_scale)
             else:
                 axis.set_ylim(ymin=btm_scale, ymax=top_scale)
@@ -1502,7 +1563,7 @@ class BoxPlotter(TimeseriesPlotter):
         for t in texts:
             min_y, max_y = t.axes.get_ylim()
             x, y = t.get_position()
-            mult = 0.1 if self.log_scale else 0.01
+            mult = 0.1 if self.log_base else 0.01
             t.set_position((x, max_y + abs(max_y - min_y) * mult))
 
         self.artists.extend(texts)
@@ -1707,8 +1768,8 @@ class CdfPlotter(Plotter):
                 min_value -= min_value % 100
             axis.set_xlim(left=min(min_value, axis.get_xlim()[0]))
 
-        if self.log_scale:
-            axis.set_xscale('log')
+        if self.log_base:
+            axis.set_xscale('log', basex=self.log_base)
 
         for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)

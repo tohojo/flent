@@ -559,6 +559,11 @@ class Settings(argparse.Namespace):
             elif t:
 
                 val = t(v)
+                c = parser.get_choices(k)
+                if c and val not in c:
+                    logger.warning("Invalid RC value '%s' for key %s. Ignoring",
+                                   val, k)
+                    continue
                 if isinstance(val, dict) and k in vals:
                     vals[k].update(val)
                 elif parser.is_list(k):
@@ -653,8 +658,12 @@ class Settings(argparse.Namespace):
         object.__setattr__(self, k, v)
 
     def update(self, values):
+        updated = False
         for k, v in list(values.items()):
-            setattr(self, k, v)
+            if not hasattr(self, k) or getattr(self, k) != v:
+                updated = True
+                setattr(self, k, v)
+        return updated
 
     def items(self):
         return self.__dict__.items()

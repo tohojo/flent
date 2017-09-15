@@ -541,6 +541,13 @@ class ArgParser(argparse.ArgumentParser):
                 return action.type
         return None
 
+    def get_choices(self, dest):
+        for action in self._actions:
+            if action.dest == dest and action.choices:
+                return action.choices
+
+        return None
+
     def is_list(self, dest):
         for action in self._actions:
             if action.dest == dest:
