@@ -686,6 +686,11 @@ class Plotter(ArgParam):
             for n, s in zip(cycle(self.norm_factors), new_series):
                 s['norm_factor'] = n
 
+        if self.override_labels:
+            for l, s in zip(self.override_labels, new_series):
+                if l is not None:
+                    s['label'] = l
+
         return dict(config, series=new_series)
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
