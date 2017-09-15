@@ -34,6 +34,7 @@ try:
 except ImportError:
     import pickle
 
+from argparse import SUPPRESS
 from datetime import datetime
 from itertools import chain
 from multiprocessing import Pool, Queue
@@ -1610,7 +1611,7 @@ class SettingsWidget(QScrollArea):
         layout = QFormLayout()
 
         for a in options._group_actions:
-            if getattr(a, "hide_gui", False):
+            if getattr(a, "hide_gui", False) or a.help is SUPPRESS:
                 continue
             wdgt = self._action_widget(a, getattr(settings, a.dest))
             wdgt.value_changed.connect(self.values_changed)
