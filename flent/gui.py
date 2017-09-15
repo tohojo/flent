@@ -1300,7 +1300,7 @@ class BooleanActionWidget(ActionWidget, QComboBox):
         return bool(self.currentIndex())
 
     def clear(self):
-        if self.default:
+        if self.default is not None:
             self.setCurrentIndex(int(self.default))
         else:
             self.setCurrentIndex(int(not self.action.const))
