@@ -240,17 +240,47 @@ def add_plotting_args(parser):
         a.hide_gui = True
         return a
 
-    def gui_help(a, help):
+    def gui_help(a, gui_help):
         "Adds a second help text that takes precedence in the GUI editor."
-        a.gui_help = help
+        a.gui_help = gui_help
         return a
+
+    parser.add_argument(
+        "--label-x",
+        action="append", dest="LABEL_X", type=unicode, default=[],
+        help="Override X axis labels. "
+        "Can be specified twice, corresponding to figures with multiple axes.")
+
+    parser.add_argument(
+        "--label-y",
+        action="append", dest="LABEL_Y", type=unicode, default=[],
+        help="Override Y axis labels. "
+        "Can be specified twice, corresponding to figures with multiple axes.")
+
+    parser.add_argument(
+        "-I", "--invert-latency-y",
+        action="store_true", dest="INVERT_Y",
+        help="Invert latency data axis. This inverts the latency data axis "
+        "(typically the Y axis), which makes plots show 'better' values upwards.")
 
     parser.add_argument(
         "-z", "--zero-y",
         action="store_true", dest="ZERO_Y",
-        help="Zero Y axis. Always start y axis of plot at zero, instead of auto-scaling the "
-        "axis (also disables log scales). Auto-scaling is still enabled for the "
-        "upper bound.")
+        help="Zero Y axis. Always start y axis of plot at zero, instead of "
+        "auto-scaling the axis. Auto-scaling is still enabled for the "
+        "upper bound. This also disables log scale.")
+
+    parser.add_argument(
+        "--log-scale",
+        action="store_true", dest="LOG_SCALE",
+        help="Use logarithmic scale.")
+
+    parser.add_argument(
+        "--norm-factor",
+        action="append", type=float, dest="NORM_FACTORS", metavar="FACTOR",
+        default=[], help="Data normalisation factor. Divide all data "
+        "points by this value. Can be specified multiple times, in which case "
+        "each value corresponds to a data series.")
 
     parser.add_argument(
         "--bounds-x",
@@ -271,57 +301,11 @@ def add_plotting_args(parser):
         "corresponding to figures with multiple axes.")
 
     parser.add_argument(
-        "--label-x",
-        action="append", dest="LABEL_X", type=unicode, default=[],
-        help="Override X axis label. "
-        "Can be specified twice, corresponding to figures with multiple axes.")
-
-    parser.add_argument(
-        "--label-y",
-        action="append", dest="LABEL_Y", type=unicode, default=[],
-        help="Override Y axis label. "
-        "Can be specified twice, corresponding to figures with multiple axes.")
-
-    parser.add_argument(
-        "--colours",
-        action="store", dest="COLOURS", type=comma_list, default=COLOURS,
-        help="Override plot colours. Specify a comma-separated list of colours "
-        "to be used for the plot colour cycle.")
-
-    parser.add_argument(
-        "-I", "--invert-latency-y",
-        action="store_true", dest="INVERT_Y",
-        help="Invert latency data axis. This inverts the latency data axis "
-        "(typically the Y axis), which makes plots show 'better' values upwards.")
-
-    parser.add_argument(
-        "--log-scale",
-        action="store_true", dest="LOG_SCALE",
-        help="Use logarithmic scale.")
-
-    parser.add_argument(
-        "--norm-factor",
-        action="append", type=float, dest="NORM_FACTORS", metavar="FACTOR",
-        default=[], help="Data normalisation factor. Divide all data "
-        "points by this value. Can be specified multiple times, in which case "
-        "each value corresponds to a data series.")
-
-    hide_gui(parser.add_argument(
-        "--scale-data",
-        action="append", type=unicode, dest="SCALE_DATA", default=[],
-        help="Extra scale data. Additional data files to consider when scaling "
-        "the plot axes "
-        "(for plotting several plots with identical axes). Note, this displays "
-        "only the first data set, but with axis scaling taking into account the "
-        "additional data sets. Can be supplied multiple times; see also "
-        "--scale-mode."))
-
-    parser.add_argument(
         "-S", "--scale-mode",
         action="store_true", dest="SCALE_MODE",
-        help="Scale mode. Treats file names (except for the first one) passed as "
-        "unqualified arguments as if passed as --scale-data (default as if passed as "
-        "--input).")
+        help="Scale mode. If enabled, secondary data sets are not plotted, but "
+        "are still taken into account when calculating axis bounds. Use this to "
+        "plot several datasets with the same axis scales.")
 
     parser.add_argument(
         "--concatenate",
@@ -332,8 +316,8 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--absolute-time",
         action="store_true", dest="ABSOLUTE_TIME",
-        help="Plot absolute times. Shows absolute Unix time on the x-axis instead of "
-        "relative time from the test start.")
+        help="Plot absolute times. Shows absolute Unix time on the x-axis instead"
+        " of relative time from the test start.")
 
     parser.add_argument(
         "--subplot-combine",
@@ -343,26 +327,39 @@ def add_plotting_args(parser):
         "subplot instead of combining them into one plot (not supported for all "
         "plot types).")
 
+    parser.add_argument(
+        "--skip-missing-series",
+        action="store_true", dest="SKIP_MISSING",
+        help="Skip missing on bar plots. If a series is missing, this option "
+        "skips it entirely from bar plots instead of having an empty slot for "
+        "it.")
+
     gui_help(parser.add_argument(
         "--no-print-n",
         action="store_false", dest="COMBINE_PRINT_N",
-        help="No N values. Do not print the number of data points on combined plots."),
-             "Print N values. Whether to print the number of data points used "
-             "for combination plots."
-    )
+        help="No N values. Do not print the number of data points on "
+        "combined plots."),
+             gui_help="Print N values. Whether to print the number of data "
+             "points used for combination plots.")
 
     gui_help(parser.add_argument(
         "--no-annotation",
         action="store_false", dest="ANNOTATE",
-        help="Hide annotation. Exclude annotation with hostnames, time and test length from "
-        "plots."),
-             "Show annotation. Show annotation with hostnames, time and test length on "
-        "plots.")
+        help="Hide annotation. Exclude annotation with hostnames, time and test "
+        "length from plots."),
+             gui_help="Show annotation. Show annotation with hostnames, time "
+             "and test length on plots.")
+
+    parser.add_argument(
+        "--figure-note", "--fig-note",
+        action="store", type=unicode, dest="FIG_NOTE",
+        help="Figure note. Will be added to the bottom-left corner of the "
+        "figure.")
 
     gui_help(parser.add_argument(
         "--no-title",
         action="store_false", dest="PRINT_TITLE",
-        help="Hide plot title."), "Show plot title.")
+        help="Hide plot title."), gui_help="Show plot title.")
 
     parser.add_argument(
         "--override-title",
@@ -370,52 +367,25 @@ def add_plotting_args(parser):
         help="Override plot title. This parameter takes "
         "precedence over --no-title.")
 
-    parser.add_argument(
-        "--override-label",
-        action="append", type=unicode, dest="OVERRIDE_LABELS", metavar="LABEL",
-        default=[],
-        help="Override dataset label. Must be specified multiple times "
-        "corresponding to the datasets being overridden.")
-
-    parser.add_argument(
-        "--override-group-by",
-        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
-        help="Override group_by attribute. This changes the way combination plots are "
-        "created by overriding the function that is used to combine several data series into one.")
-
-    a = parser.add_argument(
-        "--combine-save-dir",
-        action="store", type=unicode, dest="COMBINE_SAVE_DIR",
-        metavar="DIRNAME",
-        help="Save intermediate combination data. When doing a combination plot "
-        "save the intermediate data to DIRNAME. This can then be used for subsequent "
-        "plotting to avoid having to load all the source data files again on each plot.")
-    a.hide_gui = True
-
-    parser.add_argument(
-        "--split-group",
-        action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
-        metavar="LABEL",
-        help="Split data sets into groups. Specify this option multiple "
-        "times to define the new groups. The value of each option is the "
-        "group name. This only works for box plots.")
+    gui_help(parser.add_argument(
+        "--no-labels",
+        action="store_false", dest="PRINT_LABELS",
+        help="Hide tick labels. Hides tick labels from box and bar plots."),
+             gui_help="Show tick labels. Whether to show tick labels on "
+             "box and bar plots.")
 
     gui_help(parser.add_argument(
         "--no-markers",
         action="store_false", dest="USE_MARKERS",
         help="No line markers. Don't use line markers to differentiate data "
-        "series on plots."), "Use line markers. Whether to use line markers "
-             "(in addition to line style) to differentiate data series on plots")
+        "series on plots."), gui_help="Use line markers. Whether to use line "
+             "markers (in addition to line style) to differentiate data series "
+             "on plots")
 
     gui_help(parser.add_argument(
         "--no-legend",
         action="store_false", dest="PRINT_LEGEND",
         help="Hide plot legend."), "Show plot legend.")
-
-    gui_help(parser.add_argument(
-        "--no-labels",
-        action="store_false", dest="PRINT_LABELS",
-        help="Hide plot labels."), "Show plot labels.")
 
     parser.add_argument(
         "--horizontal-legend",
@@ -444,7 +414,7 @@ def add_plotting_args(parser):
                  'lower center',
                  'upper center',
                  'center'),
-        help="Control legend placement. Enabling this option will place the "
+        help="Legend placement. Enabling this option will place the "
         "legend inside the plot at the specified location. Use 'best' to let "
         "matplotlib decide.")
 
@@ -462,34 +432,64 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--filter-legend",
         action="store_true", dest="FILTER_LEGEND",
-        help="Filter legend. Filters labels by removing the longest common "
-        "substring from all entries.")
-
-    parser.add_argument(
-        "--filter-regexp",
-        action="append", type=unicode, dest="FILTER_REGEXP", metavar="REGEXP", default=[],
-        help="Filter regex. Filter out supplied regular expression from label names. "
-        "Can be specified multiple times, in which case the regular expressions will be "
-        "filtered in the order specified.")
-
-    parser.add_argument(
-        "--filter-series",
-        action="append", type=unicode, dest="FILTER_SERIES", metavar="SERIES", default=[],
-        help="Filter data series. Filters out specified series name from the plot. "
-        "Can be specified multiple times.")
-
-    parser.add_argument(
-        "--skip-missing-series",
-        action="store_true", dest="SKIP_MISSING",
-        help="Skip missing series. If a series is missing, this option skips it entirely "
-        "from plots instead of having an empty slot for it. Only works for bar plots.")
+        help="Auto-filter legend text. Filters labels by removing the longest "
+        "common substring from all entries.")
 
     parser.add_argument(
         "--replace-legend",
         action=Update, type=keyval, dest="REPLACE_LEGEND", metavar="src=dest",
         default=OrderedDict(),
-        help="Replace legend text. Replaces 'src' with 'dst' in legends. Can be specified "
-        "multiple times.")
+        help="Replace legend text. Replaces 'src' with 'dst' in legends. Can be "
+        "specified multiple times.")
+
+    parser.add_argument(
+        "--filter-regexp",
+        action="append", type=unicode, dest="FILTER_REGEXP", metavar="REGEXP",
+        default=[], help="Filter labels (regex). Filter out supplied regular "
+        "expression from label names. Can be specified multiple times, in which "
+        "case the regular expressions will be filtered in the order specified.")
+
+    parser.add_argument(
+        "--override-label",
+        action="append", type=unicode, dest="OVERRIDE_LABELS", metavar="LABEL",
+        default=[],
+        help="Override dataset labels. Must be specified multiple times "
+        "corresponding to the datasets being overridden.")
+
+    parser.add_argument(
+        "--filter-series",
+        action="append", type=unicode, dest="FILTER_SERIES", metavar="SERIES",
+        default=[], help="Filter (hide) data series. Filters out specified "
+        "series names from the plot. Can be specified multiple times.")
+
+    parser.add_argument(
+        "--split-group",
+        action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
+        metavar="LABEL",
+        help="New groups for box plots. Specify this option multiple "
+        "times to define the new groups that data sets should be split into on "
+        "box plots. The value of each option is the group name (displayed at the "
+        "top of the plot).")
+
+    parser.add_argument(
+        "--override-group-by",
+        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
+        help="Override group_by attribute. This changes the way combination plots are "
+        "created by overriding the function that is used to combine several data series into one.")
+
+    parser.add_argument(
+        "--colours",
+        action="store", dest="COLOURS", type=comma_list, default=COLOURS,
+        help="Override plot colours. Specify a comma-separated list of colours "
+        "to be used for the plot colour cycle.")
+
+    hide_gui(parser.add_argument(
+        "--combine-save-dir",
+        action="store", type=unicode, dest="COMBINE_SAVE_DIR",
+        metavar="DIRNAME",
+        help="Save intermediate combination data. When doing a combination plot "
+        "save the intermediate data to DIRNAME. This can then be used for subsequent "
+        "plotting to avoid having to load all the source data files again on each plot."))
 
     hide_gui(parser.add_argument(
         "--figure-width", "--fig-width",
@@ -508,11 +508,14 @@ def add_plotting_args(parser):
         action="store", type=float, dest="FIG_DPI", default=100,
         help="Figure DPI. Used when saving plots to raster format files."))
 
-    parser.add_argument(
-        "--figure-note", "--fig-note",
-        action="store", type=unicode, dest="FIG_NOTE",
-        help="Figure note. Will be added to the bottom-left corner of the "
-        "figure.")
+    hide_gui(parser.add_argument(
+        "--fallback-layout",
+        action="store_true", dest="FALLBACK_LAYOUT",
+        help="Use the fallback layout engine. Use the tight_layout engine built "
+        "in to matplotlib for laying out figures. Enable this option if text is "
+        "cut off on saved figures. The downside to the fallback engine is that "
+        "the size of the figure (as specified by --figure-width and "
+        "--figure-height) is no longer kept constant."))
 
     hide_gui(parser.add_argument(
         "--no-matplotlibrc",
@@ -528,14 +531,16 @@ def add_plotting_args(parser):
         "Use this if redrawing is too slow, or the highlighting is undesired "
         "for other reasons."))
 
-    parser.add_argument(
-        "--fallback-layout",
-        action="store_true", dest="FALLBACK_LAYOUT",
-        help="Use the fallback layout engine. Use the tight_layout engine built "
-        "in to matplotlib for laying out figures. Enable this option if text is "
-        "cut off on saved figures. The downside to the fallback engine is that "
-        "the size of the figure (as specified by --figure-width and --figure-height) "
-        "is no longer kept constant.")
+    hide_gui(parser.add_argument(
+        "--scale-data",
+        action="append", type=unicode, dest="SCALE_DATA", default=[],
+        help="Extra scale data. Additional data files to consider when scaling "
+        "the plot axes "
+        "(for plotting several plots with identical axes). Note, this displays "
+        "only the first data set, but with axis scaling taking into account the "
+        "additional data sets. Can be supplied multiple times; see also "
+        "--scale-mode."))
+
 
     return parser
 
