@@ -751,6 +751,8 @@ class Plotter(ArgParam):
             "draw_event", self.clear_bg_cache))
         self.callbacks.append(self.figure.canvas.mpl_connect(
             "button_press_event", self.on_click))
+        self.callbacks.append(self.figure.canvas.mpl_connect(
+            "key_press_event", self.on_keypress))
 
     def disconnect_callbacks(self):
         for c in self.callbacks:
@@ -779,6 +781,28 @@ class Plotter(ArgParam):
                              for leg in self.legends]):
                 if t.contains(event)[0]:
                     return
+
+    def on_keypress(self, event):
+        if event.key in ('x', 'X', 'y', 'Y'):
+            a = event.key.lower()
+            d = 'in' if a == event.key else 'out'
+            self.zoom(a, d)
+
+    def zoom(self, axis, direction='in'):
+        factor = 0.9 if direction == 'in' else 1.1
+        for ax in self.axes_iter():
+            setter = getattr(ax, "set_"+axis+"lim")
+            getter = getattr(ax, "get_"+axis+"lim")
+
+            l, u = getter()
+            mid = l + (u-l) / 2
+
+            nl = mid - (mid-l)*factor
+            nu = mid + (u-mid)*factor
+            setter(nl, nu)
+
+        self.figure.canvas.draw()
+        self.figure.canvas.toolbar.push_current()
 
     def update_axes(self, hovered):
         bboxes = set()

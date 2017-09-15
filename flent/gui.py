@@ -460,6 +460,17 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         event.accept()
 
+    def keyPressEvent(self, event):
+        widget = self.viewArea.currentWidget()
+        text = unicode(event.text())
+        if widget and text in ('x', 'X', 'y', 'Y'):
+            a = text.lower()
+            d = 'in' if a == text else 'out'
+            widget.zoom(a, d)
+            event.accept()
+        else:
+            super(MainWindow, self).keyPressEvent(event)
+
     # Helper functions to update menubar actions when dock widgets are closed
     def plot_visibility(self):
         self.actionPlotSelector.setChecked(not self.plotDock.isHidden())
@@ -1828,6 +1839,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.settings.HOVER_HIGHLIGHT = val
             self.update()
         return self.settings.HOVER_HIGHLIGHT
+
+    def zoom(self, axis, direction='in'):
+        if self.plotter:
+            self.plotter.zoom(axis, direction)
 
     def change_plot(self, plot_name):
         if not self.plotter:
