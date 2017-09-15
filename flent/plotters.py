@@ -31,6 +31,7 @@ from flent.util import classname, long_substr, format_date, diff_parts, \
 from flent.build_info import VERSION
 from flent.loggers import get_logger
 
+from argparse import SUPPRESS
 from functools import reduce
 from itertools import cycle, islice, chain
 from collections import OrderedDict
@@ -270,9 +271,12 @@ def add_plotting_args(parser):
         "auto-scaling the axis. Auto-scaling is still enabled for the "
         "upper bound. This also disables log scale.")
 
+    # --log-scale is old boolean option, kept for compatibility
+    parser.add_argument("--log-scale", action="store_const", dest="LOG_SCALE",
+                        const="log10", help=SUPPRESS)
     parser.add_argument(
-        "--log-scale",
-        action="store_true", dest="LOG_SCALE",
+        "--log-scale-y",
+        action="store", type=unicode, dest="LOG_SCALE", choices=("log2", "log10"),
         help="Use logarithmic scale.")
 
     parser.add_argument(
@@ -619,6 +623,11 @@ class Plotter(ArgParam):
         self.interactive_callback = self.resize_callback = None
         if self.hover_highlight is not None:
             self.can_highlight = self.hover_highlight
+
+        if self.log_scale and self.log_scale.startswith("log"):
+            self.log_base = int(self.log_scale.replace("log", ""))
+        else:
+            self.log_base = None
 
         self.config = self.expand_plot_config(plot_config, data_config, results)
         self.configs = [self.config]
@@ -1147,8 +1156,8 @@ class Plotter(ArgParam):
             top_scale = top_percentile * 1.01
             axis.set_ylim(ymin=0, ymax=top_scale)
         else:
-            if self.log_scale:
-                axis.set_yscale('log')
+            if self.log_base:
+                axis.set_yscale('log', basey=self.log_base)
                 axis.set_ylim(ymin=max(0, btm_scale), ymax=top_scale)
             else:
                 axis.set_ylim(ymin=btm_scale, ymax=top_scale)
@@ -1553,7 +1562,7 @@ class BoxPlotter(TimeseriesPlotter):
         for t in texts:
             min_y, max_y = t.axes.get_ylim()
             x, y = t.get_position()
-            mult = 0.1 if self.log_scale else 0.01
+            mult = 0.1 if self.log_base else 0.01
             t.set_position((x, max_y + abs(max_y - min_y) * mult))
 
         self.artists.extend(texts)
@@ -1758,8 +1767,8 @@ class CdfPlotter(Plotter):
                 min_value -= min_value % 100
             axis.set_xlim(left=min(min_value, axis.get_xlim()[0]))
 
-        if self.log_scale:
-            axis.set_xscale('log')
+        if self.log_base:
+            axis.set_xscale('log', basex=self.log_base)
 
         for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
