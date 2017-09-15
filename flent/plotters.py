@@ -606,6 +606,9 @@ class Plotter(ArgParam):
 
         return False
 
+    def axes_iter(self):
+        return iter(reduce(lambda x, y: x + y, [i['axes'] for i in self.configs]))
+
     def expand_plot_config(self, config, data, results=None):
         if 'series' not in config:
             return config
@@ -780,7 +783,7 @@ class Plotter(ArgParam):
     def update_axes(self, hovered):
         bboxes = set()
 
-        for ax in reduce(lambda x, y: x + y, [i['axes'] for i in self.configs]):
+        for ax in self.axes_iter():
 
             # If the bbox has negative width or height abort rather than crash
             # when trying to copy its content below
@@ -911,8 +914,7 @@ class Plotter(ArgParam):
                     [l.get_window_extent().width for l in self.legends])
 
             canvas_width = self.figure.canvas.get_width_height()[0]
-            for a in reduce(lambda x, y: x + y,
-                            [i['axes'] for i in self.configs]):
+            for a in self.axes_iter():
                 # Save the original width of the axis (in the interval [0..1])
                 # and use that as a base to scale the axis on subsequent calls.
                 # Otherwise, each call will shrink the axis.
