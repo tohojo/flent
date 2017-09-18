@@ -94,7 +94,8 @@ class RunnerBase(object):
     transformed_metadata = []
 
     def __init__(self, name, settings, idx=None, start_event=None,
-                 finish_event=None, kill_event=None, parent=None, **kwargs):
+                 finish_event=None, kill_event=None, parent=None,
+                 watchdog_timer=None, **kwargs):
         super(RunnerBase, self).__init__()
         self.name = name
         self.settings = settings
@@ -110,6 +111,8 @@ class RunnerBase(object):
         self.start_event = start_event
         self.kill_event = kill_event or Event()
         self.finish_event = finish_event or Event()
+        self.watchdog_timer = watchdog_timer
+        self._watchdog = None
 
         self._child_runners = []
 
@@ -137,6 +140,8 @@ class RunnerBase(object):
 
         for c in self._child_runners:
             c.start()
+
+        self.start_watchdog()
 
         s = super(RunnerBase, self)
         if hasattr(s, 'start'):
@@ -172,8 +177,26 @@ class RunnerBase(object):
             self.start_event.wait()
         self._run()
         self.finish_event.set()
+        if self._watchdog:
+            self._watchdog.kill()
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
+
+    def start_watchdog(self):
+        if self._watchdog or not self.watchdog_timer:
+            return
+
+        logger.debug("%s: Starting watchdog with timeout %d",
+                     self.name, self.watchdog_timer)
+        self._watchdog = TimerRunner(self.watchdog_timer,
+                                     name="Watchdog [%s]" % self.name,
+                                     idx=self.idx,
+                                     settings=self.settings,
+                                     start_event=self.start_event,
+                                     kill_event=self.kill_event,
+                                     parent=self)
+        self.kill_event = self._watchdog.finish_event
+        self._watchdog.start()
 
     def add_child(self, cls, *args):
         logger.debug("%s: Adding child %s", self.name, cls.__name__)
