@@ -789,6 +789,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         widget.update_end.connect(self.busy_end)
         widget.update_end.connect(self.update_save)
         widget.plot_changed.connect(self.update_plots)
+        widget.name_changed.connect(self.shorten_tabs)
         if results:
             widget.load_results(results, plot)
         if title is None:
@@ -2043,12 +2044,22 @@ class UpdateDisabler(object):
         self.widget.update()
 
 
+class FigureManager(matplotlib.backend_bases.FigureManagerBase):
+    def __init__(self, widget, canvas):
+        super(FigureManager, self).__init__(canvas, 0)
+        self.widget = widget
+
+    def get_window_title(self):
+        return self.widget.title
+
+
 class ResultWidget(get_ui_class("resultwidget.ui")):
 
     update_start = pyqtSignal()
     update_end = pyqtSignal()
     plot_changed = pyqtSignal('QString', 'QString')
     new_plot = pyqtSignal()
+    name_changed = pyqtSignal()
     default_title = "New tab"
 
     def __init__(self, parent, settings, worker_pool):
@@ -2106,6 +2117,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         self.canvas = FigureCanvas(self.plotter.figure)
         self.canvas.setParent(self.graphDisplay)
         self.toolbar = NavigationToolbar(self.canvas, self.graphDisplay)
+        self.manager = FigureManager(self, self.canvas)
 
         vbl = QVBoxLayout()
         vbl.addWidget(self.canvas)
@@ -2218,6 +2230,15 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.plotter.zoom(axis, direction)
 
     def update_settings(self, values):
+        if values['OVERRIDE_TITLE']:
+            t = "%s - %s" % (self.results.meta('NAME'), values['OVERRIDE_TITLE'])
+        else:
+            t = self.results.title
+
+        if t != self.title:
+            self.title = t
+            self.name_changed.emit()
+
         if self.settings.update(values):
             self.update()
 
