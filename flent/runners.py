@@ -923,7 +923,7 @@ class PingRunner(RegexpRunner):
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
             # check for presence of timestamp option
-            if ip_version == 6 and not fping.endwith("6") and \
+            if ip_version == 6 and not fping.endswith("6") and \
                "--ipv6" not in str(out):
                 logger.warning("Found fping, but it does not appear to "
                                "support IPv6. Not using.")
