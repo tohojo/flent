@@ -615,7 +615,9 @@ class NetperfDemoRunner(ProcessRunner):
     output_vars = 'THROUGHPUT,LOCAL_CONG_CONTROL,REMOTE_CONG_CONTROL,' \
                   'TRANSPORT_MSS,LOCAL_TRANSPORT_RETRANS,' \
                   'REMOTE_TRANSPORT_RETRANS,LOCAL_SOCKET_TOS,' \
-                  'REMOTE_SOCKET_TOS,DIRECTION,ELAPSED_TIME,PROTOCOL'
+                  'REMOTE_SOCKET_TOS,DIRECTION,ELAPSED_TIME,PROTOCOL,' \
+                  'LOCAL_SEND_SIZE,LOCAL_RECV_SIZE,' \
+                  'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE'
     netperf = {}
 
     def parse(self, output):
@@ -688,11 +690,19 @@ class NetperfDemoRunner(ProcessRunner):
                             'LOCAL_CONG_CONTROL')
                         self.metadata['TCP_RETRANSMIT'] = data_dict.get(
                             'LOCAL_TRANSPORT_RETRANS')
+                        self.metadata['SEND_SIZE'] = int(data_dict.get(
+                            'LOCAL_SEND_SIZE', -1))
+                        self.metadata['RECV_SIZE'] = int(data_dict.get(
+                            'REMOTE_RECV_SIZE', -1))
                     else:
                         self.metadata['CONG_CONTROL'] = data_dict.get(
                             'REMOTE_CONG_CONTROL')
                         self.metadata['TCP_RETRANSMIT'] = int(data_dict.get(
                             'REMOTE_TRANSPORT_RETRANS', 0))
+                        self.metadata['SEND_SIZE'] = int(data_dict.get(
+                            'REMOTE_SEND_SIZE', -1))
+                        self.metadata['RECV_SIZE'] = int(data_dict.get(
+                            'LOCAL_RECV_SIZE', -1))
             except KeyError as e:
                 logger.warning("Missing required netperf metadata: %s", e.args[0])
 
