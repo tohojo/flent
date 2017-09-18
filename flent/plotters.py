@@ -834,6 +834,21 @@ class Plotter(ArgParam):
                 if a.contains(event)[0]:
                     hovered.add(a)
 
+        if hovered and self.figure.canvas.toolbar:
+            s = []
+
+            for a in hovered:
+                ax = a.get_axes()
+                try:
+                    trans = ax.transData.inverted()
+                    xdata, ydata = trans.transform_point((event.x, event.y))
+                except ValueError:
+                    continue
+
+                s.append("%s [%.2f, %.2f]" % (a.get_label(), xdata, ydata))
+
+            self.figure.canvas.toolbar.set_message(", ".join(s))
+
         self.update_axes(hovered)
 
     def on_click(self, event):
