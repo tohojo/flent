@@ -108,8 +108,8 @@ class RunnerBase(object):
         self.result = None
 
         self.start_event = start_event
-        self.kill_event = kill_event if kill_event is not None else Event()
-        self.finish_event = finish_event
+        self.kill_event = kill_event or Event()
+        self.finish_event = finish_event or Event()
 
         self._child_runners = []
 
@@ -182,10 +182,10 @@ class RunnerBase(object):
                 settings=self.settings,
                 idx=self.idx,
                 start_event=self.start_event,
-                finish_event=self.finish_event,
                 kill_event=self.kill_event,
                 parent=self)
         self._child_runners.append(c)
+        return c
 
     @property
     def child_results(self):
