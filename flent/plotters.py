@@ -424,7 +424,7 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--legend-columns",
-        action="store", type=int, dest="LEGEND_COLUMNS", default=1,
+        action="store", type=int, dest="LEGEND_COLUMNS", default=None,
         help="Legend columns. Set the number of columns in the legend.")
 
     parser.add_argument(
@@ -614,6 +614,9 @@ class Plotter(ArgParam):
         self.legends = []
         self.artists = []
         self.data_artists = []
+        self.top_art = []
+        self.btm_art = []
+        self.right_art = []
         self.metadata = None
         self.callbacks = []
         self.in_worker = in_worker
@@ -635,7 +638,7 @@ class Plotter(ArgParam):
         self.data_config = data_config
 
         if figure is None:
-            self.figure = pyplot.figure()
+            self.figure = pyplot.figure(dpi=self.fig_dpi)
             if self.fig_width is not None:
                 self.figure.set_figwidth(self.fig_width)
             if self.fig_height is not None:
@@ -772,6 +775,9 @@ class Plotter(ArgParam):
         else:
             logger.debug("Saving plot to %s", self.output)
             try:
+                # PDFs have fixed DPI
+                if pyplot.get_backend() == 'pdf':
+                    self.figure.set_dpi(72)
                 save_args = self.build_tight_layout(artists)
                 if pyplot.get_backend() == 'pdf':
                     self.save_pdf(self.output, results[0].meta(
@@ -922,67 +928,73 @@ class Plotter(ArgParam):
             pdf.infodict()['Subject'] = data_filename
             if self.title:
                 pdf.infodict()['Title'] = self.title.replace("\n", "; ")
-            self.figure.savefig(pdf, dpi=self.fig_dpi, **save_args)
+            self.figure.savefig(pdf, **save_args)
         finally:
             pdf.close()
 
     def build_tight_layout(self, artists):
         args = None
+        if self.fallback_layout:
+            return {'bbox_extra_artists': artists, 'bbox_inches': 'tight'}
         try:
-            # Some plot configurations are incompatible with tight_layout; this
-            # test is from matplotlib's tight_layout() in figure.py
-            from matplotlib.tight_layout import get_subplotspec_list
-            if not self.fallback_layout and None not in \
-               get_subplotspec_list(self.figure.axes):
+            self.figure.savefig(io.BytesIO())
 
-                Bbox = matplotlib.transforms.Bbox
+            renderer = self.figure._cachedRenderer
+            right = x_max = self.figure.get_figwidth() * self.figure.dpi
+            top = y_max = self.figure.get_figheight() * self.figure.dpi
+            vsp = 0.02 * self.figure.dpi
+            hsp = 0.08 * self.figure.dpi
 
-                self.figure.savefig(io.BytesIO())
+            left = btm = offset_x = right_ax = 0
 
-                # The tight_layout expands the figure as much as possible before
-                # we begin messing with it
-                self.figure.tight_layout()
+            # these move with the subplots, so use .width/.height
+            for ax in self.axes_iter():
+                w = ax.yaxis.get_tightbbox(renderer).width
+                if ax.yaxis.get_label_position() == 'right':
+                    right_ax = max(w, right_ax)
+                else:
+                    left = max(left, w)
 
-                renderer = self.figure._cachedRenderer
-                fig_bbox = self.figure.get_tightbbox(renderer)
-                if isinstance(fig_bbox, matplotlib.transforms.TransformedBbox):
-                    fig_bbox = fig_bbox._bbox
+                bbx = ax.xaxis.get_tightbbox(renderer)
+                if bbx:
+                    btm = max(btm, bbx.height)
 
-                bbs = [fig_bbox]
+            if self.right_art:
+                right -= max((a.get_window_extent(renderer).width
+                             for a in self.right_art))
+                offset_x = max((a.offset_x for a in self.right_art
+                                if hasattr(a, "offset_x")))
+            else:
+                # This only seems to be necessary if there's no legend to the right
+                right -= right_ax
 
-                for a in artists:
+            # these are fixed in place, so use .y0/.y1
+            bsp = 0
+            if self.btm_art:
+                for a in self.btm_art:
                     bb = a.get_window_extent(renderer)
+                    bsp = max(bsp, bb.y1)
+                    if bb.y1 < 0:
+                        btm += bb.height - bb.y1
+            btm += bsp
 
-                    # Handle padding inside legends places outside the plot
-                    if hasattr(a, "offset_x"):
-                        offset = 2*(a.offset_x-1)
-                        x0 = fig_bbox.x1 + offset*fig_bbox.x1
-                        adj = x0-bb.x0
-                        bb.x0 = x0
-                        bb.x1 += adj
+            if self.top_art:
+                top = y_max - sum((a.get_window_extent(renderer).height
+                                   for a in self.top_art))
 
-                    # If an artist sticks above the figure, make sure it is
-                    # entirely above the figure. This fixes the title
-                    # overlapping the figure proper
-                    if bb.y1 > fig_bbox.y1 and bb.y0 < fig_bbox.y1:
-                        adj = fig_bbox.y1 - bb.y0
-                        bb.y0 += adj
-                        bb.y1 += adj
+            # The offset is a percentage of the final subplot bounding box, so
+            # adjust by that
+            if offset_x:
+                right -= (right - left) * (offset_x - 1)
 
-                    bbs.append(bb)
-                bbox = Bbox.union([b for b in bbs
-                                   if b.height != 0 or b.width != 0])
+            left = (hsp + left)/x_max
+            top = (top - vsp)/y_max
+            right = (right - hsp)/x_max
+            bottom = (vsp + btm)/y_max
 
-                h = fig_bbox.height
-                w = fig_bbox.width
-
-                rect = [(fig_bbox.x0 - bbox.x0) / w,
-                        (fig_bbox.y0 - bbox.y0) / h,
-                        1 - (bbox.x1 - fig_bbox.x1) / w,
-                        1 - (bbox.y1 - fig_bbox.y1) / h]
-
-                self.figure.tight_layout(rect=rect)
-                args = {}
+            self.figure.subplots_adjust(left=left, right=right,
+                                        top=top, bottom=bottom)
+            args = {}
         except (AttributeError, ImportError, ValueError) as e:
             logger.warning("Unable to build our own tight layout: %s", e)
 
@@ -1030,11 +1042,12 @@ class Plotter(ArgParam):
 
     def _annotate_plot(self, skip_title=False):
         titles = []
-        title_y = 1
+        title_y = 1 - 0.04 / self.figure.get_figheight()
         if self.override_title:
             art = self.figure.suptitle(self.override_title,
                                        fontsize=14, y=title_y)
             titles.append(art)
+            self.top_art.append(art)
             self.title = self.override_title
         elif self.print_title:
             plot_title = self.description
@@ -1042,13 +1055,10 @@ class Plotter(ArgParam):
                 plot_title += "\n" + self.config['description']
             if self.metadata['TITLE'] and not skip_title:
                 plot_title += "\n" + self.metadata['TITLE']
-            if 'description' in self.config \
-               and self.metadata['TITLE'] \
-               and not skip_title:
-                title_y = 1.00
             art = self.figure.suptitle(
                 plot_title, fontsize=14, y=title_y)
             titles.append(art)
+            self.top_art.append(art)
             self.title = plot_title
 
         if self.annotate:
@@ -1059,15 +1069,19 @@ class Plotter(ArgParam):
                                     format_date(self.metadata['TIME']),
                                     self.metadata['LENGTH'],
                                     self.metadata['STEP_SIZE'])
-            titles.append(self.figure.text(0.5, 0.0, annotation_string,
-                                           horizontalalignment='center',
-                                           verticalalignment='bottom',
-                                           fontsize=8))
+            self.btm_art.append(self.figure.text(0.5,
+                                                 0.04 / self.figure.get_figheight(),
+                                                 annotation_string,
+                                                 horizontalalignment='center',
+                                                 verticalalignment='bottom',
+                                                 fontsize=8))
         if self.fig_note:
-            titles.append(self.figure.text(0.0, 0.0, self.fig_note,
-                                           horizontalalignment='left',
-                                           verticalalignment='bottom',
-                                           fontsize=8))
+            self.btm_art.append(self.figure.text(0.0,
+                                                 0.04 / self.figure.get_figheight(),
+                                                 self.fig_note,
+                                                 horizontalalignment='left',
+                                                 verticalalignment='bottom',
+                                                 fontsize=8))
 
         return titles
 
@@ -1151,7 +1165,11 @@ class Plotter(ArgParam):
                            **kwargs)
 
         if offset_x is not None:
+            self.right_art.append(l)
             l.offset_x = offset_x  # We use this in build_tight_layout
+
+        if self.horizontal_legend:
+            self.btm_art.append(l)
 
         legends.append(l)
         return legends
@@ -1589,6 +1607,8 @@ class BoxPlotter(TimeseriesPlotter):
             t.set_position((x, max_y + abs(max_y - min_y) * mult))
 
         self.artists.extend(texts)
+        if texts:
+            self.top_art.append(texts[0])
 
         axis.set_xlim(0, pos - 1)
         axis.set_xticks(ticks)
@@ -1702,6 +1722,8 @@ class BarPlotter(BoxPlotter):
             axis.set_xticklabels([])
 
         self.artists.extend(texts)
+        if texts:
+            self.top_art.append(texts[0])
 
 
 class BarCombinePlotter(CombineManyPlotter, BarPlotter):
@@ -2032,6 +2054,7 @@ class MetaPlotter(Plotter):
             s.plot(results, connect_interactive=False)
             s.legends.extend(s.do_legend())
             self.legends.extend(s.legends)
+            self.right_art.extend(s.right_art)
             s.init_interactive()
         self.connect_interactive()
 
