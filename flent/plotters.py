@@ -1062,12 +1062,19 @@ class Plotter(ArgParam):
         for r in self.filter_regexp:
             labels = [re.sub(r, "", l) for l in labels]
         if self.filter_legend and labels:
-            substr = long_substr(labels)
+            if 'Avg' in labels:
+                filt = labels[:]
+                filt.remove('Avg')
+                substr = long_substr(filt)
+            else:
+                substr = long_substr(labels)
+
             if len(substr) > 3 and substr != " - ":
                 labels = [l.replace(substr, '') for l in labels]
             prefix = long_substr(labels, prefix_only=True)
             if prefix and len(prefix) < len(labels[0]):
                 labels = [l.replace(prefix, '') for l in labels]
+
         labels = [l.strip() for l in labels]
         return labels
 
