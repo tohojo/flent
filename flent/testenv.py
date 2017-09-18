@@ -167,19 +167,17 @@ class TestEnvironment(object):
         except:
             raise RuntimeError("Invalid integer value: %s" % val)
 
-    @finder
-    def find_ping(self, ip_version, interval, length, host,
-                  marking=None, local_bind=None):
+    def find_ping(self, ip_version, interval, length, host, **args):
         """Find a suitable ping."""
-        if local_bind is None:
-            local_bind = self.env['LOCAL_BIND'][
-                0] if self.env['LOCAL_BIND'] else None
 
-        # Main code moved to the PingRunner class to be able to take advantage
-        # of the parser code there.
-        return runners.PingRunner.find_binary(ip_version, interval, length, host,
-                                              marking=marking,
-                                              local_bind=local_bind)
+        args.setdefault('local_bind', (self.env['LOCAL_BIND'][0]
+                                       if self.env['LOCAL_BIND'] else None))
+        args['ip_version'] = ip_version
+        args['interval'] = interval
+        args['length'] = length
+        args['host'] = host
+
+        return args
 
     @finder
     def find_iperf(self, host, interval, length, ip_version, local_bind=None,

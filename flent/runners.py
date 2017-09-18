@@ -902,8 +902,7 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
-    @classmethod
-    def find_binary(cls, ip_version, interval, length, host,
+    def find_binary(self, ip_version, interval, length, host,
                     marking=None, local_bind=None):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
@@ -914,7 +913,7 @@ class PingRunner(RegexpRunner):
         else:
             suffix = ""
 
-        fping = util.which('fping' + suffix)
+        fping = util.which('fping' + suffix) or util.which('fping')
         ping = util.which('ping' + suffix)
         pingargs = []
 
@@ -924,10 +923,25 @@ class PingRunner(RegexpRunner):
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
             # check for presence of timestamp option
-            if "print timestamp before each output line" in str(out):
-                return "{binary} -D -p {interval:.0f} -c {count:.0f} " \
+            if ip_version == 6 and not fping.endwith("6") and \
+               "--ipv6" not in str(out):
+                logger.warning("Found fping, but it does not appear to "
+                               "support IPv6. Not using.")
+            elif "print timestamp before each output line" not in str(out):
+                logger.warning("Found fping, but it does not appear to support "
+                               "timestamps. Not using.")
+            elif "must run as root?" in str(err):
+                logger.warning("Found fping, but it appears to be missing "
+                               "permissions (no SUID?). Not using.")
+            else:
+                # Since there is not timeout parameter to fping, set a watchdog
+                # timer to kill it in case it runs over time
+                self.watchdog_timer = length + 1
+                return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
                     "{marking} {local_bind} {host}".format(
                         binary=fping,
+                        ipver='-6' if (ip_version == 6 and
+                                       not fping.endswith("6")) else "",
                         interval=interval * 1000,  # fping expects interval in ms
                         # since there's no timeout parameter for fping,
                         # calculate a total number of pings to send
@@ -936,10 +950,6 @@ class PingRunner(RegexpRunner):
                         local_bind=("-I {0}".format(local_bind)
                                     if local_bind else ""),
                         host=host)
-            elif "must run as root?" in str(err):
-                logger.warning(
-                    "Found fping but it seems to be missing "
-                    "permissions (no SUID?). Not using.")
 
         if ping is None and ip_version == 6:
             # See if we have a combined ping binary (new versions of iputils)
@@ -971,7 +981,7 @@ class PingRunner(RegexpRunner):
             out, err = proc.communicate()
             if hasattr(out, 'decode'):
                 out = out.decode(ENCODING)
-            if not cls._parse(out)[0]:
+            if not self._parse(out)[0]:
                 raise RuntimeError(
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
