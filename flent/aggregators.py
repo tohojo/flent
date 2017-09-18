@@ -25,6 +25,7 @@ import math
 import pprint
 import signal
 
+from collections import OrderedDict
 from datetime import datetime
 from threading import Event
 
@@ -60,8 +61,8 @@ class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
 
     def __init__(self, settings):
-        self.instances = {}
-        self.threads = {}
+        self.instances = OrderedDict()
+        self.threads = OrderedDict()
         self.settings = settings
         self.failed_runners = 0
         self.runner_counter = 0
@@ -121,7 +122,12 @@ class Aggregator(object):
                 if 'kill_after' in i:
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E501
                 self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
-                self.threads[n].start()
+
+            # Start in a separate loop once we're sure we successfully created
+            # all runners
+            for t in self.threads.values():
+                t.start()
+
             shutting_down = False
             for n, t in list(self.threads.items()):
                 while t.is_alive():
