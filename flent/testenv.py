@@ -34,6 +34,19 @@ from flent.loggers import get_logger
 TEST_PATH = os.path.join(DATA_DIR, 'tests')
 logger = get_logger(__name__)
 
+try:
+    from os import cpu_count
+except ImportError:
+    from multiprocessing import cpu_count
+
+try:
+    CPU_COUNT = cpu_count()
+except NotImplementedError:
+    CPU_COUNT = 1
+
+SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams']
+SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
+
 
 class _no_default():
     pass
@@ -54,7 +67,7 @@ def finder(fn):
 class TestEnvironment(object):
 
     def __init__(self, env={}, informational=False):
-        self.env = deepcopy(env)
+        self.env = self.replace_testparms(deepcopy(env))
         self.env.update({
             'glob': Glob,
             'o': OrderedDict,
@@ -91,6 +104,16 @@ class TestEnvironment(object):
         except Exception as e:
             raise RuntimeError(
                 "Unable to read test config file '%s': '%s'." % (filename, e))
+
+    def replace_testparms(self, env):
+        if 'TEST_PARAMETERS' not in env:
+            return env
+
+        tp = env['TEST_PARAMETERS']
+        for k in SPECIAL_PARAM_NAMES:
+            if k in tp and tp[k] in SPECIAL_PARAM_MAP:
+                tp[k] = SPECIAL_PARAM_MAP[tp[k]]
+        return env
 
     def expand_duplicates(self, env):
         new_data_sets = []
