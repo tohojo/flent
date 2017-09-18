@@ -458,7 +458,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
 
-        self.result = self.parse(self.out)
+        self.result = self.parse(self.out, self.err)
         if not self.result and not self.silent:
             logger.warning("Command produced no valid data.",
                            extra={'runner': self})
@@ -466,7 +466,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         """Default parser returns the last (whitespace-separated) word of
         output as a float."""
 
@@ -479,7 +479,7 @@ DefaultRunner = ProcessRunner
 class SilentProcessRunner(ProcessRunner):
     silent = True
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         return None
 
 
@@ -531,7 +531,7 @@ class DitgRunner(ProcessRunner):
 
         super(DitgRunner, self).start()
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         data = ""
         utc_offset = 0
         results = {}
@@ -619,8 +619,9 @@ class NetperfDemoRunner(ProcessRunner):
                   'LOCAL_SEND_SIZE,LOCAL_RECV_SIZE,' \
                   'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE'
     netperf = {}
+    _env = {"DUMP_TCP_INFO": "1"}
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         """Parses the interim result lines and returns a list of (time,value)
         pairs."""
 
@@ -650,6 +651,13 @@ class NetperfDemoRunner(ProcessRunner):
                     data_dict[k] = v
             except ValueError:
                 pass
+
+        # TCP_INFO values are output to stderr
+        for line in error.strip().splitlines():
+            line = line.strip()
+            if line.startswith("tcpi"):
+                parts = line.split()
+                data_dict.update(dict(zip(parts[::2], parts[1::2])))
 
         try:
             for dur, t, value in zip(data_dict['NETPERF_INTERVAL'],
@@ -703,6 +711,10 @@ class NetperfDemoRunner(ProcessRunner):
                             'REMOTE_SEND_SIZE', -1))
                         self.metadata['RECV_SIZE'] = int(data_dict.get(
                             'LOCAL_RECV_SIZE', -1))
+
+                    for k in data_dict.keys():
+                        if k.startswith("tcpi"):
+                            self.metadata[k.upper()] = int(data_dict[k])
             except KeyError as e:
                 logger.warning("Missing required netperf metadata: %s", e.args[0])
 
@@ -808,7 +820,7 @@ class RegexpRunner(ProcessRunner):
 
     # Parse is split into a stateless class method in _parse to be able to call
     # it from find_binary.
-    def parse(self, output):
+    def parse(self, output, error=""):
         result, raw_values, metadata = self._parse(output)
         self.raw_values = raw_values
         self.metadata.update(metadata)
@@ -978,7 +990,7 @@ class IperfCsvRunner(ProcessRunner):
             self.udp = False
         super(IperfCsvRunner, self).__init__(**kwargs)
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         result = []
         raw_values = []
         lines = output.strip().split("\n")
@@ -1221,7 +1233,7 @@ class SsRunner(ProcessRunner):
 
         return vals
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         self.par_pid = str(self._parent.pid)
         results = {}
         parts = output.split("\n---\n")
@@ -1343,7 +1355,7 @@ class TcRunner(ProcessRunner):
             except ValueError:
                 return v
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
         for part in parts:
@@ -1445,7 +1457,7 @@ class CpuStatsRunner(ProcessRunner):
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     value_re = re.compile(r"^\d+ \d+ (?P<load>\d+\.\d+)$", re.MULTILINE)
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
         for part in parts:
@@ -1525,7 +1537,7 @@ class WifiStatsRunner(ProcessRunner):
 
         super(WifiStatsRunner, self).__init__(**kwargs)
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
         for part in parts:
@@ -1619,7 +1631,7 @@ class NetstatRunner(ProcessRunner):
         r"^TcpExt: (?P<header>[A-Z][0-9a-zA-Z ]+)\n", re.MULTILINE)
     tcpext_data_re = re.compile(r"^TcpExt: (?P<data>[0-9 ]+)\n", re.MULTILINE)
 
-    def parse(self, output):
+    def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
         for part in parts:
