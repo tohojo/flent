@@ -90,7 +90,7 @@ try:
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
         QFormLayout, QHBoxLayout, QVBoxLayout, QApplication, QPlainTextEdit, \
         QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea, \
-        QPushButton
+        QPushButton, QShortcut
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices, QValidator
@@ -117,7 +117,7 @@ except ImportError:
             QItemSelectionModel, QMouseEvent, QApplication, QStringListModel, \
             QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
             QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea,\
-            QPushButton, QValidator
+            QPushButton, QValidator, QShortcut
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -315,11 +315,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.actionClearExtra.triggered.connect(self.clear_extra)
         self.actionScaleOpen.triggered.connect(self.scale_open)
         self.actionNextTab.triggered.connect(self.next_tab)
-        self.actionNextTab.setShortcuts([QKeySequence("Ctrl+Right"),
-                                         QKeySequence("Ctrl+Tab")])
         self.actionPrevTab.triggered.connect(self.prev_tab)
-        self.actionPrevTab.setShortcuts([QKeySequence("Ctrl+Left"),
-                                         QKeySequence("Ctrl+Shift+Backtab")])
         self.actionRefresh.triggered.connect(self.refresh_plot)
         self.actionNewTest.triggered.connect(self.run_test)
 
@@ -390,6 +386,15 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         self.worker_pool = Pool(initializer=pool_init_func,
                                 initargs=(self.settings, self.log_queue))
+
+        QShortcut(QKeySequence("Ctrl+Right"),
+                  self).activated.connect(self.next_tab)
+        QShortcut(QKeySequence("Ctrl+Left"),
+                  self).activated.connect(self.prev_tab)
+        QShortcut(QKeySequence("Ctrl+Down"),
+                  self).activated.connect(self.next_plot)
+        QShortcut(QKeySequence("Ctrl+Up"),
+                  self).activated.connect(self.prev_plot)
 
         logger.info("GUI loaded. Running on PyQt v%s.", QtCore.PYQT_VERSION_STR)
 
@@ -717,6 +722,23 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def prev_tab(self):
         self.move_tab(-1)
+
+    def move_plot(self, move_by):
+        model = self.plotView.model()
+        if not model:
+            return
+
+        count = model.rowCount()
+        if count:
+            idx = self.plotView.currentIndex()
+            row = idx.row()
+            self.plotView.setCurrentIndex(model.index((row + move_by) % count))
+
+    def next_plot(self):
+        self.move_plot(1)
+
+    def prev_plot(self):
+        self.move_plot(-1)
 
     def busy_start(self):
         QApplication.setOverrideCursor(Qt.WaitCursor)
