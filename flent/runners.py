@@ -738,8 +738,18 @@ class NetperfDemoRunner(ProcessRunner):
             if "netperf: invalid option -- 'e'" not in str(err):
                 self.netperf['-e'] = True
 
+            try:
+                # Sanity check; is /dev/urandom readable? If so, use it to
+                # pre-fill netperf's buffers
+                with open("/dev/urandom", "rb") as fp:
+                    fp.read(1)
+                self.netperf['buffer'] = '-F /dev/urandom'
+            except:
+                self.netperf['buffer'] = ''
+
         args['binary'] = self.netperf['executable']
         args['output_vars'] = self.output_vars
+        args['buffer'] = self.netperf['buffer']
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -771,9 +781,9 @@ class NetperfDemoRunner(ProcessRunner):
 
         return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
             "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
-            "{format} {control_local_bind} {extra_args} -- {socket_timeout} " \
-            "{local_bind} -H {host} -k {output_vars} {cong_control} " \
-            "{extra_test_args}".format(**args)
+            "{buffer} {format} {control_local_bind} {extra_args} -- " \
+            "{socket_timeout} {local_bind} -H {host} -k {output_vars} " \
+            "{cong_control} {extra_test_args}".format(**args)
 
 
 class RegexpRunner(ProcessRunner):
