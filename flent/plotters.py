@@ -659,7 +659,7 @@ class Plotter(ArgParam):
         self.configs = [self.config]
 
     def verify(self):
-        for a in self.figure.get_axes():
+        for a in self.figure.axes:
             if len(a.get_lines()) > 0:
                 return True
 
@@ -844,7 +844,7 @@ class Plotter(ArgParam):
             s = []
 
             for a in hovered:
-                ax = a.get_axes()
+                ax = a.axes
                 try:
                     trans = ax.transData.inverted()
                     xdata, ydata = trans.transform_point((event.x, event.y))
