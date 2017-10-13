@@ -6,7 +6,7 @@
 WIFI_STATS_HOSTS=TEST_PARAMETERS.get('wifi_stats_hosts')
 WIFI_STATS_IFACES=TEST_PARAMETERS.get('wifi_stats_interfaces')
 WIFI_STATS_STATIONS=TEST_PARAMETERS.get('wifi_stats_stations')
-if WIFI_STATS_HOSTS:
+if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     for host,iface in zip(WIFI_STATS_HOSTS.split(","), WIFI_STATS_IFACES.split(",")):
         DATA_SETS['wifi_stats_%s' % host] = {'command': find_wifistats_iterate(iface, STEP_SIZE, TOTAL_LENGTH, host),
                                              'stations': WIFI_STATS_STATIONS.split(","),
