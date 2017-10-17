@@ -486,11 +486,12 @@ def float_pair(value):
 def keyval(value):
     ret = {}
     for p in value.split(";"):
-        if not p.strip():
+        p = p.strip()
+        if not p:
             continue
         try:
             k, v = p.split('=', 1)
-            ret.update({k: v})
+            ret.update({k.strip(): v.strip()})
         except ValueError:
             raise argparse.ArgumentTypeError(
                 "Invalid value '%s' (missing =)" % p)
