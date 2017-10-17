@@ -396,6 +396,46 @@ qdisc ingress ffff: parent ffff:fff1 ----------------
 Time: 1484778584.638003530
 """
 
+INGRESS_OUTPUT = """qdisc htb 1: root refcnt 2 r2q 10 default 11 direct_packets_stat 0 direct_qlen 1000
+ Sent 13843 bytes 62 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+qdisc fq 8052: parent 1:11 limit 10000p flow_limit 100p buckets 1024 orphan_mask 1023 quantum 3028 initial_quantum 15140 refill_delay 40.0ms
+ Sent 13843 bytes 62 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+  6 flows (5 inactive, 0 throttled)
+  0 gc, 0 highprio, 0 throttled
+qdisc ingress ffff: parent ffff:fff1 ----------------
+ Sent 12815 bytes 65 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+Time: 1508235458.602528897
+---
+qdisc htb 1: root refcnt 2 r2q 10 default 11 direct_packets_stat 0 direct_qlen 1000
+ Sent 13941 bytes 63 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+qdisc fq 8052: parent 1:11 limit 10000p flow_limit 100p buckets 1024 orphan_mask 1023 quantum 3028 initial_quantum 15140 refill_delay 40.0ms
+ Sent 13941 bytes 63 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+  6 flows (5 inactive, 0 throttled)
+  0 gc, 0 highprio, 0 throttled
+qdisc ingress ffff: parent ffff:fff1 ----------------
+ Sent 12899 bytes 66 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+Time: 1508235458.802541376
+---
+qdisc htb 1: root refcnt 2 r2q 10 default 11 direct_packets_stat 0 direct_qlen 1000
+ Sent 14039 bytes 64 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+qdisc fq 8052: parent 1:11 limit 10000p flow_limit 100p buckets 1024 orphan_mask 1023 quantum 3028 initial_quantum 15140 refill_delay 40.0ms
+ Sent 14039 bytes 64 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+  6 flows (5 inactive, 0 throttled)
+  0 gc, 0 highprio, 0 throttled
+qdisc ingress ffff: parent ffff:fff1 ----------------
+ Sent 12983 bytes 67 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+Time: 1508235459.002541779
+---"""
+
 QDISC_KEYS = ['backlog_bytes', 'backlog_pkts', 'backlog_requeues', 'dropped',
               'overlimits', 'requeues', 'sent_bytes', 'sent_pkts']
 
@@ -428,6 +468,12 @@ class TestParsers(unittest.TestCase):
             self.check_res_keys(
                 QDISC_KEYS + ['ecn_mark'], res, raw_keys, r.raw_values)
             self.check_vals(['sent_bytes', 'sent_pkts', 'ecn_mark'], res)
+
+    def test_ingress_parser(self):
+        r = self.new_runner("tc")
+        res = r.parse(INGRESS_OUTPUT)
+        self.check_res_keys(QDISC_KEYS, res, [], r.raw_values)
+        self.check_vals(['sent_bytes', 'sent_pkts'], res)
 
 
 test_suite = unittest.TestLoader().loadTestsFromTestCase(TestParsers)

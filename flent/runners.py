@@ -1392,6 +1392,11 @@ class TcRunner(ProcessRunner):
         results = {}
         parts = output.split("\n---\n")
         for part in parts:
+            timestamp = self.time_re.search(part)
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
+
             # Split out individual qdisc entries (in case there are more than
             # one). If so, discard the root qdisc and sum the rest.
             qdiscs = [i for i in self.split_re.split(part)
@@ -1401,10 +1406,6 @@ class TcRunner(ProcessRunner):
                                       if 'root' not in i])
 
             matches = {}
-            timestamp = self.time_re.search(part)
-            if timestamp is None:
-                continue
-            timestamp = float(timestamp.group('timestamp'))
 
             for r in self.qdisc_res:
                 m = r.search(part)
