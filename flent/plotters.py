@@ -1176,7 +1176,7 @@ class Plotter(ArgParam):
 
     def _do_scaling(self, axis, data, btm, top, unit=None, allow_log=True):
         """Scale the axis to the selected bottom/top percentile"""
-        if not data.any():
+        if data is None or not data.any():
             return
 
         top_percentile = self._percentile(data, top)
@@ -1546,6 +1546,9 @@ class BoxPlotter(TimeseriesPlotter):
             data = []
             for r in results:
                 d = self.get_series(s, r, config, no_invalid=True)
+
+                if not d.any():
+                    continue
 
                 if all_data[a] is None:
                     all_data[a] = d[1].copy()
