@@ -190,7 +190,7 @@ def init_matplotlib(output, use_markers, load_rc):
         matplotlib.rcParams.update(MATPLOTLIB_STYLES)
     elif 'axes.prop_cycle' in matplotlib.rcParams:
         c = matplotlib.rcParams['axes.prop_cycle']
-        if 'color' in c.keys:
+        if 'color' in c.keys and hasattr(c, 'by_key'):
             COLOURS = c.by_key()['color']
     else:
         COLOURS = matplotlib.rcParams['axes.color_cycle']
@@ -1574,6 +1574,9 @@ class BoxPlotter(TimeseriesPlotter):
                     all_data[a] = np.append(all_data[a], d[1])
 
                 data.append(d[1])
+
+            if not data:
+                continue
 
             if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
