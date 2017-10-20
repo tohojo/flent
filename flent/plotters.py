@@ -653,6 +653,24 @@ class Plotter(ArgParam):
             except Exception:
                 pass
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        for c in state['configs']:
+            for a in c['axes']:
+                # There is a bug in matplotlib prior to 1.4.2 where the renderer
+                # can't be pickled. Work around this by monkey-patching the
+                # renderer object as needed.
+                if a._cachedRenderer and not hasattr(a._cachedRenderer,
+                                                     "__getstate__"):
+                    def getState():
+                        return {'width': a._cachedRenderer.width,
+                                'height': a._cachedRenderer.height,
+                                'dpi': a._cachedRenderer.dpi}
+                    a._cachedRenderer.__getstate__ = getState
+
+        return state
+
     def init(self, config=None, axis=None):
         if config is not None:
             self.config = config
