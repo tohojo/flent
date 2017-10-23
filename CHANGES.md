@@ -2,6 +2,54 @@
 
 Changes since v1.0.1 include:
 
+- A complete overhaul of the plotting code so that it now uses the exact
+  data points captured from the test tools wherever possible, instead of
+  interpolating values to align data points on the time axis. This
+  should improve the accuracy of plots, especially for integer-value
+  data series such as packet drops.
+
+- The GUI has gained a new widget that makes it possible to control all
+  plot-related settings. Previously, only a few of the settings for
+  generating plots that are available on the command line could be set
+  from within the GUI; now, the full set of command line settings can be
+  manipulated in the GUI settings pane as well.
+
+- Another rewrite of the plot layout algorithm which should result in
+  fewer issues with plot elements such as titles being drawn on top of
+  the plot.
+
+- More keyboard shortcuts in the GUI: Ctrl+Up/Down will move between
+  different plots, and x/X and y/Y will zoom the axes in/out.
+
+- By default, batch run order is now randomised to prevent periodic
+  errors biasing results in long tests. This can be turned off with
+  the --batch-no-shuffle option.
+
+- Netperf is now instructed to prefill its buffers with random data,
+  instead of the data packets consisting repeated 7-byte strings
+  ('netperf'). This ensures that data flows are not trivially
+  compressible, which should improve test accuracy on encapsulated
+  connections that enable compression.
+
+- Added support for setting TCP congestion control and diffserv markings
+  as test parameters for some tests.
+
+- Added support for capturing socket statistics for TCP flows and store
+  them as an auxiliary data set. This makes it possible to capture
+  window size and RTT estimates from the kernel TCP state machine (Linux
+  only). Thanks to Matthias Tafelmeier for the initial implementation of
+  this feature.
+
+- Added support for watchdog timers to make sure runners don't go over
+  time. This is applied to the fping runner thus far.
+
+- More metadata is captured from test runs; in particular, Netperf
+  TCP_INFO variables, the congestion control used for each flow and
+  socket buffer sizes are captured for every flow and stored in the
+  metadata object.
+
+- Numerous bug fixes throughout.
+
 # Flent v1.0.1 #
 Released on 2017-01-16.
 
