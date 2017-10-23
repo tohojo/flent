@@ -498,6 +498,10 @@ Test tool-related options
    communication over a separate control network so as to not interfere with
    test traffic.
 
+   There is also a per-flow setting for this for tests that connect to multiple
+   hosts; see the `control_hosts` test parameter in :doc:`tests`. If both are
+   set, the per-flow setting takes precedence for those tests that use it.
+
 .. option:: --control-local-bind=IP
 
    Local hostname or IP to bind control connection to (for test tools that

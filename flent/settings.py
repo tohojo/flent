@@ -395,7 +395,8 @@ tool_group.add_argument(
     action="store", type=unicode, dest="CONTROL_HOST", metavar="HOST",
     help="Hostname for control connection for test tools that support it "
     "(netperf and D_ITG). If not supplied, this will be the same as the test "
-    "target host.")
+    "target host. The per-flow test parameter setting takes precedence of this "
+    "for multi-target tests.")
 
 tool_group.add_argument(
     "--control-local-bind",

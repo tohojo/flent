@@ -25,6 +25,7 @@ import os
 
 from collections import OrderedDict
 from copy import deepcopy
+from itertools import cycle, islice
 
 from flent import util, runners
 from flent.util import Glob
@@ -43,6 +44,11 @@ try:
     CPU_COUNT = cpu_count()
 except NotImplementedError:
     CPU_COUNT = 1
+
+try:
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest
 
 SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams']
 SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
@@ -82,9 +88,11 @@ class TestEnvironment(object):
             'find_stat_iterate': self.find_stat_iterate,
             'find_wifistats_iterate': self.find_wifistats_iterate,
             'find_netstat_iterate': self.find_netstat_iterate,
+            'set_test_parameter': self.set_test_parameter,
             'get_test_parameter': self.get_test_parameter,
             'try_test_parameters': self.try_test_parameters,
             'parse_int': self.parse_int,
+            'zip_longest': zip_longest,
         })
         self.informational = informational
         self.itgsend = None
@@ -137,9 +145,15 @@ class TestEnvironment(object):
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
 
-    def get_test_parameter(self, name, default=_no_default):
+    def set_test_parameter(self, name, value):
+        self.env['TEST_PARAMETERS'][name] = value
+
+    def get_test_parameter(self, name, default=_no_default, split=False):
         try:
-            return self.env['TEST_PARAMETERS'][name]
+            ret = self.env['TEST_PARAMETERS'][name]
+            if split:
+                ret = ret.split(",")
+            return ret
         except KeyError:
             if default is not _no_default:
                 return default
@@ -329,11 +343,9 @@ class TestEnvironment(object):
                  and self.env['DEFAULTS']['HOSTS']:
                 # If a default HOSTS list is set, populate the HOSTS list with
                 # values from this list, repeating as necessary up to count
-                def_hosts = self.env['DEFAULTS']['HOSTS']
-                host_c = len(self.env['HOSTS'])
-                missing_c = count - host_c
-                self.env['HOSTS'].extend(
-                    (def_hosts * (missing_c // len(def_hosts) + 1))[:missing_c])
+                def_hosts = cycle(self.env['DEFAULTS']['HOSTS'])
+                missing_c = count - len(self.env['HOSTS'])
+                self.env['HOSTS'].extend(islice(def_hosts, missing_c))
                 if not self.env['HOST']:
                     self.env['HOST'] = self.env['HOSTS'][0]
             else:

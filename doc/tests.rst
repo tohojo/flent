@@ -125,6 +125,15 @@ behave. These are:
 
 .. envvar:: control_hosts
 
-   Hostnames to use for the control connections for the ``rtt_fair_var*`` tests.
+   Hostnames to use for the control connections for the ``rtt_fair*`` tests.
    Comma-separated. If specified, it must contain as many hostnames as the
    number of target hostnames specified for the test.
+
+.. envvar:: markings
+
+   Flow markings to use for each of the flows in the ``rtt_fair*`` tests.
+   Comma-separated values of markings understood by Netperf (such as "CS0").
+   Only supports setting the same marking on both the upstream and downstream
+   packets of each flow (so no "CS0,CS0" setting as can be used for Netperf). If
+   not set, defaults to CS0 (best effort). If set, each value corresponds to a
+   flow, and any extra flows will be set to CS0.
