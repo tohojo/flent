@@ -1,0 +1,150 @@
+# -*- mode:conf -*-
+
+# This is a fully functional example of a batch fild. It was used to perform the
+# experiments in the paper describing Flent. The paper is called simply "Flent:
+# The FLExible Network Tester". See https://www.cs.kau.se/tohojo/flent/ and
+# http://urn.kb.se/resolve?urn=urn%3Anbn%3Ase%3Akau%3Adiva-64766
+#
+# The batch file is parsed as an ini file, and can have three types of sections:
+# commands, batches and args. Each section also has a name. Type and name are
+# separated with two colons.
+#
+# Sections of the same type can inherit from each other. Args are used for the
+# loop facility (explained below). All variables are recursively substituted by
+# using the ${varname} syntax. These three operations are resolved in this order
+# (inheritance, arg interpolation and variable substitution).
+
+
+# Setup command to be run before each test run. The script is simply:
+### Start script setup_qdisc.sh
+# #!/bin/sh
+#
+# set -o errexit
+# set -o nounset
+#
+# IFACE=enp5s0
+# QDISC=$1
+# sudo ethtool -K $IFACE gso off tso off gro off
+# sudo sysctl -w net.ipv4.tcp_no_metrics_save=1
+# sudo tc qdisc replace dev $IFACE root $QDISC
+### End script setup_qdisc.sh
+#
+# The user running Flent must have sufficient permissions to run the sudo
+# commands specified, and the IFACE needs to be adjusted to match the system.
+
+[Command::setup_qdisc]
+exec = ./setup_qdisc.sh ${qdisc}
+type = pre
+
+# An essential pre command will cause the test to be aborted if it fails
+# (returncode non-zero)
+essential = yes
+
+
+# A 'batch' is a named test to be run. It can specify normal Flent parameters as
+# well as any other variables that can be used for substitution. When executing
+# Flent in batch mode, -B specifies the batch file (this file), while -b
+# specified which batch to run. The special argument ALL to -b will run all
+# defined batches that are not set as inactive.
+#
+# Batches can inherit from each other, so it can be a good idea to have a
+# 'global' batch that sets most parameters, and then override things in
+# sub-batches.
+[Batch::global]
+# These are all Flent parameters that correspond to command line options.
+extended_metadata = yes
+socket_stats = yes
+debug_error = yes
+debug_log = yes
+title = ${batch_title} qdisc:${qdisc} cc:${cc} rep:${repetition}
+output_path = batch-${batch_time}-${batch_title}/${batch_name}
+ip_version = 4
+length = 140
+hosts = netperf-eu.bufferbloat.net
+test_parameters= tcp_cong_control=${cc};
+
+# This is a special variable that specifies things to *append* to the filename
+# Flent generates (based on time etc). The first part of the filename will be
+# the same for every test in a batch, so the idea is to use this variable to
+# disambiguate subsequent test runs (so putting 'repetition' in there is
+# generally a good idea).
+#
+# The 'repetition' variable is another special variable that will get assigned
+# the current repetition for each run.
+filename_extra = ${qdisc}-${cc}-${repetition}
+
+# These are the commands to run; must be specified as command type sections
+# (i.e. this one corresponds to [Command::setup_qdisc] above).
+commands = setup_qdisc
+
+# This is a special variable that causes the test in the batch to be repeated
+# this many times (setting the ${repetition} variable for each).
+repetitions = 1
+
+# Special variable - how long to pause after each test run before proceeding to
+# the next one.
+pause = 5
+
+# Special variable. A batch can be disabled in two ways: Setting 'disabled=yes'
+# which does what one would expect, and by setting 'abstract=yes'. The
+# difference is that when another batch inherits from this one, the value of
+# 'disabled' is inherited, while the value of 'abstract' isn't.
+abstract = yes
+
+# These are variables that are used for variable expansion in settings above.
+# The idea is that other batches can override these to change part of the
+# configuration.
+batch_title = untitled
+qdisc = fq
+
+# This is the loop mechanism of the batch facility. Each variable that starts
+# with for_ defines a loop (Flent doesn't care about the part after for_, but
+# they matter when inheriting). The batch will then be repeated for each of the
+# values of this variable. Each value must be defined in the batch file as a
+# heading of type [Arg::name]. The variables in each [Arg] section will then be
+# applied on top of the batch containing the loop before the test run
+# corresponding to that arg.
+#
+# When multiple for_ statements are present, the cross product of all of them
+# will be run. Likewise with repetitions (each arg will be repeated as many
+# times as specified).
+#
+# The example here is used to repeat each test run with different congestion
+# control algorithms.
+for_cc = cubic, cubic_nopacing, bbr
+
+
+# These are the actual batches that will be run. Each of them just inherits from
+# 'global' and overrides some variables.
+[Batch::tcp-upload]
+inherits = global
+test_name = tcp_1up_noping
+disabled = no
+
+[Batch::rrul]
+inherits = global
+test_name = rrul
+disabled = no
+
+
+# These are the args used for loops in the batches specified above. The arg name
+# (the part after ::) is what is put into the for_ variables. Args can inherit
+# from each other just like batches (but none of these do). In that case, arg
+# inheritance is performed before the values are interpolated onto the batch.
+#
+# These args all just set a single variable (which is then used in the commands
+# defined at the top of the file).
+
+[Arg::cubic_nopacing]
+cc = cubic
+# The fq_codel qdisc doesn't do pacing for CUBIC
+qdisc = fq_codel
+# This host does not run sch_fq either
+hosts = vlan820-28.cs.kau.se
+
+[Arg::cubic]
+cc = cubic
+
+[Arg::bbr]
+cc = bbr
+

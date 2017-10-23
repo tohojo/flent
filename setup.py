@@ -82,7 +82,8 @@ class sdist(_sdist):
 
 data_files = [('share/doc/flent',
                ['BUGS',
-                'README.rst'] + glob("*.example")),
+                'README.rst',
+                'flent-paper.batch'] + glob("*.example")),
               ('share/man/man1',
                ['man/flent.1']),
               ('share/doc/flent/misc',
