@@ -123,9 +123,9 @@ General options
 
    Be verbose during batch run: Print all commands executed.
 
-.. option:: --batch-shuffle
+.. option:: --batch-no-shuffle
 
-   Randomise the order of tests within each batch run.
+   Do not randomise the order of test runs within each batch.
 
 .. option:: --batch-repetitions=REPETITIONS
 
@@ -250,10 +250,32 @@ Plot configuration options
 These options are used to configure the appearance of plot output and only make
 sense combined with :option:`-f` *plot*.
 
+.. option:: --label-x=LABEL
+.. option:: --label-y=LABEL
+
+   Override the figure axis labels. Can be specified twice, corresponding to
+   figures with multiple axes.
+
+.. option:: -I, --invert-latency-y
+
+   Invert latency data series axis (typically the Y-axis), making plots show
+   ’better' values upwards.
+
 .. option:: -z, --zero-y
 
-   Always start y axis of plot at zero, instead of autoscaling the axis (also
-   disables log scales). Autoscaling is still enabled for the upper bound.
+   Always start Y axis of plot at zero, instead of autoscaling the axis.
+   Autoscaling is still enabled for the upper bound. This also disables log
+   scale if enabled.
+
+.. option:: --log-scale={log2,log10}
+
+   Use the specified logarithmic scale on plots.
+
+.. option:: --norm-factor=FACTOR
+
+   Data normalisation factor. Divide all data points by this value. Can be
+   specified multiple times, in which case each value corresponds to a data
+   series.
 
 .. option:: --bounds-x=BOUNDS
 .. option:: --bounds-y=BOUNDS
@@ -263,43 +285,6 @@ sense combined with :option:`-f` *plot*.
    upper and lower bounds. To specify just the lower bound, add a comma
    afterwards. Can be specified twice, corresponding to figures with multiple
    axes.
-
-.. option:: --label-x=LABEL
-.. option:: --label-y=LABEL
-
-   Override the figure axis labels. Can be specified twice, corresponding to
-   figures with multiple axes.
-
-.. option:: --colours=COLOURS
-
-   Comma-separated list of colours to be used for the plot colour cycle. Can be
-   specified in any format understood by matplotlib (including HTML hex values
-   prefixed with a #).
-
-   Yes, this option uses British spelling. No, American spelling is not
-   supported. Deal with it.
-
-.. option:: -I, --invert-latency-y
-
-   Invert the y-axis for latency data series (making plots show ’better values
-   upwards’).
-
-.. option:: --log-scale
-
-   Use logarithmic scale on plots.
-
-.. option:: --norm-factor=FACTOR
-
-   Factor to normalise data by. I.e. divide all data points by this value. Can
-   be specified multiple times, in which case each value corresponds to a data
-   series.
-
-.. option:: --scale-data=SCALE_DATA
-
-   Additional data files to consider when scaling the plot axes (for plotting
-   several plots with identical axes). Note, this displays only the first data
-   set, but with axis scaling taking into account the additional data sets. Can
-   be supplied multiple times; see also :option:`--scale-mode`.
 
 .. option:: -S, --scale-mode
 
@@ -326,6 +311,11 @@ sense combined with :option:`-f` *plot*.
    instead of combining them into one plot. This mode is not supported for all
    plot types, and only works when :option:`--scale-mode` is disabled.
 
+.. option:: --skip-missing-series
+
+   Skip missing series entirely from bar plots, instead of leaving an empty
+   space for it.
+
 .. option:: --no-print-n
 
    Do not print the number of data points on combined plots. When using plot
@@ -336,6 +326,10 @@ sense combined with :option:`-f` *plot*.
 .. option:: --no-annotation
 
    Exclude annotation with hostnames, time and test length from plots.
+
+.. option:: --figure-note=NOTE, --fig-note=NOTE
+
+   Add a note (arbitrary text) to the bottom-left of the figure.
 
 .. option:: --no-title
 
@@ -350,6 +344,57 @@ sense combined with :option:`-f` *plot*.
    aggregate plot from several data series. When this parameter is specified,
    :option:`--no-title` has no effect.
 
+.. option:: --no-labels
+
+   Hides tick labels from box and bar plots.
+
+.. option:: --no-markers
+
+   Don’t use line markers to differentiate data series on plots.
+
+.. option:: --no-legend
+
+   Exclude legend from plots.
+
+.. option:: --horizontal-legend
+
+   Place a horizontal legend below the plot instead of a vertical one next to
+   it. Doesn't always work well if there are too many items in the legend.
+
+.. option:: --legend-title=LEGEND_TITLE
+
+   Override legend title on plot.
+
+.. option:: --legend-placement=LEGEND_PLACEMENT
+
+   Control legend placement. Enabling this option will place the legend inside
+   the plot at the specified location. Can be one of 'best', 'upper right',
+   'upper left', 'lower left', 'lower right', 'right', 'center left', 'center
+   right', 'lower center', 'upper center' or 'center'.
+
+.. option:: --legend-columns=LEGEND_COLUMNS
+    Set the number of columns in the legend.
+
+.. option:: --reverse-legend
+
+   Reverse the order of items in the legend. This can be useful to make the
+   legend order match the data series in some cases.
+
+.. option:: --filter-legend
+
+   Filter legend labels by removing the longest common substring from all
+   entries. This is not particularly smart, so use with care.
+
+.. option:: --replace-legend=src=dest
+
+   Replace 'src' with 'dst' in legends. Can be specified multiple times.
+
+.. option:: --filter-regexp=REGEXP
+
+   Filter the plot legend by the supplied regular expression. Note that for
+   combining several plot results, the regular expression is also applied before
+   the grouping logic, meaning that a too wide filter can mess up the grouping.
+
 .. option:: --override-label=LABEL
 
    Override dataset label. Can be specified multiple times when multiple
@@ -358,17 +403,9 @@ sense combined with :option:`-f` *plot*.
 
    Like :option:`--override-title`, this is applied *at the time of plotting*.
 
-.. option:: --override-group-by=GROUP
+.. option:: --filter-series=SERIES
 
-   Override the ``group_by`` setting for combination plots. This is useful to,
-   for instance, switch to splitting up combined data sets by batch run instead
-   of by file name.
-
-.. option:: --combine-save-dir=DIRNAME
-
-   When doing a combination plot save the intermediate data to ``DIRNAME``. This
-   can then be used for subsequent plotting to avoid having to load all the
-   source data files again on each plot.
+   Filter out specified series from plot. Can be specified multiple times.
 
 .. option:: --split-group=LABEL
 
@@ -386,58 +423,26 @@ sense combined with :option:`-f` *plot*.
    A constraint on this option is that the number of datasets being plotted must
    be divisible by the number of groups.
 
-.. option:: --no-markers
+.. option:: --colours=COLOURS
 
-   Don’t use line markers to differentiate data series on plots.
+   Comma-separated list of colours to be used for the plot colour cycle. Can be
+   specified in any format understood by matplotlib (including HTML hex values
+   prefixed with a #).
 
-.. option:: --no-legend
+   Yes, this option uses British spelling. No, American spelling is not
+   supported.
 
-   Exclude legend from plots.
+.. option:: --override-group-by=GROUP
 
-.. option:: --horizontal-legend
+   Override the ``group_by`` setting for combination plots. This is useful to,
+   for instance, switch to splitting up combined data sets by batch run instead
+   of by file name.
 
-   Place a horizontal legend below the plot instead of a vertical one next to
-   it. Doesn't work well if there are too many items in the legend, obviously.
+.. option:: --combine-save-dir=DIRNAME
 
-.. option:: --legend-title=LEGEND_TITLE
-
-   Override legend title on plot.
-
-.. option:: --legend-placement=LEGEND_PLACEMENT
-
-   Control legend placement. Enabling this option will place the legend inside
-   the plot at the specified location. Use 'best' to let matplotlib decide.
-
-.. option:: --legend-columns=LEGEND_COLUMNS
-    Set the number of columns in the legend.
-
-.. option:: --reverse-legend
-
-   Reverse the order of items in the legend. This can be useful to make the
-   legend order match the data series in some cases.
-
-.. option:: --filter-legend
-
-   Filter legend labels by removing the longest common substring from all
-   entries. This is not particularly smart, so should be used with care.
-
-.. option:: --filter-regexp=REGEXP
-
-   Filter the plot legend by the supplied regular expression. Note that for
-   combining several plot results, the regular expression is also applied before
-   the grouping logic, meaning that a too wide filter can mess up the grouping.
-
-.. option:: --filter-series=SERIES
-
-   Filter out specified series from plot. Can be specified multiple times.
-
-.. option:: --skip-missing-series
-
-   Skip missing series entirely from plots. Only works for bar plots.
-
-.. option:: --replace-legend=src=dest
-
-   Replace 'src' with 'dst' in legends. Can be specified multiple times.
+   When doing a combination plot save the intermediate data to ``DIRNAME``. This
+   can then be used for subsequent plotting to avoid having to load all the
+   source data files again on each plot.
 
 .. option:: --figure-width=FIG_WIDTH
 
@@ -453,6 +458,13 @@ sense combined with :option:`-f` *plot*.
 
    Figure DPI. Used when saving plots to raster format files.
 
+.. option:: --fallback-layout
+
+   Use the fallback layout engine (tight_layout built in to matplotlib). Use
+   this if text is cut off on saved figures. The downside to the fallback engine
+   is that the size of the figure (as specified by :option:`--figure-width` and
+   :option:`--figure-height`) is no longer kept constant.)
+
 .. option:: --no-matplotlibrc
 
    Don’t load included matplotlibrc values. Use this if autodetection of custom
@@ -463,12 +475,13 @@ sense combined with :option:`-f` *plot*.
    Don't highlight data series on hover in interactive plot views. Use this if
    redrawing is too slow, or the highlighting is undesired for other reasons.
 
-.. option:: --fallback-layout
+.. option:: --scale-data=SCALE_DATA
 
-   Use the fallback layout engine (tight_layout built in to matplotlib). Use
-   this if text is cut off on saved figures. The downside to the fallback engine
-   is that the size of the figure (as specified by :option:`--figure-width` and
-   :option:`--figure-height`) is no longer kept constant.)
+   Additional data files to consider when scaling the plot axes (for plotting
+   several plots with identical axes). Note, this displays only the first data
+   set, but with axis scaling taking into account the additional data sets. Can
+   be supplied multiple times; see also :option:`--scale-mode`.
+
 
 Test tool-related options
 -------------------------
