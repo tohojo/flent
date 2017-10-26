@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "June 15, 2017" "1.0.1-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "October 26, 2017" "1.1.0" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -85,7 +85,7 @@ and \fI\%\-H\fP switches can be used to explicitly specify the interpretation
 of an argument.
 .SS Invocation
 .sp
-\fBflent\fP [\fIoptions\fP] \fI<host|test|input file\fP ...\fI>\fP
+\fBflent\fP [\fIoptions\fP] \fI<host|test|input file\fP …\fI>\fP
 .SS General options
 .INDENT 0.0
 .TP
@@ -207,8 +207,8 @@ Be verbose during batch run: Print all commands executed.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-batch\-shuffle
-Randomise the order of tests within each batch run.
+.B \-\-batch\-no\-shuffle
+Do not randomise the order of test runs within each batch.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -234,8 +234,8 @@ tests for which data files already exist will be skipped on this run. If the
 rest of the batch invocation is different from the one being resumed, results
 may not be what you want.
 .sp
-There\(aqs a check to ensure that the generated output path is a subdirectory of
-the resume directory, and the whole run will be aborted if it isn\(aqt.
+There’s a check to ensure that the generated output path is a subdirectory of
+the resume directory, and the whole run will be aborted if it isn’t.
 .UNINDENT
 .SS Test configuration options
 .sp
@@ -262,13 +262,13 @@ if it is, it must be specified as many times as there are hosts.
 .B \-\-remote\-host=idx=HOSTNAME
 A remote hostname to connect to when starting a test. The idx is the runner
 index, which is assigned sequentially to each \fIrunner\fP (and so it is \fInot\fP
-the same as the sequence of hostnames). Look for the \(aqIDX\(aq key in SERIES_META
+the same as the sequence of hostnames). Look for the ‘IDX’ key in SERIES_META
 for a test get the idx used here, but note that the idx assignment depends on
 the exact arguments to the test.
 .sp
-This works by simply prepending \(aqssh HOSTNAME\(aq to the runner command, so it
+This works by simply prepending ‘ssh HOSTNAME’ to the runner command, so it
 relies on the same binaries being in the same places on both machines, and
-won\(aqt work for all runners.
+won’t work for all runners.
 .sp
 This option can be specified multiple times to have multiple runners run on
 remote hosts.
@@ -336,7 +336,7 @@ these as their data transfer, and only for the TCP streams.
 .B \-\-socket\-stats
 Parse socket stats during test. This will capture and parse socket
 statistics for all TCP upload flows during a test, adding TCP cwnd and RTT
-values to the test data. Requires the \(aqss\(aq utility to be present on the
+values to the test data. Requires the ‘ss’ utility to be present on the
 system, and can fail if there are too many simultaneous upload flows; which
 is why this option is not enabled by default.
 .UNINDENT
@@ -346,9 +346,38 @@ These options are used to configure the appearance of plot output and only make
 sense combined with \fI\%\-f\fP \fIplot\fP\&.
 .INDENT 0.0
 .TP
+.B \-\-label\-x=LABEL
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-label\-y=LABEL
+Override the figure axis labels. Can be specified twice, corresponding to
+figures with multiple axes.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-I, \-\-invert\-latency\-y
+Invert latency data series axis (typically the Y\-axis), making plots show
+’better’ values upwards.
+.UNINDENT
+.INDENT 0.0
+.TP
 .B \-z, \-\-zero\-y
-Always start y axis of plot at zero, instead of autoscaling the axis (also
-disables log scales). Autoscaling is still enabled for the upper bound.
+Always start Y axis of plot at zero, instead of autoscaling the axis.
+Autoscaling is still enabled for the upper bound. This also disables log
+scale if enabled.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-log\-scale={log2,log10}
+Use the specified logarithmic scale on plots.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-norm\-factor=FACTOR
+Data normalisation factor. Divide all data points by this value. Can be
+specified multiple times, in which case each value corresponds to a data
+series.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -362,52 +391,6 @@ the upper bound. Specify two numbers separated by a comma to specify both
 upper and lower bounds. To specify just the lower bound, add a comma
 afterwards. Can be specified twice, corresponding to figures with multiple
 axes.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-label\-x=LABEL
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-label\-y=LABEL
-Override the figure axis labels. Can be specified twice, corresponding to
-figures with multiple axes.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-colours=COLOURS
-Comma\-separated list of colours to be used for the plot colour cycle. Can be
-specified in any format understood by matplotlib (including HTML hex values
-prefixed with a #).
-.sp
-Yes, this option uses British spelling. No, American spelling is not
-supported. Deal with it.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-I, \-\-invert\-latency\-y
-Invert the y\-axis for latency data series (making plots show ’better values
-upwards’).
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-log\-scale
-Use logarithmic scale on plots.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-norm\-factor=FACTOR
-Factor to normalise data by. I.e. divide all data points by this value. Can
-be specified multiple times, in which case each value corresponds to a data
-series.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-scale\-data=SCALE_DATA
-Additional data files to consider when scaling the plot axes (for plotting
-several plots with identical axes). Note, this displays only the first data
-set, but with axis scaling taking into account the additional data sets. Can
-be supplied multiple times; see also \fI\%\-\-scale\-mode\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -440,6 +423,12 @@ plot types, and only works when \fI\%\-\-scale\-mode\fP is disabled.
 .UNINDENT
 .INDENT 0.0
 .TP
+.B \-\-skip\-missing\-series
+Skip missing series entirely from bar plots, instead of leaving an empty
+space for it.
+.UNINDENT
+.INDENT 0.0
+.TP
 .B \-\-no\-print\-n
 Do not print the number of data points on combined plots. When using plot
 types that combines results from several test runs, the number of data series
@@ -450,6 +439,11 @@ for X data series. This option turns that off.
 .TP
 .B \-\-no\-annotation
 Exclude annotation with hostnames, time and test length from plots.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-figure\-note=NOTE, \-\-fig\-note=NOTE
+Add a note (arbitrary text) to the bottom\-left of the figure.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -468,43 +462,8 @@ aggregate plot from several data series. When this parameter is specified,
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-override\-label=LABEL
-Override dataset label. Can be specified multiple times when multiple
-datasets are being plotted, in which case the order of labels corresponds to
-the order of datasets.
-.sp
-Like \fI\%\-\-override\-title\fP, this is applied \fIat the time of plotting\fP\&.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-override\-group\-by=GROUP
-Override the \fBgroup_by\fP setting for combination plots. This is useful to,
-for instance, switch to splitting up combined data sets by batch run instead
-of by file name.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-combine\-save\-dir=DIRNAME
-When doing a combination plot save the intermediate data to \fBDIRNAME\fP\&. This
-can then be used for subsequent plotting to avoid having to load all the
-source data files again on each plot.
-.UNINDENT
-.INDENT 0.0
-.TP
-.B \-\-split\-group=LABEL
-Split data sets into groups when creating box plots. Specify this option
-multiple times to define the new groups; the value of each option is the
-group name.
-.sp
-Say you\(aqre plotting nine datasets which are really testing two variables with
-three values each. In this case, it can be useful to have the box plot of the
-results be split into three parts (corresponding to the values of one
-variable) with each three boxes in each of them (corresponding to the values
-of the second variable). This option makes this possible; simply specify it
-three times with the labels to be used for the three groups.
-.sp
-A constraint on this option is that the number of datasets being plotted must
-be divisible by the number of groups.
+.B \-\-no\-labels
+Hides tick labels from box and bar plots.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -520,7 +479,7 @@ Exclude legend from plots.
 .TP
 .B \-\-horizontal\-legend
 Place a horizontal legend below the plot instead of a vertical one next to
-it. Doesn\(aqt work well if there are too many items in the legend, obviously.
+it. Doesn’t always work well if there are too many items in the legend.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -531,7 +490,9 @@ Override legend title on plot.
 .TP
 .B \-\-legend\-placement=LEGEND_PLACEMENT
 Control legend placement. Enabling this option will place the legend inside
-the plot at the specified location. Use \(aqbest\(aq to let matplotlib decide.
+the plot at the specified location. Can be one of ‘best’, ‘upper right’,
+‘upper left’, ‘lower left’, ‘lower right’, ‘right’, ‘center left’, ‘center
+right’, ‘lower center’, ‘upper center’ or ‘center’.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -549,7 +510,12 @@ legend order match the data series in some cases.
 .TP
 .B \-\-filter\-legend
 Filter legend labels by removing the longest common substring from all
-entries. This is not particularly smart, so should be used with care.
+entries. This is not particularly smart, so use with care.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-replace\-legend=src=dest
+Replace ‘src’ with ‘dst’ in legends. Can be specified multiple times.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -560,18 +526,58 @@ the grouping logic, meaning that a too wide filter can mess up the grouping.
 .UNINDENT
 .INDENT 0.0
 .TP
+.B \-\-override\-label=LABEL
+Override dataset label. Can be specified multiple times when multiple
+datasets are being plotted, in which case the order of labels corresponds to
+the order of datasets.
+.sp
+Like \fI\%\-\-override\-title\fP, this is applied \fIat the time of plotting\fP\&.
+.UNINDENT
+.INDENT 0.0
+.TP
 .B \-\-filter\-series=SERIES
 Filter out specified series from plot. Can be specified multiple times.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-skip\-missing\-series
-Skip missing series entirely from plots. Only works for bar plots.
+.B \-\-split\-group=LABEL
+Split data sets into groups when creating box plots. Specify this option
+multiple times to define the new groups; the value of each option is the
+group name.
+.sp
+Say you’re plotting nine datasets which are really testing two variables with
+three values each. In this case, it can be useful to have the box plot of the
+results be split into three parts (corresponding to the values of one
+variable) with each three boxes in each of them (corresponding to the values
+of the second variable). This option makes this possible; simply specify it
+three times with the labels to be used for the three groups.
+.sp
+A constraint on this option is that the number of datasets being plotted must
+be divisible by the number of groups.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-replace\-legend=src=dest
-Replace \(aqsrc\(aq with \(aqdst\(aq in legends. Can be specified multiple times.
+.B \-\-colours=COLOURS
+Comma\-separated list of colours to be used for the plot colour cycle. Can be
+specified in any format understood by matplotlib (including HTML hex values
+prefixed with a #).
+.sp
+Yes, this option uses British spelling. No, American spelling is not
+supported.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-override\-group\-by=GROUP
+Override the \fBgroup_by\fP setting for combination plots. This is useful to,
+for instance, switch to splitting up combined data sets by batch run instead
+of by file name.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-combine\-save\-dir=DIRNAME
+When doing a combination plot save the intermediate data to \fBDIRNAME\fP\&. This
+can then be used for subsequent plotting to avoid having to load all the
+source data files again on each plot.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -592,6 +598,14 @@ Figure DPI. Used when saving plots to raster format files.
 .UNINDENT
 .INDENT 0.0
 .TP
+.B \-\-fallback\-layout
+Use the fallback layout engine (tight_layout built in to matplotlib). Use
+this if text is cut off on saved figures. The downside to the fallback engine
+is that the size of the figure (as specified by \fI\%\-\-figure\-width\fP and
+\fI\%\-\-figure\-height\fP) is no longer kept constant.)
+.UNINDENT
+.INDENT 0.0
+.TP
 .B \-\-no\-matplotlibrc
 Don’t load included matplotlibrc values. Use this if autodetection of custom
 matplotlibrc fails and flent is inadvertently overriding rc values.
@@ -599,16 +613,16 @@ matplotlibrc fails and flent is inadvertently overriding rc values.
 .INDENT 0.0
 .TP
 .B \-\-no\-hover\-highlight
-Don\(aqt highlight data series on hover in interactive plot views. Use this if
+Don’t highlight data series on hover in interactive plot views. Use this if
 redrawing is too slow, or the highlighting is undesired for other reasons.
 .UNINDENT
 .INDENT 0.0
 .TP
-.B \-\-fallback\-layout
-Use the fallback layout engine (tight_layout built in to matplotlib). Use
-this if text is cut off on saved figures. The downside to the fallback engine
-is that the size of the figure (as specified by \fI\%\-\-figure\-width\fP and
-\fI\%\-\-figure\-height\fP) is no longer kept constant.)
+.B \-\-scale\-data=SCALE_DATA
+Additional data files to consider when scaling the plot axes (for plotting
+several plots with identical axes). Note, this displays only the first data
+set, but with axis scaling taking into account the additional data sets. Can
+be supplied multiple times; see also \fI\%\-\-scale\-mode\fP\&.
 .UNINDENT
 .SS Test tool\-related options
 .INDENT 0.0
@@ -624,6 +638,10 @@ tests, this option is passed to Netperf to control where to point the control
 connection. This is useful to, for instance, to run the control server
 communication over a separate control network so as to not interfere with
 test traffic.
+.sp
+There is also a per\-flow setting for this for tests that connect to multiple
+hosts; see the \fIcontrol_hosts\fP test parameter in tests\&. If both are
+set, the per\-flow setting takes precedence for those tests that use it.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -663,7 +681,7 @@ hostname.
 .TP
 .B \-\-http\-getter\-dns\-servers=DNS_SERVERS
 DNS servers to use for http\-getter lookups. Format is
-host[:port][,host[:port]]... This option will only work if libcurl supports
+host[:port][,host[:port]]… This option will only work if libcurl supports
 it (needs to be built with the ares resolver). Default is none (use the
 system resolver).
 .UNINDENT
@@ -720,7 +738,7 @@ Show usage help message and exit.
 .UNINDENT
 .SS Signals
 .sp
-Flent will abort what it is currently doing on receiving a \fBSIGINT\fP \-\- this
+Flent will abort what it is currently doing on receiving a \fBSIGINT\fP – this
 includes killing all runners, cleaning up temporary files and shutting down as
 gracefully as possible. Runners are killed with \fBSIGTERM\fP in this mode, and
 their output is discarded. If a batch run is in progress, the current test will
@@ -776,7 +794,9 @@ behave. These are:
 .TP
 .B download_streams
 These set the number of upload or download streams for the \fBtcp_nup\fP,
-\fBtcp_ndown\fP and \fBrrul_be_nflows\fP tests.
+\fBtcp_ndown\fP and \fBrrul_be_nflows\fP tests. If set to the special value
+\fBnum_cpus\fP the number of streams will be set to the number of CPUs on the
+system (if this information is available).
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -892,9 +912,19 @@ D\-ITG (and the control server) running.
 .INDENT 0.0
 .TP
 .B control_hosts
-Hostnames to use for the control connections for the \fBrtt_fair_var*\fP tests.
+Hostnames to use for the control connections for the \fBrtt_fair*\fP tests.
 Comma\-separated. If specified, it must contain as many hostnames as the
 number of target hostnames specified for the test.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B markings
+Flow markings to use for each of the flows in the \fBrtt_fair*\fP tests.
+Comma\-separated values of markings understood by Netperf (such as “CS0”).
+Only supports setting the same marking on both the upstream and downstream
+packets of each flow (so no “CS0,CS0” setting as can be used for Netperf). If
+not set, defaults to CS0 (best effort). If set, each value corresponds to a
+flow, and any extra flows will be set to CS0.
 .UNINDENT
 .SH THE FLENT GUI
 .sp
@@ -937,14 +967,14 @@ reproducibility of tests.
 .sp
 The batch file is parsed as an ini file, and can have three types of sections:
 batches, commands and args. Each section also has a name; type and name are
-separated with two colons. \(aqBatches\(aq are named tests that can be selected from
-the command line, \(aqcommands\(aq are system commands to be run before or after each
-test run, and \(aqargs\(aq are used in the looping mechanism (which allows repeating
+separated with two colons. ‘Batches’ are named tests that can be selected from
+the command line, ‘commands’ are system commands to be run before or after each
+test run, and ‘args’ are used in the looping mechanism (which allows repeating
 tests multiple times with different parameters).
 .sp
 Variables in sections control the operation of Flent and can be modified in
 several ways: Sections of the same type can inherit from each other and the
-variables in an \(aqarg\(aq section will be interpolated into the batch definition on
+variables in an ‘arg’ section will be interpolated into the batch definition on
 each iteration of a loop. In addition, variable contents can be substituted into
 other variables by using the ${varname} syntax. These three operations are
 resolved in this order (inheritance, arg interpolation and variable
@@ -1199,7 +1229,7 @@ and refuse to run if it is not available, unless explicitly told otherwise.
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
 done by netperf can experience packet loss to the extent that the test aborts
 completely, which can cause missing data points for some measurement series.
-The \-\-socket\-timeout feature can alleviate this, but requires a recent SVN
+The –socket\-timeout feature can alleviate this, but requires a recent SVN
 version of netperf to work. Flent tries to detect if netperf supports this
 option and enables it for the UDP measurements if it does.
 .sp
