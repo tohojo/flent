@@ -10,12 +10,14 @@ Installing Flent
 ----------------
 Installing Flent can be done in several ways, depending on your operating system:
 
-- **Debian and Ubuntu users:** Use the `packages from the Open Build Service
-  <https://software.opensuse.org/download.html?project=home:tohojo:flent&package=flent>`_
+- **Ubuntu users:** Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
 
-- **Arch Linux users:** Install 'flent' from the AUR.
+- **Debian users:** Use the `package included in Debian
+  Stretch <https://packages.debian.org/stretch/flent>`_ and later.
 
-- **Other Linux and OSX with Macbrew:** Install from the Python cheese shop:
+- **Arch Linux users:** Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
+
+- **Other Linux and OSX with Macbrew:** Install from the `Python Package Index <https://pypi.python.org/pypi/flent>`_:
   ``pip install flent``.
 
 
