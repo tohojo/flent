@@ -646,6 +646,10 @@ class Plotter(ArgParam):
         else:
             self.figure = figure
 
+        # Some versions of matplotlib will crash if this is not set
+        if not hasattr(self.figure, '_original_dpi'):
+            self.figure._original_dpi = self.figure.dpi
+
     def __del__(self):
         if not self.disable_cleanup:
             try:
