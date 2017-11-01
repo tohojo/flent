@@ -569,7 +569,7 @@ def new(settings, plotter=None, in_worker=False, **kwargs):
 
 
 def draw_worker(settings, results):
-    plotter = new(settings, in_worker=True)
+    plotter = new(settings, in_worker=True, results=results)
     plotter.init()
     plotter.plot(results)
     plotter.save(results)
