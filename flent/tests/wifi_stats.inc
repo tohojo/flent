@@ -42,11 +42,13 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                            ]}
     PLOTS['airtime_rx_combine'] = {'description': 'Combined airtime RX plot (short timescale)',
                                    'parent': 'airtime_rx',
+                                   'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
                                    'type': 'box_combine',
                                    'cutoff': (DELAY,DELAY),
                                    'group_by': 'groups_concat'}
     PLOTS['airtime_rx_combine_long'] = {'description': 'Combined airtime RX plot (long timescale)',
                                         'parent': 'airtime_rx',
+                                        'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
                                         'type': 'box_combine',
                                         'cutoff': (DELAY,DELAY),
                                         'group_by': 'groups'}
@@ -62,11 +64,13 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                            ]}
     PLOTS['airtime_tx_combine'] = {'description': 'Combined airtime TX plot (short timescale)',
                                    'parent': 'airtime_tx',
+                                   'series': [{'data': glob('wifi_stats_*::airtime_tx::**'), 'label': 'TX airtime'}],
                                    'type': 'box_combine',
                                    'cutoff': (DELAY,DELAY),
                                    'group_by': 'groups_concat'}
     PLOTS['airtime_tx_combine_long'] = {'description': 'Combined airtime TX plot (long timescale)',
                                         'parent': 'airtime_tx',
+                                        'series': [{'data': glob('wifi_stats_*::airtime_tx::**'), 'label': 'TX airtime'}],
                                         'type': 'box_combine',
                                         'cutoff': (DELAY,DELAY),
                                         'group_by': 'groups'}
