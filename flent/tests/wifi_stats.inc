@@ -80,7 +80,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                            'stacked': True}
     PLOTS['airtime_tx_stacked'] = {'description': 'WiFi TX airtime (stacked)',
                            'parent': 'airtime_tx',
-                           'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
+                           'series': [{'data': glob('wifi_stats_*::airtime_tx::**'), 'label': 'TX airtime'}],
                            'stacked': True}
     PLOTS['airtime_stacked'] = {'description': 'WiFi airtime (stacked)',
                         'type': 'meta',
