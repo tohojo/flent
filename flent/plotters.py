@@ -22,6 +22,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import io
+import math
 import re
 import warnings
 
@@ -1204,7 +1205,8 @@ class Plotter(ArgParam):
         top_percentile = self._percentile(data, top)
         btm_percentile = self._percentile(data, btm)
 
-        if top_percentile == btm_percentile:
+        if top_percentile == btm_percentile or \
+           math.isnan(top_percentile) or math.isnan(btm_percentile):
             return
 
         # Leave 1 percent of the axis range as extra space, so the outermost
@@ -1212,6 +1214,7 @@ class Plotter(ArgParam):
         space = (top_percentile - btm_percentile) * 0.01
         top_scale = top_percentile + space
         btm_scale = btm_percentile - space
+
         if self.zero_y:
             # When y is set at zero, set space at the top to be one percent room
             # of the *axis* range, not the data range (this may be a big
