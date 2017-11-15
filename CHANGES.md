@@ -2,6 +2,11 @@
 
 Changes since v1.1.0 include:
 
+- Fix several plotting bugs resulting from the overhaul of the plotting
+  code. This includes a couple of crash bugs, bugs in the airtime plots,
+  and a bug where all bar plots were completely broken, showing wrong
+  values.
+
 # Flent v1.1.0 #
 Released on 2017-10-26.
 
