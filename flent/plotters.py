@@ -1700,7 +1700,7 @@ class BarPlotter(BoxPlotter):
                     errors.append(0.0)
                     all_data[a].append(0.0)
                 elif dp.any():
-                    dp = np.array(dp)
+                    dp = np.array(dp[1])
                     data.append(dp.mean())
                     errors.append(dp.std())
                     all_data[a].append(data[-1] + errors[-1])
