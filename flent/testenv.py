@@ -190,17 +190,6 @@ class TestEnvironment(object):
 
         return args
 
-    def find_irtt(self, interval, length, host, **args):
-        """Find a suitable irtt."""
-
-        args.setdefault('local_bind', (self.env['LOCAL_BIND'][0]
-                                       if self.env['LOCAL_BIND'] else None))
-        args['interval'] = interval
-        args['length'] = length
-        args['host'] = host
-
-        return args
-
     @finder
     def find_iperf(self, host, interval, length, ip_version, local_bind=None,
                    no_delay=False, udp=False, bw=None):
@@ -214,52 +203,6 @@ class TestEnvironment(object):
         return runners.IperfCsvRunner.find_binary(host, interval, length,
                                                   ip_version, udp=udp, bw=bw,
                                                   local_bind=local_bind)
-
-    def find_netperf(self, test, length, host, **args):
-        """Find a suitable netperf executable, and test for the required
-        capabilities."""
-
-        if test.lower() == 'omni':
-            raise RuntimeError("Use of netperf 'omni' test is not supported")
-
-        args.setdefault('ip_version', self.env['IP_VERSION'])
-        args.setdefault('interval', self.env['STEP_SIZE'])
-        args.setdefault('control_host', self.env['CONTROL_HOST'] or host)
-        args.setdefault('control_port', self.env['NETPERF_CONTROL_PORT'])
-        args.setdefault('local_bind', self.env['LOCAL_BIND'][
-                        0] if self.env['LOCAL_BIND'] else "")
-        args.setdefault('control_local_bind', self.env[
-                        'CONTROL_LOCAL_BIND'] or args['local_bind'])
-        args.setdefault('extra_args', "")
-        args.setdefault('extra_test_args', "")
-        args.setdefault('format', "")
-        args.setdefault('marking', "")
-        args.setdefault('cong_control',
-                        self.get_test_parameter('tcp_cong_control', ''))
-        args.setdefault('socket_timeout', self.env['SOCKET_TIMEOUT'])
-
-        if self.env['SWAP_UPDOWN']:
-            if test == 'TCP_STREAM':
-                test = 'TCP_MAERTS'
-            elif test == 'TCP_MAERTS':
-                test = 'TCP_STREAM'
-
-        args['test'] = test
-        args['length'] = length
-        args['host'] = host
-
-        return args
-
-    def find_udp_rr(self, host, length, **args):
-
-        args.setdefault('ip_version', self.env['IP_VERSION'])
-        args.setdefault('interval', self.env['STEP_SIZE'])
-
-        args['host'] = host
-        args['length'] = length
-
-        return {'netperf': self.find_netperf(test='UDP_RR', **args),
-                'irtt': self.find_irtt(**args)}
 
     @finder
     def find_itgsend(self, test_args, length, host, local_bind=None):

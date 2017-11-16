@@ -87,6 +87,14 @@ else:
             raise RuntimeError("Unknown child exit status!")
 
 
+class ParseError(Exception):
+    pass
+
+
+class RunnerCheckError(Exception):
+    pass
+
+
 def get(name):
     cname = classname(name, "Runner")
     if cname not in globals():
@@ -124,6 +132,7 @@ class RunnerBase(object):
         self._pickled = False
 
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
+        self.runner_args = kwargs
 
     def __getstate__(self):
         state = {}
@@ -137,6 +146,9 @@ class RunnerBase(object):
         state['_pickled'] = True
 
         return state
+
+    def check(self):
+        pass
 
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
@@ -212,6 +224,7 @@ class RunnerBase(object):
                 start_event=self.start_event,
                 kill_event=self.kill_event,
                 parent=self)
+        c.check()
         self._child_runners.append(c)
         return c
 
@@ -333,7 +346,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
     supports_remote = True
     _env = {}
 
-    def __init__(self, command, delay, remote_host, **kwargs):
+    def __init__(self, delay=0, remote_host=None, **kwargs):
         super(ProcessRunner, self).__init__(**kwargs)
 
         self.remote_host = remote_host
@@ -345,32 +358,30 @@ class ProcessRunner(RunnerBase, threading.Thread):
         self.test_parameters = {}
         self.stdout = None
         self.stderr = None
+        self.command = None
 
         if 'units' in kwargs:
-            self.metadata['UNITS'] = kwargs['units']
+            self.units = kwargs['units']
 
-        if isinstance(command, dict):
-            self.command = self.find_binary(**command)
-            self.command_args = command
-            if self.command is None:
-                raise RuntimeError("Unable to find binary for %s" %
+    def check(self):
+
+        if self.command is None:
+            raise RunnerCheckError("No command set for %s" %
                                    self.__class__.__name__)
-        else:
-            self.command = command
-            self.command_args = {}
         self.args = shlex.split(self.command)
         self.metadata['COMMAND'] = self.command
+        self.metadata['UNITS'] = self.units
 
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
         # remote hosts. I.e. the same binaries must exist in the same places.
-        if remote_host:
+        if self.remote_host:
             if not self.supports_remote:
-                raise RuntimeError(
+                raise RunnerCheckError(
                     "%s (idx %d) does not support running on remote hosts." % (
                         self.__class__.__name__, self.idx))
-            command = "ssh %s '%s'" % (remote_host, command)
-            self.metadata['REMOTE_HOST'] = remote_host
+            self.command = "ssh %s '%s'" % (self.remote_host, self.command)
+            self.metadata['REMOTE_HOST'] = self.remote_host
 
     def handle_usr2(self, signal, frame):
         if self.start_event is not None:
@@ -789,7 +800,34 @@ class NetperfDemoRunner(ProcessRunner):
 
         return result
 
-    def find_binary(self, **args):
+    def check(self):
+        args = self.runner_args.copy()
+
+        if args['test'].lower() == 'omni':
+            raise RunnerCheckError("Use of netperf 'omni' test is not supported")
+
+        args.setdefault('ip_version', self.settings.IP_VERSION)
+        args.setdefault('interval', self.settings.STEP_SIZE)
+        args.setdefault('control_host', self.settings.CONTROL_HOST or host)
+        args.setdefault('control_port', self.settings.NETPERF_CONTROL_PORT)
+        args.setdefault('local_bind',
+                        self.settings.LOCAL_BIND[0]
+                        if self.settings.LOCAL_BIND else "")
+        args.setdefault('control_local_bind',
+                        self.settings.CONTROL_LOCAL_BIND or args['local_bind'])
+        args.setdefault('extra_args', "")
+        args.setdefault('extra_test_args', "")
+        args.setdefault('format', "")
+        args.setdefault('marking', "")
+        args.setdefault('cong_control',
+                        self.settings.TEST_PARAMETERS.get('tcp_cong_control', ''))
+        args.setdefault('socket_timeout', self.settings.SOCKET_TIMEOUT)
+
+        if self.settings.SWAP_UPDOWN:
+            if args['test'] == 'TCP_STREAM':
+                args['test'] = 'TCP_MAERTS'
+            elif args['test'] == 'TCP_MAERTS':
+                args['test'] = 'TCP_STREAM'
 
         if not self.netperf:
             netperf = util.which('netperf', fail=True)
@@ -811,10 +849,10 @@ class NetperfDemoRunner(ProcessRunner):
             proc.kill()
             out, err = proc.communicate()
             if "Demo Mode not configured" in str(out):
-                raise RuntimeError("%s does not support demo mode." % netperf)
+                raise RunnerCheckError("%s does not support demo mode." % netperf)
 
             if "invalid option -- '0'" in str(err):
-                raise RuntimeError(
+                raise RunnerCheckError(
                     "%s does not support accurate intermediate time reporting. "
                     "You need netperf v2.6.0 or newer." % netperf)
 
@@ -854,6 +892,7 @@ class NetperfDemoRunner(ProcessRunner):
 
         if args['test'] in ("TCP_STREAM", "TCP_MAERTS"):
             args['format'] = "-f m"
+            self.units = 'Mbits/s'
 
             if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
                 ss_args = {'host': self.remote_host or 'localhost',
@@ -864,12 +903,17 @@ class NetperfDemoRunner(ProcessRunner):
 
                 self.add_child(SsRunner, [args['control_port']],
                                ss_args, self.delay, None)
+        elif args['test'] == 'UDP_RR':
+            self.units = 'rr'
 
-        return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
-            "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
-            "{buffer} {format} {control_local_bind} {extra_args} -- " \
-            "{socket_timeout} {local_bind} -H {host} -k {output_vars} " \
-            "{cong_control} {extra_test_args}".format(**args)
+        self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
+                       "{marking} -H {control_host} -p {control_port} " \
+                       "-t {test} -l {length:d} {buffer} {format} " \
+                       "{control_local_bind} {extra_args} -- " \
+                       "{socket_timeout} {local_bind} -H {host} -k {output_vars} " \
+                       "{cong_control} {extra_test_args}".format(**args)
+
+        super(NetperfDemoRunner, self).check()
 
 
 class RegexpRunner(ProcessRunner):
@@ -943,8 +987,19 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
+    def check(self):
+        args = self.runner_args.copy()
+        args.setdefault('local_bind', (self.settings.LOCAL_BIND[0]
+                                       if self.settings.LOCAL_BIND else None))
+        args.setdefault('ip_version', self.settings.IP_VERSION)
+        args.setdefault('interval', self.settings.STEP_SIZE)
+        args.setdefault('length', self.settings.LENGTH)
+
+        self.command = self.find_binary(**args)
+        super(PingRunner, self).check()
+
     def find_binary(self, ip_version, interval, length, host,
-                    marking=None, local_bind=None):
+                    marking=None, local_bind=None, **kwargs):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
@@ -1023,7 +1078,7 @@ class PingRunner(RegexpRunner):
             if hasattr(out, 'decode'):
                 out = out.decode(ENCODING)
             if not self._parse(out)[0]:
-                raise RuntimeError(
+                raise RunnerCheckError(
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
 
@@ -1037,7 +1092,7 @@ class PingRunner(RegexpRunner):
                     host=host,
                     pingargs=" ".join(pingargs))
 
-        raise RuntimeError("No suitable ping tool found.")
+        raise RunnerCheckError("No suitable ping tool found.")
 
 
 class HttpGetterRunner(RegexpRunner):
@@ -1199,6 +1254,9 @@ class IrttRunner(ProcessRunner):
         self.raw_values = raw_values
         return result
 
+    def check(self):
+        super(IrttRunner, self).check()
+
     @classmethod
     def find_binary(cls, interval, length, host, ip_version=None,
                     local_bind=None, marking=None):
@@ -1230,20 +1288,19 @@ class IrttRunner(ProcessRunner):
 
 class UdpRrRunner(DelegatingRunner):
 
-    def __init__(self, command, delay, remote_host, **kwargs):
-        super(UdpRrRunner, self).__init__(**kwargs)
-        if IrttRunner.find_binary(**command['irtt']) is not None:
-            logger.debug("UDP RR test: Using irtt")
+    def check(self):
+        try:
             self.add_child(IrttRunner,
-                           command['irtt'], delay, remote_host)
-        else:
+                           delay=self.delay, remote_host=self.remote_host,
+                           **self.runner_args)
+            logger.debug("UDP RR test: Using irtt")
+        except RunnerCheckError:
             logger.debug("UDP RR test: Using netperf UDP_RR")
             self.add_child(NetperfDemoRunner,
-                           command['netperf'], delay, remote_host)
+                           test='UDP_RR', delay=self.delay, remote_host=self.remote_host,
+                           **self.runner_args)
 
-
-class ParseException(Exception):
-    pass
+        super(UdpRrRunner, self).check()
 
 
 class SsRunner(ProcessRunner):
@@ -1348,7 +1405,7 @@ class SsRunner(ProcessRunner):
                 f_ports = self.ports_ipv6_re.search(sp)
 
             if None is f_ports:
-                raise ParseException()
+                raise ParseError()
 
             dst_p = int(f_ports.group('dst_p').split(":")[-1])
 
@@ -1356,7 +1413,7 @@ class SsRunner(ProcessRunner):
                 sub_part.append(sp)
 
         if 1 != len(sub_part):
-            raise ParseException()
+            raise ParseError()
 
         return sub_part[0]
 
@@ -1374,7 +1431,7 @@ class SsRunner(ProcessRunner):
 
         timestamp = self.time_re.search(part)
         if timestamp is None:
-            raise ParseException()
+            raise ParseError()
         timestamp = float(timestamp.group('timestamp'))
 
         vals = {'t': timestamp}
@@ -1390,7 +1447,7 @@ class SsRunner(ProcessRunner):
                         pass
 
         if len(vals.keys()) == 1:
-            raise ParseException()
+            raise ParseError()
 
         self._raw_values.append(vals)
 
@@ -1412,7 +1469,7 @@ class SsRunner(ProcessRunner):
                     else:
                         results[k].append([t, v])
 
-            except ParseException:
+            except ParseError:
                 continue
 
         return results

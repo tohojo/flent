@@ -122,6 +122,10 @@ class Aggregator(object):
                 if 'kill_after' in i:
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E501
                 self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
+                try:
+                    self.threads[n].check()
+                except runners.RunnerCheckError as e:
+                    raise RuntimeError("Runner %s failed check: %s" % (n, e))
 
             # Start in a separate loop once we're sure we successfully created
             # all runners
