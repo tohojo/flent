@@ -410,7 +410,7 @@ class ResultSet(object):
                                         ":", ""),
                                     self.SUFFIX)
             title_len = MAX_FILENAME_LEN - len(name) + 2
-            return name % re.sub("[^A-Za-z0-9]", "_",
+            return name % re.sub("[^A-Za-z0-9-]", "_",
                                  self.metadata['TITLE'])[:title_len]
 
         else:
