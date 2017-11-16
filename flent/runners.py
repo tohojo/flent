@@ -237,6 +237,39 @@ class RunnerBase(object):
     raw_values = property(get_raw_values, set_raw_values)
 
 
+class DelegatingRunner(RunnerBase):
+
+    @property
+    def child_results(self):
+        return iter([])
+
+    def get_metadata(self):
+        md = {}
+        for c in self._child_runners:
+            md.update(c.metadata)
+        return md
+
+    def set_metadata(self, val):
+        pass
+
+    metadata = property(get_metadata, set_metadata)
+
+    def get_result(self):
+        res = []
+        for c in self._child_runners:
+            res.extend(c.result)
+        return res
+
+    def set_result(self, val):
+        pass
+
+    result = property(get_result, set_result)
+
+    def _run(self):
+        for c in self._child_runners:
+            c.join()
+
+
 class TimerRunner(RunnerBase, threading.Thread):
 
     def __init__(self, timeout, **kwargs):
@@ -319,6 +352,9 @@ class ProcessRunner(RunnerBase, threading.Thread):
         if isinstance(command, dict):
             self.command = self.find_binary(**command)
             self.command_args = command
+            if self.command is None:
+                raise RuntimeError("Unable to find binary for %s" %
+                                   self.__class__.__name__)
         else:
             self.command = command
             self.command_args = {}
@@ -1119,6 +1155,11 @@ class IperfCsvRunner(ProcessRunner):
 
 class IrttRunner(ProcessRunner):
 
+    marking_map = {'CS0': 0,
+                   'CS1': 8,
+                   'CS5': 40,
+                   'EF': 46}
+
     # irtt outputs all durations in nanoseconds
     def _to_ms(self, value):
         return value/10**6
@@ -1158,13 +1199,23 @@ class IrttRunner(ProcessRunner):
         self.raw_values = raw_values
         return result
 
-    def find_binary(self, interval, length, host, ip_version=None,
+    @classmethod
+    def find_binary(cls, interval, length, host, ip_version=None,
                     local_bind=None, marking=None):
 
         irtt = util.which('irtt')
 
         if irtt is None:
-            raise RuntimeError("No irtt binary in PATH")
+            logger.debug("No irtt binary in PATH")
+            return None
+
+        # Try to convert netperf-style textual marking specs into integers
+        if marking is not None:
+            try:
+                mk = marking.split(",")[0]
+                marking = cls.marking_map[mk]
+            except (AttributeError, KeyError):
+                pass
 
         return "{binary} client -o - -fill rand -fillall -qq " \
             "-d {length}s -i {interval}s {ip_version} {marking} {host}".format(
@@ -1175,6 +1226,20 @@ class IrttRunner(ProcessRunner):
                 ip_version="-{}".format(ip_version) if ip_version else "",
                 local_bind="-local {}".format(local_bind) if local_bind else "",
                 marking="-dscp {}".format(marking) if marking else "")
+
+
+class UdpRrRunner(DelegatingRunner):
+
+    def __init__(self, command, delay, remote_host, **kwargs):
+        super(UdpRrRunner, self).__init__(**kwargs)
+        if IrttRunner.find_binary(**command['irtt']) is not None:
+            logger.debug("UDP RR test: Using irtt")
+            self.add_child(IrttRunner,
+                           command['irtt'], delay, remote_host)
+        else:
+            logger.debug("UDP RR test: Using netperf UDP_RR")
+            self.add_child(NetperfDemoRunner,
+                           command['netperf'], delay, remote_host)
 
 
 class ParseException(Exception):

@@ -250,6 +250,17 @@ class TestEnvironment(object):
 
         return args
 
+    def find_udp_rr(self, host, length, **args):
+
+        args.setdefault('ip_version', self.env['IP_VERSION'])
+        args.setdefault('interval', self.env['STEP_SIZE'])
+
+        args['host'] = host
+        args['length'] = length
+
+        return {'netperf': self.find_netperf(test='UDP_RR', **args),
+                'irtt': self.find_irtt(**args)}
+
     @finder
     def find_itgsend(self, test_args, length, host, local_bind=None):
 
