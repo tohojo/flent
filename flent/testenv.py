@@ -80,6 +80,7 @@ class TestEnvironment(object):
             'include': self.include_test,
             'min_host_count': self.require_host_count,
             'find_ping': self.find_ping,
+            'find_irtt': self.find_irtt,
             'find_iperf': self.find_iperf,
             'find_netperf': self.find_netperf,
             'find_itgsend': self.find_itgsend,
@@ -187,6 +188,17 @@ class TestEnvironment(object):
         args.setdefault('local_bind', (self.env['LOCAL_BIND'][0]
                                        if self.env['LOCAL_BIND'] else None))
         args['ip_version'] = ip_version
+        args['interval'] = interval
+        args['length'] = length
+        args['host'] = host
+
+        return args
+
+    def find_irtt(self, interval, length, host, **args):
+        """Find a suitable irtt."""
+
+        args.setdefault('local_bind', (self.env['LOCAL_BIND'][0]
+                                       if self.env['LOCAL_BIND'] else None))
         args['interval'] = interval
         args['length'] = length
         args['host'] = host

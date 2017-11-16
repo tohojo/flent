@@ -44,6 +44,11 @@ from flent.build_info import DATA_DIR
 from flent.util import classname, ENCODING, Glob
 from flent.loggers import get_logger
 
+try:
+    import ujson as json
+except ImportError:
+    import json
+
 mswindows = (sys.platform == "win32")
 
 try:
@@ -1110,6 +1115,66 @@ class IperfCsvRunner(ProcessRunner):
                     "an --enhancedreports option. Not using.", err.strip())
 
         raise RuntimeError("No suitable Iperf binary found.")
+
+
+class IrttRunner(ProcessRunner):
+
+    # irtt outputs all durations in nanoseconds
+    def _to_ms(self, value):
+        return value/10**6
+
+    def _to_s(self, value):
+        return value/10**9
+
+    def parse(self, output, error=""):
+        result = []
+        raw_values = []
+        try:
+            data = json.loads(output)
+        except ValueError as e:
+            logger.warning("Unable to parse irtt JSON output: %s", e)
+            return
+
+        self.metadata['RTT_MEAN'] = self._to_ms(data['stats']['rtt']['mean'])
+        self.metadata['RTT_MEDIAN'] = self._to_ms(data['stats']['rtt']['median'])
+        self.metadata['RTT_MAX'] = self._to_ms(data['stats']['rtt']['max'])
+        self.metadata['RTT_MIN'] = self._to_ms(data['stats']['rtt']['min'])
+        self.metadata['MEAN_VALUE'] = self.metadata['RTT_MEAN']
+        self.metadata['PACKETS_SENT'] = data['stats']['packets_sent']
+        self.metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
+        self.metadata['PACKET_LOSS'] = data['stats']['packet_loss_percent']
+
+        for pkt in data['round_trips']:
+            if pkt['lost'] != 'false':
+                continue
+            dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
+                  'val': self._to_ms(pkt['delay']['rtt']),
+                  'owd_up': self._to_ms(pkt['delay']['send']),
+                  'owd_down': self._to_ms(pkt['delay']['receive']),
+                  'seq': pkt['seqno']}
+            raw_values.append(dp)
+            result.append([dp['t'], dp['val']])
+
+        self.raw_values = raw_values
+        return result
+
+    def find_binary(self, interval, length, host, ip_version=None,
+                    local_bind=None, marking=None):
+
+        irtt = util.which('irtt')
+
+        if irtt is None:
+            raise RuntimeError("No irtt binary in PATH")
+
+        return "{binary} client -o - -fill rand -fillall -qq " \
+            "-d {length}s -i {interval}s {ip_version} {marking} {host}".format(
+                binary=irtt,
+                length=length,
+                interval=interval,
+                host=host,
+                ip_version="-{}".format(ip_version) if ip_version else "",
+                local_bind="-local {}".format(local_bind) if local_bind else "",
+                marking="-dscp {}".format(marking) if marking else "")
 
 
 class ParseException(Exception):
