@@ -79,22 +79,18 @@ class TestEnvironment(object):
             'o': OrderedDict,
             'include': self.include_test,
             'min_host_count': self.require_host_count,
-            'find_ping': self.find_ping,
-            'find_irtt': self.find_irtt,
-            'find_iperf': self.find_iperf,
-            'find_netperf': self.find_netperf,
-            'find_itgsend': self.find_itgsend,
-            'find_http_getter': self.find_http_getter,
-            'find_tc_iterate': self.find_tc_iterate,
-            'find_stat_iterate': self.find_stat_iterate,
-            'find_wifistats_iterate': self.find_wifistats_iterate,
-            'find_netstat_iterate': self.find_netstat_iterate,
             'set_test_parameter': self.set_test_parameter,
             'get_test_parameter': self.get_test_parameter,
             'try_test_parameters': self.try_test_parameters,
             'parse_int': self.parse_int,
             'zip_longest': zip_longest,
         })
+
+        # Populate env with all find_ methods
+        for k in self.__class__.__dict__.keys():
+            if k.startswith("find_"):
+                self.env[k] = getattr(self, k)
+
         self.informational = informational
         self.itgsend = None
         self.http_getter = None
