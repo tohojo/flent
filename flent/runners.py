@@ -696,6 +696,12 @@ class NetperfDemoRunner(ProcessRunner):
     netperf = {}
     _env = {"DUMP_TCP_INFO": "1"}
 
+    def __init__(self, test, length, host, **kwargs):
+        self.test = test
+        self.length = length
+        self.host = host
+        super(NetperfDemoRunner, self).__init__(**kwargs)
+
     def parse(self, output, error=""):
         """Parses the interim result lines and returns a list of (time,value)
         pairs."""
@@ -803,12 +809,12 @@ class NetperfDemoRunner(ProcessRunner):
     def check(self):
         args = self.runner_args.copy()
 
-        if args['test'].lower() == 'omni':
+        if self.test.lower() == 'omni':
             raise RunnerCheckError("Use of netperf 'omni' test is not supported")
 
         args.setdefault('ip_version', self.settings.IP_VERSION)
         args.setdefault('interval', self.settings.STEP_SIZE)
-        args.setdefault('control_host', self.settings.CONTROL_HOST or host)
+        args.setdefault('control_host', self.settings.CONTROL_HOST or self.host)
         args.setdefault('control_port', self.settings.NETPERF_CONTROL_PORT)
         args.setdefault('local_bind',
                         self.settings.LOCAL_BIND[0]
@@ -824,10 +830,10 @@ class NetperfDemoRunner(ProcessRunner):
         args.setdefault('socket_timeout', self.settings.SOCKET_TIMEOUT)
 
         if self.settings.SWAP_UPDOWN:
-            if args['test'] == 'TCP_STREAM':
-                args['test'] = 'TCP_MAERTS'
-            elif args['test'] == 'TCP_MAERTS':
-                args['test'] = 'TCP_STREAM'
+            if self.test == 'TCP_STREAM':
+                self.test = 'TCP_MAERTS'
+            elif self.test == 'TCP_MAERTS':
+                self.test = 'TCP_STREAM'
 
         if not self.netperf:
             netperf = util.which('netperf', fail=True)
@@ -874,6 +880,9 @@ class NetperfDemoRunner(ProcessRunner):
         args['binary'] = self.netperf['executable']
         args['output_vars'] = self.output_vars
         args['buffer'] = self.netperf['buffer']
+        args['test'] = self.test
+        args['length'] = self.length
+        args['host'] = self.host
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -885,25 +894,25 @@ class NetperfDemoRunner(ProcessRunner):
             if args[c]:
                 args[c] = "-L {0}".format(args[c])
 
-        if args['test'] == "UDP_RR" and self.netperf["-e"]:
+        if self.test == "UDP_RR" and self.netperf["-e"]:
             args['socket_timeout'] = "-e {0:d}".format(args['socket_timeout'])
         else:
             args['socket_timeout'] = ""
 
-        if args['test'] in ("TCP_STREAM", "TCP_MAERTS"):
+        if self.test in ("TCP_STREAM", "TCP_MAERTS"):
             args['format'] = "-f m"
             self.units = 'Mbits/s'
 
             if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
                 ss_args = {'host': self.remote_host or 'localhost',
                            'interval': args['interval'],
-                           'length': args['length'],
-                           'target': args['host'],
+                           'length': self.length,
+                           'target': self.host,
                            'ip_version': args['ip_version']}
 
                 self.add_child(SsRunner, [args['control_port']],
                                ss_args, self.delay, None)
-        elif args['test'] == 'UDP_RR':
+        elif self.test == 'UDP_RR':
             self.units = 'rr'
 
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
@@ -987,15 +996,19 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
+    def __init__(self, host, **kwargs):
+        self.host = host
+        super(PingRunner, self).__init__(**kwargs)
+
     def check(self):
         args = self.runner_args.copy()
         args.setdefault('local_bind', (self.settings.LOCAL_BIND[0]
                                        if self.settings.LOCAL_BIND else None))
         args.setdefault('ip_version', self.settings.IP_VERSION)
         args.setdefault('interval', self.settings.STEP_SIZE)
-        args.setdefault('length', self.settings.LENGTH)
+        args.setdefault('length', self.settings.TOTAL_LENGTH)
 
-        self.command = self.find_binary(**args)
+        self.command = self.find_binary(host=self.host, **args)
         super(PingRunner, self).check()
 
     def find_binary(self, ip_version, interval, length, host,
@@ -1215,6 +1228,16 @@ class IrttRunner(ProcessRunner):
                    'CS5': 40,
                    'EF': 46}
 
+    def __init__(self, host, interval, length, ip_version=None,
+                 local_bind=None, marking=None, **kwargs):
+        self.host = host
+        self.interval = interval
+        self.length = length
+        self.ip_version = ip_version
+        self.local_bind = local_bind
+        self.marking = marking
+        super(IrttRunner, self).__init__(self, **kwargs)
+
     # irtt outputs all durations in nanoseconds
     def _to_ms(self, value):
         return value/10**6
@@ -1255,35 +1278,46 @@ class IrttRunner(ProcessRunner):
         return result
 
     def check(self):
-        super(IrttRunner, self).check()
-
-    @classmethod
-    def find_binary(cls, interval, length, host, ip_version=None,
-                    local_bind=None, marking=None):
 
         irtt = util.which('irtt')
 
         if irtt is None:
-            logger.debug("No irtt binary in PATH")
-            return None
+            raise RunnerCheckError("No irtt binary in PATH")
 
         # Try to convert netperf-style textual marking specs into integers
-        if marking is not None:
+        if self.marking is not None:
             try:
-                mk = marking.split(",")[0]
-                marking = cls.marking_map[mk]
+                mk = self.marking.split(",")[0]
+                marking = "-dscp {}".format(self.marking_map[mk])
             except (AttributeError, KeyError):
-                pass
+                marking = "-dscp {}".format(marking)
+        else:
+            marking = ""
 
-        return "{binary} client -o - -fill rand -fillall -qq " \
-            "-d {length}s -i {interval}s {ip_version} {marking} {host}".format(
-                binary=irtt,
-                length=length,
-                interval=interval,
-                host=host,
-                ip_version="-{}".format(ip_version) if ip_version else "",
-                local_bind="-local {}".format(local_bind) if local_bind else "",
-                marking="-dscp {}".format(marking) if marking else "")
+        if self.local_bind:
+            local_bind = "-local {}".format(self.local_bind)
+        elif self.settings.LOCAL_BIND:
+            local_bind = "-local {}".format(self.settings.LOCAL_BIND[0])
+        else:
+            local_bind = ""
+
+        if self.ip_version is not None:
+            ip_version = "-{}".format(self.ip_version)
+        else:
+            ip_version = ""
+
+        self.command = "{binary} client -o - -fill rand -fillall -qq " \
+                       "-d {length}s -i {interval}s {ip_version} {marking} " \
+                       "{local_bind} {host}".format(
+                           binary=irtt,
+                           length=self.length,
+                           interval=self.interval,
+                           host=self.host,
+                           ip_version=ip_version,
+                           local_bind=local_bind,
+                           marking=marking)
+
+        super(IrttRunner, self).check()
 
 
 class UdpRrRunner(DelegatingRunner):
