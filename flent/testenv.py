@@ -178,32 +178,6 @@ class TestEnvironment(object):
         except:
             raise RuntimeError("Invalid integer value: %s" % val)
 
-    def find_ping(self, ip_version, interval, length, host, **args):
-        """Find a suitable ping."""
-
-        args.setdefault('local_bind', (self.env['LOCAL_BIND'][0]
-                                       if self.env['LOCAL_BIND'] else None))
-        args['ip_version'] = ip_version
-        args['interval'] = interval
-        args['length'] = length
-        args['host'] = host
-
-        return args
-
-    @finder
-    def find_iperf(self, host, interval, length, ip_version, local_bind=None,
-                   no_delay=False, udp=False, bw=None):
-        """Find a suitable iperf."""
-        if local_bind is None:
-            local_bind = self.env['LOCAL_BIND'][
-                0] if self.env['LOCAL_BIND'] else None
-
-        # Main code moved to the PingRunner class to be able to take advantage
-        # of the parser code there.
-        return runners.IperfCsvRunner.find_binary(host, interval, length,
-                                                  ip_version, udp=udp, bw=bw,
-                                                  local_bind=local_bind)
-
     @finder
     def find_itgsend(self, test_args, length, host, local_bind=None):
 
@@ -272,30 +246,6 @@ class TestEnvironment(object):
             self.http_getter = util.which('http-getter', fail=True)
 
         return "%s %s" % (self.http_getter, args)
-
-    @finder
-    def find_tc_iterate(self, *args, **kwargs):
-        """Find a suitable tc_iterate script."""
-
-        return runners.TcRunner.find_binary(*args, **kwargs)
-
-    @finder
-    def find_stat_iterate(self, *args, **kwargs):
-        """Find a suitable stat_iterate script."""
-
-        return runners.CpuStatsRunner.find_binary(*args, **kwargs)
-
-    @finder
-    def find_wifistats_iterate(self, *args, **kwargs):
-        """Find a suitable wifistats_iterate script."""
-
-        return runners.WifiStatsRunner.find_binary(*args, **kwargs)
-
-    @finder
-    def find_netstat_iterate(self, *args, **kwargs):
-        """Find a suitable netstat_iterate script."""
-
-        return runners.NetstatRunner.find_binary(*args, **kwargs)
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
