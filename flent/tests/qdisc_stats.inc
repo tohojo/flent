@@ -8,10 +8,8 @@ QDISC_STATS_IFACES=TEST_PARAMETERS.get('qdisc_stats_interfaces')
 if QDISC_STATS_HOSTS:
     for host,iface in zip(QDISC_STATS_HOSTS.split(","), QDISC_STATS_IFACES.split(",")):
         id = "%s (%s)" % (host, iface)
-        DATA_SETS['qdisc_stats_%s' % host] = {'command': find_tc_iterate(iface, STEP_SIZE, TOTAL_LENGTH, host),
-                                              'id': id,
-                                              'units': 'misc',
-                                              'runner': 'tc',}
+        DATA_SETS['qdisc_stats_%s' % host] = {'interface': iface, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH, 'host':
+                                              host, 'id': id, 'units': 'misc', 'runner': 'tc'}
         DATA_SETS['qdisc_stats_%s::dropped' % host] = {'units': 'packets', 'data_transform': 'cumulative_to_events', 'runner': 'null', 'id': id}
         DATA_SETS['qdisc_stats_%s::ecn_mark' % host] = {'units': 'packets', 'data_transform': 'cumulative_to_events', 'runner': 'null', 'id': id}
 

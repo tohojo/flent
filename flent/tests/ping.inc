@@ -10,10 +10,9 @@ if PING_LOCAL_BINDS:
 if PING_HOSTS:
     for i,host in enumerate(PING_HOSTS.split(",")):
         local_bind = PING_LOCAL_BINDS[i] if PING_LOCAL_BINDS else None
-        DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'command': find_ping(IP_VERSION, STEP_SIZE, TOTAL_LENGTH, host, local_bind=local_bind),
-                                                         'units': 'ms',
-                                                         'id': host,
-                                                         'runner': 'ping',}
+        DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'ip_version': IP_VERSION, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH,
+                                                         'host': host, 'local_bind': local_bind, 'units': 'ms', 'id': host,
+                                                         'runner': 'ping'}
 
     PLOTS['ping_extra'] = {'description': 'Extra ping hosts',
                     'type': 'timeseries',

@@ -8,11 +8,9 @@ WIFI_STATS_IFACES=TEST_PARAMETERS.get('wifi_stats_interfaces')
 WIFI_STATS_STATIONS=TEST_PARAMETERS.get('wifi_stats_stations')
 if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     for host,iface in zip(WIFI_STATS_HOSTS.split(","), WIFI_STATS_IFACES.split(",")):
-        DATA_SETS['wifi_stats_%s' % host] = {'command': find_wifistats_iterate(iface, STEP_SIZE, TOTAL_LENGTH, host),
-                                             'stations': WIFI_STATS_STATIONS.split(","),
-                                             'units': 'misc',
-                                             'id': host,
-                                             'runner': 'wifi_stats',}
+        DATA_SETS['wifi_stats_%s' % host] = {'interface': iface, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH, 'host':
+                                             host, 'stations': WIFI_STATS_STATIONS.split(','), 'units': 'misc', 'id':
+                                             host, 'runner': 'wifi_stats'}
         for station in WIFI_STATS_STATIONS.split(","):
             DATA_SETS['wifi_stats_%s::airtime_rx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
                                                                            'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
