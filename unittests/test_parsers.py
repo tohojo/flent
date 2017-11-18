@@ -457,7 +457,8 @@ class TestParsers(unittest.TestCase):
     def new_runner(self, name):
         r = runners.get(name)
         return r(name='test', settings=object(), command='test',
-                 delay=0, remote_host=None)
+                 delay=0, remote_host=None, interface=None, interval=0,
+                 length=0)
 
     def test_cake_parser(self):
         raw_keys = ["cake_%s" % k for k in runners.TcRunner.cake_keys]
