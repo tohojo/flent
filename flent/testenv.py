@@ -86,14 +86,7 @@ class TestEnvironment(object):
             'zip_longest': zip_longest,
         })
 
-        # Populate env with all find_ methods
-        for k in self.__class__.__dict__.keys():
-            if k.startswith("find_"):
-                self.env[k] = getattr(self, k)
-
         self.informational = informational
-        self.itgsend = None
-        self.http_getter = None
         self.orig_hosts = self.env['HOSTS']
 
     def execute(self, filename):
@@ -177,53 +170,6 @@ class TestEnvironment(object):
                 raise
         except (ValueError, AttributeError):
             raise RuntimeError("Invalid integer value: %s" % val)
-
-    @finder
-    def find_http_getter(self, interval, length, workers=None, ip_version=None,
-                         dns_servers=None, url_file=None, timeout=None):
-
-        args = "-i %d -l %d" % (int(interval * 1000.0), length)
-
-        if url_file is None:
-            url_file = self.env['HTTP_GETTER_URLLIST']
-
-        if dns_servers is None:
-            dns_servers = self.env['HTTP_GETTER_DNS']
-
-        if timeout is None:
-            timeout = self.env['HTTP_GETTER_TIMEOUT']
-
-        if workers is None:
-            workers = self.env['HTTP_GETTER_WORKERS']
-
-        if ip_version is None:
-            ip_version = self.env['IP_VERSION']
-
-        if ip_version == 4:
-            args += " -4"
-        elif ip_version == 6:
-            args += " -6"
-
-        if timeout is None:
-            args += " -t %d" % int(length * 1000)
-        else:
-            args += " -t %d" % timeout
-
-        if workers is not None:
-            args += " -n %d" % workers
-
-        if dns_servers is not None:
-            args += " -d '%s'" % dns_servers
-
-        if url_file is None:
-            args += " http://%s/filelist.txt" % self.env['HOST']
-        else:
-            args += " %s" % url_file
-
-        if self.http_getter is None:
-            self.http_getter = util.which('http-getter', fail=True)
-
-        return "%s %s" % (self.http_getter, args)
 
     def require_host_count(self, count):
         if len(self.env['HOSTS']) < count:
