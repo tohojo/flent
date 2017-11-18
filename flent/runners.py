@@ -561,21 +561,30 @@ class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
     supports_remote = False
 
-    def __init__(self, duration, interval, **kwargs):
+    def __init__(self, test_args, length, host, duration, interval,
+                 local_bind=None, control_host=None, **kwargs):
         super(DitgRunner, self).__init__(**kwargs)
-        if 'control_host' in kwargs:
-            control_host = kwargs['control_host']
-        else:
+
+        if not control_host:
             control_host = self.settings.CONTROL_HOST or self.settings.HOST
+
+        if not local_bind and self.settings.LOCAL_BIND:
+            local_bind = self.settings.LOCAL_BIND[0]
+
         self.proxy = xmlrpc.ServerProxy("http://%s:%s"
                                         % (control_host,
                                            self.settings.DITG_CONTROL_PORT),
                                         allow_none=True)
         self.ditg_secret = self.settings.DITG_CONTROL_SECRET
+
+        self.test_args = test_args
+        self.length = length
+        self.host = host
         self.duration = duration
         self.interval = interval
+        self.local_bind = local_bind
 
-    def start(self):
+    def check(self):
         try:
             interval = int(self.interval * 1000)
             hm = hmac.new(self.ditg_secret.encode(
@@ -586,24 +595,39 @@ class DitgRunner(ProcessRunner):
                 self.duration, interval, hm.hexdigest(), True)
             if params['status'] != 'OK':
                 if 'message' in params:
-                    raise RuntimeError(
+                    raise RunnerCheckError(
                         "Unable to request D-ITG test. "
                         "Control server reported error: %s" % params['message'])
                 else:
-                    raise RuntimeError(
+                    raise RunnerCheckError(
                         "Unable to request D-ITG test. "
                         "Control server reported an unspecified error.")
             self.test_id = params['test_id']
             self.out += "Test ID: %s\n" % self.test_id
         except (xmlrpc.Fault, socket.error) as e:
-            raise RuntimeError(
+            raise RunnerCheckError(
                 "Error while requesting D-ITG test: '%s'. "
                 "Is the control server listening (see man page)?" % e)
-        self.command = self.command.format(
-            signal_port=params['port'], dest_port=params['port'] + 1)
-        self.args = shlex.split(self.command)
 
-        super(DitgRunner, self).start()
+        itgsend = util.which("ITGSend")
+        if not itgsend:
+            raise RunnerCheckError("Unable to find ITGSend binary")
+
+        # We put placeholders in the command string to be filled out by string
+        # format expansion by the runner once it has communicated with the control
+        # server and obtained the port values.
+        self.command = "{binary} -Sdp {signal_port} -t {length} {local_bind} " \
+                       "-a {dest_host} -rp {dest_port} {args}".format(
+                           binary=self.itgsend,
+                           length=int(self.length * 1000),
+                           dest_host=self.host,
+                           local_bind="-sa {0} -Ssa {0}".format(
+                               self.local_bind) if self.local_bind else "",
+                           args=self.test_args,
+                           signal_port=params['port'],
+                           dest_port=params['port'] + 1)
+
+        super(DitgRunner, self).check()
 
     def parse(self, output, error=""):
         data = ""

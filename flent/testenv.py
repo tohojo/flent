@@ -179,28 +179,6 @@ class TestEnvironment(object):
             raise RuntimeError("Invalid integer value: %s" % val)
 
     @finder
-    def find_itgsend(self, test_args, length, host, local_bind=None):
-
-        if local_bind is None:
-            local_bind = self.env['LOCAL_BIND'][
-                0] if self.env['LOCAL_BIND'] else None
-
-        if self.itgsend is None:
-            self.itgsend = util.which("ITGSend", fail=True)
-
-        # We put placeholders in the command string to be filled out by string
-        # format expansion by the runner once it has communicated with the control
-        # server and obtained the port values.
-        return "{binary} -Sdp {{signal_port}} -t {length} {local_bind} " \
-            "-a {dest_host} -rp {{dest_port}} {args}".format(
-                binary=self.itgsend,
-                length=int(length * 1000),
-                dest_host=host,
-                local_bind="-sa {0} -Ssa {0}".format(
-                    local_bind) if local_bind else "",
-                args=test_args)
-
-    @finder
     def find_http_getter(self, interval, length, workers=None, ip_version=None,
                          dns_servers=None, url_file=None, timeout=None):
 
