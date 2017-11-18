@@ -175,7 +175,7 @@ class TestEnvironment(object):
                 if val.startswith("0x"):
                     return int(val, 16)
                 raise
-        except:
+        except (ValueError, AttributeError):
             raise RuntimeError("Invalid integer value: %s" % val)
 
     @finder
