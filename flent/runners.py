@@ -609,9 +609,7 @@ class DitgRunner(ProcessRunner):
                 "Error while requesting D-ITG test: '%s'. "
                 "Is the control server listening (see man page)?" % e)
 
-        itgsend = util.which("ITGSend")
-        if not itgsend:
-            raise RunnerCheckError("Unable to find ITGSend binary")
+        itgsend = util.which("ITGSend", fail=RunnerCheckError)
 
         # We put placeholders in the command string to be filled out by string
         # format expansion by the runner once it has communicated with the control
@@ -859,7 +857,7 @@ class NetperfDemoRunner(ProcessRunner):
                 self.test = 'TCP_STREAM'
 
         if not self.netperf:
-            netperf = util.which('netperf', fail=True)
+            netperf = util.which('netperf', fail=RunnerCheckError)
 
             # Try to figure out whether this version of netperf supports the -e
             # option for socket timeout on UDP_RR tests, and whether it has been
@@ -1143,6 +1141,43 @@ class HttpGetterRunner(RegexpRunner):
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
+    def __init__(self, interval, length, workers=None, ip_version=None,
+                 dns_servers=None, url_file=None, timeout=None, **kwargs):
+        super(HttpGetterRunner, self).__init__(self, **kwargs)
+
+        self.interval = interval
+        self.length = length
+        self.workers = workers
+        self.ip_version = ip_version
+        self.dns_servers = dns_servers,
+        self.url_file = url_file
+        self.timeout = timeout
+
+    def check(self):
+
+        http_getter = util.which('http-getter', fail=RunnerCheckError)
+
+        url_file = (self.url_file or self.settings.HTTP_GETTER_URLLIST
+                    or "http://%s/filelist.txt".format(self.settings.HOST))
+        dns_servers = self.dns_servers or self.settings.HTTP_GETTER_DNS
+        timeout = (self.timeout or self.settings.HTTP_GETTER_TIMEOUT
+                   or int(self.length * 1000))
+        workers = self.workers or self.settings.HTTP_GETTER_WORKERS
+        ip_version = self.ip_version or self.settings.IP_VERSION
+
+        self.command = "{binary} -i {interval} -d {length} -t {timeout} " \
+                       "{dns} {workers} {ipv} {url_file}".format(
+                           binary=http_getter,
+                           interval=self.interval,
+                           length=self.length,
+                           timeout=timeout,
+                           dns="-d {}".format(dns_servers) if dns_servers else "",
+                           workers="-n {}".format(workers) if workers else "",
+                           ipv="-{}".format(ip_version) if ip_version else "",
+                           url_file=url_file)
+
+        super(HttpGetterRunner, self).check()
+
 
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
@@ -1317,10 +1352,7 @@ class IrttRunner(ProcessRunner):
 
     def check(self):
 
-        irtt = util.which('irtt')
-
-        if irtt is None:
-            raise RunnerCheckError("No irtt binary in PATH")
+        irtt = util.which('irtt', fail=RunnerCheckError)
 
         # Try to convert netperf-style textual marking specs into integers
         if self.marking is not None:

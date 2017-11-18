@@ -141,7 +141,7 @@ def is_executable(filename):
     return os.path.isfile(filename) and os.access(filename, os.X_OK)
 
 
-def which(executable, fail=False):
+def which(executable, fail=None):
     pathname, filename = os.path.split(executable)
     if pathname:
         if is_executable(executable):
@@ -158,7 +158,7 @@ def which(executable, fail=False):
                 logger.debug("which: %s is not an executable file", filename)
 
     if fail:
-        raise RuntimeError("No %s binary found in PATH." % executable)
+        raise fail("No %s binary found in PATH." % executable)
     return None
 
 
