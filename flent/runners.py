@@ -1336,7 +1336,8 @@ class IrttRunner(ProcessRunner):
         self.metadata['MEAN_VALUE'] = self.metadata['RTT_MEAN']
         self.metadata['PACKETS_SENT'] = data['stats']['packets_sent']
         self.metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
-        self.metadata['PACKET_LOSS'] = data['stats']['packet_loss_percent']
+        self.metadata['PACKET_LOSS_RATE'] = (data['stats']['packet_loss_percent']
+                                             / 100.0)
 
         for pkt in data['round_trips']:
             dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
@@ -1345,6 +1346,9 @@ class IrttRunner(ProcessRunner):
                 dp['val'] = self._to_ms(pkt['delay']['rtt'])
                 dp['owd_up'] = self._to_ms(pkt['delay']['send'])
                 dp['owd_down'] = self._to_ms(pkt['delay']['receive'])
+                dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
+                dp['ipdv_up'] = self._to_ms(pkt['ipdv']['send'])
+                dp['ipdv_down'] = self._to_ms(pkt['ipdv']['receive'])
                 result.append([dp['t'], dp['val']])
             else:
                 lost_dir = pkt['lost'].replace('true_', '')
