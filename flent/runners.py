@@ -1339,15 +1339,19 @@ class IrttRunner(ProcessRunner):
         self.metadata['PACKET_LOSS'] = data['stats']['packet_loss_percent']
 
         for pkt in data['round_trips']:
-            if pkt['lost'] != 'false':
-                continue
             dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
-                  'val': self._to_ms(pkt['delay']['rtt']),
-                  'owd_up': self._to_ms(pkt['delay']['send']),
-                  'owd_down': self._to_ms(pkt['delay']['receive']),
                   'seq': pkt['seqno']}
+            if pkt['lost'] == 'false':
+                dp['val'] = self._to_ms(pkt['delay']['rtt'])
+                dp['owd_up'] = self._to_ms(pkt['delay']['send'])
+                dp['owd_down'] = self._to_ms(pkt['delay']['receive'])
+                result.append([dp['t'], dp['val']])
+            else:
+                lost_dir = pkt['lost'].replace('true_', '')
+                dp['lost'] = True
+                dp['lost_dir'] = lost_dir or None
+
             raw_values.append(dp)
-            result.append([dp['t'], dp['val']])
 
         self.raw_values = raw_values
         return result
