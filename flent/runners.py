@@ -1823,7 +1823,7 @@ class TcRunner(ProcessRunner):
                 if k not in matches:
                     continue
                 v = matches[k]
-                matches[k] = v - last_vals[k] if k in last_vals else 0
+                matches[k] = v - last_vals[k] if k in last_vals else 0.0
                 last_vals[k] = v
 
             for k, v in matches.items():
@@ -1996,7 +1996,7 @@ class WifiStatsRunner(ProcessRunner):
                     tx = float(airtime.group('tx'))
                     if s not in last_airtime:
                         last_airtime[s] = {'rx': rx, 'tx': tx}
-                        sv['airtime_rx'] = sv['airtime_tx'] = 0
+                        sv['airtime_rx'] = sv['airtime_tx'] = 0.0
                     else:
                         sv['airtime_rx'] = rx - last_airtime[s]['rx']
                         sv['airtime_tx'] = tx - last_airtime[s]['tx']

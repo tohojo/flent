@@ -533,7 +533,7 @@ class ResultSet(object):
                             for k in ('airtime_tx', 'airtime_rx'):
                                 if k in d:
                                     if k not in last:
-                                        last[k], d[k] = d[k], 0
+                                        last[k], d[k] = d[k], 0.0
                                     else:
                                         last[k], d[k] = d[k], d[k] - last[k]
 
@@ -545,7 +545,7 @@ class ResultSet(object):
                         for k in ('dropped', 'ecn_mark'):
                             if k in v:
                                 if k not in last:
-                                    last[k], v[k] = v[k], 0
+                                    last[k], v[k] = v[k], 0.0
                                 else:
                                     last[k], v[k] = v[k], v[k] - last[k]
 
