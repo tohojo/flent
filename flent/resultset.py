@@ -31,6 +31,7 @@ from itertools import repeat
 from copy import deepcopy
 from collections import OrderedDict
 
+from flent import transformers
 from flent.loggers import get_logger
 from flent.util import gzip_open, bz2_open, parse_date, format_date
 
@@ -470,6 +471,7 @@ class ResultSet(object):
 
     @classmethod
     def unserialise_compat(cls, version, obj, absolute=False):
+        fake_raw = False
         if version == 1:
             obj['raw_values'] = {}
             if 'SERIES_META' in obj['metadata']:
@@ -489,12 +491,72 @@ class ResultSet(object):
                     obj['raw_values'][name] = [{'t': x0 + x, 'val': r} for x, r in
                                                zip(obj['x_values'],
                                                    obj['results'][name])]
-                obj['metadata']['FAKE_RAW_VALUES'] = True
+                obj['metadata']['FAKE_RAW_VALUES'] = fake_raw = True
 
             if 'NETPERF_WRAPPER_VERSION' in obj['metadata']:
                 obj['metadata']['FLENT_VERSION'] = obj[
                     'metadata']['NETPERF_WRAPPER_VERSION']
                 del obj['metadata']['NETPERF_WRAPPER_VERSION']
+
+        if version < 4 and not fake_raw:
+            # Version 4 moved the data transform logic to also be applied to
+            # raw_values data. So fixup the values in the raw_values structure
+            # to apply data transforms where they are missing.
+
+            for n, values in obj['raw_values'].items():
+                # Netperf UDP_RR values
+                if 'UDP' in n:
+                    for v in values:
+                        # Unfortunately this is the best heuristic we have that
+                        # this was a netperf UDP_RR runner, since old versions
+                        # may not have recorded this fact in the metadata
+                        if 'dur' in v:
+                            v['val'] = transformers.rr_to_ms(v['val'])
+
+                # Convert HTTP latency values from seconds to milliseconds
+                elif n == 'HTTP latency':
+                    for v in values:
+                        if 'val' in v:
+                            v['val'] = transformers.s_to_ms(v['val'])
+
+                # Turn airtime values from cumulative values into counts per
+                # interval
+                elif values and 'stations' in values[0]:
+                    last_vals = {}
+                    for v in values:
+                        if 'stations' not in v:
+                            continue
+                        for s, d in v['stations'].items():
+                            if s not in last_vals:
+                                last_vals[s] = {}
+                            last = last_vals[s]
+                            for k in ('airtime_tx', 'airtime_rx'):
+                                if k in d:
+                                    if k not in last:
+                                        last[k], d[k] = d[k], 0
+                                    else:
+                                        last[k], d[k] = d[k], d[k] - last[k]
+
+                # Ditto for qdisc drops and marks
+                elif values and ('dropped' in values[0] or
+                                 'ecn_mark' in values[0]):
+                    last = {}
+                    for v in values:
+                        for k in ('dropped', 'ecn_mark'):
+                            if k in v:
+                                if k not in last:
+                                    last[k], v[k] = v[k], 0
+                                else:
+                                    last[k], v[k] = v[k], v[k] - last[k]
+
+            # Iperf UDP bandwidth is was reported in bits/s, now uses Mbits/s to
+            # be consistent with other bandwidth measurements
+            if 'SERIES_META' in obj['metadata']:
+                for k, v in obj['metadata']['SERIES_META'].items():
+                    if 'MEAN_VALUE' in v and v['UNITS'] == "bits/s":
+                        v['MEAN_VALUE'] = transformers.bits_to_mbits(
+                            v['MEAN_VALUE'])
+                        v['UNITS'] = "Mbits/s"
 
         return obj
 
