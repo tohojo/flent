@@ -94,9 +94,9 @@ class Aggregator(object):
         instance['start_event'] = None
         instance['kill_event'] = None
         instance['finish_event'] = Event()
+        instance['transformers'] = []
 
         if 'data_transform' in config:
-            instance['transformers'] = []
             for t in [i.strip() for i in config['data_transform'].split(',')]:
                 if hasattr(transformers, t):
                     instance['transformers'].append(getattr(transformers, t))
@@ -121,11 +121,14 @@ class Aggregator(object):
                     i['start_event'] = self.instances[i['run_after']]['finish_event']  # noqa: E501
                 if 'kill_after' in i:
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E501
-                self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
+                t = i['runner'](name=n, settings=self.settings, **i)
                 try:
-                    self.threads[n].check()
+                    t.check()
                 except runners.RunnerCheckError as e:
                     raise RuntimeError("Runner %s failed check: %s" % (n, e))
+
+                i['transformers'].extend(t.transformers)
+                self.threads[n] = t
 
             # Start in a separate loop once we're sure we successfully created
             # all runners
@@ -150,14 +153,13 @@ class Aggregator(object):
                                 "Patience, please...")
 
                 metadata['series'][n] = t.metadata
-                if 'transformers' in self.instances[n]:
-                    for tr in self.instances[n]['transformers']:
-                        for k in t.transformed_metadata:
-                            try:
-                                metadata['series'][n][k] = tr(
-                                    metadata['series'][n][k])
-                            except:
-                                pass
+                for tr in self.instances[n]['transformers']:
+                    for k in t.transformed_metadata:
+                        try:
+                            metadata['series'][n][k] = tr(
+                                metadata['series'][n][k])
+                        except:
+                            pass
                 if t.test_parameters:
                     metadata['test_parameters'].update(t.test_parameters)
                 raw_values[n] = t.raw_values
@@ -188,8 +190,7 @@ class Aggregator(object):
                         result[key] = v
 
             for key in result.keys():
-                if key in self.instances and \
-                   'transformers' in self.instances[key]:
+                if key in self.instances:
                     for tr in self.instances[key]['transformers']:
                         result[key] = tr(result[key])
 

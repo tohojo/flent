@@ -134,6 +134,8 @@ class RunnerBase(object):
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
         self.runner_args = kwargs
 
+        self.transformers = []
+
     def __getstate__(self):
         state = {}
 
