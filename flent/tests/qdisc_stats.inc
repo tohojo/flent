@@ -10,8 +10,8 @@ if QDISC_STATS_HOSTS:
         id = "%s (%s)" % (host, iface)
         DATA_SETS['qdisc_stats_%s' % host] = {'interface': iface, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH, 'host':
                                               host, 'id': id, 'units': 'misc', 'runner': 'tc'}
-        DATA_SETS['qdisc_stats_%s::dropped' % host] = {'units': 'packets', 'data_transform': 'cumulative_to_events', 'runner': 'null', 'id': id}
-        DATA_SETS['qdisc_stats_%s::ecn_mark' % host] = {'units': 'packets', 'data_transform': 'cumulative_to_events', 'runner': 'null', 'id': id}
+        DATA_SETS['qdisc_stats_%s::dropped' % host] = {'units': 'packets', 'runner': 'null', 'id': id}
+        DATA_SETS['qdisc_stats_%s::ecn_mark' % host] = {'units': 'packets', 'runner': 'null', 'id': id}
 
     PLOTS['backlog'] = {'description': 'Queue backlog',
                         'type': 'timeseries',

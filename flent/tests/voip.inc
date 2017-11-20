@@ -5,8 +5,8 @@ DATA_SETS['VoIP']                 = {'test_args': 'VoIP', 'length': VOIP_LENGTH,
                                      STEP_SIZE, 'units': 'Kbps', 'control_host': VOIP_CONTROL_HOST, 'runner':
                                      'ditg'}
 DATA_SETS['VoIP::bitrate']        = {'units': 'Kbits/s', 'runner': 'null'}
-DATA_SETS['VoIP::delay']          = {'units': 'ms', 'runner': 'null', 'data_transform': 's_to_ms'}
-DATA_SETS['VoIP::jitter']         = {'units': 'ms', 'runner': 'null', 'data_transform': 's_to_ms'}
+DATA_SETS['VoIP::delay']          = {'units': 'ms', 'runner': 'null'}
+DATA_SETS['VoIP::jitter']         = {'units': 'ms', 'runner': 'null'}
 DATA_SETS['VoIP::loss']           = {'units': 'count', 'runner': 'null'}
 DATA_SETS['VoIP::induced_delay']  = {'units': 'ms', 'runner': 'diff_min', 'apply_to': ['VoIP::delay']}
 

@@ -12,9 +12,9 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                                              host, 'stations': WIFI_STATS_STATIONS.split(','), 'units': 'misc', 'id':
                                              host, 'runner': 'wifi_stats'}
         for station in WIFI_STATS_STATIONS.split(","):
-            DATA_SETS['wifi_stats_%s::airtime_rx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
+            DATA_SETS['wifi_stats_%s::airtime_rx::%s' % (host,station)] = {'units': 'us',
                                                                            'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
-            DATA_SETS['wifi_stats_%s::airtime_tx::%s' % (host,station)] = {'units': 'us', 'data_transform': 'cumulative_to_events',
+            DATA_SETS['wifi_stats_%s::airtime_tx::%s' % (host,station)] = {'units': 'us',
                                                                            'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
             DATA_SETS['wifi_stats_%s::airtime_total::%s' % (host,station)] = {'units': 'us', 'apply_to': ['wifi_stats_%s::airtime_rx::%s' % (host,station),
                                                                                                           'wifi_stats_%s::airtime_tx::%s' % (host,station),],
@@ -34,7 +34,6 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                            'legend_title': 'RX airtime',
                            'series': [
                                {'data': glob('wifi_stats_*'),
-                                'data_transform': 'cumulative_to_events',
                                 'raw_key': glob('stations::**::airtime_rx'),
                                 'label': 'RX airtime'},
                            ]}
@@ -56,7 +55,6 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                            'legend_title': 'TX airtime',
                            'series': [
                                {'data': glob('wifi_stats_*'),
-                                'data_transform': 'cumulative_to_events',
                                 'raw_key': glob('stations::**::airtime_tx'),
                                 'label': 'TX airtime'},
                            ]}

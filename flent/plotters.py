@@ -26,7 +26,7 @@ import math
 import re
 import warnings
 
-from flent import combiners, transformers
+from flent import combiners
 from flent.util import classname, long_substr, format_date, diff_parts, \
     Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
 from flent.build_info import VERSION
@@ -1239,12 +1239,6 @@ class Plotter(ArgParam):
             ma = np.ma.masked_invalid(arr)
             return np.percentile(ma.compressed(), q)
 
-    def _transform_data(self, data, t):
-        t = t.strip()
-        if hasattr(transformers, t):
-            data = getattr(transformers, t)(data)
-        return data
-
     def get_series(self, series, results, config,
                    no_invalid=False, aligned=False):
 
@@ -1263,20 +1257,6 @@ class Plotter(ArgParam):
                 if not len(data):
                     raise KeyError()
 
-                data_transform = series.get('data_transform')
-
-                if not data_transform and 'FAKE_RAW_VALUES' not in results.meta():
-                    cfgn = "%s::%s" % (series['data'], raw_key)
-                    if cfgn not in self.data_config:
-                        cfgn = series['data']
-
-                    try:
-                        data_transform = self.data_config[cfgn]['data_transform']
-                    except KeyError:
-                        pass
-
-                if data_transform:
-                    data[1] = self._transform_data(data[1], data_transform)
             except KeyError:
                 if raw_key:
                     # No point in using synthesised results since those won't be

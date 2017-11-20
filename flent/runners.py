@@ -39,7 +39,7 @@ from datetime import datetime
 from calendar import timegm
 from threading import Event
 
-from flent import util
+from flent import util, transformers
 from flent.build_info import DATA_DIR
 from flent.util import classname, ENCODING, Glob
 from flent.loggers import get_logger
@@ -108,13 +108,14 @@ class RunnerBase(object):
 
     def __init__(self, name, settings, idx=None, start_event=None,
                  finish_event=None, kill_event=None, parent=None,
-                 watchdog_timer=None, **kwargs):
+                 watchdog_timer=None, data_transform=None, **kwargs):
         super(RunnerBase, self).__init__()
         self.name = name
         self.settings = settings
         self.idx = idx
         self.test_parameters = {}
         self._raw_values = []
+        self._result = []
         self.command = None
         self.returncode = 0
         self.out = self.err = ''
@@ -134,7 +135,10 @@ class RunnerBase(object):
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
         self.runner_args = kwargs
 
-        self.transformers = []
+        if data_transform and hasattr(transformers, data_transform):
+            self._data_transform = getattr(transformers, data_transform)
+        else:
+            self._data_transform = None
 
     def __getstate__(self):
         state = {}
@@ -241,6 +245,11 @@ class RunnerBase(object):
             return self._raw_values
 
         vals = list(self._raw_values)
+        if self._data_transform:
+            for v in vals:
+                if 'val' in v:
+                    v['val'] = self._data_transform(v['val'])
+
         for c in self._child_runners:
             vals.extend(c.raw_values)
         return sorted(vals, key=lambda v: v['t'])
@@ -249,6 +258,16 @@ class RunnerBase(object):
         self._raw_values = val
 
     raw_values = property(get_raw_values, set_raw_values)
+
+    def get_result(self):
+        if self._data_transform:
+            return self._data_transform(self._result)
+        return self._result
+
+    def set_result(self, val):
+        self._result = val
+
+    result = property(get_result, set_result)
 
 
 class DelegatingRunner(RunnerBase):
@@ -562,6 +581,10 @@ class SilentProcessRunner(ProcessRunner):
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
     supports_remote = False
+    transformers = {'delay': transformers.s_to_ms,
+                    'jitter': transformers.s_to_ms,
+                    'bitrate': transformers.identity,
+                    'loss': transformers.identity}
 
     def __init__(self, test_args, length, host, duration, interval,
                  local_bind=None, control_host=None, **kwargs):
@@ -675,7 +698,7 @@ class DitgRunner(ProcessRunner):
             for i, n in enumerate(('bitrate', 'delay', 'jitter', 'loss')):
                 if n not in results:
                     results[n] = []
-                results[n].append([timestamp, parts[i]])
+                results[n].append([timestamp, self.transformers[n](parts[i])])
 
         return results
 
@@ -771,6 +794,9 @@ class NetperfDemoRunner(ProcessRunner):
                 dur = float(dur)
                 t = float(t)
                 value = float(value)
+
+                if self.test == 'UDP_RR':
+                    value = transformers.rr_to_ms(value)
 
                 # Calculate an EWMA of the netperf sampling duration and exclude
                 # data points from a sampling period that is more than an order
@@ -938,7 +964,7 @@ class NetperfDemoRunner(ProcessRunner):
                                ip_version=args['ip_version'])
 
         elif self.test == 'UDP_RR':
-            self.units = 'rr'
+            self.units = 'ms'
 
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
                        "{marking} -H {control_host} -p {control_port} " \
@@ -959,6 +985,7 @@ class RegexpRunner(ProcessRunner):
 
     regexes = []
     metadata_regexes = []
+    transformers = {}
 
     # Parse is split into a stateless class method in _parse to be able to call
     # it from find_binary.
@@ -978,15 +1005,16 @@ class RegexpRunner(ProcessRunner):
             for regexp in cls.regexes:
                 match = regexp.match(line)
                 if match:
-                    result.append([float(match.group('t')),
-                                   float(match.group('val'))])
                     rw = match.groupdict()
                     for k, v in rw.items():
                         try:
                             rw[k] = float(v)
+                            if k in cls.transformers:
+                                rw[k] = cls.transformers[k](rw[k])
                         except ValueError:
                             pass
                     raw_values.append(rw)
+                    result.append([rw['t'], rw['val']])
                     break  # only match one regexp per line
             for regexp in cls.metadata_regexes:
                 match = regexp.match(line)
@@ -994,6 +1022,10 @@ class RegexpRunner(ProcessRunner):
                     for k, v in match.groupdict().items():
                         try:
                             metadata[k] = float(v)
+                            if k in cls.transformed_metadata and \
+                               'val' in cls.transformers:
+                                metadata[k] = cls.transformers['val'](
+                                    metadata[k])
                         except ValueError:
                             metadata[k] = v
         return result, raw_values, metadata
@@ -1142,6 +1174,7 @@ class HttpGetterRunner(RegexpRunner):
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
+    transformers = {'val': transformers.s_to_ms}
 
     def __init__(self, interval, length, workers=None, ip_version=None,
                  dns_servers=None, url_file=None, timeout=None, **kwargs):
@@ -1222,7 +1255,7 @@ class IperfCsvRunner(ProcessRunner):
                 sec, mil = timestamp.split(".")
                 dt = datetime.strptime(sec, "%Y%m%d%H%M%S")
                 timestamp = time.mktime(dt.timetuple()) + float(mil) / 1000
-                val = float(bandwidth)
+                val = transformers.bits_to_mbits(float(bandwidth))
                 result.append([timestamp, val])
                 raw_values.append({'t': timestamp, 'val': val})
             except ValueError:
@@ -1234,7 +1267,8 @@ class IperfCsvRunner(ProcessRunner):
             # src and dest should be reversed if this was a reply from the
             # server. Track this for UDP where it may be missing.
             if parts[1] == dest or not self.udp:
-                self.metadata['MEAN_VALUE'] = float(parts[8])
+                self.metadata['MEAN_VALUE'] = transformers.bits_to_mbits(
+                    float(parts[8]))
             else:
                 self.metadata['MEAN_VALUE'] = None
         except (ValueError, IndexError):
@@ -1694,6 +1728,7 @@ class TcRunner(ProcessRunner):
     cake_1tin_re = re.compile(cake_tin_re)
     cake_keys = ["av_delay", "sp_delay", "pkts", "bytes",
                  "drops", "marks", "sp_flows", "bk_flows", "max_len"]
+    cumulative_keys = ["dropped", "ecn_mark"]
 
     def __init__(self, interface, interval, length, host='localhost', **kwargs):
         self.interface = interface
@@ -1728,6 +1763,7 @@ class TcRunner(ProcessRunner):
     def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
+        last_vals = {}
         for part in parts:
             timestamp = self.time_re.search(part)
             if timestamp is None:
@@ -1781,6 +1817,14 @@ class TcRunner(ProcessRunner):
             # cake tins, for comparability with other qdiscs
             if "cake_marks" in matches and "ecn_mark" not in matches:
                 matches['ecn_mark'] = sum(matches['cake_marks'].values())
+
+            # Transform cumulative keys into events per interval
+            for k in self.cumulative_keys:
+                if k not in matches:
+                    continue
+                v = matches[k]
+                matches[k] = v - last_vals[k] if k in last_vals else 0
+                last_vals[k] = v
 
             for k, v in matches.items():
                 if not isinstance(v, float):
@@ -1926,6 +1970,7 @@ class WifiStatsRunner(ProcessRunner):
     def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
+        last_airtime = {}
         for part in parts:
             matches = {}
             timestamp = self.time_re.search(part)
@@ -1947,8 +1992,16 @@ class WifiStatsRunner(ProcessRunner):
                 sv = {}
                 airtime = self.airtime_re.search(v)
                 if airtime is not None:
-                    sv['airtime_rx'] = float(airtime.group('rx'))
-                    sv['airtime_tx'] = float(airtime.group('tx'))
+                    rx = float(airtime.group('rx'))
+                    tx = float(airtime.group('tx'))
+                    if s not in last_airtime:
+                        last_airtime[s] = {'rx': rx, 'tx': tx}
+                        sv['airtime_rx'] = sv['airtime_tx'] = 0
+                    else:
+                        sv['airtime_rx'] = rx - last_airtime[s]['rx']
+                        sv['airtime_tx'] = tx - last_airtime[s]['tx']
+                        last_airtime[s]['rx'] = rx
+                        last_airtime[s]['tx'] = tx
 
                 rcs = v.find("RC stats:\n")
 

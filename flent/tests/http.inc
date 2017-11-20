@@ -1,7 +1,7 @@
 ## -*- mode: python; coding: utf-8 -*-
 
 DATA_SETS['HTTP latency'] = {'interval': STEP_SIZE, 'length': TOTAL_LENGTH, 'units': 'ms',
-                             'data_transform': 's_to_ms', 'runner': 'http_getter'}
+                             'runner': 'http_getter'}
 
 
 PLOTS['http_delay']       = {'description': 'HTTP latency over time',

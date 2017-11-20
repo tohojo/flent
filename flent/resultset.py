@@ -70,7 +70,7 @@ RECORDED_SETTINGS = (
     "HTTP_GETTER_WORKERS",
 )
 
-FILEFORMAT_VERSION = 3
+FILEFORMAT_VERSION = 4
 SUFFIX = '.flent.gz'
 MAX_FILENAME_LEN = 250  # most filesystems have 255 as their limit
 

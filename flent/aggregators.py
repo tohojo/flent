@@ -94,12 +94,6 @@ class Aggregator(object):
         instance['start_event'] = None
         instance['kill_event'] = None
         instance['finish_event'] = Event()
-        instance['transformers'] = []
-
-        if 'data_transform' in config:
-            for t in [i.strip() for i in config['data_transform'].split(',')]:
-                if hasattr(transformers, t):
-                    instance['transformers'].append(getattr(transformers, t))
 
         self.instances[name] = instance
 
@@ -127,7 +121,6 @@ class Aggregator(object):
                 except runners.RunnerCheckError as e:
                     raise RuntimeError("Runner %s failed check: %s" % (n, e))
 
-                i['transformers'].extend(t.transformers)
                 self.threads[n] = t
 
             # Start in a separate loop once we're sure we successfully created
@@ -153,13 +146,6 @@ class Aggregator(object):
                                 "Patience, please...")
 
                 metadata['series'][n] = t.metadata
-                for tr in self.instances[n]['transformers']:
-                    for k in t.transformed_metadata:
-                        try:
-                            metadata['series'][n][k] = tr(
-                                metadata['series'][n][k])
-                        except:
-                            pass
                 if t.test_parameters:
                     metadata['test_parameters'].update(t.test_parameters)
                 raw_values[n] = t.raw_values
@@ -188,11 +174,6 @@ class Aggregator(object):
                             raise RuntimeError(
                                 "Duplicate key '%s' from child runner" % key)
                         result[key] = v
-
-            for key in result.keys():
-                if key in self.instances:
-                    for tr in self.instances[key]['transformers']:
-                        result[key] = tr(result[key])
 
         except KeyboardInterrupt:
             self.kill_runners()

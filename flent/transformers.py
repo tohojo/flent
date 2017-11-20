@@ -24,7 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 try:
     import numpy as np
 except ImportError:
-    pass
+    np = None
+
 
 def transform_results(results, func):
     """Transform a list of (timestamp,value) pairs by applying a function to the
@@ -83,3 +84,7 @@ def cumulative_to_events(results):
         return res
     except (TypeError, IndexError):
         return results
+
+
+def identity(results):
+    return results
