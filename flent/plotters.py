@@ -471,10 +471,10 @@ def add_plotting_args(parser):
         "--split-group",
         action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
         metavar="LABEL",
-        help="New groups for box plots. Specify this option multiple "
+        help="New groups for box and bar plots. Specify this option multiple "
         "times to define the new groups that data sets should be split into on "
-        "box plots. The value of each option is the group name (displayed at the "
-        "top of the plot).")
+        "box and bar plots. The value of each option is the group name "
+        "(displayed at the top of the plot).")
 
     parser.add_argument(
         "--colours",
@@ -1524,17 +1524,7 @@ class BoxPlotter(TimeseriesPlotter):
             self.metadata = results[0].meta()
         return self._plot(results, config, axis)
 
-    def _plot(self, results, config=None, axis=None):
-        if config is None:
-            config = self.config
-        axis = config['axes'][0]
-
-        ticklabels = []
-        ticks = []
-        texts = []
-        pos = 1
-        all_data = [None] * len(config['axes'])
-
+    def _get_split_groups(self, results, config):
         if self.split_groups:
             if len(results) % len(self.split_groups) > 0:
                 raise RuntimeError(
@@ -1553,6 +1543,22 @@ class BoxPlotter(TimeseriesPlotter):
             group_size = len(results)
             split_results = []
             series = config['series']
+
+        return group_size, split_results, series
+
+    def _plot(self, results, config=None, axis=None):
+        if config is None:
+            config = self.config
+        axis = config['axes'][0]
+
+        ticklabels = []
+        ticks = []
+        texts = []
+        pos = 1
+        all_data = [None] * len(config['axes'])
+
+        group_size, split_results, series = self._get_split_groups(results,
+                                                                   config)
 
         # The median lines are red, so filter out red from the list of colours
         colours = list(
@@ -1674,18 +1680,21 @@ class BarPlotter(BoxPlotter):
         errcol = 'k'
         width = 1.0
 
+        group_size, split_results, series = self._get_split_groups(results,
+                                                                   config)
         # The error bars lines are black, so filter out black from the list of
         # colours
         colours = list(
             islice(cycle([c for c in self.colours if c != errcol]),
-                   len(config['series'])))
+                   group_size))
 
-        labels = self._filter_labels([r.label() for r in results])
         series_labels = self._filter_labels(
-            [s['label'] for s in config['series']])
+            [s['label'] for s in series])
         texts = []
 
-        for i, s in enumerate(config['series']):
+        for i, s in enumerate(series):
+            if split_results:
+                results = split_results[i]
             if 'axis' in s and s['axis'] == 2:
                 a = 1
             else:
@@ -1706,11 +1715,12 @@ class BarPlotter(BoxPlotter):
                     all_data[a].append(data[-1] + errors[-1])
                     all_data[a].append(data[-1] - errors[-1])
 
+            # may have skipped series, recalculate
             group_size = len(data)
 
             positions = [p - width / 2.0 for p in range(pos, pos + group_size)]
             ticks.extend(list(range(pos, pos + group_size)))
-            ticklabels.extend(labels)
+            ticklabels.extend(self._filter_labels([r.label() for r in results]))
             if config.get('colour_by', 'groups') == 'groups':
                 colour = colours[i]
             else:
