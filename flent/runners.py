@@ -1466,7 +1466,7 @@ class UdpRttRunner(DelegatingRunner):
                            remote_host=self.remote_host,
                            **self.runner_args)
 
-        super(UdpRrRunner, self).check()
+        super(UdpRttRunner, self).check()
 
 
 class SsRunner(ProcessRunner):
