@@ -344,7 +344,7 @@ class BothCombiner(Combiner):
     # second the series. Currently only works if there's just one series
     # name configured in the plot config.
     def group(self, groups, config):
-        if len(config['series']) >= 1:
+        if len(config['series']) > 1:
             raise RuntimeError("Cannot use group_by=both for plots with more "
                                "than one data series")
         series_names = []
