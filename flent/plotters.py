@@ -1686,7 +1686,7 @@ class BarPlotter(BoxPlotter):
         # colours
         colours = list(
             islice(cycle([c for c in self.colours if c != errcol]),
-                   group_size))
+                   max(group_size, len(series))))
 
         series_labels = self._filter_labels(
             [s['label'] for s in series])
