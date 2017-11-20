@@ -1301,6 +1301,8 @@ class IrttRunner(ProcessRunner):
                    'CS5': 40,
                    'EF': 46}
 
+    _irtt = {}
+
     def __init__(self, host, interval, length, ip_version=None,
                  local_bind=None, marking=None, **kwargs):
         self.host = host
@@ -1352,7 +1354,21 @@ class IrttRunner(ProcessRunner):
 
     def check(self):
 
-        irtt = util.which('irtt', fail=RunnerCheckError)
+        if not self._irtt:
+            irtt = util.which('irtt', fail=RunnerCheckError)
+
+            proc = subprocess.Popen([self._irtt['binary'], 'client', '-n', '-qq',
+                                     '-timeouts', '200ms,300ms,400ms', self.host])
+            out, err = proc.communicate()
+            if hasattr(err, 'decode'):
+                err = err.decode(ENCODING)
+
+            if proc.returncode != 0:
+                raise RunnerCheckError("Irtt connection check failed: %s" % err)
+
+            self._irtt['binary'] = irtt
+        else:
+            irtt = self._irtt['binary']
 
         # Try to convert netperf-style textual marking specs into integers
         if self.marking is not None:
