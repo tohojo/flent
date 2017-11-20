@@ -432,6 +432,14 @@ sense combined with :option:`-f` *plot*.
    Yes, this option uses British spelling. No, American spelling is not
    supported.
 
+.. option:: --override-colour-mode=MODE
+
+   Override colour_mode attribute. This changes the way colours are
+   assigned to bar plots. The default is 'groups' which assigns a separate
+   colour to each group of data series. The alternative is 'series' which
+   assigns a separate colour to each series, repeating them for each data
+   group.
+
 .. option:: --override-group-by=GROUP
 
    Override the ``group_by`` setting for combination plots. This is useful to,

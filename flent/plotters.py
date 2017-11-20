@@ -483,6 +483,15 @@ def add_plotting_args(parser):
         "to be used for the plot colour cycle.")
 
     parser.add_argument(
+        "--override-colour-mode",
+        action="store", type=unicode, dest="OVERRIDE_COLOUR_MODE", metavar="MODE",
+        help="Override colour_mode attribute. This changes the way colours "
+        "are assigned to bar plots. The default is 'groups' which assigns a "
+        "separate colour to each group of data series. The alternative is "
+        "'series' which assigns a separate colour to each series, repeating them"
+        "for each data group.")
+
+    parser.add_argument(
         "--override-group-by",
         action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
         help="Override group_by attribute. This changes the way combination "
@@ -1688,6 +1697,9 @@ class BarPlotter(BoxPlotter):
             islice(cycle([c for c in self.colours if c != errcol]),
                    max(group_size, len(series))))
 
+        colour_mode = (self.override_colour_mode or
+                       config.get('colour_by', 'groups'))
+
         series_labels = self._filter_labels(
             [s['label'] for s in series])
         texts = []
@@ -1721,7 +1733,7 @@ class BarPlotter(BoxPlotter):
             positions = [p - width / 2.0 for p in range(pos, pos + group_size)]
             ticks.extend(list(range(pos, pos + group_size)))
             ticklabels.extend(self._filter_labels([r.label() for r in results]))
-            if config.get('colour_by', 'groups') == 'groups':
+            if colour_mode == 'groups':
                 colour = colours[i]
             else:
                 colour = self.colours[:len(data)]
