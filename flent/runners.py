@@ -1414,8 +1414,9 @@ class UdpRrRunner(DelegatingRunner):
                            delay=self.delay, remote_host=self.remote_host,
                            **self.runner_args)
             logger.debug("UDP RR test: Using irtt")
-        except RunnerCheckError:
-            logger.debug("UDP RR test: Using netperf UDP_RR")
+        except RunnerCheckError as e:
+            logger.debug("UDP RR test: Cannot use irtt runner (%s). "
+                         "Using netperf UDP_RR", e)
             self.add_child(NetperfDemoRunner,
                            test='UDP_RR', delay=self.delay,
                            remote_host=self.remote_host,
