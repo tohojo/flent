@@ -1698,7 +1698,7 @@ class BarPlotter(BoxPlotter):
                    max(group_size, len(series))))
 
         colour_mode = (self.override_colour_mode or
-                       config.get('colour_by', 'groups'))
+                       config.get('colour_mode', 'groups'))
 
         series_labels = self._filter_labels(
             [s['label'] for s in series])
