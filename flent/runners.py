@@ -1450,16 +1450,16 @@ class IrttRunner(ProcessRunner):
         super(IrttRunner, self).check()
 
 
-class UdpRrRunner(DelegatingRunner):
+class UdpRttRunner(DelegatingRunner):
 
     def check(self):
         try:
             self.add_child(IrttRunner,
                            delay=self.delay, remote_host=self.remote_host,
                            **self.runner_args)
-            logger.debug("UDP RR test: Using irtt")
+            logger.debug("UDP RTT test: Using irtt")
         except RunnerCheckError as e:
-            logger.debug("UDP RR test: Cannot use irtt runner (%s). "
+            logger.debug("UDP RTT test: Cannot use irtt runner (%s). "
                          "Using netperf UDP_RR", e)
             self.add_child(NetperfDemoRunner,
                            test='UDP_RR', delay=self.delay,
