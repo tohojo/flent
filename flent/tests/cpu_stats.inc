@@ -19,3 +19,23 @@ if CPU_STATS_HOSTS:
                          'raw_key': 'load',
                          'label': 'CPU load'},
                     ]}
+
+    PLOTS['cpu_box'] = {'description': 'CPU stats (box plot)',
+                        'type': 'box',
+                        'parent': 'cpu'}
+    PLOTS['cpu_bar'] = {'description': 'CPU stats (bar plot)',
+                        'type': 'bar',
+                        'parent': 'cpu'}
+
+    PLOTS['cpu_box_combine'] = {'description': 'CPU stats (box combine plot)',
+                                'type': 'box_combine',
+                                'axis_labels': ['Load'],
+                                'series': [
+                                    {'data': glob('cpu_stats_*'),
+                                     'raw_key': 'load',
+                                     'label': 'CPU load',
+                                     'combine_mode': 'raw_mean'},
+                                ]}
+    PLOTS['cpu_bar_combine'] = {'description': 'CPU stats (bar combine plot)',
+                                'type': 'bar_combine',
+                                'parent': 'cpu_box_combine'}
