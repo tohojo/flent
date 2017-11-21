@@ -1421,7 +1421,9 @@ class IrttRunner(ProcessRunner):
 
             args.append(self.host)
 
-            proc = subprocess.Popen(args)
+            proc = subprocess.Popen(args,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
             out, err = proc.communicate()
             if hasattr(err, 'decode'):
                 err = err.decode(ENCODING)
