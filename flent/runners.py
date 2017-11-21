@@ -1521,6 +1521,7 @@ class SsRunner(ProcessRunner):
         self.interval = interval
         self.length = length
         self.target = target
+        self._dup_key = None
         super(SsRunner, self).__init__(**kwargs)
 
     def fork(self):
@@ -1647,11 +1648,11 @@ class SsRunner(ProcessRunner):
             logger.debug("Starting new SsRunner (dup key %s)", dup_key)
             self._dup_runner = None
             self._duplicate_map[dup_key] = self
-            self._dup_key = dup_key
             self.command = self.find_binary(self.ip_version, self.host,
                                             self.interval, self.length,
                                             self.target)
 
+        self._dup_key = dup_key
         super(SsRunner, self).check()
 
     def find_binary(self, ip_version, host, interval, length, target):
