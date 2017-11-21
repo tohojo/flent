@@ -1199,7 +1199,7 @@ class HttpGetterRunner(RegexpRunner):
         workers = self.workers or self.settings.HTTP_GETTER_WORKERS
         ip_version = self.ip_version or self.settings.IP_VERSION
 
-        self.command = "{binary} -i {interval} -d {length} -t {timeout} " \
+        self.command = "{binary} -i {interval} -l {length} -t {timeout} " \
                        "{dns} {workers} {ipv} {url_file}".format(
                            binary=http_getter,
                            interval=self.interval,
