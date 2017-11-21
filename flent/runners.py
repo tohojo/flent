@@ -1525,7 +1525,11 @@ class SsRunner(ProcessRunner):
 
     def fork(self):
         if self._dup_runner is None:
+            logger.debug("SsRunner for dup key %s: forking", self._dup_key)
             super(SsRunner, self).fork()
+        else:
+            logger.debug("Duplicate SsRunner for dup key %s. Not forking",
+                         self._dup_key)
 
     def run(self):
         if self._dup_runner is None:
@@ -1636,10 +1640,11 @@ class SsRunner(ProcessRunner):
                    self.ip_version, tuple(self.exclude_ports))
 
         if dup_key in self._duplicate_map:
-            logger.debug("Found duplicate SsRunner, reusing output")
+            logger.debug("Found duplicate SsRunner (%s), reusing output", dup_key)
             self._dup_runner = self._duplicate_map[dup_key]
             self.command = "%s (duplicate)" % self._dup_runner.command
         else:
+            logger.debug("Starting new SsRunner (dup key %s)", dup_key)
             self._dup_runner = None
             self._duplicate_map[dup_key] = self
             self._dup_key = dup_key
