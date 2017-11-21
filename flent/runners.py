@@ -366,11 +366,12 @@ class ProcessRunner(RunnerBase, threading.Thread):
     supports_remote = True
     _env = {}
 
-    def __init__(self, delay=0, remote_host=None, **kwargs):
+    def __init__(self, delay=0, remote_host=None, units=None, **kwargs):
         super(ProcessRunner, self).__init__(**kwargs)
 
-        self.remote_host = remote_host
         self.delay = delay
+        self.remote_host = remote_host
+        self.units = units
         self.killed = False
         self.pid = None
         self.returncode = None
@@ -380,9 +381,6 @@ class ProcessRunner(RunnerBase, threading.Thread):
         self.stderr = None
         self.command = None
 
-        if 'units' in kwargs:
-            self.units = kwargs['units']
-
     def check(self):
 
         if self.command is None:
@@ -390,7 +388,8 @@ class ProcessRunner(RunnerBase, threading.Thread):
                                    self.__class__.__name__)
         self.args = shlex.split(self.command)
         self.metadata['COMMAND'] = self.command
-        self.metadata['UNITS'] = self.units
+        if self.units:
+            self.metadata['UNITS'] = self.units
 
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
@@ -1339,7 +1338,7 @@ class IrttRunner(ProcessRunner):
 
     _irtt = {}
 
-    def __init__(self, host, interval, length, ip_version=None,
+    def __init__(self, host, length, interval=None, ip_version=None,
                  local_bind=None, marking=None, **kwargs):
         self.host = host
         self.interval = interval
@@ -1347,7 +1346,7 @@ class IrttRunner(ProcessRunner):
         self.ip_version = ip_version
         self.local_bind = local_bind
         self.marking = marking
-        super(IrttRunner, self).__init__(self, **kwargs)
+        super(IrttRunner, self).__init__(**kwargs)
 
     # irtt outputs all durations in nanoseconds
     def _to_ms(self, value):
@@ -1382,9 +1381,12 @@ class IrttRunner(ProcessRunner):
                 dp['val'] = self._to_ms(pkt['delay']['rtt'])
                 dp['owd_up'] = self._to_ms(pkt['delay']['send'])
                 dp['owd_down'] = self._to_ms(pkt['delay']['receive'])
-                dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
-                dp['ipdv_up'] = self._to_ms(pkt['ipdv']['send'])
-                dp['ipdv_down'] = self._to_ms(pkt['ipdv']['receive'])
+                try:
+                    dp['ipdv_up'] = self._to_ms(pkt['ipdv']['send'])
+                    dp['ipdv_down'] = self._to_ms(pkt['ipdv']['receive'])
+                    dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
+                except KeyError:
+                    pass
                 result.append([dp['t'], dp['val']])
             else:
                 lost_dir = pkt['lost'].replace('true_', '')
@@ -1401,7 +1403,7 @@ class IrttRunner(ProcessRunner):
         if not self._irtt:
             irtt = util.which('irtt', fail=RunnerCheckError)
 
-            proc = subprocess.Popen([self._irtt['binary'], 'client', '-n', '-qq',
+            proc = subprocess.Popen([irtt, 'client', '-n', '-qq',
                                      '-timeouts', '200ms,300ms,400ms', self.host])
             out, err = proc.communicate()
             if hasattr(err, 'decode'):
@@ -1441,7 +1443,7 @@ class IrttRunner(ProcessRunner):
                        "{local_bind} {host}".format(
                            binary=irtt,
                            length=self.length,
-                           interval=self.interval,
+                           interval=self.interval or self.settings.STEP_SIZE,
                            host=self.host,
                            ip_version=ip_version,
                            local_bind=local_bind,
@@ -1454,17 +1456,13 @@ class UdpRttRunner(DelegatingRunner):
 
     def check(self):
         try:
-            self.add_child(IrttRunner,
-                           delay=self.delay, remote_host=self.remote_host,
-                           **self.runner_args)
+            self.add_child(IrttRunner, **self.runner_args)
             logger.debug("UDP RTT test: Using irtt")
         except RunnerCheckError as e:
             logger.debug("UDP RTT test: Cannot use irtt runner (%s). "
                          "Using netperf UDP_RR", e)
             self.add_child(NetperfDemoRunner,
-                           test='UDP_RR', delay=self.delay,
-                           remote_host=self.remote_host,
-                           **self.runner_args)
+                           **dict(self.runner_args, test='UDP_RR'))
 
         super(UdpRttRunner, self).check()
 
