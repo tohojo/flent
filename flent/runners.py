@@ -1183,7 +1183,7 @@ class HttpGetterRunner(RegexpRunner):
         self.length = length
         self.workers = workers
         self.ip_version = ip_version
-        self.dns_servers = dns_servers,
+        self.dns_servers = dns_servers
         self.url_file = url_file
         self.timeout = timeout
 
