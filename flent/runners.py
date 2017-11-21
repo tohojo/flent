@@ -1408,8 +1408,20 @@ class IrttRunner(ProcessRunner):
         if not self._irtt:
             irtt = util.which('irtt', fail=RunnerCheckError)
 
-            proc = subprocess.Popen([irtt, 'client', '-n', '-qq',
-                                     '-timeouts', '200ms,300ms,400ms', self.host])
+            args = [irtt, 'client', '-n', '-qq',
+                    '-timeouts', '200ms,300ms,400ms']
+
+            if self.local_bind:
+                args.extend(['-local', self.local_bind])
+            elif self.settings.LOCAL_BIND:
+                args.extend(['-local', self.settings.LOCAL_BIND[0]])
+
+            if self.ip_version is not None:
+                args.append("-{}".format(self.ip_version))
+
+            args.append(self.host)
+
+            proc = subprocess.Popen(args)
             out, err = proc.communicate()
             if hasattr(err, 'decode'):
                 err = err.decode(ENCODING)
