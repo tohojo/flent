@@ -630,6 +630,7 @@ class Plotter(ArgParam):
         self.metadata = None
         self.callbacks = []
         self.in_worker = in_worker
+        self.combined = False
 
         self.gui = gui
         self.description = description
@@ -1257,7 +1258,7 @@ class Plotter(ArgParam):
     def get_series(self, series, results, config,
                    no_invalid=False, aligned=False):
 
-        if aligned:
+        if aligned or self.combined:
             data = np.array((results.x_values,
                              results.series(series['data'])),
                             dtype=float)
@@ -1327,6 +1328,10 @@ class Plotter(ArgParam):
 
 
 class CombineManyPlotter(object):
+
+    def __init__(self, *args, **kwargs):
+        super(CombineManyPlotter, self).__init__(*args, **kwargs)
+        self.combined = True
 
     def plot(self, results, config=None, axis=None, connect_interactive=True):
         if self.metadata is None:
