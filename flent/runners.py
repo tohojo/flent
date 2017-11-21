@@ -1202,8 +1202,8 @@ class HttpGetterRunner(RegexpRunner):
         self.command = "{binary} -i {interval} -l {length} -t {timeout} " \
                        "{dns} {workers} {ipv} {url_file}".format(
                            binary=http_getter,
-                           interval=self.interval,
-                           length=self.length,
+                           interval=int(self.interval * 1000),
+                           length=int(self.length),
                            timeout=timeout,
                            dns="-d {}".format(dns_servers) if dns_servers else "",
                            workers="-n {}".format(workers) if workers else "",
