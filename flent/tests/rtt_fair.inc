@@ -1,3 +1,4 @@
+## -*- mode: python; coding: utf-8 -*-
 
 DATA_SETS = o([
     ('TCP upload avg',
