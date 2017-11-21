@@ -571,8 +571,9 @@ class RawReducer(Reducer):
         key = series['data']
         if '::' in key:
             key = key.split("::")[0]
+        raw_key = series.get("raw_key", "val")
         try:
-            rawdata = self._get_series(resultset, key)
+            rawdata = self._get_series(resultset, key, ensure=raw_key)
         except KeyError:
             return None
         if not rawdata and self.cutoff:
@@ -582,9 +583,9 @@ class RawReducer(Reducer):
             self.cutoff = (self.cutoff[0], None)
             rawdata = self._get_series(resultset, key)
         if self.filter_none:
-            data = [d['val'] for d in rawdata if d['val'] is not None]
+            data = [d[raw_key] for d in rawdata if d[raw_key] is not None]
         else:
-            data = [d['val'] for d in rawdata]
+            data = [d[raw_key] for d in rawdata]
         if not data:
             return None
         return self._reduce(data)
