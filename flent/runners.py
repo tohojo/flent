@@ -1210,6 +1210,11 @@ class HttpGetterRunner(RegexpRunner):
                            ipv="-{}".format(ip_version) if ip_version else "",
                            url_file=url_file)
 
+        # Individual http requests can take a long time to time out, causing
+        # http-getter to get stuck, so set a generous watchdog timer at 1.5
+        # times the duration to catch any stuck binaries
+        self.watchdog_timer = (self.length * 3) // 2
+
         super(HttpGetterRunner, self).check()
 
 
