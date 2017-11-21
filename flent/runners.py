@@ -1177,7 +1177,7 @@ class HttpGetterRunner(RegexpRunner):
 
     def __init__(self, interval, length, workers=None, ip_version=None,
                  dns_servers=None, url_file=None, timeout=None, **kwargs):
-        super(HttpGetterRunner, self).__init__(self, **kwargs)
+        super(HttpGetterRunner, self).__init__(**kwargs)
 
         self.interval = interval
         self.length = length
