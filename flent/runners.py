@@ -640,7 +640,7 @@ class DitgRunner(ProcessRunner):
         # server and obtained the port values.
         self.command = "{binary} -Sdp {signal_port} -t {length} {local_bind} " \
                        "-a {dest_host} -rp {dest_port} {args}".format(
-                           binary=self.itgsend,
+                           binary=itgsend,
                            length=int(self.length * 1000),
                            dest_host=self.host,
                            local_bind="-sa {0} -Ssa {0}".format(
