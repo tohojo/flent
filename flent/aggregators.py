@@ -29,7 +29,7 @@ from collections import OrderedDict
 from datetime import datetime
 from threading import Event
 
-from flent import runners, transformers
+from flent import runners
 from flent.util import classname
 from flent.loggers import get_logger
 
@@ -37,7 +37,8 @@ logger = get_logger(__name__)
 
 
 def new(settings):
-    cname = classname(settings.AGGREGATOR, "Aggregator")
+    cname = classname(getattr(settings, 'AGGREGATOR', 'timeseries'),
+                      "Aggregator")
     if cname not in globals():
         raise RuntimeError("Aggregator not found: '%s'" % settings.AGGREGATOR)
     try:
