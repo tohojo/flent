@@ -29,7 +29,7 @@ from collections import OrderedDict
 from datetime import datetime
 from threading import Event
 
-from flent import runners, transformers
+from flent import runners
 from flent.util import classname
 from flent.loggers import get_logger
 
@@ -37,7 +37,8 @@ logger = get_logger(__name__)
 
 
 def new(settings):
-    cname = classname(settings.AGGREGATOR, "Aggregator")
+    cname = classname(getattr(settings, 'AGGREGATOR', 'timeseries'),
+                      "Aggregator")
     if cname not in globals():
         raise RuntimeError("Aggregator not found: '%s'" % settings.AGGREGATOR)
     try:
@@ -95,12 +96,6 @@ class Aggregator(object):
         instance['kill_event'] = None
         instance['finish_event'] = Event()
 
-        if 'data_transform' in config:
-            instance['transformers'] = []
-            for t in [i.strip() for i in config['data_transform'].split(',')]:
-                if hasattr(transformers, t):
-                    instance['transformers'].append(getattr(transformers, t))
-
         self.instances[name] = instance
 
     def aggregate(self, results):
@@ -121,7 +116,13 @@ class Aggregator(object):
                     i['start_event'] = self.instances[i['run_after']]['finish_event']  # noqa: E501
                 if 'kill_after' in i:
                     i['kill_event'] = self.instances[i['kill_after']]['finish_event']  # noqa: E501
-                self.threads[n] = i['runner'](name=n, settings=self.settings, **i)
+                t = i['runner'](name=n, settings=self.settings, **i)
+                try:
+                    t.check()
+                except runners.RunnerCheckError as e:
+                    raise RuntimeError("Runner %s failed check: %s" % (n, e))
+
+                self.threads[n] = t
 
             # Start in a separate loop once we're sure we successfully created
             # all runners
@@ -146,14 +147,6 @@ class Aggregator(object):
                                 "Patience, please...")
 
                 metadata['series'][n] = t.metadata
-                if 'transformers' in self.instances[n]:
-                    for tr in self.instances[n]['transformers']:
-                        for k in t.transformed_metadata:
-                            try:
-                                metadata['series'][n][k] = tr(
-                                    metadata['series'][n][k])
-                            except:
-                                pass
                 if t.test_parameters:
                     metadata['test_parameters'].update(t.test_parameters)
                 raw_values[n] = t.raw_values
@@ -182,12 +175,6 @@ class Aggregator(object):
                             raise RuntimeError(
                                 "Duplicate key '%s' from child runner" % key)
                         result[key] = v
-
-            for key in result.keys():
-                if key in self.instances and \
-                   'transformers' in self.instances[key]:
-                    for tr in self.instances[key]['transformers']:
-                        result[key] = tr(result[key])
 
         except KeyboardInterrupt:
             self.kill_runners()

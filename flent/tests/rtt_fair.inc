@@ -1,3 +1,4 @@
+## -*- mode: python; coding: utf-8 -*-
 
 DATA_SETS = o([
     ('TCP upload avg',
@@ -43,28 +44,17 @@ for host, label, ping_label, marking, control_host, local_bind in zip_longest(HO
         break
 
     DATA_SETS['TCP upload %s %s' % (label or "BE", host)] = \
-     {'command': find_netperf("TCP_STREAM", LENGTH, host,
-                              marking=marking or "CS0",
-                              control_host=control_host or host,
-                              local_bind=local_bind),
-      'delay': DELAY,
-      'id': host,
-      'units': 'Mbits/s',
-      'runner': 'netperf_demo',}
+     {'test': 'TCP_STREAM', 'length': LENGTH, 'host': host, 'marking': marking or
+                              'CS0', 'control_host': control_host or host, 'local_bind': local_bind,
+                              'delay': DELAY, 'id': host, 'units': 'Mbits/s', 'runner': 'netperf_demo'}
     DATA_SETS['TCP download %s %s' % (label or "BE", host)] = \
-     {'command': find_netperf("TCP_MAERTS", LENGTH, host,
-                              marking=marking or "CS0",
-                              control_host=control_host or host,
-                              local_bind=local_bind),
-      'delay': DELAY,
-      'id': host,
-      'units': 'Mbits/s',
-      'runner': 'netperf_demo',}
+     {'test': 'TCP_MAERTS', 'length': LENGTH, 'host': host, 'marking': marking or
+                              'CS0', 'control_host': control_host or host, 'local_bind': local_bind,
+                              'delay': DELAY, 'id': host, 'units': 'Mbits/s', 'runner': 'netperf_demo'}
     DATA_SETS['Ping (ms) %s %s' % (ping_label or "ICMP", host)] = \
-     {'command': find_ping(IP_VERSION, STEP_SIZE, TOTAL_LENGTH, host, local_bind=local_bind),
-      'id': host,
-      'units': 'ms',
-      'runner': 'ping',}
+     {'ip_version': IP_VERSION, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH,
+      'host': host, 'local_bind': local_bind, 'id': host, 'units': 'ms',
+      'runner': 'ping'}
 
 PLOTS = o([
     ('download',

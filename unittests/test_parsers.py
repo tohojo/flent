@@ -452,22 +452,27 @@ class TestParsers(unittest.TestCase):
     def check_vals(self, keys, res):
         for k in keys:
             vals = [i[1] > 0 for i in res[k]]
-            self.assertTrue(all(vals))
+            self.assertTrue(any(vals))
 
     def new_runner(self, name):
         r = runners.get(name)
         return r(name='test', settings=object(), command='test',
-                 delay=0, remote_host=None)
+                 delay=0, remote_host=None, interface=None, interval=0,
+                 length=0)
 
     def test_cake_parser(self):
         raw_keys = ["cake_%s" % k for k in runners.TcRunner.cake_keys]
+        check_keys = ['sent_bytes', 'sent_pkts']
 
         for data in (CAKE_1TIN, CAKE_4TINS, CAKE_LONG):
             r = self.new_runner("tc")
             res = r.parse(data)
             self.check_res_keys(
                 QDISC_KEYS + ['ecn_mark'], res, raw_keys, r.raw_values)
-            self.check_vals(['sent_bytes', 'sent_pkts', 'ecn_mark'], res)
+            if data == CAKE_LONG:
+                self.check_vals(check_keys + ['ecn_mark'], res)
+            else:
+                self.check_vals(check_keys, res)
 
     def test_ingress_parser(self):
         r = self.new_runner("tc")

@@ -263,6 +263,7 @@ def remove_log_handler(handler):
     if not handler:
         return
 
+    handler.flush()
     logger = logging.getLogger()
     logger.removeHandler(handler)
 

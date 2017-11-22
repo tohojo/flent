@@ -604,7 +604,7 @@ class RawSeqLossReducer(RawReducer):
             key = key.split("::")[0]
         try:
             data = self._get_series(resultset, key, ensure='seq')
-            seqs = [d['seq'] for d in data]
+            seqs = [d['seq'] for d in data if not d.get('lost')]
 
             return 1 - len(seqs) / (max(seqs) - min(seqs) + 1)
         except (KeyError, ValueError):

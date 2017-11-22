@@ -31,6 +31,7 @@ from itertools import repeat
 from copy import deepcopy
 from collections import OrderedDict
 
+from flent import transformers
 from flent.loggers import get_logger
 from flent.util import gzip_open, bz2_open, parse_date, format_date
 
@@ -70,7 +71,7 @@ RECORDED_SETTINGS = (
     "HTTP_GETTER_WORKERS",
 )
 
-FILEFORMAT_VERSION = 3
+FILEFORMAT_VERSION = 4
 SUFFIX = '.flent.gz'
 MAX_FILENAME_LEN = 250  # most filesystems have 255 as their limit
 
@@ -446,7 +447,11 @@ class ResultSet(object):
                 "File format version %d is too new. "
                 "Please upgrade your version of Flent" % version)
         if version < FILEFORMAT_VERSION:
+            logger.debug("Found old file format version %d. "
+                         "Converting to current version %d.",
+                         version, FILEFORMAT_VERSION)
             obj = cls.unserialise_compat(version, obj, absolute)
+
         metadata = dict(obj['metadata'])
 
         if 'TOTAL_LENGTH' not in metadata or metadata['TOTAL_LENGTH'] is None:
@@ -470,9 +475,11 @@ class ResultSet(object):
 
     @classmethod
     def unserialise_compat(cls, version, obj, absolute=False):
+        fake_raw = False
         if version == 1:
             obj['raw_values'] = {}
             if 'SERIES_META' in obj['metadata']:
+                logger.debug("Moving raw values from SERIES_META")
                 obj['raw_values'] = dict([(k, v['RAW_VALUES']) for k, v in
                                           obj['metadata']['SERIES_META'].items()
                                           if 'RAW_VALUES' in v])
@@ -481,6 +488,7 @@ class ResultSet(object):
                 # using the interpolated values as 'raw'. This ensures there's
                 # always some data available as raw values, to facilitate
                 # relying on their presence in future code.
+                logger.debug("No raw values found; synthesising from parsed data")
 
                 t0 = parse_date(obj['metadata'].get(
                     'T0', obj['metadata'].get('TIME')))
@@ -489,12 +497,94 @@ class ResultSet(object):
                     obj['raw_values'][name] = [{'t': x0 + x, 'val': r} for x, r in
                                                zip(obj['x_values'],
                                                    obj['results'][name])]
-                obj['metadata']['FAKE_RAW_VALUES'] = True
+                obj['metadata']['FAKE_RAW_VALUES'] = fake_raw = True
 
             if 'NETPERF_WRAPPER_VERSION' in obj['metadata']:
+                logger.debug("Converting old NETPERF_WRAPPER_VERSION (%s) "
+                             "to FLENT_VERSION",
+                             obj['metadata']['NETPERF_WRAPPER_VERSION'])
                 obj['metadata']['FLENT_VERSION'] = obj[
                     'metadata']['NETPERF_WRAPPER_VERSION']
                 del obj['metadata']['NETPERF_WRAPPER_VERSION']
+
+        if version < 4 and not fake_raw:
+            # Version 4 moved the data transform logic to also be applied to
+            # raw_values data. So fixup the values in the raw_values structure
+            # to apply data transforms where they are missing.
+
+            logger.debug("Applying unit conversion to raw values")
+            converted = 0
+            for n, values in obj['raw_values'].items():
+                # Netperf UDP_RR values
+                if 'UDP' in n:
+                    logger.debug("Converting data series '%s' from RR to ms", n)
+                    for v in values:
+                        # Unfortunately this is the best heuristic we have that
+                        # this was a netperf UDP_RR runner, since old versions
+                        # may not have recorded this fact in the metadata
+                        if 'dur' in v:
+                            v['val'] = transformers.rr_to_ms(v['val'])
+                            converted += 1
+
+                # Convert HTTP latency values from seconds to milliseconds
+                elif n == 'HTTP latency':
+                    logger.debug("Converting data series '%s' from s to ms", n)
+                    for v in values:
+                        if 'val' in v:
+                            v['val'] = transformers.s_to_ms(v['val'])
+                            converted += 1
+
+                # Turn airtime values from cumulative values into counts per
+                # interval
+                elif values and 'stations' in values[0]:
+                    logger.debug("Converting airtime values for series '%s' from "
+                                 "cumulative to per-interval", n)
+                    last_vals = {}
+                    for v in values:
+                        if 'stations' not in v:
+                            continue
+                        for s, d in v['stations'].items():
+                            if s not in last_vals:
+                                last_vals[s] = {}
+                            last = last_vals[s]
+                            for k in ('airtime_tx', 'airtime_rx'):
+                                if k in d:
+                                    converted += 1
+                                    if k not in last:
+                                        last[k], d[k] = d[k], 0.0
+                                    else:
+                                        last[k], d[k] = d[k], d[k] - last[k]
+
+                # Ditto for qdisc drops and marks
+                elif values and ('dropped' in values[0] or
+                                 'ecn_mark' in values[0]):
+                    logger.debug("Converting qdisc drops and marks for series "
+                                 "'%s' ""from cumulative to per-interval values",
+                                 n)
+                    last = {}
+                    for v in values:
+                        for k in ('dropped', 'ecn_mark'):
+                            if k in v:
+                                converted += 1
+                                if k not in last:
+                                    last[k], v[k] = v[k], 0.0
+                                else:
+                                    last[k], v[k] = v[k], v[k] - last[k]
+
+            # Iperf UDP bandwidth is was reported in bits/s, now uses Mbits/s to
+            # be consistent with other bandwidth measurements
+            if 'SERIES_META' in obj['metadata']:
+                for k, v in obj['metadata']['SERIES_META'].items():
+                    if 'MEAN_VALUE' in v and v['UNITS'] == "bits/s":
+                        logger.debug("Converting MEAN_VALUE units for series "
+                                     "'%s' from bit/s to Mbits/s", k)
+                        converted += 1
+                        v['MEAN_VALUE'] = transformers.bits_to_mbits(
+                            v['MEAN_VALUE'])
+                        v['UNITS'] = "Mbits/s"
+
+            logger.debug("Converted a total of %d data points.",
+                         converted)
 
         return obj
 

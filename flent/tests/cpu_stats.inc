@@ -6,10 +6,8 @@
 CPU_STATS_HOSTS=TEST_PARAMETERS.get('cpu_stats_hosts')
 if CPU_STATS_HOSTS:
     for host in CPU_STATS_HOSTS.split(","):
-        DATA_SETS['cpu_stats_%s' % host] = {'command': find_stat_iterate(STEP_SIZE, TOTAL_LENGTH, host),
-                                            'units': 'misc',
-                                            'id': host,
-                                            'runner': 'cpu_stats',}
+        DATA_SETS['cpu_stats_%s' % host] = {'interval': STEP_SIZE, 'length': TOTAL_LENGTH, 'host': host, 'units':
+                                            'misc', 'id': host, 'runner': 'cpu_stats'}
 
     PLOTS['cpu'] = {'description': 'CPU stats',
                     'type': 'timeseries',

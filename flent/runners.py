@@ -39,7 +39,7 @@ from datetime import datetime
 from calendar import timegm
 from threading import Event
 
-from flent import util
+from flent import util, transformers
 from flent.build_info import DATA_DIR
 from flent.util import classname, ENCODING, Glob
 from flent.loggers import get_logger
@@ -87,6 +87,14 @@ else:
             raise RuntimeError("Unknown child exit status!")
 
 
+class ParseError(Exception):
+    pass
+
+
+class RunnerCheckError(Exception):
+    pass
+
+
 def get(name):
     cname = classname(name, "Runner")
     if cname not in globals():
@@ -100,13 +108,14 @@ class RunnerBase(object):
 
     def __init__(self, name, settings, idx=None, start_event=None,
                  finish_event=None, kill_event=None, parent=None,
-                 watchdog_timer=None, **kwargs):
+                 watchdog_timer=None, data_transform=None, **kwargs):
         super(RunnerBase, self).__init__()
         self.name = name
         self.settings = settings
         self.idx = idx
         self.test_parameters = {}
         self._raw_values = []
+        self._result = []
         self.command = None
         self.returncode = 0
         self.out = self.err = ''
@@ -124,6 +133,12 @@ class RunnerBase(object):
         self._pickled = False
 
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
+        self.runner_args = kwargs
+
+        if data_transform and hasattr(transformers, data_transform):
+            self._data_transform = getattr(transformers, data_transform)
+        else:
+            self._data_transform = None
 
     def __getstate__(self):
         state = {}
@@ -137,6 +152,9 @@ class RunnerBase(object):
         state['_pickled'] = True
 
         return state
+
+    def check(self):
+        pass
 
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
@@ -203,15 +221,15 @@ class RunnerBase(object):
         self.kill_event = self._watchdog.finish_event
         self._watchdog.start()
 
-    def add_child(self, cls, *args):
+    def add_child(self, cls, **kwargs):
         logger.debug("%s: Adding child %s", self.name, cls.__name__)
-        c = cls(*args,
-                name="%s :: child %d" % (self.name, len(self._child_runners)),
+        c = cls(name="%s :: child %d" % (self.name, len(self._child_runners)),
                 settings=self.settings,
                 idx=self.idx,
                 start_event=self.start_event,
                 kill_event=self.kill_event,
-                parent=self)
+                parent=self, **kwargs)
+        c.check()
         self._child_runners.append(c)
         return c
 
@@ -227,6 +245,11 @@ class RunnerBase(object):
             return self._raw_values
 
         vals = list(self._raw_values)
+        if self._data_transform:
+            for v in vals:
+                if 'val' in v:
+                    v['val'] = self._data_transform(v['val'])
+
         for c in self._child_runners:
             vals.extend(c.raw_values)
         return sorted(vals, key=lambda v: v['t'])
@@ -235,6 +258,16 @@ class RunnerBase(object):
         self._raw_values = val
 
     raw_values = property(get_raw_values, set_raw_values)
+
+    def get_result(self):
+        if self._data_transform:
+            return self._data_transform(self._result)
+        return self._result
+
+    def set_result(self, val):
+        self._result = val
+
+    result = property(get_result, set_result)
 
 
 class DelegatingRunner(RunnerBase):
@@ -333,11 +366,12 @@ class ProcessRunner(RunnerBase, threading.Thread):
     supports_remote = True
     _env = {}
 
-    def __init__(self, command, delay, remote_host, **kwargs):
+    def __init__(self, delay=0, remote_host=None, units=None, **kwargs):
         super(ProcessRunner, self).__init__(**kwargs)
 
-        self.remote_host = remote_host
         self.delay = delay
+        self.remote_host = remote_host
+        self.units = units
         self.killed = False
         self.pid = None
         self.returncode = None
@@ -345,32 +379,28 @@ class ProcessRunner(RunnerBase, threading.Thread):
         self.test_parameters = {}
         self.stdout = None
         self.stderr = None
+        self.command = None
 
-        if 'units' in kwargs:
-            self.metadata['UNITS'] = kwargs['units']
+    def check(self):
 
-        if isinstance(command, dict):
-            self.command = self.find_binary(**command)
-            self.command_args = command
-            if self.command is None:
-                raise RuntimeError("Unable to find binary for %s" %
+        if self.command is None:
+            raise RunnerCheckError("No command set for %s" %
                                    self.__class__.__name__)
-        else:
-            self.command = command
-            self.command_args = {}
         self.args = shlex.split(self.command)
         self.metadata['COMMAND'] = self.command
+        if self.units:
+            self.metadata['UNITS'] = self.units
 
         # Rudimentary remote host capability. Note that this is modifying the
         # final command, so all the find_* stuff must match on the local and
         # remote hosts. I.e. the same binaries must exist in the same places.
-        if remote_host:
+        if self.remote_host:
             if not self.supports_remote:
-                raise RuntimeError(
+                raise RunnerCheckError(
                     "%s (idx %d) does not support running on remote hosts." % (
                         self.__class__.__name__, self.idx))
-            command = "ssh %s '%s'" % (remote_host, command)
-            self.metadata['REMOTE_HOST'] = remote_host
+            self.command = "ssh %s '%s'" % (self.remote_host, self.command)
+            self.metadata['REMOTE_HOST'] = self.remote_host
 
     def handle_usr2(self, signal, frame):
         if self.start_event is not None:
@@ -550,22 +580,35 @@ class SilentProcessRunner(ProcessRunner):
 class DitgRunner(ProcessRunner):
     """Runner for D-ITG with a control server."""
     supports_remote = False
+    transformers = {'delay': transformers.s_to_ms,
+                    'jitter': transformers.s_to_ms,
+                    'bitrate': transformers.identity,
+                    'loss': transformers.identity}
 
-    def __init__(self, duration, interval, **kwargs):
+    def __init__(self, test_args, length, host, duration, interval,
+                 local_bind=None, control_host=None, **kwargs):
         super(DitgRunner, self).__init__(**kwargs)
-        if 'control_host' in kwargs:
-            control_host = kwargs['control_host']
-        else:
+
+        if not control_host:
             control_host = self.settings.CONTROL_HOST or self.settings.HOST
+
+        if not local_bind and self.settings.LOCAL_BIND:
+            local_bind = self.settings.LOCAL_BIND[0]
+
         self.proxy = xmlrpc.ServerProxy("http://%s:%s"
                                         % (control_host,
                                            self.settings.DITG_CONTROL_PORT),
                                         allow_none=True)
         self.ditg_secret = self.settings.DITG_CONTROL_SECRET
+
+        self.test_args = test_args
+        self.length = length
+        self.host = host
         self.duration = duration
         self.interval = interval
+        self.local_bind = local_bind
 
-    def start(self):
+    def check(self):
         try:
             interval = int(self.interval * 1000)
             hm = hmac.new(self.ditg_secret.encode(
@@ -576,24 +619,37 @@ class DitgRunner(ProcessRunner):
                 self.duration, interval, hm.hexdigest(), True)
             if params['status'] != 'OK':
                 if 'message' in params:
-                    raise RuntimeError(
+                    raise RunnerCheckError(
                         "Unable to request D-ITG test. "
                         "Control server reported error: %s" % params['message'])
                 else:
-                    raise RuntimeError(
+                    raise RunnerCheckError(
                         "Unable to request D-ITG test. "
                         "Control server reported an unspecified error.")
             self.test_id = params['test_id']
             self.out += "Test ID: %s\n" % self.test_id
         except (xmlrpc.Fault, socket.error) as e:
-            raise RuntimeError(
+            raise RunnerCheckError(
                 "Error while requesting D-ITG test: '%s'. "
                 "Is the control server listening (see man page)?" % e)
-        self.command = self.command.format(
-            signal_port=params['port'], dest_port=params['port'] + 1)
-        self.args = shlex.split(self.command)
 
-        super(DitgRunner, self).start()
+        itgsend = util.which("ITGSend", fail=RunnerCheckError)
+
+        # We put placeholders in the command string to be filled out by string
+        # format expansion by the runner once it has communicated with the control
+        # server and obtained the port values.
+        self.command = "{binary} -Sdp {signal_port} -t {length} {local_bind} " \
+                       "-a {dest_host} -rp {dest_port} {args}".format(
+                           binary=itgsend,
+                           length=int(self.length * 1000),
+                           dest_host=self.host,
+                           local_bind="-sa {0} -Ssa {0}".format(
+                               self.local_bind) if self.local_bind else "",
+                           args=self.test_args,
+                           signal_port=params['port'],
+                           dest_port=params['port'] + 1)
+
+        super(DitgRunner, self).check()
 
     def parse(self, output, error=""):
         data = ""
@@ -641,7 +697,7 @@ class DitgRunner(ProcessRunner):
             for i, n in enumerate(('bitrate', 'delay', 'jitter', 'loss')):
                 if n not in results:
                     results[n] = []
-                results[n].append([timestamp, parts[i]])
+                results[n].append([timestamp, self.transformers[n](parts[i])])
 
         return results
 
@@ -684,6 +740,12 @@ class NetperfDemoRunner(ProcessRunner):
                   'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE'
     netperf = {}
     _env = {"DUMP_TCP_INFO": "1"}
+
+    def __init__(self, test, length, host, **kwargs):
+        self.test = test
+        self.length = length
+        self.host = host
+        super(NetperfDemoRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
         """Parses the interim result lines and returns a list of (time,value)
@@ -731,6 +793,9 @@ class NetperfDemoRunner(ProcessRunner):
                 dur = float(dur)
                 t = float(t)
                 value = float(value)
+
+                if self.test == 'UDP_RR':
+                    value = transformers.rr_to_ms(value)
 
                 # Calculate an EWMA of the netperf sampling duration and exclude
                 # data points from a sampling period that is more than an order
@@ -789,10 +854,37 @@ class NetperfDemoRunner(ProcessRunner):
 
         return result
 
-    def find_binary(self, **args):
+    def check(self):
+        args = self.runner_args.copy()
+
+        if self.test.lower() == 'omni':
+            raise RunnerCheckError("Use of netperf 'omni' test is not supported")
+
+        args.setdefault('ip_version', self.settings.IP_VERSION)
+        args.setdefault('interval', self.settings.STEP_SIZE)
+        args.setdefault('control_host', self.settings.CONTROL_HOST or self.host)
+        args.setdefault('control_port', self.settings.NETPERF_CONTROL_PORT)
+        args.setdefault('local_bind',
+                        self.settings.LOCAL_BIND[0]
+                        if self.settings.LOCAL_BIND else "")
+        args.setdefault('control_local_bind',
+                        self.settings.CONTROL_LOCAL_BIND or args['local_bind'])
+        args.setdefault('extra_args', "")
+        args.setdefault('extra_test_args', "")
+        args.setdefault('format', "")
+        args.setdefault('marking', "")
+        args.setdefault('cong_control',
+                        self.settings.TEST_PARAMETERS.get('tcp_cong_control', ''))
+        args.setdefault('socket_timeout', self.settings.SOCKET_TIMEOUT)
+
+        if self.settings.SWAP_UPDOWN:
+            if self.test == 'TCP_STREAM':
+                self.test = 'TCP_MAERTS'
+            elif self.test == 'TCP_MAERTS':
+                self.test = 'TCP_STREAM'
 
         if not self.netperf:
-            netperf = util.which('netperf', fail=True)
+            netperf = util.which('netperf', fail=RunnerCheckError)
 
             # Try to figure out whether this version of netperf supports the -e
             # option for socket timeout on UDP_RR tests, and whether it has been
@@ -811,10 +903,10 @@ class NetperfDemoRunner(ProcessRunner):
             proc.kill()
             out, err = proc.communicate()
             if "Demo Mode not configured" in str(out):
-                raise RuntimeError("%s does not support demo mode." % netperf)
+                raise RunnerCheckError("%s does not support demo mode." % netperf)
 
             if "invalid option -- '0'" in str(err):
-                raise RuntimeError(
+                raise RunnerCheckError(
                     "%s does not support accurate intermediate time reporting. "
                     "You need netperf v2.6.0 or newer." % netperf)
 
@@ -836,6 +928,9 @@ class NetperfDemoRunner(ProcessRunner):
         args['binary'] = self.netperf['executable']
         args['output_vars'] = self.output_vars
         args['buffer'] = self.netperf['buffer']
+        args['test'] = self.test
+        args['length'] = self.length
+        args['host'] = self.host
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -847,29 +942,37 @@ class NetperfDemoRunner(ProcessRunner):
             if args[c]:
                 args[c] = "-L {0}".format(args[c])
 
-        if args['test'] == "UDP_RR" and self.netperf["-e"]:
+        if self.test == "UDP_RR" and self.netperf["-e"]:
             args['socket_timeout'] = "-e {0:d}".format(args['socket_timeout'])
         else:
             args['socket_timeout'] = ""
 
-        if args['test'] in ("TCP_STREAM", "TCP_MAERTS"):
+        if self.test in ("TCP_STREAM", "TCP_MAERTS"):
             args['format'] = "-f m"
+            self.units = 'Mbits/s'
 
             if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
-                ss_args = {'host': self.remote_host or 'localhost',
-                           'interval': args['interval'],
-                           'length': args['length'],
-                           'target': args['host'],
-                           'ip_version': args['ip_version']}
+                self.add_child(SsRunner,
+                               exclude_ports=(args['control_port'],),
+                               delay=self.delay,
+                               remote_host=None,
+                               host=self.remote_host or 'localhost',
+                               interval=args['interval'],
+                               length=self.length,
+                               target=self.host,
+                               ip_version=args['ip_version'])
 
-                self.add_child(SsRunner, [args['control_port']],
-                               ss_args, self.delay, None)
+        elif self.test == 'UDP_RR':
+            self.units = 'ms'
 
-        return "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} {marking} " \
-            "-H {control_host} -p {control_port} -t {test} -l {length:d} " \
-            "{buffer} {format} {control_local_bind} {extra_args} -- " \
-            "{socket_timeout} {local_bind} -H {host} -k {output_vars} " \
-            "{cong_control} {extra_test_args}".format(**args)
+        self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
+                       "{marking} -H {control_host} -p {control_port} " \
+                       "-t {test} -l {length:d} {buffer} {format} " \
+                       "{control_local_bind} {extra_args} -- " \
+                       "{socket_timeout} {local_bind} -H {host} -k {output_vars} " \
+                       "{cong_control} {extra_test_args}".format(**args)
+
+        super(NetperfDemoRunner, self).check()
 
 
 class RegexpRunner(ProcessRunner):
@@ -881,6 +984,7 @@ class RegexpRunner(ProcessRunner):
 
     regexes = []
     metadata_regexes = []
+    transformers = {}
 
     # Parse is split into a stateless class method in _parse to be able to call
     # it from find_binary.
@@ -900,15 +1004,16 @@ class RegexpRunner(ProcessRunner):
             for regexp in cls.regexes:
                 match = regexp.match(line)
                 if match:
-                    result.append([float(match.group('t')),
-                                   float(match.group('val'))])
                     rw = match.groupdict()
                     for k, v in rw.items():
                         try:
                             rw[k] = float(v)
+                            if k in cls.transformers:
+                                rw[k] = cls.transformers[k](rw[k])
                         except ValueError:
                             pass
                     raw_values.append(rw)
+                    result.append([rw['t'], rw['val']])
                     break  # only match one regexp per line
             for regexp in cls.metadata_regexes:
                 match = regexp.match(line)
@@ -916,6 +1021,10 @@ class RegexpRunner(ProcessRunner):
                     for k, v in match.groupdict().items():
                         try:
                             metadata[k] = float(v)
+                            if k in cls.transformed_metadata and \
+                               'val' in cls.transformers:
+                                metadata[k] = cls.transformers['val'](
+                                    metadata[k])
                         except ValueError:
                             metadata[k] = v
         return result, raw_values, metadata
@@ -943,8 +1052,23 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
+    def __init__(self, host, **kwargs):
+        self.host = host
+        super(PingRunner, self).__init__(**kwargs)
+
+    def check(self):
+        args = self.runner_args.copy()
+        args.setdefault('local_bind', (self.settings.LOCAL_BIND[0]
+                                       if self.settings.LOCAL_BIND else None))
+        args.setdefault('ip_version', self.settings.IP_VERSION)
+        args.setdefault('interval', self.settings.STEP_SIZE)
+        args.setdefault('length', self.settings.TOTAL_LENGTH)
+
+        self.command = self.find_binary(host=self.host, **args)
+        super(PingRunner, self).check()
+
     def find_binary(self, ip_version, interval, length, host,
-                    marking=None, local_bind=None):
+                    marking=None, local_bind=None, **kwargs):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
@@ -1023,7 +1147,7 @@ class PingRunner(RegexpRunner):
             if hasattr(out, 'decode'):
                 out = out.decode(ENCODING)
             if not self._parse(out)[0]:
-                raise RuntimeError(
+                raise RunnerCheckError(
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
 
@@ -1037,7 +1161,7 @@ class PingRunner(RegexpRunner):
                     host=host,
                     pingargs=" ".join(pingargs))
 
-        raise RuntimeError("No suitable ping tool found.")
+        raise RunnerCheckError("No suitable ping tool found.")
 
 
 class HttpGetterRunner(RegexpRunner):
@@ -1049,6 +1173,49 @@ class HttpGetterRunner(RegexpRunner):
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
+    transformers = {'val': transformers.s_to_ms}
+
+    def __init__(self, interval, length, workers=None, ip_version=None,
+                 dns_servers=None, url_file=None, timeout=None, **kwargs):
+        super(HttpGetterRunner, self).__init__(**kwargs)
+
+        self.interval = interval
+        self.length = length
+        self.workers = workers
+        self.ip_version = ip_version
+        self.dns_servers = dns_servers
+        self.url_file = url_file
+        self.timeout = timeout
+
+    def check(self):
+
+        http_getter = util.which('http-getter', fail=RunnerCheckError)
+
+        url_file = (self.url_file or self.settings.HTTP_GETTER_URLLIST
+                    or "http://%s/filelist.txt".format(self.settings.HOST))
+        dns_servers = self.dns_servers or self.settings.HTTP_GETTER_DNS
+        timeout = (self.timeout or self.settings.HTTP_GETTER_TIMEOUT
+                   or int(self.length * 1000))
+        workers = self.workers or self.settings.HTTP_GETTER_WORKERS
+        ip_version = self.ip_version or self.settings.IP_VERSION
+
+        self.command = "{binary} -i {interval} -l {length} -t {timeout} " \
+                       "{dns} {workers} {ipv} {url_file}".format(
+                           binary=http_getter,
+                           interval=int(self.interval * 1000),
+                           length=int(self.length),
+                           timeout=timeout,
+                           dns="-d {}".format(dns_servers) if dns_servers else "",
+                           workers="-n {}".format(workers) if workers else "",
+                           ipv="-{}".format(ip_version) if ip_version else "",
+                           url_file=url_file)
+
+        # Individual http requests can take a long time to time out, causing
+        # http-getter to get stuck, so set a generous watchdog timer at 1.5
+        # times the duration to catch any stuck binaries
+        self.watchdog_timer = (self.length * 3) // 2
+
+        super(HttpGetterRunner, self).check()
 
 
 class IperfCsvRunner(ProcessRunner):
@@ -1056,12 +1223,16 @@ class IperfCsvRunner(ProcessRunner):
 
     transformed_metadata = ('MEAN_VALUE',)
 
-    def __init__(self, **kwargs):
-        if 'udp' in kwargs:
-            self.udp = kwargs['udp']
-            del kwargs['udp']
-        else:
-            self.udp = False
+    def __init__(self, host, interval, length, ip_version, local_bind=None,
+                 no_delay=False, udp=False, bw=None, **kwargs):
+        self.host = host
+        self.interval = interval
+        self.length = length
+        self.ip_version = ip_version
+        self.local_bind = local_bind
+        self.no_delay = no_delay
+        self.udp = udp
+        self.bw = bw
         super(IperfCsvRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
@@ -1088,7 +1259,7 @@ class IperfCsvRunner(ProcessRunner):
                 sec, mil = timestamp.split(".")
                 dt = datetime.strptime(sec, "%Y%m%d%H%M%S")
                 timestamp = time.mktime(dt.timetuple()) + float(mil) / 1000
-                val = float(bandwidth)
+                val = transformers.bits_to_mbits(float(bandwidth))
                 result.append([timestamp, val])
                 raw_values.append({'t': timestamp, 'val': val})
             except ValueError:
@@ -1100,15 +1271,25 @@ class IperfCsvRunner(ProcessRunner):
             # src and dest should be reversed if this was a reply from the
             # server. Track this for UDP where it may be missing.
             if parts[1] == dest or not self.udp:
-                self.metadata['MEAN_VALUE'] = float(parts[8])
+                self.metadata['MEAN_VALUE'] = transformers.bits_to_mbits(
+                    float(parts[8]))
             else:
                 self.metadata['MEAN_VALUE'] = None
         except (ValueError, IndexError):
             pass
         return result
 
-    @classmethod
-    def find_binary(cls, host, interval, length, ip_version, local_bind=None,
+    def check(self):
+        local_bind = self.local_bind
+        if not self.local_bind and self.settings.LOCAL_BIND:
+            local_bind = self.settings.LOCAL_BIND[0]
+
+        self.command = self.find_binary(self.host, self.interval, self.length,
+                                        self.ip_version, local_bind,
+                                        self.no_delay, self.upd, self.bw)
+        super(IperfCsvRunner, self).check()
+
+    def find_binary(self, host, interval, length, ip_version, local_bind=None,
                     no_delay=False, udp=False, bw=None):
         iperf = util.which('iperf')
 
@@ -1150,7 +1331,7 @@ class IperfCsvRunner(ProcessRunner):
                     "Found iperf binary (%s), but it does not have "
                     "an --enhancedreports option. Not using.", err.strip())
 
-        raise RuntimeError("No suitable Iperf binary found.")
+        raise RunnerCheckError("No suitable Iperf binary found.")
 
 
 class IrttRunner(ProcessRunner):
@@ -1159,6 +1340,18 @@ class IrttRunner(ProcessRunner):
                    'CS1': 8,
                    'CS5': 40,
                    'EF': 46}
+
+    _irtt = {}
+
+    def __init__(self, host, length, interval=None, ip_version=None,
+                 local_bind=None, marking=None, **kwargs):
+        self.host = host
+        self.interval = interval
+        self.length = length
+        self.ip_version = ip_version
+        self.local_bind = local_bind
+        self.marking = marking
+        super(IrttRunner, self).__init__(**kwargs)
 
     # irtt outputs all durations in nanoseconds
     def _to_ms(self, value):
@@ -1183,67 +1376,114 @@ class IrttRunner(ProcessRunner):
         self.metadata['MEAN_VALUE'] = self.metadata['RTT_MEAN']
         self.metadata['PACKETS_SENT'] = data['stats']['packets_sent']
         self.metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
-        self.metadata['PACKET_LOSS'] = data['stats']['packet_loss_percent']
+        self.metadata['PACKET_LOSS_RATE'] = (data['stats']['packet_loss_percent']
+                                             / 100.0)
 
         for pkt in data['round_trips']:
-            if pkt['lost'] != 'false':
-                continue
             dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
-                  'val': self._to_ms(pkt['delay']['rtt']),
-                  'owd_up': self._to_ms(pkt['delay']['send']),
-                  'owd_down': self._to_ms(pkt['delay']['receive']),
                   'seq': pkt['seqno']}
+            if pkt['lost'] == 'false':
+                dp['val'] = self._to_ms(pkt['delay']['rtt'])
+                dp['owd_up'] = self._to_ms(pkt['delay']['send'])
+                dp['owd_down'] = self._to_ms(pkt['delay']['receive'])
+                try:
+                    dp['ipdv_up'] = self._to_ms(pkt['ipdv']['send'])
+                    dp['ipdv_down'] = self._to_ms(pkt['ipdv']['receive'])
+                    dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
+                except KeyError:
+                    pass
+                result.append([dp['t'], dp['val']])
+            else:
+                lost_dir = pkt['lost'].replace('true_', '')
+                dp['lost'] = True
+                dp['lost_dir'] = lost_dir or None
+
             raw_values.append(dp)
-            result.append([dp['t'], dp['val']])
 
         self.raw_values = raw_values
         return result
 
-    @classmethod
-    def find_binary(cls, interval, length, host, ip_version=None,
-                    local_bind=None, marking=None):
+    def check(self):
 
-        irtt = util.which('irtt')
+        if not self._irtt:
+            irtt = util.which('irtt', fail=RunnerCheckError)
 
-        if irtt is None:
-            logger.debug("No irtt binary in PATH")
-            return None
+            args = [irtt, 'client', '-n', '-qq',
+                    '-timeouts', '200ms,300ms,400ms']
+
+            if self.local_bind:
+                args.extend(['-local', self.local_bind])
+            elif self.settings.LOCAL_BIND:
+                args.extend(['-local', self.settings.LOCAL_BIND[0]])
+
+            if self.ip_version is not None:
+                args.append("-{}".format(self.ip_version))
+
+            args.append(self.host)
+
+            proc = subprocess.Popen(args,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            out, err = proc.communicate()
+            if hasattr(err, 'decode'):
+                err = err.decode(ENCODING)
+
+            if proc.returncode != 0:
+                raise RunnerCheckError("Irtt connection check failed: %s" % err)
+
+            self._irtt['binary'] = irtt
+        else:
+            irtt = self._irtt['binary']
 
         # Try to convert netperf-style textual marking specs into integers
-        if marking is not None:
+        if self.marking is not None:
             try:
-                mk = marking.split(",")[0]
-                marking = cls.marking_map[mk]
+                mk = self.marking.split(",")[0]
+                marking = "-dscp {}".format(self.marking_map[mk])
             except (AttributeError, KeyError):
-                pass
-
-        return "{binary} client -o - -fill rand -fillall -qq " \
-            "-d {length}s -i {interval}s {ip_version} {marking} {host}".format(
-                binary=irtt,
-                length=length,
-                interval=interval,
-                host=host,
-                ip_version="-{}".format(ip_version) if ip_version else "",
-                local_bind="-local {}".format(local_bind) if local_bind else "",
-                marking="-dscp {}".format(marking) if marking else "")
-
-
-class UdpRrRunner(DelegatingRunner):
-
-    def __init__(self, command, delay, remote_host, **kwargs):
-        super(UdpRrRunner, self).__init__(**kwargs)
-        if IrttRunner.find_binary(**command['irtt']) is not None:
-            logger.debug("UDP RR test: Using irtt")
-            self.add_child(IrttRunner,
-                           command['irtt'], delay, remote_host)
+                marking = "-dscp {}".format(marking)
         else:
-            logger.debug("UDP RR test: Using netperf UDP_RR")
+            marking = ""
+
+        if self.local_bind:
+            local_bind = "-local {}".format(self.local_bind)
+        elif self.settings.LOCAL_BIND:
+            local_bind = "-local {}".format(self.settings.LOCAL_BIND[0])
+        else:
+            local_bind = ""
+
+        if self.ip_version is not None:
+            ip_version = "-{}".format(self.ip_version)
+        else:
+            ip_version = ""
+
+        self.command = "{binary} client -o - -fill rand -fillall -qq " \
+                       "-d {length}s -i {interval}s {ip_version} {marking} " \
+                       "{local_bind} {host}".format(
+                           binary=irtt,
+                           length=self.length,
+                           interval=self.interval or self.settings.STEP_SIZE,
+                           host=self.host,
+                           ip_version=ip_version,
+                           local_bind=local_bind,
+                           marking=marking)
+
+        super(IrttRunner, self).check()
+
+
+class UdpRttRunner(DelegatingRunner):
+
+    def check(self):
+        try:
+            self.add_child(IrttRunner, **self.runner_args)
+            logger.debug("UDP RTT test: Using irtt")
+        except RunnerCheckError as e:
+            logger.debug("UDP RTT test: Cannot use irtt runner (%s). "
+                         "Using netperf UDP_RR", e)
             self.add_child(NetperfDemoRunner,
-                           command['netperf'], delay, remote_host)
+                           **dict(self.runner_args, test='UDP_RR'))
 
-
-class ParseException(Exception):
-    pass
+        super(UdpRttRunner, self).check()
 
 
 class SsRunner(ProcessRunner):
@@ -1292,26 +1532,24 @@ class SsRunner(ProcessRunner):
                  "LISTEN", "CLOSING"]
     ss_states_re = re.compile(r"|".join(ss_states))
 
-    def __init__(self, exclude_ports, command, *args, **kwargs):
+    def __init__(self, exclude_ports, ip_version, host, interval,
+                 length, target, **kwargs):
         self.exclude_ports = exclude_ports
-        super(SsRunner, self).__init__(command, *args, **kwargs)
-
-        dup_key = (command['host'], command['interval'], command['length'],
-                   command['target'], command['ip_version'],
-                   tuple(self.exclude_ports))
-
-        if dup_key in self._duplicate_map:
-            logger.debug("Found duplicate SsRunner, reusing output")
-            self._dup_runner = self._duplicate_map[dup_key]
-            self.command = "%s (duplicate)" % self.command
-        else:
-            self._dup_runner = None
-            self._duplicate_map[dup_key] = self
-            self._dup_key = dup_key
+        self.ip_version = ip_version
+        self.host = host
+        self.interval = interval
+        self.length = length
+        self.target = target
+        self._dup_key = None
+        super(SsRunner, self).__init__(**kwargs)
 
     def fork(self):
         if self._dup_runner is None:
+            logger.debug("SsRunner for dup key %s: forking", self._dup_key)
             super(SsRunner, self).fork()
+        else:
+            logger.debug("Duplicate SsRunner for dup key %s. Not forking",
+                         self._dup_key)
 
     def run(self):
         if self._dup_runner is None:
@@ -1348,7 +1586,7 @@ class SsRunner(ProcessRunner):
                 f_ports = self.ports_ipv6_re.search(sp)
 
             if None is f_ports:
-                raise ParseException()
+                raise ParseError()
 
             dst_p = int(f_ports.group('dst_p').split(":")[-1])
 
@@ -1356,7 +1594,7 @@ class SsRunner(ProcessRunner):
                 sub_part.append(sp)
 
         if 1 != len(sub_part):
-            raise ParseException()
+            raise ParseError()
 
         return sub_part[0]
 
@@ -1374,7 +1612,7 @@ class SsRunner(ProcessRunner):
 
         timestamp = self.time_re.search(part)
         if timestamp is None:
-            raise ParseException()
+            raise ParseError()
         timestamp = float(timestamp.group('timestamp'))
 
         vals = {'t': timestamp}
@@ -1390,7 +1628,7 @@ class SsRunner(ProcessRunner):
                         pass
 
         if len(vals.keys()) == 1:
-            raise ParseException()
+            raise ParseError()
 
         self._raw_values.append(vals)
 
@@ -1412,19 +1650,38 @@ class SsRunner(ProcessRunner):
                     else:
                         results[k].append([t, v])
 
-            except ParseException:
+            except ParseError:
                 continue
 
         return results
 
+    def check(self):
+        dup_key = (self.host, self.interval, self.length, self.target,
+                   self.ip_version, tuple(self.exclude_ports))
+
+        if dup_key in self._duplicate_map:
+            logger.debug("Found duplicate SsRunner (%s), reusing output", dup_key)
+            self._dup_runner = self._duplicate_map[dup_key]
+            self.command = "%s (duplicate)" % self._dup_runner.command
+        else:
+            logger.debug("Starting new SsRunner (dup key %s)", dup_key)
+            self._dup_runner = None
+            self._duplicate_map[dup_key] = self
+            self.command = self.find_binary(self.ip_version, self.host,
+                                            self.interval, self.length,
+                                            self.target)
+
+        self._dup_key = dup_key
+        super(SsRunner, self).check()
+
     def find_binary(self, ip_version, host, interval, length, target):
         script = os.path.join(DATA_DIR, 'scripts', 'ss_iterate.sh')
         if not os.path.exists(script):
-            raise RuntimeError("Cannot find ss_iterate.sh.")
+            raise RunnerCheckError("Cannot find ss_iterate.sh.")
 
         bash = util.which('bash')
         if not bash:
-            raise RuntimeError("Socket stats requires a Bash shell.")
+            raise RunnerCheckError("Socket stats requires a Bash shell.")
 
         resol_target = util.lookup_host(target, ip_version)[4][0]
         if ip_version == 6:
@@ -1494,6 +1751,14 @@ class TcRunner(ProcessRunner):
     cake_1tin_re = re.compile(cake_tin_re)
     cake_keys = ["av_delay", "sp_delay", "pkts", "bytes",
                  "drops", "marks", "sp_flows", "bk_flows", "max_len"]
+    cumulative_keys = ["dropped", "ecn_mark"]
+
+    def __init__(self, interface, interval, length, host='localhost', **kwargs):
+        self.interface = interface
+        self.interval = interval
+        self.length = length
+        self.host = host
+        super(TcRunner, self).__init__(**kwargs)
 
     # Normalise time values (seconds, ms, us) to milliseconds and bit values
     # (bit, Kbit, Mbit) to bits
@@ -1521,6 +1786,7 @@ class TcRunner(ProcessRunner):
     def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
+        last_vals = {}
         for part in parts:
             timestamp = self.time_re.search(part)
             if timestamp is None:
@@ -1575,6 +1841,14 @@ class TcRunner(ProcessRunner):
             if "cake_marks" in matches and "ecn_mark" not in matches:
                 matches['ecn_mark'] = sum(matches['cake_marks'].values())
 
+            # Transform cumulative keys into events per interval
+            for k in self.cumulative_keys:
+                if k not in matches:
+                    continue
+                v = matches[k]
+                matches[k] = v - last_vals[k] if k in last_vals else 0.0
+                last_vals[k] = v
+
             for k, v in matches.items():
                 if not isinstance(v, float):
                     continue
@@ -1586,15 +1860,19 @@ class TcRunner(ProcessRunner):
             self._raw_values.append(matches)
         return results
 
-    @classmethod
-    def find_binary(cls, interface, interval, length, host='localhost'):
+    def check(self):
+        self.command = self.find_binary(self.interface, self.interval,
+                                        self.length, self.host)
+        super(TcRunner, self).check()
+
+    def find_binary(self, interface, interval, length, host='localhost'):
         script = os.path.join(DATA_DIR, 'scripts', 'tc_iterate.sh')
         if not os.path.exists(script):
-            raise RuntimeError("Cannot find tc_iterate.sh.")
+            raise RunnerCheckError("Cannot find tc_iterate.sh.")
 
         bash = util.which('bash')
         if not bash:
-            raise RuntimeError("TC stats requires a Bash shell.")
+            raise RunnerCheckError("TC stats requires a Bash shell.")
 
         if interface is None:
             logger.warning(
@@ -1620,6 +1898,12 @@ class CpuStatsRunner(ProcessRunner):
     """
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     value_re = re.compile(r"^\d+ \d+ (?P<load>\d+\.\d+)$", re.MULTILINE)
+
+    def __init__(self, interval, length, host='localhost', **kwargs):
+        self.interval = interval
+        self.length = length
+        self.host = host
+        super(CpuStatsRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
         results = {}
@@ -1655,15 +1939,19 @@ class CpuStatsRunner(ProcessRunner):
             self._raw_values.append(matches)
         return results
 
-    @classmethod
-    def find_binary(cls, interval, length, host='localhost'):
+    def check(self):
+        self.command = self.find_binary(self.interval,
+                                        self.length, self.host)
+        super(CpuStatsRunner, self).check()
+
+    def find_binary(self, interval, length, host='localhost'):
         script = os.path.join(DATA_DIR, 'scripts', 'stat_iterate.sh')
         if not os.path.exists(script):
-            raise RuntimeError("Cannot find stat_iterate.sh.")
+            raise RunnerCheckError("Cannot find stat_iterate.sh.")
 
         bash = util.which('bash')
         if not bash:
-            raise RuntimeError("CPU stats requires a Bash shell.")
+            raise RunnerCheckError("CPU stats requires a Bash shell.")
 
         return "{bash} {script} -I {interval:.2f} " \
             "-c {count:.0f} -H {host}".format(
@@ -1686,24 +1974,26 @@ class WifiStatsRunner(ProcessRunner):
     airtime_re = re.compile(
         r"^Airtime:\nRX: (?P<rx>\d+) us\nTX: (?P<tx>\d+) us", re.MULTILINE)
 
-    def __init__(self, **kwargs):
-        if 'stations' in kwargs:
-            if kwargs['stations'] in (["all"], ["ALL"]):
-                self.stations = []
-                # disabled as it doesn't work properly yet
-                self.all_stations = False
-            else:
-                self.stations = kwargs['stations']
-                self.all_stations = False
-            del kwargs['stations']
-        else:
+    def __init__(self, interface, interval, length,
+                 host='localhost', stations=None, **kwargs):
+
+        self.interface = interface
+        self.interval = interval
+        self.length = length
+        self.host = host
+
+        self.stations = stations or []
+        if self.stations in (["all"], ["ALL"]):
             self.stations = []
+        # disabled as it doesn't work properly yet
+        self.all_stations = False
 
         super(WifiStatsRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
         results = {}
         parts = output.split("\n---\n")
+        last_airtime = {}
         for part in parts:
             matches = {}
             timestamp = self.time_re.search(part)
@@ -1725,8 +2015,16 @@ class WifiStatsRunner(ProcessRunner):
                 sv = {}
                 airtime = self.airtime_re.search(v)
                 if airtime is not None:
-                    sv['airtime_rx'] = float(airtime.group('rx'))
-                    sv['airtime_tx'] = float(airtime.group('tx'))
+                    rx = float(airtime.group('rx'))
+                    tx = float(airtime.group('tx'))
+                    if s not in last_airtime:
+                        last_airtime[s] = {'rx': rx, 'tx': tx}
+                        sv['airtime_rx'] = sv['airtime_tx'] = 0.0
+                    else:
+                        sv['airtime_rx'] = rx - last_airtime[s]['rx']
+                        sv['airtime_tx'] = tx - last_airtime[s]['tx']
+                        last_airtime[s]['rx'] = rx
+                        last_airtime[s]['tx'] = tx
 
                 rcs = v.find("RC stats:\n")
 
@@ -1764,15 +2062,19 @@ class WifiStatsRunner(ProcessRunner):
             self.test_parameters['wifi_stats_stations'] = ",".join(self.stations)
         return results
 
-    @classmethod
-    def find_binary(cls, interface, interval, length, host='localhost'):
+    def check(self):
+        self.command = self.find_binary(self.interface, self.interval,
+                                        self.length, self.host)
+        super(WifiStatsRunner, self).check()
+
+    def find_binary(self, interface, interval, length, host='localhost'):
         script = os.path.join(DATA_DIR, 'scripts', 'wifistats_iterate.sh')
         if not os.path.exists(script):
-            raise RuntimeError("Cannot find wifistats_iterate.sh.")
+            raise RunnerCheckError("Cannot find wifistats_iterate.sh.")
 
         bash = util.which('bash')
         if not bash:
-            raise RuntimeError("WiFi stats requires a Bash shell.")
+            raise RunnerCheckError("WiFi stats requires a Bash shell.")
 
         return "{bash} {script} -i {interface} -I {interval:.2f} " \
             "-c {count:.0f} -H {host}".format(
@@ -1794,6 +2096,12 @@ class NetstatRunner(ProcessRunner):
     tcpext_header_re = re.compile(
         r"^TcpExt: (?P<header>[A-Z][0-9a-zA-Z ]+)\n", re.MULTILINE)
     tcpext_data_re = re.compile(r"^TcpExt: (?P<data>[0-9 ]+)\n", re.MULTILINE)
+
+    def __init__(self, interval, length, host='localhost', **kwargs):
+        self.interval = interval
+        self.length = length
+        self.host = host
+        super(NetstatRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
         results = {}
@@ -1829,15 +2137,19 @@ class NetstatRunner(ProcessRunner):
             self._raw_values.append(matches)
         return results
 
-    @classmethod
-    def find_binary(cls, interval, length, host='localhost'):
+    def check(self):
+        self.command = self.find_binary(self.interval,
+                                        self.length, self.host)
+        super(NetstatRunner, self).check()
+
+    def find_binary(self, interval, length, host='localhost'):
         script = os.path.join(DATA_DIR, 'scripts', 'netstat_iterate.sh')
         if not os.path.exists(script):
-            raise RuntimeError("Cannot find netstat_iterate.sh.")
+            raise RunnerCheckError("Cannot find netstat_iterate.sh.")
 
         bash = util.which('bash')
         if not bash:
-            raise RuntimeError("Capturing netstat requires a Bash shell.")
+            raise RunnerCheckError("Capturing netstat requires a Bash shell.")
 
         return "{bash} {script} -I {interval:.2f} -c {count:.0f} " \
             "-H {host}".format(
