@@ -171,7 +171,8 @@ class CachingHandler(Handler):
 
     def replay(self, handler):
         for r in self.cache:
-            handler.handle(r)
+            if r.levelno >= handler.level:
+                handler.handle(r)
 
     def write(self, m):
         pass
