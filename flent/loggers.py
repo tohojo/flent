@@ -230,7 +230,7 @@ def add_common_filters(handler):
     handler.addFilter(NamePrefixFilter("PyQt"))
 
 
-def setup_logfile(filename, level=DEBUG, maxlevel=None):
+def setup_logfile(filename, level=DEBUG, maxlevel=None, replay=True):
     if filename in logfiles:
         return
     logfiles.add(filename)
@@ -252,7 +252,7 @@ def setup_logfile(filename, level=DEBUG, maxlevel=None):
     logger.addHandler(handler)
     logger.setLevel(min(logger.level, level))
 
-    if cache_handler is not None:
+    if replay and cache_handler is not None:
         cache_handler.replay(handler)
 
     return handler

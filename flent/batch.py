@@ -430,13 +430,14 @@ class BatchRunner(object):
                 self.logfile = loggers.setup_logfile(
                     os.path.join(output_path,
                                  "%s.log" % settings.DATA_FILENAME),
-                    level=loggers.INFO)
+                    level=loggers.INFO, replay=False)
                 if b.get('debug_log', False):
                     self.logfile_debug = loggers.setup_logfile(
                         os.path.join(output_path,
                                      "%s.debug.log" % settings.DATA_FILENAME),
                         level=loggers.DEBUG,
-                        maxlevel=loggers.DEBUG)
+                        maxlevel=loggers.DEBUG,
+                        replay=False)
 
             if settings.DATA_FILENAME in filenames_seen:
                 logger.warning("Filename already seen in this run: %s",
