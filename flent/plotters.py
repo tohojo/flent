@@ -1316,7 +1316,7 @@ class Plotter(ArgParam):
         if 'norm_factor' in series:
             data[1] /= series['norm_factor']
 
-        if 'smoothing' in series and series['smoothing']:
+        if 'smoothing' in series and series['smoothing'] and data.any():
             l = series['smoothing']
             if l % 2 != 1:
                 l += 1
