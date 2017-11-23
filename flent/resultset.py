@@ -575,7 +575,7 @@ class ResultSet(object):
             # be consistent with other bandwidth measurements
             if 'SERIES_META' in obj['metadata']:
                 for k, v in obj['metadata']['SERIES_META'].items():
-                    if 'MEAN_VALUE' in v and v['UNITS'] == "bits/s":
+                    if 'MEAN_VALUE' in v and v.get('UNITS') == "bits/s":
                         logger.debug("Converting MEAN_VALUE units for series "
                                      "'%s' from bit/s to Mbits/s", k)
                         converted += 1
