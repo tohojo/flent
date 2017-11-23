@@ -1286,7 +1286,7 @@ class IperfCsvRunner(ProcessRunner):
 
         self.command = self.find_binary(self.host, self.interval, self.length,
                                         self.ip_version, local_bind,
-                                        self.no_delay, self.upd, self.bw)
+                                        self.no_delay, self.udp, self.bw)
         super(IperfCsvRunner, self).check()
 
     def find_binary(self, host, interval, length, ip_version, local_bind=None,
