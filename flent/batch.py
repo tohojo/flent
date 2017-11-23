@@ -43,7 +43,7 @@ except ImportError:
 
 from flent import aggregators, formatters, resultset, loggers
 from flent.metadata import record_metadata, record_postrun_metadata
-from flent.util import clean_path, format_date
+from flent.util import clean_path, format_date, token_split
 from flent.settings import parser as SETTINGS_PARSER
 
 # Python2/3 compatibility
@@ -176,7 +176,7 @@ class BatchRunner(object):
     def commands_for(self, batch, settings=None):
         if 'commands' not in batch:
             return []
-        cmdnames = [i.strip() for i in batch['commands'].split(',')]
+        cmdnames = [i.strip() for i in token_split(batch['commands'])]
         commands = OrderedDict()
 
         while cmdnames:
@@ -194,7 +194,7 @@ class BatchRunner(object):
 
             # Commands can specify extra commands to run; expand those, use the
             # dictionary to prevent duplicates
-            extra = [i.strip() for i in cmd.get('extra_commands', '').split(',')
+            extra = [i.strip() for i in token_split(cmd.get('extra_commands', ''))
                      if i.strip()]
             for e in reversed(extra):
                 cmdnames.insert(0, e)
@@ -313,7 +313,7 @@ class BatchRunner(object):
         for k in batch.keys():
             if k.startswith("for_"):
                 argset = []
-                for a in batch[k].split(','):
+                for a in token_split(batch[k]):
                     a = a.strip().lower()
                     matches = [arg for arg in self.args if fnmatch(arg, a)]
                     if not matches:

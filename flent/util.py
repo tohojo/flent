@@ -28,6 +28,7 @@ import gzip
 import io
 import os
 import re
+import shlex
 import socket
 import time
 
@@ -485,12 +486,12 @@ def float_pair(value):
 
 def keyval(value):
     ret = {}
-    for p in value.split(";"):
+    for p in token_split(value, ";"):
         p = p.strip()
         if not p:
             continue
         try:
-            k, v = p.split('=', 1)
+            k, v = token_split(p, '=')
             ret.update({k.strip(): v.strip()})
         except ValueError:
             raise argparse.ArgumentTypeError(
@@ -507,9 +508,19 @@ def keyval_int(value):
 
 def comma_list(value):
     try:
-        return [v.strip() for v in value.split(",")]
+        return [v.strip() for v in token_split(value)]
     except ValueError:
         raise argparse.ArgumentTypeError("Unable to split into list.")
+
+
+def token_split(value, split_tokens=',;'):
+    """Split VALUE on the tokens given in SPLIT_TOKENS, while
+    avoiding splitting of quoted strings"""
+
+    lex = shlex.shlex(value, posix=True)
+    lex.whitespace_split = True
+    lex.whitespace = split_tokens
+    return list(lex)
 
 
 class ArgParam(object):

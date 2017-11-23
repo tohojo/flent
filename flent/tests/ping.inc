@@ -3,16 +3,22 @@
 # Mixin include file to add extra hosts to ping
 
 
-PING_HOSTS=TEST_PARAMETERS.get('ping_hosts')
-PING_LOCAL_BINDS=TEST_PARAMETERS.get('ping_local_binds')
-if PING_LOCAL_BINDS:
-    PING_LOCAL_BINDS = PING_LOCAL_BINDS.split(",")
+PING_HOSTS=get_test_parameter('ping_hosts', default=[], split=True)
+PING_LOCAL_BINDS=get_test_parameter('ping_local_binds', default=[], split=True)
+
+for host, local_bind in zip_longest(PING_HOSTS, PING_LOCAL_BINDS):
+    if not host:
+        break
+    DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'ip_version': IP_VERSION,
+                                                     'interval': STEP_SIZE,
+                                                     'length': TOTAL_LENGTH,
+                                                     'host': host,
+                                                     'local_bind': local_bind,
+                                                     'units': 'ms',
+                                                     'id': host,
+                                                     'runner': 'ping'}
+
 if PING_HOSTS:
-    for i,host in enumerate(PING_HOSTS.split(",")):
-        local_bind = PING_LOCAL_BINDS[i] if PING_LOCAL_BINDS else None
-        DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'ip_version': IP_VERSION, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH,
-                                                         'host': host, 'local_bind': local_bind, 'units': 'ms', 'id': host,
-                                                         'runner': 'ping'}
 
     PLOTS['ping_extra'] = {'description': 'Extra ping hosts',
                     'type': 'timeseries',

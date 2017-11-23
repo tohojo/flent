@@ -38,7 +38,8 @@ except ImportError:
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent.loggers import get_logger
-from flent.util import FuncAction, Update, keyval, keyval_int, ArgParser
+from flent.util import FuncAction, Update, keyval, keyval_int, ArgParser, \
+    token_split
 from flent.plotters import add_plotting_args
 from flent import loggers, util, resultset, runners
 
@@ -568,7 +569,7 @@ class Settings(argparse.Namespace):
                 if isinstance(val, dict) and k in vals:
                     vals[k].update(val)
                 elif parser.is_list(k):
-                    vals[k] = [t(i.strip()) for i in v.split(",")]
+                    vals[k] = [t(i.strip()) for i in token_split(v)]
                 else:
                     vals[k] = val
 

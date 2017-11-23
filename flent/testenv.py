@@ -27,8 +27,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from itertools import cycle, islice
 
-from flent import util, runners
-from flent.util import Glob
+from flent.util import Glob, token_split
 from flent.build_info import DATA_DIR
 from flent.loggers import get_logger
 
@@ -142,7 +141,7 @@ class TestEnvironment(object):
         try:
             ret = self.env['TEST_PARAMETERS'][name]
             if split:
-                ret = ret.split(",")
+                ret = token_split(ret)
             return ret
         except KeyError:
             if default is not _no_default:

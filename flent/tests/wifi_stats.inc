@@ -3,15 +3,15 @@
 # Mixin include file to add wifi stats to a test
 
 
-WIFI_STATS_HOSTS=TEST_PARAMETERS.get('wifi_stats_hosts')
-WIFI_STATS_IFACES=TEST_PARAMETERS.get('wifi_stats_interfaces')
-WIFI_STATS_STATIONS=TEST_PARAMETERS.get('wifi_stats_stations')
+WIFI_STATS_HOSTS=get_test_parameter('wifi_stats_hosts', default=[], split=True)
+WIFI_STATS_IFACES=get_test_parameter('wifi_stats_interfaces', default=[], split=True)
+WIFI_STATS_STATIONS=get_test_parameter('wifi_stats_stations', default=[], split=True)
 if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
-    for host,iface in zip(WIFI_STATS_HOSTS.split(","), WIFI_STATS_IFACES.split(",")):
+    for host, iface in zip(WIFI_STATS_HOSTS, WIFI_STATS_IFACES):
         DATA_SETS['wifi_stats_%s' % host] = {'interface': iface, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH, 'host':
-                                             host, 'stations': WIFI_STATS_STATIONS.split(','), 'units': 'misc', 'id':
+                                             host, 'stations': WIFI_STATS_STATIONS, 'units': 'misc', 'id':
                                              host, 'runner': 'wifi_stats'}
-        for station in WIFI_STATS_STATIONS.split(","):
+        for station in WIFI_STATS_STATIONS:
             DATA_SETS['wifi_stats_%s::airtime_rx::%s' % (host,station)] = {'units': 'us',
                                                                            'runner': 'null', 'id': "%s::%s" % (host, station), 'parent_id' : host}
             DATA_SETS['wifi_stats_%s::airtime_tx::%s' % (host,station)] = {'units': 'us',
