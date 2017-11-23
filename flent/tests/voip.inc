@@ -1,9 +1,12 @@
 ## -*- mode: python; coding: utf-8 -*-
 
-DATA_SETS['VoIP']                 = {'test_args': 'VoIP', 'length': VOIP_LENGTH, 'host': VOIP_HOST,
-                                     'local_bind': VOIP_LOCAL_BIND, 'duration': VOIP_LENGTH, 'interval':
-                                     STEP_SIZE, 'units': 'Kbps', 'control_host': VOIP_CONTROL_HOST, 'runner':
-                                     'ditg'}
+DATA_SETS['VoIP']                 = {'length': VOIP_LENGTH,
+                                     'host': VOIP_HOST,
+                                     'local_bind': VOIP_LOCAL_BIND,
+                                     'interval': STEP_SIZE,
+                                     'units': 'Kbps',
+                                     'control_host': VOIP_CONTROL_HOST,
+                                     'runner': 'voip'}
 DATA_SETS['VoIP::bitrate']        = {'units': 'Kbits/s', 'runner': 'null'}
 DATA_SETS['VoIP::delay']          = {'units': 'ms', 'runner': 'null'}
 DATA_SETS['VoIP::jitter']         = {'units': 'ms', 'runner': 'null'}

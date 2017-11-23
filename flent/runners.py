@@ -287,11 +287,25 @@ class DelegatingRunner(RunnerBase):
 
     metadata = property(get_metadata, set_metadata)
 
+    def _combine(self, vals):
+        if not vals:
+            return vals
+
+        if hasattr(vals[0], 'keys'):
+            r = {}
+            for v in vals:
+                if v:
+                    r.update(v)
+        else:
+            r = []
+            for v in vals:
+                if v:
+                    r.extend(v)
+
+        return r
+
     def get_result(self):
-        res = []
-        for c in self._child_runners:
-            res.extend(c.result)
-        return res
+        return self._combine([c.result for c in self._child_runners])
 
     def set_result(self, val):
         pass
@@ -585,7 +599,7 @@ class DitgRunner(ProcessRunner):
                     'bitrate': transformers.identity,
                     'loss': transformers.identity}
 
-    def __init__(self, test_args, length, host, duration, interval,
+    def __init__(self, test_args, host, length, interval,
                  local_bind=None, control_host=None, **kwargs):
         super(DitgRunner, self).__init__(**kwargs)
 
@@ -604,19 +618,23 @@ class DitgRunner(ProcessRunner):
         self.test_args = test_args
         self.length = length
         self.host = host
-        self.duration = duration
         self.interval = interval
         self.local_bind = local_bind
 
     def check(self):
         try:
+            # We want to request a test that is long enough to keep the server
+            # alive for the duration of the whole test, even though we may not
+            # start ITGSend until after a delay
+            length = max(self.length, self.settings.TOTAL_LENGTH)
+
             interval = int(self.interval * 1000)
             hm = hmac.new(self.ditg_secret.encode(
                 'UTF-8'), digestmod=hashlib.sha256)
-            hm.update(str(self.duration).encode('UTF-8'))
+            hm.update(str(length).encode('UTF-8'))
             hm.update(str(interval).encode('UTF-8'))
-            params = self.proxy.request_new_test(
-                self.duration, interval, hm.hexdigest(), True)
+            params = self.proxy.request_new_test(length, interval,
+                                                 hm.hexdigest(), True)
             if params['status'] != 'OK':
                 if 'message' in params:
                     raise RunnerCheckError(
@@ -682,7 +700,7 @@ class DitgRunner(ProcessRunner):
         # sometimes it runs amok and outputs megabytes of erroneous data. So, if
         # the length of the data is more than ten times the expected value,
         # abort rather than try to process the data.
-        if len(data) > (self.duration / self.interval) * 500:
+        if len(data) > (self.length / self.interval) * 500:
             self.err += "D-ITG output too much data (%d bytes).\n" % len(data)
             return results
 
@@ -1344,13 +1362,17 @@ class IrttRunner(ProcessRunner):
     _irtt = {}
 
     def __init__(self, host, length, interval=None, ip_version=None,
-                 local_bind=None, marking=None, **kwargs):
+                 local_bind=None, marking=None, multi_results=False,
+                 sample_freq=0,
+                 **kwargs):
         self.host = host
         self.interval = interval
         self.length = length
         self.ip_version = ip_version
         self.local_bind = local_bind
         self.marking = marking
+        self.multi_results = multi_results
+        self.sample_freq = sample_freq
         super(IrttRunner, self).__init__(**kwargs)
 
     # irtt outputs all durations in nanoseconds
@@ -1361,7 +1383,7 @@ class IrttRunner(ProcessRunner):
         return value/10**9
 
     def parse(self, output, error=""):
-        result = []
+        result = {'rtt': [], 'delay': [], 'jitter': [], 'loss': []}
         raw_values = []
         try:
             data = json.loads(output)
@@ -1379,6 +1401,8 @@ class IrttRunner(ProcessRunner):
         self.metadata['PACKET_LOSS_RATE'] = (data['stats']['packet_loss_percent']
                                              / 100.0)
 
+        next_sample = 0
+        lost = 0
         for pkt in data['round_trips']:
             dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
                   'seq': pkt['seqno']}
@@ -1392,16 +1416,30 @@ class IrttRunner(ProcessRunner):
                     dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
                 except KeyError:
                     pass
-                result.append([dp['t'], dp['val']])
+
+                if dp['t'] >= next_sample:
+                    result['rtt'].append([dp['t'], dp['val']])
+                    # delay and jitter are for compatibility with the D-ITG VoIP
+                    # mode
+                    result['delay'].append([dp['t'], dp['owd_up']])
+                    result['jitter'].append([dp['t'],
+                                             abs(dp.get('ipdv_up', 0))])
+                    result['loss'].append([dp['t'], lost])
+                    lost = 0
+                    next_sample = dp['t'] + self.sample_freq
             else:
                 lost_dir = pkt['lost'].replace('true_', '')
                 dp['lost'] = True
                 dp['lost_dir'] = lost_dir or None
+                lost += 1
 
             raw_values.append(dp)
 
         self.raw_values = raw_values
-        return result
+
+        if self.multi_results:
+            return result
+        return result['rtt']
 
     def check(self):
 
@@ -1484,6 +1522,28 @@ class UdpRttRunner(DelegatingRunner):
                            **dict(self.runner_args, test='UDP_RR'))
 
         super(UdpRttRunner, self).check()
+
+
+class VoipRunner(DelegatingRunner):
+
+    def check(self):
+        try:
+            self.add_child(IrttRunner,
+                           **dict(self.runner_args,
+                                  multi_results=True,
+                                  sample_freq=self.runner_args['interval'],
+                                  # interval and data size to emulate G711 VoIP
+                                  # ref.: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=SIP_CALL_RTP_G711
+                                  interval=0.02,
+                                  data_length=172))
+            logger.debug("VoIP test: Using irtt")
+        except RunnerCheckError as e:
+            logger.debug("VoIP test: Cannot use irtt runner (%s). "
+                         "Using D-ITG", e)
+            self.add_child(DitgRunner,
+                           **dict(self.runner_args, test_args='VoIP'))
+
+        super(VoipRunner, self).check()
 
 
 class SsRunner(ProcessRunner):
