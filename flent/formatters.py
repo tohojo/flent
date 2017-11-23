@@ -296,25 +296,32 @@ class SummaryFormatter(Formatter):
 
             for s in sorted(r.series_names):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
-                d = [i for i in r.series(s) if i is not None]
+                try:
+                    d = [i[1] for i in r.raw_series(s) if i[1] is not None]
+                except KeyError:
+                    d = None
 
-                median = mean = None
+                if not d:
+                    d = [i for i in r.series(s) if i is not None]
 
-                if s in m and 'MEAN_VALUE' in m[s]:
-                    mean = m[s]['MEAN_VALUE']
-                elif not d:
+                md = m.get(s, {})
+
+                units = (md.get('UNITS') or
+                         self.settings.DATA_SETS.get(s, {}).get('units', ''))
+
+                mean = md.get('MEAN_VALUE')
+                median = md.get('RTT_MEDIAN') if units == 'ms' else None
+
+                if not mean and not d:
                     self.write("No data.\n")
                     continue
 
-                units = self.settings.DATA_SETS[s]['units'] if s in \
-                    self.settings.DATA_SETS else ''
-
                 if d and self.np is not None:
-                    mean = self.np.mean(d) if not mean else mean
-                    median = self.np.median(d)
+                    mean = mean or self.np.mean(d)
+                    median = median or self.np.median(d)
                 elif d:
-                    mean = sum(d) / len(d) if not mean else mean
-                    median = sorted(d)[len(d) // 2]
+                    mean = mean or sum(d) / len(d)
+                    median = median or sorted(d)[len(d) // 2]
 
                 if mean and units == 'bytes':
                     factor, units = format_bytes(max(mean, median))
