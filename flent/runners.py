@@ -1363,8 +1363,7 @@ class IrttRunner(ProcessRunner):
 
     def __init__(self, host, length, interval=None, ip_version=None,
                  local_bind=None, marking=None, multi_results=False,
-                 sample_freq=0,
-                 **kwargs):
+                 sample_freq=0, data_size=None, **kwargs):
         self.host = host
         self.interval = interval
         self.length = length
@@ -1373,6 +1372,7 @@ class IrttRunner(ProcessRunner):
         self.marking = marking
         self.multi_results = multi_results
         self.sample_freq = sample_freq
+        self.data_size = data_size
         super(IrttRunner, self).__init__(**kwargs)
 
     # irtt outputs all durations in nanoseconds
@@ -1400,6 +1400,9 @@ class IrttRunner(ProcessRunner):
         self.metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
         self.metadata['PACKET_LOSS_RATE'] = (data['stats']['packet_loss_percent']
                                              / 100.0)
+        self.metadata['SEND_RATE'] = data['stats']['send_rate']['bps'] / 10**6
+        self.metadata['RECEIVE_RATE'] = (data['stats']['receive_rate']['bps']
+                                         / 10**6)
 
         next_sample = 0
         lost = 0
@@ -1495,17 +1498,24 @@ class IrttRunner(ProcessRunner):
         else:
             ip_version = ""
 
+        if self.data_size is not None:
+            data_size = "-l {}".format(self.data_size)
+        else:
+            data_size = ""
+
         self.command = "{binary} client -o - -fill rand -fillall -qq " \
                        "-d {length}s -i {interval}s {ip_version} {marking} " \
-                       "{local_bind} {host}".format(
+                       "{local_bind} {data_size} {host}".format(
                            binary=irtt,
                            length=self.length,
                            interval=self.interval or self.settings.STEP_SIZE,
                            host=self.host,
                            ip_version=ip_version,
                            local_bind=local_bind,
+                           data_size=data_size,
                            marking=marking)
 
+        self.units = 'ms'
         super(IrttRunner, self).check()
 
 
@@ -1535,7 +1545,7 @@ class VoipRunner(DelegatingRunner):
                                   # interval and data size to emulate G711 VoIP
                                   # ref.: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=SIP_CALL_RTP_G711
                                   interval=0.02,
-                                  data_length=172))
+                                  data_size=172))
             logger.debug("VoIP test: Using irtt")
         except RunnerCheckError as e:
             logger.debug("VoIP test: Cannot use irtt runner (%s). "
