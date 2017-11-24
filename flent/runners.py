@@ -1431,7 +1431,7 @@ class IrttRunner(ProcessRunner):
                     lost_dir = pkt['lost'].replace('true_', '')
                     dp['lost'] = True
                     dp['lost_dir'] = lost_dir or None
-                    dp['send_time'] = self._to_s(
+                    dp['t'] = self._to_s(
                         pkt['timestamps']['client']['send']['wall'])
                     lost += 1
 
