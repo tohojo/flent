@@ -265,7 +265,7 @@ class ResultSet(object):
 
     def raw_series(self, name, absolute=False, raw_key=None):
         if name not in self.raw_values:
-            raise KeyError()
+            raise KeyError(name)
 
         if raw_key is None:
             raw_key = 'val'
@@ -274,8 +274,8 @@ class ResultSet(object):
             self._calculate_t0()
 
         for i in self.raw_values[name]:
-            x = i['t'] if absolute else i['t'] - self.t0
             try:
+                x = i['t'] if absolute else i['t'] - self.t0
                 yield x, i[raw_key]
             except KeyError:
                 continue
