@@ -1424,7 +1424,7 @@ class IrttRunner(ProcessRunner):
                       'seq': pkt['seqno']}
             except KeyError as e:
                 logger.warning("Unable to get packet timestamp and seqno: %s", e,
-                               output=str(pkt))
+                               extra={'output': str(pkt)})
                 continue
             if pkt['lost'] == 'false':
                 dp['val'] = self._to_ms(pkt['delay']['rtt'])
