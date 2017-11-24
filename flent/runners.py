@@ -1419,8 +1419,13 @@ class IrttRunner(ProcessRunner):
         next_sample = 0
         lost = 0
         for pkt in data['round_trips']:
-            dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
-                  'seq': pkt['seqno']}
+            try:
+                dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
+                      'seq': pkt['seqno']}
+            except KeyError as e:
+                logger.warning("Unable to get packet timestamp and seqno: %s", e,
+                               output=str(pkt))
+                continue
             if pkt['lost'] == 'false':
                 dp['val'] = self._to_ms(pkt['delay']['rtt'])
                 dp['owd_up'] = self._to_ms(pkt['delay']['send'])
