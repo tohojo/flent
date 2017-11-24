@@ -602,6 +602,11 @@ class RawSeqLossReducer(RawReducer):
         key = series['data']
         if '::' in key:
             key = key.split("::")[0]
+
+        smeta = resultset.meta('SERIES_META').get(key)
+        if smeta and 'PACKET_LOSS_RATE' in smeta:
+            return smeta['PACKET_LOSS_RATE']
+
         try:
             data = self._get_series(resultset, key, ensure='seq')
             seqs = [d['seq'] for d in data if not d.get('lost')]
@@ -615,8 +620,7 @@ class MosReducer(RawReducer):
     filter_none = False
     numpy_req = True
 
-    def reduce(self, resultset, series, data=None):
-        key = series['data']
+    def _calc_delay_loss(self, resultset, key):
         data = self._get_series(resultset, key)
         if not data:
             return None
@@ -626,16 +630,41 @@ class MosReducer(RawReducer):
         last_delay = -1
         last_seq = -1
         for d in data:
-            if last_seq > -1 and d['seq'] - last_seq > 1:
+            if d.get('lost'):
                 loss += 1
+                continue
+            if 'seq' not in d:
+                continue
+
+            if last_seq > -1 and d['seq'] - last_seq > 1:
+                loss += d['seq'] - last_seq - 1
+
             last_seq = d['seq']
-            if last_delay > -1:
-                jitter_samples.append(abs(last_delay - d['val']))
-            last_delay = d['val']
-            delay_samples.append(d['val'])
+            dval = d.get('owd_up', d['val'])
+            delay_samples.append(dval)
+
+            if 'ipdv_up' in d:
+                jitter_samples.append(abs(d['ipdv_up']))
+            elif last_delay > -1:
+                jitter_samples.append(abs(last_delay - dval))
+
+            last_delay = dval
 
         delay = np.mean(delay_samples) + 2 * np.mean(jitter_samples)
         lossrate = loss / len(data)
+
+        return delay, lossrate
+
+    def reduce(self, resultset, series, data=None):
+        key = series['data']
+
+        smeta = resultset.meta('SERIES_META').get(key)
+        if smeta and 'OWD_UP_MEAN' in smeta:
+            delay = smeta['OWD_UP_MEAN'] + 2 * smeta['IPDV_UP_MEAN']
+            lossrate = smeta['PACKET_LOSS_RATE']
+        else:
+            delay, lossrate = self._calc_delay_loss(resultset, key)
+
         mos = mos_score(delay, lossrate)
         return mos
 
