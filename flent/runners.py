@@ -108,7 +108,7 @@ class RunnerBase(object):
 
     def __init__(self, name, settings, idx=None, start_event=None,
                  finish_event=None, kill_event=None, parent=None,
-                 watchdog_timer=None, data_transform=None, **kwargs):
+                 watchdog_timer=None, **kwargs):
         super(RunnerBase, self).__init__()
         self.name = name
         self.settings = settings
@@ -134,11 +134,6 @@ class RunnerBase(object):
 
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
         self.runner_args = kwargs
-
-        if data_transform and hasattr(transformers, data_transform):
-            self._data_transform = getattr(transformers, data_transform)
-        else:
-            self._data_transform = None
 
     def __getstate__(self):
         state = {}
@@ -245,10 +240,6 @@ class RunnerBase(object):
             return self._raw_values
 
         vals = list(self._raw_values)
-        if self._data_transform:
-            for v in vals:
-                if 'val' in v:
-                    v['val'] = self._data_transform(v['val'])
 
         for c in self._child_runners:
             vals.extend(c.raw_values)
@@ -258,16 +249,6 @@ class RunnerBase(object):
         self._raw_values = val
 
     raw_values = property(get_raw_values, set_raw_values)
-
-    def get_result(self):
-        if self._data_transform:
-            return self._data_transform(self._result)
-        return self._result
-
-    def set_result(self, val):
-        self._result = val
-
-    result = property(get_result, set_result)
 
 
 class DelegatingRunner(RunnerBase):
