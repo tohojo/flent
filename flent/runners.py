@@ -1395,6 +1395,18 @@ class IrttRunner(ProcessRunner):
         self.metadata['RTT_MEDIAN'] = self._to_ms(data['stats']['rtt']['median'])
         self.metadata['RTT_MAX'] = self._to_ms(data['stats']['rtt']['max'])
         self.metadata['RTT_MIN'] = self._to_ms(data['stats']['rtt']['min'])
+
+        self.metadata['OWD_UP_MEAN'] = self._to_ms(
+            data['stats']['send_delay']['mean'])
+        self.metadata['OWD_DOWN_MEAN'] = self._to_ms(
+            data['stats']['receive_delay']['mean'])
+        self.metadata['IPDV_MEAN'] = self._to_ms(
+            data['stats']['ipdv_round_trip']['mean'])
+        self.metadata['IPDV_UP_MEAN'] = self._to_ms(
+            data['stats']['ipdv_send']['mean'])
+        self.metadata['IPDV_DOWN_MEAN'] = self._to_ms(
+            data['stats']['ipdv_receive']['mean'])
+
         self.metadata['MEAN_VALUE'] = self.metadata['RTT_MEAN']
         self.metadata['PACKETS_SENT'] = data['stats']['packets_sent']
         self.metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
