@@ -604,7 +604,7 @@ class RawSeqLossReducer(RawReducer):
             key = key.split("::")[0]
 
         smeta = resultset.meta('SERIES_META').get(key)
-        if smeta and 'PACKET_LOSS_RATE' in smeta:
+        if smeta and 'PACKET_LOSS_RATE' in smeta and not self.cutoff:
             return smeta['PACKET_LOSS_RATE']
 
         try:
@@ -659,7 +659,7 @@ class MosReducer(RawReducer):
         key = series['data']
 
         smeta = resultset.meta('SERIES_META').get(key)
-        if smeta and 'OWD_UP_MEAN' in smeta:
+        if smeta and 'OWD_UP_MEAN' in smeta and not self.cutoff:
             delay = smeta['OWD_UP_MEAN'] + 2 * smeta['IPDV_UP_MEAN']
             lossrate = smeta['PACKET_LOSS_RATE']
         else:
