@@ -1420,40 +1420,45 @@ class IrttRunner(ProcessRunner):
         lost = 0
         for pkt in data['round_trips']:
             try:
-                dp = {'t': self._to_s(pkt['timestamps']['client']['receive']['wall']),
-                      'seq': pkt['seqno']}
+                dp = {'seq': pkt['seqno']}
+                if pkt['lost'] == 'false':
+                    dp['t'] = self._to_s(
+                        pkt['timestamps']['client']['receive']['wall'])
+
+                    dp['val'] = self._to_ms(pkt['delay']['rtt'])
+                    dp['owd_up'] = self._to_ms(pkt['delay']['send'])
+                    dp['owd_down'] = self._to_ms(pkt['delay']['receive'])
+
+                    try:
+                        dp['ipdv_up'] = self._to_ms(pkt['ipdv']['send'])
+                        dp['ipdv_down'] = self._to_ms(pkt['ipdv']['receive'])
+                        dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
+                    except KeyError:
+                        pass
+
+                    if dp['t'] >= next_sample:
+                        result['rtt'].append([dp['t'], dp['val']])
+                        # delay and jitter are for compatibility with the D-ITG
+                        # VoIP mode
+                        result['delay'].append([dp['t'], dp['owd_up']])
+                        result['jitter'].append([dp['t'],
+                                                 abs(dp.get('ipdv_up', 0))])
+                        result['loss'].append([dp['t'], lost])
+                        lost = 0
+                        next_sample = dp['t'] + self.sample_freq
+                else:
+                    lost_dir = pkt['lost'].replace('true_', '')
+                    dp['lost'] = True
+                    dp['lost_dir'] = lost_dir or None
+                    dp['send_time'] = self._to_s(
+                        pkt['timestamps']['client']['send']['wall'])
+                    lost += 1
+
+                raw_values.append(dp)
             except KeyError as e:
-                logger.warning("Unable to get packet timestamp and seqno: %s", e,
-                               extra={'output': str(pkt)})
+                logger.warning("Missing expected key in irtt output: %s",
+                               e, extra={'output': str(pkt)})
                 continue
-            if pkt['lost'] == 'false':
-                dp['val'] = self._to_ms(pkt['delay']['rtt'])
-                dp['owd_up'] = self._to_ms(pkt['delay']['send'])
-                dp['owd_down'] = self._to_ms(pkt['delay']['receive'])
-                try:
-                    dp['ipdv_up'] = self._to_ms(pkt['ipdv']['send'])
-                    dp['ipdv_down'] = self._to_ms(pkt['ipdv']['receive'])
-                    dp['ipdv'] = self._to_ms(pkt['ipdv']['rtt'])
-                except KeyError:
-                    pass
-
-                if dp['t'] >= next_sample:
-                    result['rtt'].append([dp['t'], dp['val']])
-                    # delay and jitter are for compatibility with the D-ITG VoIP
-                    # mode
-                    result['delay'].append([dp['t'], dp['owd_up']])
-                    result['jitter'].append([dp['t'],
-                                             abs(dp.get('ipdv_up', 0))])
-                    result['loss'].append([dp['t'], lost])
-                    lost = 0
-                    next_sample = dp['t'] + self.sample_freq
-            else:
-                lost_dir = pkt['lost'].replace('true_', '')
-                dp['lost'] = True
-                dp['lost_dir'] = lost_dir or None
-                lost += 1
-
-            raw_values.append(dp)
 
         self.raw_values = raw_values
 
