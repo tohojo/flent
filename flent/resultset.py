@@ -256,13 +256,6 @@ class ResultSet(object):
         self.t0 = timegm(self.metadata['T0'].timetuple(
         )) + self.metadata['T0'].microsecond / 1000000.0
 
-    def num_missing(self, name):
-        if name in self.raw_values:
-            seqnos = [i['seq'] for i in self.raw_values[name] if 'seq' in i]
-            if seqnos:
-                return 1 + max(seqnos) - len(seqnos)
-        return 0
-
     def raw_series(self, name, absolute=False, raw_key=None):
         if name not in self.raw_values:
             raise KeyError(name)
