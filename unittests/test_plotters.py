@@ -342,6 +342,8 @@ class TestGUIPlotting(unittest.TestCase):
         unittest.TestCase.__init__(self)
 
     def setUp(self):
+        if plotters.MPL_VER < (1, 4, 2):
+            self.skipTest('matplotlib too old')
         self.output_dir = tempfile.mkdtemp()
         self.settings = settings.copy()
 

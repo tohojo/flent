@@ -66,20 +66,10 @@ try:
 except NotImplementedError:
     CPU_COUNT = 1
 
+if plotters.MPL_VER < (1, 4, 2):
+    raise RuntimeError("The GUI requires matplotlib version >= 1.4.2 to work.")
 
 FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
-try:
-    import matplotlib
-    ver = tuple([int(i) for i in matplotlib.__version__.split(".")[:2]])
-    if ver < (1, 4):
-        logger.warning("Forcing fallback to Qt4 because of old matplotlib v%s.",
-                       matplotlib.__version__)
-        FORCE_QT4 = True
-    matplotlib.use("Agg")
-except ImportError:
-    raise RuntimeError("The GUI requires matplotlib.")
-
-
 try:
     if FORCE_QT4:
         raise ImportError("Force fallback to Qt4")

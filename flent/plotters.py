@@ -41,8 +41,10 @@ try:
     import matplotlib
     import numpy as np
     HAS_MATPLOTLIB = True
+    MPL_VER = tuple(map(int, matplotlib.__version__.split(".")))
 except ImportError:
     HAS_MATPLOTLIB = False
+    MPL_VER = (0, 0, 0)
 
 # Python 2/3 compatibility
 try:
