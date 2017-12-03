@@ -802,7 +802,7 @@ class Plotter(ArgParam):
         # appropriate output format based on the file name.
         if self.output == "-":
             self.size_legends()
-            if not self.gui:
+            if not self.gui and not self.in_worker:
                 logger.debug("Showing matplotlib pyplot viewer")
                 pyplot.show()
         else:

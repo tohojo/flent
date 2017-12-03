@@ -21,7 +21,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import itertools
 import os
 import shutil
 import sys
@@ -30,6 +29,7 @@ import unittest
 import warnings
 import traceback
 
+from multiprocessing import Pool
 from unittest.util import strclass
 from distutils.version import LooseVersion
 
@@ -287,7 +287,6 @@ class TestPlotting(unittest.TestCase):
         self.filename = filename
         self.fmt = fmt
         unittest.TestCase.__init__(self)
-        self._description = 'testtesttest'
 
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
@@ -297,8 +296,8 @@ class TestPlotting(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def __str__(self):
-        return "%s of %s (%s)" % (self.fmt, os.path.basename(self.filename),
-                                  strclass(self.__class__))
+        return "%s - %s (%s)" % (os.path.basename(self.filename), self.fmt,
+                                 strclass(self.__class__))
 
     @prefork
     def runTest(self):
@@ -315,7 +314,7 @@ class TestPlotting(unittest.TestCase):
                     self.output_dir, "%s.%s" % (p, self.fmt))
                 formatter = formatters.new(self.settings)
                 formatter.format([r])
-                if not formatter.verify() and not p in PLOTS_MAY_FAIL:
+                if not formatter.verify() and p not in PLOTS_MAY_FAIL:
                     raise self.failureException(
                         "Verification of plot '%s' failed" % p)
             except self.failureException:
@@ -327,13 +326,54 @@ class TestPlotting(unittest.TestCase):
                 raise new_exc
 
 
+def initfunc():
+    plotters.init_matplotlib("-", False, True)
+
+
+def plot_one(settings, plot, results):
+    settings.PLOT = plot
+    return plotters.draw_worker(settings, [results])
+
+
+class TestGUIPlotting(unittest.TestCase):
+
+    def __init__(self, filename):
+        self.filename = filename
+        unittest.TestCase.__init__(self)
+
+    def setUp(self):
+        self.output_dir = tempfile.mkdtemp()
+        self.settings = settings.copy()
+
+    def tearDown(self):
+        shutil.rmtree(self.output_dir)
+
+    def __str__(self):
+        return "%s - GUI (%s)" % (os.path.basename(self.filename),
+                                  strclass(self.__class__))
+
+    @prefork
+    def runTest(self):
+        pool = Pool(initializer=initfunc)
+        results = resultset.load(self.filename)
+        self.settings.update(results.meta())
+        self.settings.load_test(informational=True)
+        for p in self.settings.PLOTS.keys():
+            plot = pool.apply(plot_one, (self.settings, p, results))
+            if not plot.verify() and p not in PLOTS_MAY_FAIL:
+                raise self.failureException(
+                    "Verification of plot '%s' failed" % p)
+
+
 dirname = os.path.join(os.path.dirname(__file__), "test_data")
 output_formats = ['svg', 'pdf', 'png']
 plot_suite = unittest.TestSuite()
-for fname, fmt in itertools.product(os.listdir(dirname), output_formats):
+for fname in os.listdir(dirname):
     if not fname.endswith(resultset.SUFFIX):
         continue
-    plot_suite.addTest(TestPlotting(os.path.join(dirname, fname), fmt))
+    plot_suite.addTest(TestGUIPlotting(os.path.join(dirname, fname)))
+    for fmt in output_formats:
+        plot_suite.addTest(TestPlotting(os.path.join(dirname, fname), fmt))
 
 
 test_suite = unittest.TestSuite(
