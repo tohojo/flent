@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import io
 import math
+import os
 import re
 import warnings
 
@@ -172,6 +173,9 @@ def init_matplotlib(output, use_markers, load_rc):
         else:
             raise RuntimeError(
                 "Unrecognised file format for output '%s'" % output)
+
+    elif not os.getenv("DISPLAY"):
+        matplotlib.use("agg")
 
     from matplotlib import pyplot
 

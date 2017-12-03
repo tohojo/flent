@@ -360,6 +360,7 @@ class TestGUIPlotting(unittest.TestCase):
         results = resultset.load(self.filename)
         self.settings.update(results.meta())
         self.settings.load_test(informational=True)
+        plotters.init_matplotlib("-", False, True)
         for p in self.settings.PLOTS.keys():
             plot = pool.apply(plot_one, (self.settings, p, results))
             if not plot.verify() and p not in PLOTS_MAY_FAIL:
