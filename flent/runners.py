@@ -1477,9 +1477,9 @@ class IrttRunner(ProcessRunner):
                     '--timeouts=200ms,300ms,400ms']
 
             if self.local_bind:
-                args.extend(["--local={}".format(self.local_bind)])
+                args.append("--local={}".format(self.local_bind))
             elif self.settings.LOCAL_BIND:
-                args.extend(["--local={}".format(self.settings.LOCAL_BIND[0])])
+                args.append("--local={}".format(self.settings.LOCAL_BIND[0]))
 
             if self.ip_version is not None:
                 args.append("-{}".format(self.ip_version))
