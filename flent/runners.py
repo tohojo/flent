@@ -1474,12 +1474,12 @@ class IrttRunner(ProcessRunner):
                                        "Please upgrade to irtt v0.9+." % irtt)
 
             args = [irtt, 'client', '-n', '-Q',
-                    '--timeouts', '200ms,300ms,400ms']
+                    '--timeouts=200ms,300ms,400ms']
 
             if self.local_bind:
-                args.extend(['--local', self.local_bind])
+                args.append("--local={}".format(self.local_bind))
             elif self.settings.LOCAL_BIND:
-                args.extend(['--local', self.settings.LOCAL_BIND[0]])
+                args.append("--local={}".format(self.settings.LOCAL_BIND[0]))
 
             if self.ip_version is not None:
                 args.append("-{}".format(self.ip_version))
@@ -1497,16 +1497,16 @@ class IrttRunner(ProcessRunner):
         if self.marking is not None:
             try:
                 mk = self.marking.split(",")[0]
-                marking = "--dscp {}".format(self.marking_map[mk])
+                marking = "--dscp={}".format(self.marking_map[mk])
             except (AttributeError, KeyError):
-                marking = "--dscp {}".format(marking)
+                marking = "--dscp={}".format(marking)
         else:
             marking = ""
 
         if self.local_bind:
-            local_bind = "--local {}".format(self.local_bind)
+            local_bind = "--local={}".format(self.local_bind)
         elif self.settings.LOCAL_BIND:
-            local_bind = "--local {}".format(self.settings.LOCAL_BIND[0])
+            local_bind = "--local={}".format(self.settings.LOCAL_BIND[0])
         else:
             local_bind = ""
 
@@ -1520,7 +1520,7 @@ class IrttRunner(ProcessRunner):
         else:
             data_size = ""
 
-        self.command = "{binary} client -o - --fill rand -Q " \
+        self.command = "{binary} client -o - --fill=rand -Q " \
                        "-d {length}s -i {interval}s {ip_version} {marking} " \
                        "{local_bind} {data_size} {host}".format(
                            binary=irtt,
