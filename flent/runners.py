@@ -561,6 +561,26 @@ class ProcessRunner(RunnerBase, threading.Thread):
 
         return float(output.split()[-1].strip())
 
+    def test_run(self, args, kill=False, errmsg=None):
+            proc = subprocess.Popen(args,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
+            if kill:
+                time.sleep(0.1)
+                proc.kill()
+
+            out, err = proc.communicate()
+            if hasattr(out, 'decode'):
+                out = out.decode(ENCODING)
+            if hasattr(err, 'decode'):
+                err = err.decode(ENCODING)
+
+            if proc.returncode != 0 and errmsg:
+                raise RunnerCheckError(errmsg.format(err=err))
+
+            return out, err
+
 
 DefaultRunner = ProcessRunner
 
@@ -893,18 +913,14 @@ class NetperfDemoRunner(ProcessRunner):
             # of having netperf attempt a connection to localhost, which can
             # stall, so we kill the process almost immediately.
 
-            proc = subprocess.Popen([netperf, '-l', '1', '-D', '-0.2',
-                                     '--', '-e', '1'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
             # should be enough time for netperf to output any error messages
-            time.sleep(0.1)
-            proc.kill()
-            out, err = proc.communicate()
-            if "Demo Mode not configured" in str(out):
+            out, err = self.test_run([netperf, '-l', '1', '-D', '-0.2',
+                                      '--', '-e', '1'], kill=True)
+
+            if "Demo Mode not configured" in out:
                 raise RunnerCheckError("%s does not support demo mode." % netperf)
 
-            if "invalid option -- '0'" in str(err):
+            if "invalid option -- '0'" in err:
                 raise RunnerCheckError(
                     "%s does not support accurate intermediate time reporting. "
                     "You need netperf v2.6.0 or newer." % netperf)
@@ -912,7 +928,7 @@ class NetperfDemoRunner(ProcessRunner):
             self.netperf['executable'] = netperf
             self.netperf['-e'] = False
 
-            if "netperf: invalid option -- 'e'" not in str(err):
+            if "netperf: invalid option -- 'e'" not in err:
                 self.netperf['-e'] = True
 
             try:
@@ -1452,28 +1468,26 @@ class IrttRunner(ProcessRunner):
         if not self._irtt:
             irtt = util.which('irtt', fail=RunnerCheckError)
 
-            args = [irtt, 'client', '-n', '-qq',
-                    '-timeouts', '200ms,300ms,400ms']
+            out, err = self.test_run([irtt, 'help', 'client'])
+            if re.search('--[a-z]', out) is None:
+                raise RunnerCheckError("%s is too old to support gnu style args. "
+                                       "Please upgrade to irtt v0.9+." % irtt)
+
+            args = [irtt, 'client', '-n', '-Q',
+                    '--timeouts=200ms,300ms,400ms']
 
             if self.local_bind:
-                args.extend(['-local', self.local_bind])
+                args.append('--local={}'.format(self.local_bind))
             elif self.settings.LOCAL_BIND:
-                args.extend(['-local', self.settings.LOCAL_BIND[0]])
+                args.append('--local={}'.format(self.settings.LOCAL_BIND[0]))
 
             if self.ip_version is not None:
                 args.append("-{}".format(self.ip_version))
 
             args.append(self.host)
 
-            proc = subprocess.Popen(args,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate()
-            if hasattr(err, 'decode'):
-                err = err.decode(ENCODING)
-
-            if proc.returncode != 0:
-                raise RunnerCheckError("Irtt connection check failed: %s" % err)
+            out, err = self.test_run(args,
+                                     errmsg="Irtt connection check failed: {err}")
 
             self._irtt['binary'] = irtt
         else:
@@ -1483,16 +1497,16 @@ class IrttRunner(ProcessRunner):
         if self.marking is not None:
             try:
                 mk = self.marking.split(",")[0]
-                marking = "-dscp {}".format(self.marking_map[mk])
+                marking = "--dscp={}".format(self.marking_map[mk])
             except (AttributeError, KeyError):
-                marking = "-dscp {}".format(marking)
+                marking = "--dscp={}".format(marking)
         else:
             marking = ""
 
         if self.local_bind:
-            local_bind = "-local {}".format(self.local_bind)
+            local_bind = "--local={}".format(self.local_bind)
         elif self.settings.LOCAL_BIND:
-            local_bind = "-local {}".format(self.settings.LOCAL_BIND[0])
+            local_bind = "--local={}".format(self.settings.LOCAL_BIND[0])
         else:
             local_bind = ""
 
@@ -1506,7 +1520,7 @@ class IrttRunner(ProcessRunner):
         else:
             data_size = ""
 
-        self.command = "{binary} client -o - -fill rand -fillall -qq " \
+        self.command = "{binary} client -o - --fill=rand -Q " \
                        "-d {length}s -i {interval}s {ip_version} {marking} " \
                        "{local_bind} {data_size} {host}".format(
                            binary=irtt,
