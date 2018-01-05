@@ -26,8 +26,12 @@ from multiprocessing import freeze_support
 
 sys.path.insert(1, os.path.dirname(__file__))
 
-from flent import run_flent
+from flent import run_flent, run_flent_gui
 
 if __name__ == "__main__":
     freeze_support()
-    sys.exit(run_flent())
+
+    if len(sys.argv) == 2 and sys.argv[1] == 'gui':
+        sys.exit(run_flent_gui())
+    else:
+        sys.exit(run_flent())

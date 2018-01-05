@@ -25,3 +25,28 @@ Quick Start
 -----------
 
 See https://flent.org/intro.html#quick-start or doc/quickstart.rst.
+
+
+Running Flent from source code
+------------------------------
+
+You can run Flent directly from source code in twp step:
+
+1. Clone GitHub repo:
+
+.. code-block:: bash
+
+  $ git clone https://github.com/tohojo/flent
+  $ cd flent
+
+2. Run Flent by scripts:
+
+.. code-block:: bash
+
+  $ python3 run-flent
+
+3. Run Flent GUI by scripts:
+
+.. code-block:: bash
+
+  $ python3 run-flent gui
