@@ -70,6 +70,7 @@ if plotters.MPL_VER < (1, 4, 2):
     raise RuntimeError("The GUI requires matplotlib version >= 1.4.2 to work.")
 else:
     import matplotlib
+    matplotlib.use("Agg")
 
 FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
 try:
