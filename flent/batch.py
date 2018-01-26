@@ -282,7 +282,6 @@ class BatchRunner(object):
                 logger.info(" args:%s rep:%02d%s", ",".join(argset), rep,
                             " (dry run)" if settings.BATCH_DRY else "")
             settings.FORMAT = 'null'
-            settings.PLOT = None
             settings.BATCH_NAME = batch_name
             settings.BATCH_TIME = batch_time
             settings.TIME = datetime.utcnow()

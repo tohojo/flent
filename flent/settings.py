@@ -179,8 +179,8 @@ parser.add_argument(
 parser.add_argument(
     "-p", "--plot",
     action="store", type=unicode, dest="PLOT",
-    help="Select which plot to output for the given test (implies -f plot). "
-    "Use the --list-plots option to see available plots.")
+    help="Select which plot to output for the given test (implies -f plot if no"
+    "formatter is selected). Use the --list-plots option to see available plots.")
 
 parser.add_argument(
     "-t", "--title-extra",
@@ -701,7 +701,7 @@ class Settings(argparse.Namespace):
         if self.REMOTE_METADATA:
             self.EXTENDED_METADATA = True
 
-        if self.PLOT is not None:
+        if self.PLOT is not None and self.FORMAT == 'default':
             self.FORMAT = 'plot'
 
         if self.BATCH_REPS is not None:
