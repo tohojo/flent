@@ -2,6 +2,37 @@
 
 Changes since v1.1.1 include:
 
+- Add support for the irtt binary (https://github.com/peteheist/irtt/)
+  for isochronous UDP latency tests. If irtt is available in $PATH, it
+  will be preferred over netperf for UDP RTT tests and over D-ITG for
+  VoIP tests. This means that UDP latency tests will no longer use more
+  bandwidth as the RTT decreases, and VoIP tests are easier to setup.
+  Many thanks to Pete Heist for writing the irtt tool.
+
+  As part of this change, a generic facility for runner preferences has
+  been added, which makes it possible to define a test in terms of
+  higher level functionality and let Flent pick the best available
+  underlying tool to run the test. For now this is only used in the
+  cases mentioned above for irtt.
+
+- Add a configurable option for overriding the colour mode for plots.
+  This makes it possible to change how colours are assigned to different
+  data series.
+
+- Improve handling of multi-value options between batch files, rc file
+  and command line. This means that multi-value options can now use both
+  comma and semicolon as separators in the batch file, and values can be
+  quoted to prevent splitting.
+
+- Drop compatibility with matplotlib versions earlier than 1.4.2. Using
+  older versions resulted in spurious errors anyway, and it is too much
+  backporting work to support them properly.
+
+- Fix batch mode logging to make sure a log file for a batch run only
+  includes log lines from that run and not previous runs.
+
+- Fix several bugs in the plotting and runner code.
+
 # Flent v1.1.1 #
 Released on 2017-11-15.
 
