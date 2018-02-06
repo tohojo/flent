@@ -37,15 +37,16 @@ from argparse import SUPPRESS
 from functools import reduce
 from itertools import cycle, islice, chain
 from collections import OrderedDict
+from distutils.version import LooseVersion
 
 try:
     import matplotlib
     import numpy as np
     HAS_MATPLOTLIB = True
-    MPL_VER = tuple(map(int, matplotlib.__version__.split(".")))
+    MPL_VER = LooseVersion(matplotlib.__version__)
 except ImportError:
     HAS_MATPLOTLIB = False
-    MPL_VER = (0, 0, 0)
+    MPL_VER = LooseVersion("0")
 
 # Python 2/3 compatibility
 try:

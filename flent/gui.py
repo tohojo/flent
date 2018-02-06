@@ -38,6 +38,7 @@ from argparse import SUPPRESS
 from datetime import datetime
 from itertools import chain
 from multiprocessing import Pool, Queue
+from distutils.version import LooseVersion
 
 from flent import util, batch, loggers, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
@@ -66,7 +67,7 @@ try:
 except NotImplementedError:
     CPU_COUNT = 1
 
-if plotters.MPL_VER < (1, 4, 2):
+if plotters.MPL_VER < LooseVersion("1.4.2"):
     raise RuntimeError("The GUI requires matplotlib version >= 1.4.2 to work.")
 else:
     import matplotlib

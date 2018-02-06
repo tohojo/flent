@@ -58,11 +58,6 @@ from flent import plotters, resultset, formatters
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
-if hasattr(plotters, 'matplotlib'):
-    matplotlib_version = LooseVersion(plotters.matplotlib.__version__)
-else:
-    matplotlib_version = LooseVersion('0')
-
 MATPLOTLIB_RC_VALUES = {
     'axes.axisbelow': True,
     'axes.color_cycle': ['#1b9e77', '#d95f02', '#7570b3', '#e7298a',
