@@ -2248,8 +2248,10 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def update_settings(self, values):
         if values['OVERRIDE_TITLE']:
             t = "%s - %s" % (self.results.meta('NAME'), values['OVERRIDE_TITLE'])
-        else:
+        elif self.results:
             t = self.results.title
+        else:
+            t = self.default_title
 
         if t != self.title:
             self.title = t
