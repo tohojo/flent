@@ -1351,10 +1351,27 @@ class IperfCsvRunner(ProcessRunner):
 
 class IrttRunner(ProcessRunner):
 
-    marking_map = {'CS0': 0,
-                   'CS1': 8,
-                   'CS5': 40,
-                   'EF': 46}
+    marking_map = {'AF11': 0x28,
+                   'AF12': 0x30,
+                   'AF13': 0x38,
+                   'AF21': 0x48,
+                   'AF22': 0x50,
+                   'AF23': 0x58,
+                   'AF31': 0x68,
+                   'AF32': 0x70,
+                   'AF33': 0x78,
+                   'AF41': 0x88,
+                   'AF42': 0x90,
+                   'AF43': 0x98,
+                   'CS0':  0x00,
+                   'CS1':  0x20,
+                   'CS2':  0x40,
+                   'CS3':  0x60,
+                   'CS4':  0x80,
+                   'CS5':  0xa0,
+                   'CS6':  0xc0,
+                   'CS7':  0xe0,
+                   'EF':   0xb8}
 
     _irtt = {}
 
@@ -1497,9 +1514,9 @@ class IrttRunner(ProcessRunner):
         if self.marking is not None:
             try:
                 mk = self.marking.split(",")[0]
-                marking = "--dscp={}".format(self.marking_map[mk])
+                marking = "--dscp={}".format(self.marking_map[mk.upper()])
             except (AttributeError, KeyError):
-                marking = "--dscp={}".format(marking)
+                marking = "--dscp={}".format(self.marking)
         else:
             marking = ""
 
