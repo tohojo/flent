@@ -2246,12 +2246,12 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             self.plotter.zoom(axis, direction)
 
     def update_settings(self, values):
-        if values['OVERRIDE_TITLE']:
-            t = "%s - %s" % (self.results.meta('NAME'), values['OVERRIDE_TITLE'])
-        elif self.results:
-            t = self.results.title
-        else:
+        if not self.results:
             t = self.default_title
+        elif values['OVERRIDE_TITLE']:
+            t = "%s - %s" % (self.results.meta('NAME'), values['OVERRIDE_TITLE'])
+        else:
+            t = self.results.title
 
         if t != self.title:
             self.title = t
