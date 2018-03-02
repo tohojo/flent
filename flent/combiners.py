@@ -551,26 +551,24 @@ class MeanZeroReducer(Reducer):
 class RawReducer(Reducer):
 
     def _get_series(self, resultset, name, ensure='val'):
-        data = resultset.raw_values[name]
-        if ensure:
-            data = [d for d in data if ensure in d]
+        data = list(resultset.raw_series(name, raw_key=ensure))
 
         if data and self.cutoff is not None:
             start, end = self.cutoff
-            min_t = min((d['t'] for d in data if 't' in d))
+            min_t = min((t for t, v in data))
             start_t = min_t + start if start else min_t - 1
             if end is not None:
                 end_t = min_t + resultset.meta("TOTAL_LENGTH") - end
-                return [d for d in data
-                        if 't' in d and d['t'] > start_t and d['t'] < end_t]
+                return [v for t, v in data
+                        if t > start_t and t < end_t]
             else:
-                return [d for d in data if 't' in d and d['t'] > start_t]
+                return [v for t, v in data if t > start_t]
 
         return data
 
     def reduce(self, resultset, series, data=None):
         key = series['data']
-        if '::' in key:
+        if '::' in key and 'raw_key' not in series:
             key = key.split("::")[0]
         raw_key = series.get("raw_key", "val")
         try:
@@ -582,11 +580,9 @@ class RawReducer(Reducer):
                 "No data points with current cutoff settings, "
                 "relaxing end cutoff.")
             self.cutoff = (self.cutoff[0], None)
-            rawdata = self._get_series(resultset, key)
+            rawdata = self._get_series(resultset, key, ensure=raw_key)
         if self.filter_none:
-            data = [d[raw_key] for d in rawdata if d[raw_key] is not None]
-        else:
-            data = [d[raw_key] for d in rawdata]
+            data = [d for d in rawdata if d is not None]
         if not data:
             return None
         return self._reduce(data)
