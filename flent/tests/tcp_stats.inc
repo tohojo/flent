@@ -21,8 +21,21 @@ PLOTS['tcp_rtt'] = {'description': 'TCP RTT statistics',
 PLOTS['tcp_rtt_cdf'] = {'description': 'TCP RTT statistics',
                         'type': 'cdf',
                         'axis_labels': ['Latency (ms)'],
-                        'parent': 'tcp_rtt',
-                        'cutoff': (DELAY,DELAY)}
+                        'parent': 'tcp_rtt'}
+
+PLOTS['tcp_rtt_box_combine'] = {'description': 'TCP RTT statistics - box combination plot',
+                                'type': 'box_combine',
+                                'series': [
+                                    {'data': glob('TCP**', exclude=['*fairness*']),
+                                     'raw_key': 'tcp_rtt',
+                                     'combine_mode': 'raw_mean',
+                                     'label': 'RTT'}]}
+
+PLOTS['tcp_rtt_bar_combine'] = {'description': 'TCP RTT statistics - bar combination plot',
+                                'type': 'bar_combine',
+                                'parent': 'tcp_rtt_box_combine'}
+
+
 PLOTS['tcp_pacing'] = {'description': 'TCP pacing rate statistics',
                     'type': 'timeseries',
                     'axis_labels': ['Mbps'],
