@@ -1628,8 +1628,8 @@ class BoxPlotter(TimeseriesPlotter):
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size + 1
 
-        if not any(all_data):
-            return
+        if not ticks:
+            return # no data
 
         for i, a in enumerate(config['axes']):
             if all_data[i]:
