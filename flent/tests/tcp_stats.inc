@@ -25,6 +25,7 @@ PLOTS['tcp_rtt_cdf'] = {'description': 'TCP RTT statistics',
 
 PLOTS['tcp_rtt_box_combine'] = {'description': 'TCP RTT statistics - box combination plot',
                                 'type': 'box_combine',
+                                'axis_labels': ['Latency (ms)'],
                                 'series': [
                                     {'data': glob('TCP**', exclude=['*fairness*']),
                                      'raw_key': 'tcp_rtt',
