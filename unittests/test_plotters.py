@@ -91,7 +91,8 @@ MATPLOTLIB_RC_VALUES = {
 }
 
 # Plots that may fail validation
-PLOTS_MAY_FAIL = set(('tcp_cwnd', 'tcp_rtt', 'tcp_rtt_cdf', 'tcp_pacing'))
+PLOTS_MAY_FAIL = set(('tcp_cwnd', 'tcp_rtt', 'tcp_rtt_cdf',
+                      'tcp_rtt_box_combine', 'tcp_rtt_bar_combine', 'tcp_pacing'))
 
 
 def setup_warnings():
