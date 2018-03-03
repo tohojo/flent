@@ -1629,10 +1629,10 @@ class BoxPlotter(TimeseriesPlotter):
             pos += group_size + 1
 
         if not ticks:
-            return # no data
+            return  # no data
 
         for i, a in enumerate(config['axes']):
-            if all_data[i]:
+            if all_data[i] is not None:
                 self._do_scaling(a, all_data[i], 0, 100,
                                  config['units'][i], allow_log=False)
 
