@@ -1749,6 +1749,9 @@ class BarPlotter(BoxPlotter):
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size + 1
 
+        if not ticks:
+            return  # no data
+
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
