@@ -1627,9 +1627,14 @@ class BoxPlotter(TimeseriesPlotter):
             config['axes'][a].axvline(
                 x=pos + group_size, color='black', linewidth=0.5, linestyle=':')
             pos += group_size + 1
+
+        if not any(all_data):
+            return
+
         for i, a in enumerate(config['axes']):
-            self._do_scaling(a, all_data[i], 0, 100,
-                             config['units'][i], allow_log=False)
+            if all_data[i]:
+                self._do_scaling(a, all_data[i], 0, 100,
+                                 config['units'][i], allow_log=False)
 
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
