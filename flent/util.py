@@ -133,7 +133,7 @@ def diff_parts(strings, sep):
     a separator and pruning parts that are identical for all strings"""
 
     parts = [s.split(sep) for s in strings]
-    np = [p for p in zip(*parts) if len(set(p)) > 1]
+    np = [p for p in zip(*parts) if len(set(p)) >= 1]
 
     return [sep.join(p) for p in zip(*np)]
 
