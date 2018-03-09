@@ -182,8 +182,12 @@ def lookup_host(hostname, version=None):
         version = socket.AF_INET6
     else:
         version = socket.AF_UNSPEC
-    hostnames = socket.getaddrinfo(hostname, None, version,
-                                   socket.SOCK_STREAM)
+    try:
+        hostnames = socket.getaddrinfo(hostname, None, version,
+                                       socket.SOCK_STREAM)
+    except Exception:
+        hostnames = None
+
     if not hostnames:
         raise RuntimeError("Found no hostnames on lookup of %s" % hostname)
 
