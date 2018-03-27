@@ -119,7 +119,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                                               'label': 'Airtime fairness',
                                               'combine_mode': 'fairness_mean'},
                                          ],
-                                         'group_by': 'groups_concat'}
+                                         'group_by': 'groups'}
     PLOTS['airtime_fairness_combine_bar'] = {'description': 'Combined airtime fairness bar plot',
                                          'type': 'bar_combine',
                                          'axis_labels': ['Fairness index'],
@@ -130,7 +130,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                                               'label': 'Airtime fairness',
                                               'combine_mode': 'fairness_mean'},
                                          ],
-                                         'group_by': 'groups_concat'}
+                                         'group_by': 'groups'}
     PLOTS['airtime_fairness_combine_tx'] = {'description': 'Combined TX airtime fairness plot',
                                             'parent': 'airtime_fairness_combine',
                                             'series': [
