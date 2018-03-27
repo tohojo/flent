@@ -1576,6 +1576,7 @@ class BoxPlotter(TimeseriesPlotter):
                 a = 0
 
             data = []
+            group_size = len(results)
             for r in results:
                 d = self.get_series(s, r, config, no_invalid=True)
 
@@ -1592,6 +1593,8 @@ class BoxPlotter(TimeseriesPlotter):
             if not data:
                 continue
 
+            group_size = len(data)
+
             if len(series) > 1 or self.print_title:
                 texts.append(config['axes'][0].text(
                     pos + group_size / 2.0 - 0.5,
@@ -1604,7 +1607,7 @@ class BoxPlotter(TimeseriesPlotter):
 
             bp = config['axes'][a].boxplot(data,
                                            positions=positions, sym="b+")
-            for j, r in enumerate(results):
+            for j, r in zip(range(group_size), results):
                 pyplot.setp(bp['boxes'][j], color=colours[j])
                 if i == 0 and group_size > 1:
                     bp['caps'][j * 2].set_label(r.label())
