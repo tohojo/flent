@@ -352,12 +352,12 @@ def get_egress_info(target, ip_version, extended):
         if 'nexthop' not in route:
             route['nexthop'] = None
 
-    if not extended:
-        for k in 'gateway', 'src', 'nexthop', 'target':
-            if k in route:
-                del route[k]
-        if route['link_params'] and 'ether' in route['link_params']:
-            del route['link_params']['ether']
+        if not extended:
+            for k in 'gateway', 'src', 'nexthop', 'target':
+                if k in route:
+                    del route[k]
+            if route['link_params'] and 'ether' in route['link_params']:
+                del route['link_params']['ether']
 
     return route or None
 
