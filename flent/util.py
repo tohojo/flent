@@ -176,6 +176,7 @@ def path_components(path):
 
 
 def lookup_host(hostname, version=None):
+    logger.debug("Looking up hostname '%s'.", hostname)
     if version == 4:
         version = socket.AF_INET
     elif version == 6:
