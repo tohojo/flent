@@ -2,6 +2,17 @@
 
 Changes since v1.2.0 include:
 
+- Fix DSCP handling for irtt flows.
+
+- Fix several crashes in the GUI.
+
+- Fix handling of empty data series and several potential crashes in the
+  plotting code.
+
+- Fix potential crash in metadata gathering and add timeout to commands.
+
+- Add several missing plots to various tests.
+
 # Flent v1.2.0 #
 Released on 2018-02-06.
 
