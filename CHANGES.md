@@ -1,4 +1,5 @@
-# Changes since latest release #
+# Flent v1.2.1 #
+Released on 2018-03-28.
 
 Changes since v1.2.0 include:
 
