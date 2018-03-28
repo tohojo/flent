@@ -30,6 +30,7 @@ from flent.loggers import get_logger
 
 logger = get_logger(__name__)
 
+TIMEOUT = 5
 INTERESTING_OFFLOADS = ['tcp-segmentation-offload',
                         'udp-fragmentation-offload',
                         'large-receive-offload',
@@ -68,6 +69,11 @@ INTERESTING_MODULES = ['cake',
                        'mac80211',
                        'cfg80211']
 
+try:
+    processerror = subprocess.SubprocessError
+except AttributeError:
+    processerror = subprocess.CalledProcessError
+
 
 class CommandRunner(object):
 
@@ -96,11 +102,17 @@ class CommandRunner(object):
         try:
             if self.hostname:
                 command = "ssh %s '%s'" % (self.hostname, command)
-            res = subprocess.check_output(command, universal_newlines=True,
-                                          shell=True, stderr=subprocess.STDOUT,
-                                          env=self.env)
+            try:
+                res = subprocess.check_output(command, universal_newlines=True,
+                                              shell=True, stderr=subprocess.STDOUT,
+                                              env=self.env, timeout=TIMEOUT)
+            except TypeError:
+                # Python 2 doesn't have timeout arg
+                res = subprocess.check_output(command, universal_newlines=True,
+                                              shell=True, stderr=subprocess.STDOUT,
+                                              env=self.env)
             return res.strip()
-        except subprocess.CalledProcessError:
+        except processerror:
             return None
 
 
@@ -110,6 +122,7 @@ __all__ = ['record_metadata']
 
 
 def record_metadata(results, extended, hostnames):
+    logger.debug("Gathering local metadata")
     m = results.meta()
     get_command_output.set_hostname(None)
     m['KERNEL_NAME'] = get_command_output("uname -s")
@@ -127,6 +140,7 @@ def record_metadata(results, extended, hostnames):
     m['REMOTE_METADATA'] = {}
 
     for h in hostnames:
+        logger.debug("Gathering remote metadata from %s", h)
         get_command_output.set_hostname(h)
         m['REMOTE_METADATA'][h] = {}
         m['REMOTE_METADATA'][h]['LOCAL_HOST'] = get_command_output("hostname")
