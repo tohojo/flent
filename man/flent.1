@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "February 06, 2018" "1.2.0-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "March 28, 2018" "1.2.0-git" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -57,10 +57,11 @@ Flent runs on Python, versions 2.7+ and 3.3+. Plotting requires a functional
 \fBmatplotlib\fP). For the interactive plot viewer, a graphical display (and
 suitably configured \fBmatplotlib\fP) is required.
 .sp
-Most tests employ the netperf benchmarking tool to run the tests. Version 2.6 or
-higher is required, and netperf must be compiled with the \fB\-\-enable\-demo\fP
-option passed to \fB\&./configure\fP\&. Some tests use iperf in addition to, or
-instead of netperf. Both tools must be available in the \fBPATH\fP\&.
+Most tests employ the \fBnetperf\fP benchmarking tool to run the tests.
+Version 2.6 or higher is required, and netperf must be compiled with the
+\fB\-\-enable\-demo\fP option passed to \fB\&./configure\fP\&. Some tests use
+iperf in addition to, or instead of netperf. Both tools must be available in the
+\fBPATH\fP\&.
 .sp
 For ICMP ping measurements, the version of ping employed must support output
 timestamping (the \-D parameter to GNU ping). This is not supported by the BSD
@@ -70,6 +71,11 @@ fping must be version 3.5 or greater. Flent will attempt to detect the presence
 of fping in the \fBPATH\fP and check for support for the \-D parameter. If
 this check is successful, \fBfping\fP will be employed for ping data,
 otherwise the system ping will be used.
+.sp
+The \fBirtt\fP tool is highly recommended for UDP measurements. See
+\fI\%https://github.com/peteheist/irtt\fP\&. Flent will automatically detect if irtt is
+available in the \fBPATH\fP and use it if it is detected. Note that the
+server component of irtt needs to be running on the target host(s) as well.
 .SH RUNNING FLENT
 .sp
 When run, flent must be supplied either (a) a test name and one or more host
@@ -85,7 +91,7 @@ and \fI\%\-H\fP switches can be used to explicitly specify the interpretation
 of an argument.
 .SS Invocation
 .sp
-\fBflent\fP [\fIoptions\fP] \fI<host|test|input file\fP …\fI>\fP
+\fBflent\fP [\fIoptions\fP] \fI<host|test|input file\fP ...\fI>\fP
 .SS General options
 .INDENT 0.0
 .TP
@@ -234,8 +240,8 @@ tests for which data files already exist will be skipped on this run. If the
 rest of the batch invocation is different from the one being resumed, results
 may not be what you want.
 .sp
-There’s a check to ensure that the generated output path is a subdirectory of
-the resume directory, and the whole run will be aborted if it isn’t.
+There\(aqs a check to ensure that the generated output path is a subdirectory of
+the resume directory, and the whole run will be aborted if it isn\(aqt.
 .UNINDENT
 .SS Test configuration options
 .sp
@@ -262,13 +268,13 @@ if it is, it must be specified as many times as there are hosts.
 .B \-\-remote\-host=idx=HOSTNAME
 A remote hostname to connect to when starting a test. The idx is the runner
 index, which is assigned sequentially to each \fIrunner\fP (and so it is \fInot\fP
-the same as the sequence of hostnames). Look for the ‘IDX’ key in SERIES_META
+the same as the sequence of hostnames). Look for the \(aqIDX\(aq key in SERIES_META
 for a test get the idx used here, but note that the idx assignment depends on
 the exact arguments to the test.
 .sp
-This works by simply prepending ‘ssh HOSTNAME’ to the runner command, so it
+This works by simply prepending \(aqssh HOSTNAME\(aq to the runner command, so it
 relies on the same binaries being in the same places on both machines, and
-won’t work for all runners.
+won\(aqt work for all runners.
 .sp
 This option can be specified multiple times to have multiple runners run on
 remote hosts.
@@ -336,7 +342,7 @@ these as their data transfer, and only for the TCP streams.
 .B \-\-socket\-stats
 Parse socket stats during test. This will capture and parse socket
 statistics for all TCP upload flows during a test, adding TCP cwnd and RTT
-values to the test data. Requires the ‘ss’ utility to be present on the
+values to the test data. Requires the \(aqss\(aq utility to be present on the
 system, and can fail if there are too many simultaneous upload flows; which
 is why this option is not enabled by default.
 .UNINDENT
@@ -358,7 +364,7 @@ figures with multiple axes.
 .TP
 .B \-I, \-\-invert\-latency\-y
 Invert latency data series axis (typically the Y\-axis), making plots show
-’better’ values upwards.
+’better\(aq values upwards.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -479,7 +485,7 @@ Exclude legend from plots.
 .TP
 .B \-\-horizontal\-legend
 Place a horizontal legend below the plot instead of a vertical one next to
-it. Doesn’t always work well if there are too many items in the legend.
+it. Doesn\(aqt always work well if there are too many items in the legend.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -490,9 +496,9 @@ Override legend title on plot.
 .TP
 .B \-\-legend\-placement=LEGEND_PLACEMENT
 Control legend placement. Enabling this option will place the legend inside
-the plot at the specified location. Can be one of ‘best’, ‘upper right’,
-‘upper left’, ‘lower left’, ‘lower right’, ‘right’, ‘center left’, ‘center
-right’, ‘lower center’, ‘upper center’ or ‘center’.
+the plot at the specified location. Can be one of \(aqbest\(aq, \(aqupper right\(aq,
+\(aqupper left\(aq, \(aqlower left\(aq, \(aqlower right\(aq, \(aqright\(aq, \(aqcenter left\(aq, \(aqcenter
+right\(aq, \(aqlower center\(aq, \(aqupper center\(aq or \(aqcenter\(aq.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -515,7 +521,7 @@ entries. This is not particularly smart, so use with care.
 .INDENT 0.0
 .TP
 .B \-\-replace\-legend=src=dest
-Replace ‘src’ with ‘dst’ in legends. Can be specified multiple times.
+Replace \(aqsrc\(aq with \(aqdst\(aq in legends. Can be specified multiple times.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -545,7 +551,7 @@ Split data sets into groups when creating box plots. Specify this option
 multiple times to define the new groups; the value of each option is the
 group name.
 .sp
-Say you’re plotting nine datasets which are really testing two variables with
+Say you\(aqre plotting nine datasets which are really testing two variables with
 three values each. In this case, it can be useful to have the box plot of the
 results be split into three parts (corresponding to the values of one
 variable) with each three boxes in each of them (corresponding to the values
@@ -569,8 +575,8 @@ supported.
 .TP
 .B \-\-override\-colour\-mode=MODE
 Override colour_mode attribute. This changes the way colours are
-assigned to bar plots. The default is ‘groups’ which assigns a separate
-colour to each group of data series. The alternative is ‘series’ which
+assigned to bar plots. The default is \(aqgroups\(aq which assigns a separate
+colour to each group of data series. The alternative is \(aqseries\(aq which
 assigns a separate colour to each series, repeating them for each data
 group.
 .UNINDENT
@@ -622,7 +628,7 @@ matplotlibrc fails and flent is inadvertently overriding rc values.
 .INDENT 0.0
 .TP
 .B \-\-no\-hover\-highlight
-Don’t highlight data series on hover in interactive plot views. Use this if
+Don\(aqt highlight data series on hover in interactive plot views. Use this if
 redrawing is too slow, or the highlighting is undesired for other reasons.
 .UNINDENT
 .INDENT 0.0
@@ -690,7 +696,7 @@ hostname.
 .TP
 .B \-\-http\-getter\-dns\-servers=DNS_SERVERS
 DNS servers to use for http\-getter lookups. Format is
-host[:port][,host[:port]]… This option will only work if libcurl supports
+host[:port][,host[:port]]... This option will only work if libcurl supports
 it (needs to be built with the ares resolver). Default is none (use the
 system resolver).
 .UNINDENT
@@ -747,7 +753,7 @@ Show usage help message and exit.
 .UNINDENT
 .SS Signals
 .sp
-Flent will abort what it is currently doing on receiving a \fBSIGINT\fP – this
+Flent will abort what it is currently doing on receiving a \fBSIGINT\fP \-\- this
 includes killing all runners, cleaning up temporary files and shutting down as
 gracefully as possible. Runners are killed with \fBSIGTERM\fP in this mode, and
 their output is discarded. If a batch run is in progress, the current test will
@@ -929,9 +935,9 @@ number of target hostnames specified for the test.
 .TP
 .B markings
 Flow markings to use for each of the flows in the \fBrtt_fair*\fP tests.
-Comma\-separated values of markings understood by Netperf (such as “CS0”).
+Comma\-separated values of markings understood by Netperf (such as "CS0").
 Only supports setting the same marking on both the upstream and downstream
-packets of each flow (so no “CS0,CS0” setting as can be used for Netperf). If
+packets of each flow (so no "CS0,CS0" setting as can be used for Netperf). If
 not set, defaults to CS0 (best effort). If set, each value corresponds to a
 flow, and any extra flows will be set to CS0.
 .UNINDENT
@@ -976,14 +982,14 @@ reproducibility of tests.
 .sp
 The batch file is parsed as an ini file, and can have three types of sections:
 batches, commands and args. Each section also has a name; type and name are
-separated with two colons. ‘Batches’ are named tests that can be selected from
-the command line, ‘commands’ are system commands to be run before or after each
-test run, and ‘args’ are used in the looping mechanism (which allows repeating
+separated with two colons. \(aqBatches\(aq are named tests that can be selected from
+the command line, \(aqcommands\(aq are system commands to be run before or after each
+test run, and \(aqargs\(aq are used in the looping mechanism (which allows repeating
 tests multiple times with different parameters).
 .sp
 Variables in sections control the operation of Flent and can be modified in
 several ways: Sections of the same type can inherit from each other and the
-variables in an ‘arg’ section will be interpolated into the batch definition on
+variables in an \(aqarg\(aq section will be interpolated into the batch definition on
 each iteration of a loop. In addition, variable contents can be substituted into
 other variables by using the ${varname} syntax. These three operations are
 resolved in this order (inheritance, arg interpolation and variable
@@ -1233,18 +1239,24 @@ For this reason, it is highly recommended to install the \fBdefusedxml\fP
 library (available at \fI\%https://pypi.python.org/pypi/defusedxml/\fP) on the host
 running the control server. The server will try to find the library on startup
 and refuse to run if it is not available, unless explicitly told otherwise.
+.sp
+Due to the hassle of using D\-ITG, it is recommended to install \fBirtt\fP
+instead and use that for VoIP tests.
 .SS Bugs
 .sp
 Under some conditions (such as severe bufferbloat), the UDP RTT measurements
 done by netperf can experience packet loss to the extent that the test aborts
 completely, which can cause missing data points for some measurement series.
-The –socket\-timeout feature can alleviate this, but requires a recent SVN
+The \-\-socket\-timeout feature can alleviate this, but requires a recent SVN
 version of netperf to work. Flent tries to detect if netperf supports this
-option and enables it for the UDP measurements if it does.
+option and enables it for the UDP measurements if it does. Using \fBirtt\fP
+for UDP measurements is a way to alleviate this; Flent will automatically detect
+the availability of irtt and use it if available.
 .sp
 Probably many other bugs. Please report any found to
-\fI\%https://github.com/tohojo/flent/issues\fP and include the output of
-\fBflent \-\-version\fP in the report.
+\fI\%https://github.com/tohojo/flent/issues\fP and include the output of \fBflent
+\-\-version\fP in the report. A debug log (as obtained with \fBflent
+\-\-log\-file\fP) is also often useful.
 .SH AUTHOR
 Toke Høiland-Jørgensen
 .SH COPYRIGHT

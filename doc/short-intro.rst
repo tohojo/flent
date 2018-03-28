@@ -27,10 +27,11 @@ Flent runs on Python, versions 2.7+ and 3.3+. Plotting requires a functional
 :py:mod:`matplotlib`). For the interactive plot viewer, a graphical display (and
 suitably configured :py:mod:`matplotlib`) is required.
 
-Most tests employ the netperf benchmarking tool to run the tests. Version 2.6 or
-higher is required, and netperf must be compiled with the :command:`--enable-demo`
-option passed to :command:`./configure`. Some tests use iperf in addition to, or
-instead of netperf. Both tools must be available in the :envvar:`PATH`.
+Most tests employ the :command:`netperf` benchmarking tool to run the tests.
+Version 2.6 or higher is required, and netperf must be compiled with the
+:command:`--enable-demo` option passed to :command:`./configure`. Some tests use
+iperf in addition to, or instead of netperf. Both tools must be available in the
+:envvar:`PATH`.
 
 For ICMP ping measurements, the version of ping employed must support output
 timestamping (the -D parameter to GNU ping). This is not supported by the BSD
@@ -41,4 +42,7 @@ of fping in the :envvar:`PATH` and check for support for the -D parameter. If
 this check is successful, :command:`fping` will be employed for ping data,
 otherwise the system ping will be used.
 
-
+The :command:`irtt` tool is highly recommended for UDP measurements. See
+https://github.com/peteheist/irtt. Flent will automatically detect if irtt is
+available in the :envvar:`PATH` and use it if it is detected. Note that the
+server component of irtt needs to be running on the target host(s) as well.

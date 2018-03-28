@@ -30,6 +30,9 @@ library (available at https://pypi.python.org/pypi/defusedxml/) on the host
 running the control server. The server will try to find the library on startup
 and refuse to run if it is not available, unless explicitly told otherwise.
 
+Due to the hassle of using D-ITG, it is recommended to install :command:`irtt`
+instead and use that for VoIP tests.
+
 Bugs
 ----
 
@@ -38,8 +41,11 @@ done by netperf can experience packet loss to the extent that the test aborts
 completely, which can cause missing data points for some measurement series.
 The --socket-timeout feature can alleviate this, but requires a recent SVN
 version of netperf to work. Flent tries to detect if netperf supports this
-option and enables it for the UDP measurements if it does.
+option and enables it for the UDP measurements if it does. Using :command:`irtt`
+for UDP measurements is a way to alleviate this; Flent will automatically detect
+the availability of irtt and use it if available.
 
 Probably many other bugs. Please report any found to
-https://github.com/tohojo/flent/issues and include the output of
-:option:`flent --version<-V>` in the report.
+https://github.com/tohojo/flent/issues and include the output of :option:`flent
+--version<-V>` in the report. A debug log (as obtained with :option:`flent
+--log-file<-L>`) is also often useful.
