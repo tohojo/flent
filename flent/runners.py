@@ -1118,7 +1118,7 @@ class PingRunner(RegexpRunner):
                 # timer to kill it in case it runs over time
                 self.watchdog_timer = length + 1
                 return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
-                    "{marking} {local_bind} {host}".format(
+                    "-t {timeout} {marking} {local_bind} {host}".format(
                         binary=fping,
                         ipver='-6' if (ip_version == 6 and
                                        not fping.endswith("6")) else "",
@@ -1126,6 +1126,13 @@ class PingRunner(RegexpRunner):
                         # since there's no timeout parameter for fping,
                         # calculate a total number of pings to send
                         count=length // interval + 1,
+                        # the timeout parameter is not the kind of timeout we
+                        # want, rather it is the time after which fping will
+                        # ignore late replies. We don't ever want to ignore late
+                        # replies, so set this to a really high value (twice the
+                        # full test length). This only affects fping v4.0+;
+                        # earlier versions will ignore -t when running in -c mode.
+                        timeout=length * 2000,
                         marking="-O {0}".format(marking) if marking else "",
                         local_bind=("-I {0}".format(local_bind)
                                     if local_bind else ""),
