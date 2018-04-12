@@ -1642,6 +1642,7 @@ class BoxPlotter(TimeseriesPlotter):
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
+        ticklabels = self._filter_labels(ticklabels)
         for i, l in enumerate(ticklabels):
             if len(l) > self._max_label_length:
                 ticklabels[i] = l[:self._max_label_length] + "..."
