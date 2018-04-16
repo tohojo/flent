@@ -175,6 +175,8 @@ class Combiner(object):
             regexps.append(self.serial_regex)
         if self.filter_prefix:
             prefix = long_substr(filenames, prefix_only=True)
+            if "-" in prefix and not prefix.endswith("-"):
+                prefix = prefix[:prefix.rfind("-")+1]
             names = [n.replace(prefix, "", 1) for n in filenames]
         else:
             names = filenames
