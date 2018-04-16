@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "March 28, 2018" "1.2.1-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "April 16, 2018" "1.2.1-git" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -919,10 +919,16 @@ specified multiple times, however.
 .INDENT 0.0
 .TP
 .B voip_control_host
+.UNINDENT
+.INDENT 0.0
+.TP
+.B voip_marking
 Similar to the ping variants above, these parameters specify a hostname that
 will receive a VoIP test. However, unlike the ping parameters, only one
 hostname can be specified for VoIP tests, and that end\-host needs to have
-D\-ITG (and the control server) running.
+either D\-ITG (and the control server) or the IRTT server running. The marking
+setting controls which DiffServ marking is applied to the VoIP flow and
+defaults to no marking being set.
 .UNINDENT
 .INDENT 0.0
 .TP

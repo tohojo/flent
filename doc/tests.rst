@@ -117,11 +117,14 @@ behave. These are:
 .. envvar:: voip_host
 .. envvar:: voip_local_bind
 .. envvar:: voip_control_host
+.. envvar:: voip_marking
 
    Similar to the ping variants above, these parameters specify a hostname that
    will receive a VoIP test. However, unlike the ping parameters, only one
    hostname can be specified for VoIP tests, and that end-host needs to have
-   D-ITG (and the control server) running.
+   either D-ITG (and the control server) or the IRTT server running. The marking
+   setting controls which DiffServ marking is applied to the VoIP flow and
+   defaults to no marking being set.
 
 .. envvar:: control_hosts
 
