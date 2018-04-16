@@ -718,8 +718,11 @@ class Plotter(ArgParam):
                 for d in Glob.expand_list(s['data'], data.keys()):
                     if 'label' in s:
                         d_id = data[d]['id'] if 'id' in data[d] else d
-                        ns.append(dict(s, data=d, id=d_id,
-                                       label='%s -- %s' % (s['label'], d_id)))
+                        if s['label']:
+                            lbl = '%s -- %s' % (s['label'], d_id)
+                        else:
+                            lbl = d_id
+                        ns.append(dict(s, data=d, id=d_id, label=lbl))
                         if 'parent_id' in data[d]:
                             ns[-1]['parent_id'] = data[d]['parent_id']
                     else:
