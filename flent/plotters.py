@@ -1567,8 +1567,7 @@ class BoxPlotter(TimeseriesPlotter):
         # The median lines are red, so filter out red from the list of colours
         colours = list(
             islice(cycle([c for c in self.colours if c != 'r']), group_size))
-        series_labels = self._filter_labels(
-            [s['label'] for s in series])
+        series_labels = self._filter_labels([s.get('label', '') for s in series])
 
         for i, s in enumerate(series):
             if split_results:

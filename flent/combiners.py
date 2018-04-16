@@ -318,7 +318,7 @@ class SeriesCombiner(Combiner):
         new_results = []
 
         for s in self.orig_series:
-            res = ResultSet(TITLE=s['label'], NAME=self.orig_name)
+            res = ResultSet(TITLE=s.get('label'), NAME=self.orig_name)
             res.create_series(groups.keys())
             x = 0
             for d in zip_longest(*groups.values()):
