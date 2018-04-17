@@ -2,6 +2,23 @@
 
 Changes since v1.2.1 include:
 
+- Add workaround for the new timeout behaviour in fping v4.0, which
+  would result in no ping data being recorded.
+
+- Fix plotting bugs where the idle period at the start and end of tests
+  were not removed from aggregate plots in single-flow TCP tests.
+
+- Add missing {bar,box}_combine_{up,down} plots to RRUL test.
+
+- Fix filtering of combination plot filenames and make sure legends are
+  filtered in box plot ticklabels.
+
+- Add voip_marking test parameter to set diffserv marking for VoIP
+  flows.
+
+- Add udp_flood_var_up_staggered test that runs multiple UDP flood flows
+  with staggered start times.
+
 # Flent v1.2.1 #
 Released on 2018-03-28.
 
