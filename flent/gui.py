@@ -829,12 +829,14 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
         if isinstance(filenames[0], ResultSet):
             results = filenames
+            titles = self.shorten_titles([r.title for r in results])
         else:
             results = list(filter(None, self.worker_pool.map(results_load_helper,
                                                              map(unicode,
                                                                  filenames))))
 
-        titles = self.shorten_titles([r['title'] for r in results])
+            titles = self.shorten_titles([r['title'] for r in results])
+
         self.focus_new = True
 
         self.load_queue.extend(zip(results, titles))
