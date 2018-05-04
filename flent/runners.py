@@ -1243,6 +1243,28 @@ class HttpGetterRunner(RegexpRunner):
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
+    marking_map = {'AF11': 0x28,
+                   'AF12': 0x30,
+                   'AF13': 0x38,
+                   'AF21': 0x48,
+                   'AF22': 0x50,
+                   'AF23': 0x58,
+                   'AF31': 0x68,
+                   'AF32': 0x70,
+                   'AF33': 0x78,
+                   'AF41': 0x88,
+                   'AF42': 0x90,
+                   'AF43': 0x98,
+                   'CS0':  0x00,
+                   'CS1':  0x20,
+                   'CS2':  0x40,
+                   'CS3':  0x60,
+                   'CS4':  0x80,
+                   'CS5':  0xa0,
+                   'CS6':  0xc0,
+                   'CS7':  0xe0,
+                   'EF':   0xb8}
+
     transformed_metadata = ('MEAN_VALUE',)
 
     def __init__(self, host, interval, length, ip_version, local_bind=None,
@@ -1255,6 +1277,7 @@ class IperfCsvRunner(ProcessRunner):
         self.no_delay = no_delay
         self.udp = udp
         self.bw = bw
+        self.runner_args = kwargs
         super(IperfCsvRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
@@ -1313,6 +1336,8 @@ class IperfCsvRunner(ProcessRunner):
 
     def find_binary(self, host, interval, length, ip_version, local_bind=None,
                     no_delay=False, udp=False, bw=None):
+        args = self.runner_args.copy()
+        args.setdefault('marking', 'CS0')
         iperf = util.which('iperf')
 
         if iperf is not None:
@@ -1330,11 +1355,12 @@ class IperfCsvRunner(ProcessRunner):
                     udp_args = ""
                 return "{binary} --enhancedreports --reportstyle C --format m " \
                     "--client {host} --time {length} --interval {interval} " \
-                    "{local_bind} {no_delay} {udp} {ip6}".format(
+                    "--tos {marking} {local_bind} {no_delay} {udp} {ip6}".format(
                         host=host,
                         binary=iperf,
                         length=length,
                         interval=interval,
+                        marking=self.marking_map[args['marking'].upper()],
                         # --help output is wrong
                         ip6="--ipv6_domain" if ip_version == 6 else "",
                         local_bind="--bind {0}".format(
