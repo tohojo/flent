@@ -87,7 +87,9 @@ try:
         QPushButton, QShortcut
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
-        QResizeEvent, QDesktopServices, QValidator
+        QResizeEvent, QDesktopServices, QValidator, QGuiApplication
+
+    get_clipboard = QGuiApplication.clipboard
 
     from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -112,6 +114,8 @@ except ImportError:
             QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
             QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea,\
             QPushButton, QValidator, QShortcut
+
+        get_clipboard = QApplication.clipboard
 
         from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
             QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -1212,12 +1216,18 @@ class MetadataView(QTreeView):
 
         def pin():
             self.add_pin(idx)
-        act_pin = QAction("&Pin expanded", menu, triggered=pin)
 
         def col():
             self.add_open_files_col(idx)
-        act_col = QAction("&Add open files column", menu, triggered=col)
-        menu.addActions([act_pin, act_col])
+
+        def copy():
+            self.copy_value(idx)
+
+        menu.addActions([
+            QAction("&Pin expanded", menu, triggered=pin),
+            QAction("&Add open files column", menu, triggered=col),
+            QAction("&Copy value to clipboard", menu, triggered=copy)
+        ])
         menu.exec_(event.globalPos())
         event.accept()
 
@@ -1244,6 +1254,13 @@ class MetadataView(QTreeView):
         path = self.get_metadata_path(idx)
         self.openFilesView.horizontalHeader().add_column(None,
                                                          ":".join(map(str, path)))
+
+    def copy_value(self, idx):
+        val = self.model().data(self.model().index(idx.row(),
+                                                   1,
+                                                   idx.parent()),
+                                Qt.DisplayRole)
+        get_clipboard().setText(val)
 
     def setModel(self, model):
         super(MetadataView, self).setModel(model)
