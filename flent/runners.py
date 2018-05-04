@@ -102,6 +102,29 @@ def get(name):
     return globals()[cname]
 
 
+MARKING_MAP = {'AF11': 0x28,
+               'AF12': 0x30,
+               'AF13': 0x38,
+               'AF21': 0x48,
+               'AF22': 0x50,
+               'AF23': 0x58,
+               'AF31': 0x68,
+               'AF32': 0x70,
+               'AF33': 0x78,
+               'AF41': 0x88,
+               'AF42': 0x90,
+               'AF43': 0x98,
+               'CS0':  0x00,
+               'CS1':  0x20,
+               'CS2':  0x40,
+               'CS3':  0x60,
+               'CS4':  0x80,
+               'CS5':  0xa0,
+               'CS6':  0xc0,
+               'CS7':  0xe0,
+               'EF':   0xb8}
+
+
 class RunnerBase(object):
 
     transformed_metadata = []
@@ -580,6 +603,17 @@ class ProcessRunner(RunnerBase, threading.Thread):
                 raise RunnerCheckError(errmsg.format(err=err))
 
             return out, err
+
+    def parse_marking(self, marking, fmtstr):
+        # Try to convert netperf-style textual marking specs into integers
+        if marking is not None:
+            try:
+                mk = marking.split(",")[0]
+                return fmtstr.format(MARKING_MAP[mk.upper()])
+            except (AttributeError, KeyError):
+                return fmtstr.format(self.marking)
+
+        return ""
 
 
 DefaultRunner = ProcessRunner
@@ -1246,7 +1280,7 @@ class IperfCsvRunner(ProcessRunner):
     transformed_metadata = ('MEAN_VALUE',)
 
     def __init__(self, host, interval, length, ip_version, local_bind=None,
-                 no_delay=False, udp=False, bw=None, **kwargs):
+                 no_delay=False, udp=False, bw=None, marking=None, **kwargs):
         self.host = host
         self.interval = interval
         self.length = length
@@ -1255,6 +1289,7 @@ class IperfCsvRunner(ProcessRunner):
         self.no_delay = no_delay
         self.udp = udp
         self.bw = bw
+        self.marking = marking
         super(IperfCsvRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
@@ -1307,12 +1342,16 @@ class IperfCsvRunner(ProcessRunner):
             local_bind = self.settings.LOCAL_BIND[0]
 
         self.command = self.find_binary(self.host, self.interval, self.length,
-                                        self.ip_version, local_bind,
-                                        self.no_delay, self.udp, self.bw)
+                                        self.ip_version,
+                                        local_bind=local_bind,
+                                        no_delay=self.no_delay,
+                                        udp=self.udp,
+                                        bw=self.bw,
+                                        marking=self.marking)
         super(IperfCsvRunner, self).check()
 
     def find_binary(self, host, interval, length, ip_version, local_bind=None,
-                    no_delay=False, udp=False, bw=None):
+                    no_delay=False, udp=False, bw=None, marking=None):
         iperf = util.which('iperf')
 
         if iperf is not None:
@@ -1330,7 +1369,7 @@ class IperfCsvRunner(ProcessRunner):
                     udp_args = ""
                 return "{binary} --enhancedreports --reportstyle C --format m " \
                     "--client {host} --time {length} --interval {interval} " \
-                    "{local_bind} {no_delay} {udp} {ip6}".format(
+                    "{local_bind} {no_delay} {udp} {marking} {ip6}".format(
                         host=host,
                         binary=iperf,
                         length=length,
@@ -1340,6 +1379,7 @@ class IperfCsvRunner(ProcessRunner):
                         local_bind="--bind {0}".format(
                             local_bind) if local_bind else "",
                         no_delay="--nodelay" if no_delay else "",
+                        marking=self.parse_marking(marking, "--tos {}"),
                         udp=udp_args)
             else:
                 proc = subprocess.Popen([iperf, '-v'],
@@ -1357,28 +1397,6 @@ class IperfCsvRunner(ProcessRunner):
 
 
 class IrttRunner(ProcessRunner):
-
-    marking_map = {'AF11': 0x28,
-                   'AF12': 0x30,
-                   'AF13': 0x38,
-                   'AF21': 0x48,
-                   'AF22': 0x50,
-                   'AF23': 0x58,
-                   'AF31': 0x68,
-                   'AF32': 0x70,
-                   'AF33': 0x78,
-                   'AF41': 0x88,
-                   'AF42': 0x90,
-                   'AF43': 0x98,
-                   'CS0':  0x00,
-                   'CS1':  0x20,
-                   'CS2':  0x40,
-                   'CS3':  0x60,
-                   'CS4':  0x80,
-                   'CS5':  0xa0,
-                   'CS6':  0xc0,
-                   'CS7':  0xe0,
-                   'EF':   0xb8}
 
     _irtt = {}
 
@@ -1517,16 +1535,6 @@ class IrttRunner(ProcessRunner):
         else:
             irtt = self._irtt['binary']
 
-        # Try to convert netperf-style textual marking specs into integers
-        if self.marking is not None:
-            try:
-                mk = self.marking.split(",")[0]
-                marking = "--dscp={}".format(self.marking_map[mk.upper()])
-            except (AttributeError, KeyError):
-                marking = "--dscp={}".format(self.marking)
-        else:
-            marking = ""
-
         if self.local_bind:
             local_bind = "--local={}".format(self.local_bind)
         elif self.settings.LOCAL_BIND:
@@ -1554,7 +1562,7 @@ class IrttRunner(ProcessRunner):
                            ip_version=ip_version,
                            local_bind=local_bind,
                            data_size=data_size,
-                           marking=marking)
+                           marking=self.parse_marking(self.marking, "--dscp={}"))
 
         self.units = 'ms'
         super(IrttRunner, self).check()
