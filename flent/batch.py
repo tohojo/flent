@@ -45,6 +45,7 @@ from flent import aggregators, formatters, resultset, loggers
 from flent.metadata import record_metadata, record_postrun_metadata
 from flent.util import clean_path, format_date, token_split
 from flent.settings import parser as SETTINGS_PARSER
+from flent.settings import _LOG_DEFER
 
 # Python2/3 compatibility
 try:
@@ -496,6 +497,11 @@ class BatchRunner(object):
         settings = settings.copy()
         settings.load_test()
         res = resultset.new(settings)
+
+        if settings.LOG_FILE is _LOG_DEFER:
+            settings.LOG_FILE = res.dump_filename.replace(res.SUFFIX, ".log")
+            loggers.setup_logfile(settings.LOG_FILE)
+
         record_metadata(res, settings.EXTENDED_METADATA,
                         settings.REMOTE_METADATA)
 
@@ -572,6 +578,7 @@ class BatchRunner(object):
         elif self.settings.BATCH_NAMES:
             start_time = self.settings.TIME
             self.settings.BATCH_UUID = str(uuid.uuid4())
+            self.settings.LOG_FILE = None  # batch run will generate logs
             logger.info("Started batch run %s at %s.",
                         self.settings.BATCH_UUID,
                         format_date(start_time, fmt="%Y-%m-%d %H:%M:%S"))

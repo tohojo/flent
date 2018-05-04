@@ -67,6 +67,10 @@ DEFAULT_SETTINGS = {
 DICT_SETTINGS = ('DATA_SETS', 'PLOTS')
 
 
+class _LOG_DEFER:
+    pass
+
+
 class Version(FuncAction):
 
     def __call__(*args):
@@ -108,8 +112,11 @@ class LogFile(argparse.Action):
         super(LogFile, self).__init__(option_strings, dest, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        loggers.setup_logfile(values)
-        setattr(namespace, self.dest, values)
+        if values is None:
+            setattr(namespace, self.dest, _LOG_DEFER)
+        else:
+            loggers.setup_logfile(values)
+            setattr(namespace, self.dest, values)
 
 
 class Debug(argparse.Action):
@@ -452,8 +459,10 @@ misc_group = parser.add_argument_group("Misc and debugging options")
 
 misc_group.add_argument(
     "-L", "--log-file",
-    action=LogFile, type=unicode, dest="LOG_FILE",
-    help="Write debug log (test program output) to log file.")
+    action=LogFile, type=unicode, dest="LOG_FILE", nargs='?',
+    help="Write debug log (test program output) to log file. If the option is "
+    "enabled but no file name is given, the log file name is derived from the "
+    "test data filename.")
 
 misc_group.add_argument(
     '--list-tests',
