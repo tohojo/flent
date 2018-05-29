@@ -246,7 +246,7 @@ class ResultSet(object):
 
     def series(self, name, smooth=None):
         if name not in self._results:
-            logger.warning("Missing data points for series '%s'", name)
+            logger.debug("Missing data points for series '%s'", name)
             return [None] * len(self.x_values)
         if smooth:
             return self.smoothed(self._results[name], smooth)
