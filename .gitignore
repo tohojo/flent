@@ -41,3 +41,6 @@ data/
 
 # distutils gerated
 MANIFEST
+
+.dir-locals.el
+*.log
