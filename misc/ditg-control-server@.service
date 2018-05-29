@@ -1,0 +1,9 @@
+[Unit]
+Description=Control server for d-itg
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/lib/ditg-control-server.py --address=%I
+
+[Install]
+WantedBy=network-online.target
