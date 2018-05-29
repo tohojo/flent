@@ -1112,19 +1112,21 @@ class Plotter(ArgParam):
                                     format_date(self.metadata['TIME']),
                                     self.metadata['LENGTH'],
                                     self.metadata['STEP_SIZE'])
-            self.btm_art.append(self.figure.text(0.5,
-                                                 0.04 / self.figure.get_figheight(),
-                                                 annotation_string,
-                                                 horizontalalignment='center',
-                                                 verticalalignment='bottom',
-                                                 fontsize=8))
+            self.btm_art.append(
+                self.figure.text(0.5,
+                                 0.04 / self.figure.get_figheight(),
+                                 annotation_string,
+                                 horizontalalignment='center',
+                                 verticalalignment='bottom',
+                                 fontsize=8))
         if self.fig_note:
-            self.btm_art.append(self.figure.text(0.0,
-                                                 0.04 / self.figure.get_figheight(),
-                                                 self.fig_note,
-                                                 horizontalalignment='left',
-                                                 verticalalignment='bottom',
-                                                 fontsize=8))
+            self.btm_art.append(
+                self.figure.text(0.0,
+                                 0.04 / self.figure.get_figheight(),
+                                 self.fig_note,
+                                 horizontalalignment='left',
+                                 verticalalignment='bottom',
+                                 fontsize=8))
 
         return titles
 
