@@ -329,6 +329,8 @@ class SeriesCombiner(Combiner):
                 for k, v in zip(groups.keys(), d):
                     reducer = self.get_reducer(s)
                     data[k] = reducer(v, s) if v is not None else None
+                    if data[k] is not None and 'norm_factor' in s:
+                        data[k] /= s['norm_factor']
                 res.append_datapoint(x, data)
                 x += 1
             new_results.append(res)
