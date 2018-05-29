@@ -321,6 +321,7 @@ class SeriesCombiner(Combiner):
 
         for s in self.orig_series:
             res = ResultSet(TITLE=s.get('label'), NAME=self.orig_name)
+            res.meta('label_override', s.get('label_override', False))
             res.create_series(groups.keys())
             x = 0
             for d in zip_longest(*groups.values()):

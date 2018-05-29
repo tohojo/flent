@@ -765,6 +765,7 @@ class Plotter(ArgParam):
             for l, s in zip(self.override_labels, new_series):
                 if l is not None:
                     s['label'] = l
+                    s['label_override'] = True
 
         return dict(config, series=new_series)
 
@@ -1569,8 +1570,10 @@ class BoxPlotter(TimeseriesPlotter):
         # The median lines are red, so filter out red from the list of colours
         colours = list(
             islice(cycle([c for c in self.colours if c != 'r']), group_size))
-        series_labels = self._filter_labels([s.get('label', '') for s in series])
-
+        series_labels = [s.get('label', '') for s in series]
+        if not any([s.get('label_override', False) for s in series]):
+            series_labels = self._filter_labels(series_labels)
+        ticklabel_override = False
         for i, s in enumerate(series):
             if split_results:
                 results = split_results[i]
@@ -1617,6 +1620,9 @@ class BoxPlotter(TimeseriesPlotter):
                     bp['caps'][j * 2].set_label(r.label())
                 if len(results) > 1:
                     ticklabels.append(r.label())
+                    ticklabel_override = (ticklabel_override or
+                                          r.metadata.get('label_override',
+                                                         False))
                 if len(bp['fliers']) == group_size:
                     pyplot.setp([bp['fliers'][j]], markeredgecolor=colours[j])
                     keys = 'caps', 'whiskers'
@@ -1646,7 +1652,8 @@ class BoxPlotter(TimeseriesPlotter):
         for a, b in zip(config['axes'], self.bounds_y):
             a.set_ybound(b)
 
-        ticklabels = self._filter_labels(ticklabels)
+        if not ticklabel_override:
+            ticklabels = self._filter_labels(ticklabels)
         for i, l in enumerate(ticklabels):
             if len(l) > self._max_label_length:
                 ticklabels[i] = l[:self._max_label_length] + "..."
