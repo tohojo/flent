@@ -1014,6 +1014,7 @@ class NetperfDemoRunner(ProcessRunner):
         elif self.test == 'UDP_RR':
             self.units = 'ms'
 
+        self.watchdog_timer = self.length + 10
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
                        "{marking} -H {control_host} -p {control_port} " \
                        "-t {test} -l {length:d} {buffer} {format} " \
