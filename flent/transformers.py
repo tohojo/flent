@@ -67,6 +67,12 @@ def bits_to_mbits(results):
     return transform_results(results, lambda x: x / 1000000.0)
 
 
+def kbits_to_mbits(results):
+    if hasattr(results, "shape"):
+        return results / 1000.0
+    return transform_results(results, lambda x: x / 1000.0)
+
+
 def cumulative_to_events(results):
     """Transform cumulative counter values into the increasing events."""
     if hasattr(results, "shape") and np is not None:
