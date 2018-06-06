@@ -1284,6 +1284,78 @@ class HttpGetterRunner(RegexpRunner):
         super(HttpGetterRunner, self).check()
 
 
+class DashJsRunner(RegexpRunner):
+
+    silent_exit = True
+    _regex_prefix = r"^\[[0-9]+:[0-9]+:(?P<t>[0-9]+/[0-9]+\.[0-9]+):" \
+        r"INFO:CONSOLE\([0-9]+\)\] "
+    regexes = [
+        re.compile(_regex_prefix + r'"D,[0-9]+,(?:BC|IR),(?P<bitrate>[0-9]+),'),
+        re.compile(_regex_prefix + r'"D,[0-9]+,AT,(?P<val>[0-9\.]+),'),
+        re.compile(_regex_prefix + r'"D,[0-9]+,BL,(?P<buflen>[0-9]+),')]
+
+    def parse_chromium_timestamps(tstamp):
+        sec, mil = tstamp.split(".")
+        dt = datetime.strptime(sec, "%m%d/%H%M%S")
+        dt = dt.replace(year=datetime.now().year)
+        timestamp = time.mktime(dt.timetuple()) + float("0."+mil)
+        return timestamp
+
+    transformers = {'val': transformers.kbits_to_mbits,
+                    'bitrate': transformers.bits_to_mbits,
+                    't': parse_chromium_timestamps}
+
+    def __init__(self, length, url, host='localhost', **kwargs):
+        super(DashJsRunner, self).__init__(**kwargs)
+
+        self.length = length
+        self.url = url
+        self.host = host
+
+    def parse(self, output, error=""):
+        result = super(DashJsRunner, self).parse(output, error)
+        last_bitrate = None
+        new_rv = []
+
+        # Since the bitrate output happens when the bitrate changes, we insert a
+        # value just before the change so the output becomes abrupt staircase
+        # changes instead of gradual transitions when plotting
+        for rw in self.raw_values:
+            if 'bitrate' in rw:
+                if last_bitrate is not None:
+                    new_rv.append({'t': rw['t'], 'bitrate': last_bitrate})
+                last_bitrate = rw['bitrate']
+            new_rv.append(rw)
+
+        # Also insert a value at the end with the last known bitrate
+        if new_rv:
+            new_rv.append({'t': new_rv[-1]['t'],
+                           'bitrate': last_bitrate})
+
+        self.raw_values = new_rv
+        return result
+
+    def check(self):
+        self.command = self.find_binary(self.length, self.url, self.host)
+        super(DashJsRunner, self).check()
+
+    def find_binary(self, length, url, host='localhost'):
+        script = os.path.join(DATA_DIR, 'scripts', 'dash_client.sh')
+        if not os.path.exists(script):
+            raise RunnerCheckError("Cannot find dash_client.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RunnerCheckError("Dash client requires a Bash shell.")
+
+        return "{bash} {script} -l {length} -u '{url}' -H {host}".format(
+                bash=bash,
+                script=script,
+                length=length,
+                url=url,
+                host=host)
+
+
 class IperfCsvRunner(ProcessRunner):
     """Runner for iperf csv output (-y C), possibly with unix timestamp patch."""
 
