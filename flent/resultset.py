@@ -334,7 +334,7 @@ class ResultSet(object):
         return self.zipped()
 
     def __len__(self):
-        return len(self._x_values)
+        return len(self.raw_values)
 
     def __hash__(self):
         if self._loaded_from is None:
