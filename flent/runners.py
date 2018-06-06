@@ -381,6 +381,7 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
 class ProcessRunner(RunnerBase, threading.Thread):
     """Default process runner for any process."""
     silent = False
+    silent_exit = False
     supports_remote = True
     _env = {}
 
@@ -566,7 +567,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
         except OSError:
             pass
 
-        if self.returncode and not self.silent:
+        if self.returncode and not (self.silent or self.silent_exit):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
 
