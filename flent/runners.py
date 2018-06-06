@@ -530,6 +530,10 @@ class ProcessRunner(RunnerBase, threading.Thread):
             while (pid, sts) == (0, 0):
                 self.kill_event.wait(1)
                 if self.kill_event.is_set():
+                    self.silent_exit = True
+                    logger.debug("%s %s killed by kill event",
+                                 self.__class__.__name__,
+                                 self.name, extra={'runner': self})
                     try:
                         os.kill(self.pid, signal.SIGTERM)
                     except OSError:
