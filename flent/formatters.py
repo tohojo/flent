@@ -390,6 +390,7 @@ class PlotFormatter(Formatter):
 
     def format(self, results):
         if not results[0]:
+            logger.debug("Zero-length result, not plotting")
             return
 
         self.init_plots(results)
