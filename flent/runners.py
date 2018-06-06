@@ -1061,9 +1061,11 @@ class RegexpRunner(ProcessRunner):
                             if k in cls.transformers:
                                 rw[k] = cls.transformers[k](rw[k])
                         except ValueError:
-                            pass
+                            if k in cls.transformers:
+                                rw[k] = cls.transformers[k](rw[k])
                     raw_values.append(rw)
-                    result.append([rw['t'], rw['val']])
+                    if 'val' in rw:
+                        result.append([rw['t'], rw['val']])
                     break  # only match one regexp per line
             for regexp in cls.metadata_regexes:
                 match = regexp.match(line)
