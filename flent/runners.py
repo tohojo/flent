@@ -1294,7 +1294,10 @@ class DashJsRunner(RegexpRunner):
     regexes = [
         re.compile(_regex_prefix + r'"D,[0-9]+,(?:BC|IR),(?P<bitrate>[0-9]+),'),
         re.compile(_regex_prefix + r'"D,[0-9]+,AT,(?P<val>[0-9\.]+),'),
+        re.compile(_regex_prefix + r'"D,[0-9]+,ST,(?P<stall_dur>[0-9\.]+),'),
         re.compile(_regex_prefix + r'"D,[0-9]+,BL,(?P<buflen>[0-9]+),')]
+    metadata_regexes = [
+        re.compile(_regex_prefix + r'"D,[0-9]+,ID,(?P<INITIAL_DELAY>[0-9\.]+),')]
 
     def parse_chromium_timestamps(tstamp):
         sec, mil = tstamp.split(".")
