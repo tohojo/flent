@@ -6,6 +6,8 @@ matrix:
       env: MATPLOTLIB_VERSION=2.0.*
     - python: "3.3"
       env: MATPLOTLIB_VERSION=2.1.*
+    - python: "3.3"
+      env: MATPLOTLIB_VERSION=2.2.*
   include:
     - python: "2.7"
       env: MATPLOTLIB_VERSION=1.1.1
@@ -23,6 +25,7 @@ env:
   - MATPLOTLIB_VERSION=1.5.*
   - MATPLOTLIB_VERSION=2.0.*
   - MATPLOTLIB_VERSION=2.1.*
+  - MATPLOTLIB_VERSION=2.2.*
 install:
   - pip install mock
   - pip install matplotlib==${MATPLOTLIB_VERSION}
