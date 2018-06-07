@@ -1078,6 +1078,8 @@ class RegexpRunner(ProcessRunner):
                 match = regexp.match(line)
                 if match:
                     for k, v in match.groupdict().items():
+                        if k == 't':
+                            continue
                         try:
                             metadata[k] = float(v)
                             if k in cls.transformed_metadata and \
