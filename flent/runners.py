@@ -797,7 +797,9 @@ class NetperfDemoRunner(ProcessRunner):
                   'REMOTE_TRANSPORT_RETRANS,LOCAL_SOCKET_TOS,' \
                   'REMOTE_SOCKET_TOS,DIRECTION,ELAPSED_TIME,PROTOCOL,' \
                   'LOCAL_SEND_SIZE,LOCAL_RECV_SIZE,' \
-                  'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE'
+                  'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE,' \
+                  'LOCAL_BYTES_SENT,LOCAL_BYTES_RECVD,' \
+                  'REMOTE_BYTES_SENT,REMOTE_BYTES_RECVD'
     netperf = {}
     _env = {"DUMP_TCP_INFO": "1"}
 
@@ -893,6 +895,10 @@ class NetperfDemoRunner(ProcessRunner):
                             'LOCAL_SEND_SIZE', -1))
                         self.metadata['RECV_SIZE'] = int(data_dict.get(
                             'REMOTE_RECV_SIZE', -1))
+                        self.metadata['BYTES_SENT'] = int(data_dict.get(
+                            'LOCAL_BYTES_SENT', -1))
+                        self.metadata['BYTES_RECVD'] = int(data_dict.get(
+                            'REMOTE_BYTES_RECVD', -1))
                     else:
                         self.metadata['CONG_CONTROL'] = data_dict.get(
                             'REMOTE_CONG_CONTROL')
@@ -902,6 +908,10 @@ class NetperfDemoRunner(ProcessRunner):
                             'REMOTE_SEND_SIZE', -1))
                         self.metadata['RECV_SIZE'] = int(data_dict.get(
                             'LOCAL_RECV_SIZE', -1))
+                        self.metadata['BYTES_SENT'] = int(data_dict.get(
+                            'REMOTE_BYTES_SENT', -1))
+                        self.metadata['BYTES_RECVD'] = int(data_dict.get(
+                            'LOCAL_BYTES_RECVD', -1))
 
                     for k in data_dict.keys():
                         if k.startswith("tcpi"):
