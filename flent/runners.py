@@ -801,10 +801,11 @@ class NetperfDemoRunner(ProcessRunner):
     netperf = {}
     _env = {"DUMP_TCP_INFO": "1"}
 
-    def __init__(self, test, length, host, **kwargs):
+    def __init__(self, test, length, host, bytes=None, **kwargs):
         self.test = test
         self.length = length
         self.host = host
+        self.bytes = bytes
         super(NetperfDemoRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
@@ -986,8 +987,13 @@ class NetperfDemoRunner(ProcessRunner):
         args['output_vars'] = self.output_vars
         args['buffer'] = self.netperf['buffer']
         args['test'] = self.test
-        args['length'] = self.length
         args['host'] = self.host
+
+        if self.bytes:
+            args['length'] = -self.bytes
+        else:
+            args['length'] = self.length
+            self.watchdog_timer = self.length + 10
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -1022,7 +1028,6 @@ class NetperfDemoRunner(ProcessRunner):
         elif self.test == 'UDP_RR':
             self.units = 'ms'
 
-        self.watchdog_timer = self.length + 10
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
                        "{marking} -H {control_host} -p {control_port} " \
                        "-t {test} -l {length:d} {buffer} {format} " \
