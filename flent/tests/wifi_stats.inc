@@ -103,8 +103,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                                       'group_by': 'groups_concat',
                                       'series': [
                                           {'data': glob('wifi_stats_*::airtime_total::**'),
-                                           'label': 'Total airtime',
-                                           'norm_by': 'wifi_stats_{parent_id}::airtime_sum'},
+                                           'label': 'Total airtime'},
                                       ]}
     PLOTS['airtime_total_combine_long'] = {'description': 'Combined airtime total plot (long timescale)',
                                    'parent': 'airtime_total_combine',
