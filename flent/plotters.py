@@ -743,6 +743,8 @@ class Plotter(ArgParam):
                                             set()))
                     rks = Glob.expand_list(s['raw_key'], all_rks)
                     for k, n in zip(rks, diff_parts(rks, "::")):
+                        if k in self.filter_series:
+                            continue
                         if 'label' in s:
                             nns.append(dict(s, raw_key=k,
                                             label="%s -- %s" % (s['label'], n)))
