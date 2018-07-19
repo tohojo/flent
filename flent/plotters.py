@@ -577,6 +577,7 @@ def new(settings, plotter=None, in_worker=False, **kwargs):
             data_config=settings.DATA_SETS,
             output=settings.OUTPUT,
             gui=settings.GUI,
+            absolute_time=settings.ABSOLUTE_TIME,
             description=settings.DESCRIPTION,
             in_worker=in_worker,
 
@@ -621,6 +622,7 @@ class Plotter(ArgParam):
                  figure=None,
                  results=None,
                  in_worker=False,
+                 absolute_time=False,
                  **kwargs):
         super(Plotter, self).__init__(**kwargs)
 
@@ -638,6 +640,7 @@ class Plotter(ArgParam):
         self.callbacks = []
         self.in_worker = in_worker
         self.combined = False
+        self.absolute_time = absolute_time
 
         self.gui = gui
         self.description = description
@@ -1276,7 +1279,8 @@ class Plotter(ArgParam):
             try:
 
                 data = np.array(
-                    list(results.raw_series(series['data'], raw_key=raw_key)),
+                    list(results.raw_series(series['data'], raw_key=raw_key,
+                                            absolute=self.absolute_time)),
                     dtype=float).transpose()
 
                 if not len(data):
