@@ -1418,7 +1418,8 @@ class TimeseriesPlotter(Plotter):
 
         stack = 'stacked' in config and config['stacked']
 
-        x_min = x_max = 0
+        x_min = 2**63
+        x_max = 0
 
         colours = cycle(self.colours)
 
