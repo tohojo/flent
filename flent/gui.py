@@ -157,6 +157,9 @@ SOCKET_NAME_PREFIX = "flent-socket-"
 SOCKET_DIR = tempfile.gettempdir()
 WINDOW_STATE_VERSION = 1
 
+# Hack to propagate the --absolute-time option to multi-process helpers
+USE_ABSOLUTE_TIME = False
+
 ABOUT_TEXT = """<p>Flent version {version}.<br>
 Copyright &copy; 2017 Toke Høiland-Jørgensen and contributors.<br>
 Released under the GNU GPLv3.</p>
@@ -188,6 +191,9 @@ def run_gui(settings):
 
 
 def pool_init_func(settings, queue):
+    global USE_ABSOLUTE_TIME
+    USE_ABSOLUTE_TIME = settings.ABSOLUTE_TIME
+
     plotters.init_matplotlib("-", settings.USE_MARKERS,
                              settings.LOAD_MATPLOTLIBRC)
     set_queue_handler(queue)
@@ -268,7 +274,7 @@ class LoadedResultset(dict):
 
 def results_load_helper(filename):
     try:
-        r = ResultSet.load_file(filename)
+        r = ResultSet.load_file(filename, USE_ABSOLUTE_TIME)
         s = new_settings()
         s.update(r.meta())
         s.load_test(informational=True)
