@@ -13,6 +13,8 @@ Installing Flent can be done in several ways, depending on your operating system
 - **Other Linux and OSX with Macbrew:** Install from the `Python Package Index <https://pypi.python.org/pypi/flent>`_:
   ``pip install flent``.
 
+- **FreeBSD users:** ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
+
 Quick start
 -----------
 You must run netperf on two computers - a **server** and a **client**.
