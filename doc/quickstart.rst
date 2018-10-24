@@ -2,8 +2,6 @@ Installing Flent
 ----------------
 Installing Flent can be done in several ways, depending on your operating system:
 
-- **FreeBSD users:** ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
-
 - **Ubuntu users:** Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
 
 - **Debian users:** Use the `package included in Debian
@@ -14,6 +12,8 @@ Installing Flent can be done in several ways, depending on your operating system
 
 - **Other Linux and OSX with Macbrew:** Install from the `Python Package Index <https://pypi.python.org/pypi/flent>`_:
   ``pip install flent``.
+
+- **FreeBSD users:** ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
 
 Quick start
 -----------
