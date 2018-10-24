@@ -10,18 +10,19 @@ Installing Flent
 ----------------
 Installing Flent can be done in several ways, depending on your operating system:
 
-- **Ubuntu users:** Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
 
-- **Debian users:** Use the `package included in Debian
-  Stretch <https://packages.debian.org/stretch/flent>`_ and later.
+- **Debian and Ubuntu:** ``apt install flent``.
 
-- **Arch Linux users:** Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
+- **Ubuntu pre-18.04:** Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
+
+- **Arch Linux:** Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
+
+- **FreeBSD:**
+  ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
 
 - **Other Linux and OSX with Macbrew:** Install from the `Python Package Index <https://pypi.python.org/pypi/flent>`_:
   ``pip install flent``.
 
-- **FreeBSD users:**
-  ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
 
 
 Quick Start
