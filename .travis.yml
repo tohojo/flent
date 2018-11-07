@@ -2,12 +2,16 @@ language: python
 script: make test_long
 matrix:
   exclude:
+    - python: "2.7"
+      env: MATPLOTLIB_VERSION=3.0.*
     - python: "3.3"
       env: MATPLOTLIB_VERSION=2.0.*
     - python: "3.3"
       env: MATPLOTLIB_VERSION=2.1.*
     - python: "3.3"
       env: MATPLOTLIB_VERSION=2.2.*
+    - python: "3.3"
+      env: MATPLOTLIB_VERSION=3.0.*
   include:
     - python: "2.7"
       env: MATPLOTLIB_VERSION=1.1.1
@@ -20,12 +24,14 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
 env:
   - MATPLOTLIB_VERSION=1.4.3
   - MATPLOTLIB_VERSION=1.5.*
   - MATPLOTLIB_VERSION=2.0.*
   - MATPLOTLIB_VERSION=2.1.*
   - MATPLOTLIB_VERSION=2.2.*
+  - MATPLOTLIB_VERSION=3.0.*
 install:
   - pip install mock
   - pip install matplotlib==${MATPLOTLIB_VERSION}
