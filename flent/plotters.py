@@ -1066,13 +1066,13 @@ class Plotter(ArgParam):
            and not self.horizontal_legend \
            and not self.legend_placement \
            and self.legends:
+
+            # Make sure we have a renderer to get size from
+            if not self.figure._cachedRenderer:
+                self.figure.canvas.draw()
+
             legend_width = max(
                 [l.get_window_extent().width for l in self.legends])
-
-            if not legend_width:  # Legend width is not set before it's drawn
-                self.figure.canvas.draw()
-                legend_width = max(
-                    [l.get_window_extent().width for l in self.legends])
 
             canvas_width = self.figure.canvas.get_width_height()[0]
             for a in self.axes_iter():
