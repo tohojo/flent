@@ -1068,7 +1068,7 @@ class Plotter(ArgParam):
            and self.legends:
 
             # Make sure we have a renderer to get size from
-            if not self.figure._cachedRenderer:
+            if not getattr(self.figure, '_cachedRenderer', None):
                 self.figure.canvas.draw()
 
             legend_width = max(
