@@ -1248,13 +1248,13 @@ class Plotter(ArgParam):
             # of the *axis* range, not the data range (this may be a big
             # difference if the data range is small).
             top_scale = top_percentile * 1.01
-            axis.set_ylim(ymin=0, ymax=top_scale)
+            axis.set_ylim(0, top_scale)
         else:
             if self.log_base:
                 axis.set_yscale('log', basey=self.log_base)
-                axis.set_ylim(ymin=max(0, btm_scale), ymax=top_scale)
+                axis.set_ylim(max(0, btm_scale), top_scale)
             else:
-                axis.set_ylim(ymin=btm_scale, ymax=top_scale)
+                axis.set_ylim(btm_scale, top_scale)
 
         if self.invert_y and unit in self.inverted_units:
             axis.invert_yaxis()
