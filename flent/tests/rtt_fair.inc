@@ -33,15 +33,13 @@ DATA_SETS = o([
        'runner': 'average',}),
     ])
 
-LABELS=get_test_parameter("labels", default=[], split=True)
-PING_LABELS=get_test_parameter("ping_labels", default=[], split=True)
-MARKINGS=get_test_parameter("markings", default=[], split=True)
-CONTROL_HOSTS=get_test_parameter("control_hosts", default=[], split=True)
+def add_stream(i, host=None, label='BE', ping_label='ICMP', marking='CS0',
+               control_host=None, local_bind=None, **kwargs):
+    if host is None:
+        return
 
-for host, label, ping_label, marking, control_host, local_bind in zip_longest(HOSTS, LABELS, PING_LABELS, MARKINGS,
-                                                                              CONTROL_HOSTS, LOCAL_BIND):
-    if not host:
-        break
+    if control_host is None:
+        control_host = host
 
     DATA_SETS['TCP upload %s %s' % (label or "BE", host)] = \
      {'test': 'TCP_STREAM', 'length': LENGTH, 'host': host, 'marking': marking or
@@ -55,6 +53,8 @@ for host, label, ping_label, marking, control_host, local_bind in zip_longest(HO
      {'ip_version': IP_VERSION, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH,
       'host': host, 'local_bind': local_bind, 'id': host, 'units': 'ms',
       'runner': 'ping'}
+
+for_stream_config(add_stream)
 
 PLOTS = o([
     ('download',

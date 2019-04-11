@@ -52,6 +52,8 @@ except ImportError:
 SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams']
 SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 
+STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
+                             'control_host', 'local_bind']
 
 class _no_default():
     pass
@@ -83,6 +85,7 @@ class TestEnvironment(object):
             'try_test_parameters': self.try_test_parameters,
             'parse_int': self.parse_int,
             'zip_longest': zip_longest,
+            'for_stream_config': self.for_stream_config,
         })
 
         self.informational = informational
@@ -186,3 +189,27 @@ class TestEnvironment(object):
             else:
                 raise RuntimeError("Need %d hosts, only %d specified" %
                                    (count, len(self.env['HOSTS'])))
+
+    def for_stream_config(self, func, n=None):
+        if n is None:
+            n = len(self.env['HOSTS'])
+
+        config_params = {}
+        for k in STREAM_CONFIG_PARAM_NAMES:
+            config_params[k] = self.get_test_parameter(k+"s",
+                                                       default=[],
+                                                       split=True)
+        for i in range(n):
+            kwargs = {}
+            try:
+                kwargs['host'] = self.env['HOSTS'][i]
+            except IndexError:
+                pass
+
+            for k, v in config_params.items():
+                try:
+                    kwargs[k] = v[i]
+                except IndexError:
+                    pass
+
+            func(i, **kwargs)
