@@ -53,7 +53,7 @@ SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams']
 SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 
 STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
-                             'control_host', 'local_bind']
+                             'control_host', 'local_bind', 'cc_algo']
 
 class _no_default():
     pass
