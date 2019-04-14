@@ -52,6 +52,9 @@ except ImportError:
 SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams']
 SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 
+# Test parameters that will be parsed and from test parameters and passed to the
+# add_stream callback. In addition to these, 'stream_delay' is handled specially
+# in the code below
 STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
                              'control_host', 'local_bind', 'cc_algo']
 
@@ -199,6 +202,14 @@ class TestEnvironment(object):
             config_params[k] = self.get_test_parameter(k+"s",
                                                        default=[],
                                                        split=True)
+
+        stream_delays = self.get_test_parameter("stream_delays",
+                                                default=[],
+                                                split=True)
+        global_delay = self.env['DELAY']
+        total_length = self.env['TOTAL_LENGTH']
+        stream_length = total_length-2*global_delay
+
         for i in range(n):
             kwargs = {}
             try:
@@ -211,5 +222,11 @@ class TestEnvironment(object):
                     kwargs[k] = v[i]
                 except IndexError:
                     pass
+
+            try:
+                kwargs['length'] = stream_length - int(stream_delays[i])
+                kwargs['delay'] = global_delay + int(stream_delays[i])
+            except IndexError:
+                pass
 
             func(i, **kwargs)
