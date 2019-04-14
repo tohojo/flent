@@ -1006,7 +1006,7 @@ class NetperfDemoRunner(ProcessRunner):
             args['length'] = -self.bytes
         else:
             args['length'] = self.length
-            self.watchdog_timer = self.length + 10
+            self.watchdog_timer = self.length + self.delay + 10
 
         if args['marking']:
             args['marking'] = "-Y {0}".format(args['marking'])
@@ -1181,7 +1181,7 @@ class PingRunner(RegexpRunner):
             else:
                 # Since there is not timeout parameter to fping, set a watchdog
                 # timer to kill it in case it runs over time
-                self.watchdog_timer = length + 1
+                self.watchdog_timer = self.delay + length + 1
                 return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
                     "-t {timeout} {marking} {local_bind} {host}".format(
                         binary=fping,
@@ -1300,7 +1300,7 @@ class HttpGetterRunner(RegexpRunner):
         # Individual http requests can take a long time to time out, causing
         # http-getter to get stuck, so set a generous watchdog timer at 1.5
         # times the duration to catch any stuck binaries
-        self.watchdog_timer = (self.length * 3) // 2
+        self.watchdog_timer = self.delay + (self.length * 3) // 2
 
         super(HttpGetterRunner, self).check()
 
