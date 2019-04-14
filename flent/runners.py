@@ -879,9 +879,10 @@ class NetperfDemoRunner(ProcessRunner):
                 # The THROUGHPUT key contains the mean value even for UDP_RR tests
                 self.metadata['MEAN_VALUE'] = float(data_dict['THROUGHPUT'])
                 self.metadata['ELAPSED_TIME'] = float(data_dict.get('ELAPSED_TIME', 0))
-                self.metadata['UPSTREAM_TOS'] = data_dict.get('LOCAL_SOCKET_TOS')
-                self.metadata['DOWNSTREAM_TOS'] = data_dict.get(
-                    'REMOTE_SOCKET_TOS')
+                self.metadata['UPSTREAM_TOS'] = int(data_dict.get('LOCAL_SOCKET_TOS', 0),
+                                                    base=0)
+                self.metadata['DOWNSTREAM_TOS'] = int(data_dict.get(
+                    'REMOTE_SOCKET_TOS', 0), base=0)
 
                 if data_dict['PROTOCOL'] == 'TCP':
                     self.metadata['TCP_MSS'] = int(data_dict.get('TRANSPORT_MSS',
@@ -899,6 +900,7 @@ class NetperfDemoRunner(ProcessRunner):
                             'LOCAL_BYTES_SENT', -1))
                         self.metadata['BYTES_RECVD'] = int(data_dict.get(
                             'REMOTE_BYTES_RECVD', -1))
+                        self.metadata['DATA_TOS'] = self.metadata['UPSTREAM_TOS']
                     else:
                         self.metadata['CONG_CONTROL'] = data_dict.get(
                             'REMOTE_CONG_CONTROL')
@@ -912,6 +914,7 @@ class NetperfDemoRunner(ProcessRunner):
                             'REMOTE_BYTES_SENT', -1))
                         self.metadata['BYTES_RECVD'] = int(data_dict.get(
                             'LOCAL_BYTES_RECVD', -1))
+                        self.metadata['DATA_TOS'] = self.metadata['DOWNSTREAM_TOS']
 
                     for k in data_dict.keys():
                         if k.startswith("tcpi"):
