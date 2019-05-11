@@ -143,11 +143,15 @@ class TestEnvironment(object):
     def set_test_parameter(self, name, value):
         self.env['TEST_PARAMETERS'][name] = value
 
-    def get_test_parameter(self, name, default=_no_default, split=False):
+    def get_test_parameter(self, name, default=_no_default, split=False, cast=None):
         try:
             ret = self.env['TEST_PARAMETERS'][name]
             if split:
                 ret = token_split(ret)
+                if cast:
+                    ret = list(map(cast, ret))
+            elif cast:
+                ret = cast(ret)
             return ret
         except KeyError:
             if default is not _no_default:
