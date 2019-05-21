@@ -4,6 +4,8 @@ matrix:
   exclude:
     - python: "2.7"
       env: MATPLOTLIB_VERSION=3.0.*
+    - python: "2.7"
+      env: MATPLOTLIB_VERSION=3.1.*
     - python: "3.3"
       env: MATPLOTLIB_VERSION=2.0.*
     - python: "3.3"
@@ -12,8 +14,12 @@ matrix:
       env: MATPLOTLIB_VERSION=2.2.*
     - python: "3.3"
       env: MATPLOTLIB_VERSION=3.0.*
+    - python: "3.3"
+      env: MATPLOTLIB_VERSION=3.1.*
     - python: "3.4"
       env: MATPLOTLIB_VERSION=3.0.*
+    - python: "3.4"
+      env: MATPLOTLIB_VERSION=3.1.*
   include:
     - python: "2.7"
       env: MATPLOTLIB_VERSION=1.1.1
@@ -39,6 +45,10 @@ matrix:
       dist: xenial
       sudo: true
       env: MATPLOTLIB_VERSION=3.0.*
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: MATPLOTLIB_VERSION=3.1.*
 
 python:
   - "2.7"
@@ -53,6 +63,7 @@ env:
   - MATPLOTLIB_VERSION=2.1.*
   - MATPLOTLIB_VERSION=2.2.*
   - MATPLOTLIB_VERSION=3.0.*
+  - MATPLOTLIB_VERSION=3.1.*
 install:
   - pip install mock
   - pip install matplotlib==${MATPLOTLIB_VERSION}
