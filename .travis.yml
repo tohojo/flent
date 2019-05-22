@@ -20,6 +20,8 @@ matrix:
       env: MATPLOTLIB_VERSION=3.0.*
     - python: "3.4"
       env: MATPLOTLIB_VERSION=3.1.*
+    - python: "3.5"
+      env: MATPLOTLIB_VERSION=3.1.*
   include:
     - python: "2.7"
       env: MATPLOTLIB_VERSION=1.1.1
