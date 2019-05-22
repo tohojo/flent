@@ -686,8 +686,8 @@ class Plotter(ArgParam):
                 # There is a bug in matplotlib prior to 1.4.2 where the renderer
                 # can't be pickled. Work around this by monkey-patching the
                 # renderer object as needed.
-                if a._cachedRenderer and not hasattr(a._cachedRenderer,
-                                                     "__getstate__"):
+                if getattr(a, "_cachedRenderer", None) \
+                   and not hasattr(a._cachedRenderer, "__getstate__"):
                     def getState():
                         return {'width': a._cachedRenderer.width,
                                 'height': a._cachedRenderer.height,
