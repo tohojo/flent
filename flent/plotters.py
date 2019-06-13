@@ -1310,7 +1310,7 @@ class Plotter(ArgParam):
             if self.absolute_time:
                 start += results.t0
 
-            if end < 0:
+            if end <= 0:
                 end += results.meta("TOTAL_LENGTH")
 
             min_idx = data[0].searchsorted(start, side='right')

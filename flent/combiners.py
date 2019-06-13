@@ -287,7 +287,7 @@ class GroupsConcatCombiner(Combiner):
                     start, end = cutoff
                     offset = min(r.x_values)
 
-                    if end < 0:
+                    if end <= 0:
                         end += r.meta("TOTAL_LENGTH")
 
                     start += offset
@@ -468,7 +468,7 @@ class Reducer(object):
             start, end = self.cutoff
             offset = min(resultset.x_values)
 
-            if end < 0:
+            if end <= 0:
                 end += resultset.meta("TOTAL_LENGTH")
 
             start += offset
@@ -592,7 +592,7 @@ class RawReducer(Reducer):
             min_t = resultset.t0
             start_t = min_t + start if start else min_t - 1
             end_t = min_t + end
-            if end < 0:
+            if end <= 0:
                 end_t += resultset.meta("TOTAL_LENGTH")
 
             return [d for d in data
