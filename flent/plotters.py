@@ -1323,9 +1323,14 @@ class Plotter(ArgParam):
             l = series['smoothing']
             if l % 2 != 1:
                 l += 1
-            kern = np.ones(l, dtype=float)
-            kern /= l
-            data[1] = np.convolve(data[1], kern, mode=str('same'))
+
+            if l <= len(data[1]):
+                kern = np.ones(l, dtype=float)
+                kern /= l
+                data[1] = np.convolve(data[1], kern, mode=str('same'))
+            else:
+                logger.warn("Smoothing length longer than data series %s; "
+                            "not smoothing", series['data'])
 
         return data
 
