@@ -664,7 +664,7 @@ class MosReducer(RawReducer):
     def _calc_delay_loss(self, resultset, key):
         data = self._get_series(resultset, key)
         if not data:
-            return None
+            return None, None
         jitter_samples = []
         delay_samples = []
         loss = 0
@@ -705,6 +705,8 @@ class MosReducer(RawReducer):
             lossrate = smeta['PACKET_LOSS_RATE']
         else:
             delay, lossrate = self._calc_delay_loss(resultset, key)
+            if delay is None:
+                return None
 
         mos = mos_score(delay, lossrate)
         return mos
