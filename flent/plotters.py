@@ -29,7 +29,8 @@ import warnings
 
 from flent import combiners
 from flent.util import classname, long_substr, format_date, diff_parts, \
-    Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
+    Glob, Update, float_pair, float_pair_noomit, keyval, comma_list, ArgParam, \
+    ArgParser
 from flent.build_info import VERSION
 from flent.loggers import get_logger
 
@@ -293,6 +294,13 @@ def add_plotting_args(parser):
         default=[], help="Data normalisation factor. Divide all data "
         "points by this value. Can be specified multiple times, in which case "
         "each value corresponds to a data series.")
+
+    parser.add_argument(
+        "--data-cutoff",
+        action="store", type=float_pair_noomit, dest="DATA_CUTOFF",
+        help="Data cutoff interval. Cut off all data points outside this "
+        "interval before plotting. For aggregate plots, this will happen "
+        "*before* aggregation, so for instance mean values will be affected.")
 
     parser.add_argument(
         "--bounds-x",
@@ -1297,8 +1305,8 @@ class Plotter(ArgParam):
                                  results.series(series['data'])),
                                 dtype=float)
 
-        if data.any() and config.get('cutoff'):
-            start, end = config['cutoff']
+        if data.any() and (self.data_cutoff or config.get('cutoff')):
+            start, end = self.data_cutoff or config['cutoff']
             if self.absolute_time:
                 start += results.t0
 
@@ -1351,7 +1359,8 @@ class CombineManyPlotter(object):
         combiner = combiners.new(combine_mode, print_n=self.combine_print_n,
                                  filter_regexps=self.filter_regexp,
                                  filter_series=self.filter_series,
-                                 save_dir=self.combine_save_dir)
+                                 save_dir=self.combine_save_dir,
+                                 data_cutoff=self.data_cutoff)
         super(CombineManyPlotter, self).plot(
             combiner(results, config),
             config,

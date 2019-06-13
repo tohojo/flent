@@ -67,7 +67,7 @@ class Combiner(object):
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
 
     def __init__(self, print_n=False, filter_regexps=None, filter_series=None,
-                 save_dir=None):
+                 save_dir=None, data_cutoff=None):
         self.filter_serial = True
         self.filter_prefix = True
         self.print_n = print_n
@@ -77,6 +77,7 @@ class Combiner(object):
         else:
             self.filter_regexps = []
         self.filter_series = filter_series
+        self.data_cutoff = data_cutoff
 
     def __call__(self, results, config):
         if self.check_intermediate(results, config):
@@ -204,7 +205,7 @@ class Combiner(object):
 
     def get_reducer(self, s_config):
         reducer_name = s_config.get('combine_mode', 'mean')
-        cutoff = self.config.get('cutoff', None)
+        cutoff = self.data_cutoff or self.config.get('cutoff', None)
         return get_reducer(reducer_name, cutoff, self.filter_series)
 
 
@@ -247,7 +248,7 @@ class GroupsPointsCombiner(Combiner):
             for r in groups[k]:
                 if len(r.x_values) > len(x_values):
                     x_values = r.x_values
-            cutoff = config.get('cutoff', None)
+            cutoff = self.data_cutoff or config.get('cutoff', None)
             if cutoff is not None:
                 res.x_values = [x for x in x_values
                                 if x >= cutoff[0] and
@@ -279,7 +280,7 @@ class GroupsConcatCombiner(Combiner):
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
             res = ResultSet(TITLE=title, NAME=self.orig_name)
             res.create_series([s['data'] for s in self.orig_series])
-            cutoff = config.get('cutoff', None)
+            cutoff = self.data_cutoff or config.get('cutoff', None)
             x = 0
             for r in groups[k]:
                 if cutoff:

@@ -489,6 +489,13 @@ def float_pair(value):
         raise argparse.ArgumentTypeError("Invalid pair value: %s" % value)
 
 
+def float_pair_noomit(value):
+    val = float_pair(value)
+    if None in val:
+        raise argparse.ArgumentTypeError("Invalid pair value: %s" % value)
+    return val
+
+
 def keyval(value):
     ret = {}
     for p in token_split(value, ";"):
