@@ -562,7 +562,7 @@ class RawReducer(Reducer):
 
         if data and self.cutoff is not None:
             start, end = self.cutoff
-            min_t = min((d['t'] for d in data if 't' in d))
+            min_t = resultset.t0
             start_t = min_t + start if start else min_t - 1
             if end is not None:
                 end_t = min_t + resultset.meta("TOTAL_LENGTH") - end
