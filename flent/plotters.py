@@ -1297,12 +1297,16 @@ class Plotter(ArgParam):
                                  results.series(series['data'])),
                                 dtype=float)
 
-        if 'cutoff' in config and config['cutoff'] and data.any():
-            min_x = data[0].min() + config['cutoff'][0]
-            max_x = data[0].max() + config['cutoff'][1]
+        if data.any() and config.get('cutoff'):
+            start, end = config['cutoff']
+            if self.absolute_time:
+                start += results.t0
 
-            min_idx = data[0].searchsorted(min_x, side='right')
-            max_idx = data[0].searchsorted(max_x, side='left')
+            if end < 0:
+                end += results.meta("TOTAL_LENGTH")
+
+            min_idx = data[0].searchsorted(start, side='right')
+            max_idx = data[0].searchsorted(end, side='left')
 
             data = data[:, min_idx:max_idx]
 

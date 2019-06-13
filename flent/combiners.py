@@ -283,8 +283,14 @@ class GroupsConcatCombiner(Combiner):
             x = 0
             for r in groups[k]:
                 if cutoff:
-                    start = min(r.x_values) + cutoff[0]
-                    end = min(r.x_values) + r.meta("TOTAL_LENGTH") - cutoff[1]
+                    start, end = cutoff
+                    offset = min(r.x_values)
+
+                    if end < 0:
+                        end += r.meta("TOTAL_LENGTH")
+
+                    start += offset
+                    end += offset
                 keys, minvals = [], {}
                 for s in self.orig_series:
                     k = s['data']
@@ -458,9 +464,15 @@ class Reducer(object):
             norm_data = []
 
         if self.cutoff:
-            start = min(resultset.x_values) + self.cutoff[0]
-            end = min(resultset.x_values) + \
-                resultset.meta("TOTAL_LENGTH") - self.cutoff[1]
+            start, end = self.cutoff
+            offset = min(resultset.x_values)
+
+            if end < 0:
+                end += resultset.meta("TOTAL_LENGTH")
+
+            start += offset
+            end += offset
+
             start_idx = bisect_left(resultset.x_values, start)
             end_idx = bisect_right(resultset.x_values, end)
             data = data[start_idx:end_idx]
@@ -564,12 +576,12 @@ class RawReducer(Reducer):
             start, end = self.cutoff
             min_t = resultset.t0
             start_t = min_t + start if start else min_t - 1
-            if end is not None:
-                end_t = min_t + resultset.meta("TOTAL_LENGTH") - end
-                return [d for d in data
-                        if 't' in d and d['t'] > start_t and d['t'] < end_t]
-            else:
-                return [d for d in data if 't' in d and d['t'] > start_t]
+            end_t = min_t + end
+            if end < 0:
+                end_t += resultset.meta("TOTAL_LENGTH")
+
+            return [d for d in data
+                    if 't' in d and d['t'] > start_t and d['t'] < end_t]
 
         return data
 

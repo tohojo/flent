@@ -41,13 +41,13 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                                    'parent': 'airtime_rx',
                                    'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
                                    'type': 'box_combine',
-                                   'cutoff': (DELAY,DELAY),
+                                   'cutoff': (DELAY,-DELAY),
                                    'group_by': 'groups_concat'}
     PLOTS['airtime_rx_combine_long'] = {'description': 'Combined airtime RX plot (long timescale)',
                                         'parent': 'airtime_rx',
                                         'series': [{'data': glob('wifi_stats_*::airtime_rx::**'), 'label': 'RX airtime'}],
                                         'type': 'box_combine',
-                                        'cutoff': (DELAY,DELAY),
+                                        'cutoff': (DELAY,-DELAY),
                                         'group_by': 'groups'}
     PLOTS['airtime_tx'] = {'description': 'WiFi TX airtime',
                            'type': 'timeseries',
@@ -62,13 +62,13 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
                                    'parent': 'airtime_tx',
                                    'series': [{'data': glob('wifi_stats_*::airtime_tx::**'), 'label': 'TX airtime'}],
                                    'type': 'box_combine',
-                                   'cutoff': (DELAY,DELAY),
+                                   'cutoff': (DELAY,-DELAY),
                                    'group_by': 'groups_concat'}
     PLOTS['airtime_tx_combine_long'] = {'description': 'Combined airtime TX plot (long timescale)',
                                         'parent': 'airtime_tx',
                                         'series': [{'data': glob('wifi_stats_*::airtime_tx::**'), 'label': 'TX airtime'}],
                                         'type': 'box_combine',
-                                        'cutoff': (DELAY,DELAY),
+                                        'cutoff': (DELAY,-DELAY),
                                         'group_by': 'groups'}
     PLOTS['airtime'] = {'description': 'WiFi airtime',
                         'type': 'meta',
@@ -99,7 +99,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     PLOTS['airtime_total_combine'] = {'description': 'Combined airtime total plot',
                                       'type': 'box_combine',
                                       'axis_labels': ['Airtime share'],
-                                      'cutoff': (DELAY,DELAY),
+                                      'cutoff': (DELAY,-DELAY),
                                       'group_by': 'groups_concat',
                                       'series': [
                                           {'data': glob('wifi_stats_*::airtime_total::**'),
@@ -111,7 +111,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     PLOTS['airtime_fairness_combine'] = {'description': 'Combined airtime fairness plot',
                                          'type': 'box_combine',
                                          'axis_labels': ['Fairness index'],
-                                         'cutoff': (DELAY,DELAY),
+                                         'cutoff': (DELAY,-DELAY),
                                          'series': [
                                              {'data': glob('wifi_stats_*::airtime_fairness'),
                                               'source': glob('wifi_stats_{id}::airtime_total::**'),
@@ -122,7 +122,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     PLOTS['airtime_fairness_combine_bar'] = {'description': 'Combined airtime fairness bar plot',
                                          'type': 'bar_combine',
                                          'axis_labels': ['Fairness index'],
-                                         'cutoff': (DELAY,DELAY),
+                                         'cutoff': (DELAY,-DELAY),
                                          'series': [
                                              {'data': glob('wifi_stats_*::airtime_fairness'),
                                               'source': glob('wifi_stats_{id}::airtime_total::**'),
@@ -148,7 +148,7 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     PLOTS['airtime_sum_combine'] = {'description': 'Combined airtime sum plot',
                                     'parent': 'airtime_sum',
                                     'type': 'box_combine',
-                                    'cutoff': (DELAY,DELAY),
+                                    'cutoff': (DELAY,-DELAY),
                                     'group_by': 'groups_concat'}
     PLOTS['aggregation'] = {'description': 'WiFi aggregation size',
                            'type': 'timeseries',
@@ -161,5 +161,5 @@ if WIFI_STATS_HOSTS and WIFI_STATS_IFACES and WIFI_STATS_STATIONS:
     PLOTS['aggregation_combine'] = {'description': 'Combined aggregation size plot',
                                    'parent': 'aggregation',
                                    'type': 'box_combine',
-                                   'cutoff': (DELAY,DELAY),
+                                   'cutoff': (DELAY,-DELAY),
                                    'group_by': 'groups_concat'}

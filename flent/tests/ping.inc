@@ -30,7 +30,7 @@ if PING_HOSTS:
     PLOTS['ping_extra_combine'] = {'description': 'Extra ping hosts (combine)',
                                    'type': 'cdf_combine',
                                    'group_by': 'groups_concat',
-                                   'cutoff': (DELAY,DELAY),
+                                   'cutoff': (DELAY,-DELAY),
                                    'axis_labels': ['Latency (ms)'],
                                    'series': [
                                        {'data': glob('Ping (ms) ICMP * (extra)'),
