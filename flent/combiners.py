@@ -516,6 +516,20 @@ class FairnessReducer(Reducer):
 class MeanReducer(Reducer):
     numpy_req = True
 
+    def reduce(self, resultset, series, data=None):
+        if not self.cutoff:
+            r = get_reducer("meta:MEAN_VALUE", None, self.filter_series)
+            res = r.reduce(resultset, series, data)
+            if res:
+                return res
+
+        r = get_reducer("raw_mean", None, self.filter_series)
+        res = r.reduce(resultset, series, data)
+        if res:
+            return res
+
+        return super(MeanReducer, self).reduce(resultset, series, data)
+
     def _reduce(self, data):
         return np.mean(data)
 
@@ -615,8 +629,10 @@ class RawReducer(Reducer):
         return self._reduce(data)
 
 
-class RawMeanReducer(MeanReducer, RawReducer):
-    pass
+class RawMeanReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.mean(data)
 
 
 class RawSeqLossReducer(RawReducer):

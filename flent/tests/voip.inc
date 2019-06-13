@@ -85,11 +85,11 @@ PLOTS['voip_mos_upload']          = {'description': "VoIP MOS and upload through
                                                 # support both types of tests
                                                 {'data': glob('TCP upload sum'),
                                                  'label': 'Upload',
-                                                 'combine_mode': 'meta:MEAN_VALUE',
+                                                 'combine_mode': 'mean',
                                                  'axis': 2},
                                                 {'data': glob('TCP upload'),
                                                  'label': 'Upload',
-                                                 'combine_mode': 'meta:MEAN_VALUE',
+                                                 'combine_mode': 'mean',
                                                  'axis': 2},
                                      ]}
 PLOTS['voip_loss']               = {'description': 'VoIP loss',
