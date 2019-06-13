@@ -710,11 +710,8 @@ class Plotter(ArgParam):
         self.configs = [self.config]
 
     def verify(self):
-        for a in self.figure.axes:
-            if len(a.get_lines()) > 0:
-                return True
-
-        return False
+        lengths = [len(a.get_lines()) for a in self.figure.axes]
+        return any(lengths), lengths
 
     def axes_iter(self):
         return iter(reduce(lambda x, y: x + y, [i['axes'] for i in self.configs]))

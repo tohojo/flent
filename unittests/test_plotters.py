@@ -310,9 +310,10 @@ class TestPlotting(unittest.TestCase):
                     self.output_dir, "%s.%s" % (p, self.fmt))
                 formatter = formatters.new(self.settings)
                 formatter.format([r])
-                if not formatter.verify() and p not in PLOTS_MAY_FAIL:
+                res, plen = formatter.verify()
+                if not res and p not in PLOTS_MAY_FAIL:
                     raise self.failureException(
-                        "Verification of plot '%s' failed" % p)
+                        "Verification of plot '%s' failed: %s" % (p, plen))
             except self.failureException:
                 raise
             except Exception as e:
@@ -359,9 +360,10 @@ class TestGUIPlotting(unittest.TestCase):
         plotters.init_matplotlib("-", False, True)
         for p in self.settings.PLOTS.keys():
             plot = pool.apply(plot_one, (self.settings, p, results))
-            if not plot.verify() and p not in PLOTS_MAY_FAIL:
+            res, plen = plot.verify()
+            if not res and p not in PLOTS_MAY_FAIL:
                 raise self.failureException(
-                    "Verification of plot '%s' failed" % p)
+                    "Verification of plot '%s' failed: %s" % (p, plen))
 
 
 dirname = os.path.join(os.path.dirname(__file__), "test_data")
