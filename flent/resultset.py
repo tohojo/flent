@@ -139,7 +139,7 @@ class ResultSet(object):
         self._raw_keys = None
         self.metadata = SeparatorDict(kwargs, sep=":")
         self.SUFFIX = SUFFIX
-        self.t0 = None
+        self._t0 = None
         if 'TIME' not in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.utcnow()
         if 'NAME' not in self.metadata or self.metadata['NAME'] is None:
@@ -253,8 +253,17 @@ class ResultSet(object):
         return self._results[name]
 
     def _calculate_t0(self):
-        self.t0 = timegm(self.metadata['T0'].timetuple(
+        self._t0 = timegm(self.metadata['T0'].timetuple(
         )) + self.metadata['T0'].microsecond / 1000000.0
+
+    def get_t0(self):
+        if self._t0 is None:
+            self._calculate_t0()
+        return self._t0
+
+    def set_t0(self, value):
+        self._t0 = value
+    t0 = property(get_t0, set_t0)
 
     def raw_series(self, name, absolute=False, raw_key=None):
         if name not in self.raw_values:
@@ -262,9 +271,6 @@ class ResultSet(object):
 
         if raw_key is None:
             raw_key = 'val'
-
-        if self.t0 is None:
-            self._calculate_t0()
 
         for i in self.raw_values[name]:
             try:
