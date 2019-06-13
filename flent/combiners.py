@@ -575,13 +575,19 @@ class RawReducer(Reducer):
 
     def reduce(self, resultset, series, data=None):
         key = series['data']
-        if '::' in key and 'raw_key' not in series:
-            key = key.split("::")[0]
         raw_key = series.get("raw_key", "val")
         try:
             rawdata = self._get_series(resultset, key, ensure=raw_key)
         except KeyError:
-            return None
+            if '::' in key and 'raw_key' not in series:
+                key = key.split("::")[0]
+                try:
+                    rawdata = self._get_series(resultset, key, ensure=raw_key)
+                except KeyError:
+                    return None
+            else:
+                return None
+
         if not rawdata and self.cutoff:
             logger.warning(
                 "No data points with current cutoff settings, "
