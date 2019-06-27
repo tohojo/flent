@@ -604,7 +604,7 @@ class RawReducer(Reducer):
             rawdata = self._get_series(resultset, key, ensure=raw_key)
         except KeyError:
             if '::' in key and 'raw_key' not in series:
-                key = key.split("::")[0]
+                key, raw_key = key.split("::")
                 try:
                     rawdata = self._get_series(resultset, key, ensure=raw_key)
                 except KeyError:
