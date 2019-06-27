@@ -163,12 +163,22 @@ class ResultSet(object):
                                                   fmt="%Y-%m-%d %H:%M:%S"))
             self.long_title = self.title
 
+        if 'SERIES_META' not in self.metadata:
+            self.metadata['SERIES_META'] = {}
+
     def meta(self, key=None, value=_EMPTY):
         if key:
             if value is not _EMPTY:
                 self.metadata[key] = value
             return self.metadata[key]
         return self.metadata
+
+    def series_meta(self, series, key=None, value=_EMPTY):
+        if key:
+            if value is not _EMPTY:
+                self.metadata['SERIES_META'][series][key] = value
+            return self.metadata['SERIES_META'][series][key]
+        return self.metadata['SERIES_META'][series]
 
     def label(self):
         return self._label or self.metadata["TITLE"] \
@@ -204,6 +214,7 @@ class ResultSet(object):
     def create_series(self, series_names):
         for n in series_names:
             self._results[n] = []
+            self.metadata['SERIES_META'][n] = {}
 
     def append_datapoint(self, x, data):
         """Append a datapoint to each series. Missing data results in append
