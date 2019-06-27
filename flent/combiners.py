@@ -612,12 +612,6 @@ class RawReducer(Reducer):
             else:
                 return None
 
-        if not rawdata and self.cutoff:
-            logger.warning(
-                "No data points with current cutoff settings, "
-                "relaxing end cutoff.")
-            self.cutoff = (self.cutoff[0], 0)
-            rawdata = self._get_series(resultset, key)
         if self.filter_none:
             data = [d[raw_key] for d in rawdata if d[raw_key] is not None]
         else:
