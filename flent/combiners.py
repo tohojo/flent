@@ -511,29 +511,40 @@ class FairnessReducer(Reducer):
         return math.fsum(values)**2 / (len(values) * valsum)
 
 
-class MeanReducer(Reducer):
-    numpy_req = True
+class TryReducer(Reducer):
+    meta_key = None
+    raw_key = None
 
     def reduce(self, resultset, series, data=None):
-        if not self.cutoff:
-            r = get_reducer("meta:MEAN_VALUE", None, self.filter_series)
+        if not self.cutoff and self.meta_key:
+            r = get_reducer("meta:" + self.meta_key, None, self.filter_series)
             res = r.reduce(resultset, series, data)
             if res:
                 return res
 
-        r = get_reducer("raw_mean", self.cutoff, self.filter_series)
-        res = r.reduce(resultset, series, data)
-        if res:
-            return res
+        if self.raw_key:
+            r = get_reducer("raw_" + self.raw_key, self.cutoff,
+                            self.filter_series)
+            res = r.reduce(resultset, series, data)
+            if res:
+                return res
 
-        return super(MeanReducer, self).reduce(resultset, series, data)
+        return super(TryReducer, self).reduce(resultset, series, data)
+
+
+class MeanReducer(TryReducer):
+    numpy_req = True
+    meta_key = "MEAN_VALUE"
+    raw_key = "mean"
 
     def _reduce(self, data):
         return np.mean(data)
 
 
-class MedianReducer(Reducer):
+class MedianReducer(TryReducer):
     numpy_req = True
+    meta_key = None
+    raw_key = "median"
 
     def _reduce(self, data):
         return np.median(data)
@@ -625,6 +636,12 @@ class RawMeanReducer(RawReducer):
 
     def _reduce(self, data):
         return np.mean(data)
+
+
+class RawMedianReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.median(data)
 
 
 class RawSeqLossReducer(RawReducer):
