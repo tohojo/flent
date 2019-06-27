@@ -665,9 +665,9 @@ class RawReducer(Reducer):
                 try:
                     rawdata = self._get_series(resultset, key, ensure=raw_key)
                 except KeyError:
-                    return None
+                    return None, raw_key
             else:
-                return None
+                return None, raw_key
 
         return rawdata, raw_key
 
