@@ -551,17 +551,15 @@ class MedianReducer(TryReducer):
 
 
 class MinReducer(Reducer):
-    numpy_req = True
 
     def _reduce(self, data):
-        return np.mean(data)
+        return min(data)
 
 
 class MaxReducer(Reducer):
-    numpy_req = True
 
     def _reduce(self, data):
-        return np.mean(data)
+        return max(data)
 
 
 class SpanReducer(Reducer):
