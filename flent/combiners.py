@@ -75,8 +75,11 @@ class Combiner(object):
         self.filter_regexps = filter_regexps if filter_regexps else []
         self.filter_series = filter_series if filter_series else []
         self.data_cutoff = data_cutoff
+        self.mode_override = None
 
-    def __call__(self, results, config):
+    def __call__(self, results, config, combine_mode=None):
+        self.mode_override = combine_mode
+
         if self.check_intermediate(results, config):
             return results
 
@@ -201,7 +204,7 @@ class Combiner(object):
         return new_results
 
     def get_reducer(self, s_config):
-        reducer_name = s_config.get('combine_mode', 'mean')
+        reducer_name = self.mode_override or s_config.get('combine_mode', 'mean')
         cutoff = self.data_cutoff or self.config.get('cutoff', None)
         return get_reducer(reducer_name, cutoff, self.filter_series)
 
