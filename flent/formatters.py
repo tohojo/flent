@@ -28,7 +28,7 @@ import sys
 
 from functools import reduce
 
-from flent import plotters
+from flent import plotters, combiners
 from flent.util import classname, format_bytes
 from flent.loggers import get_logger
 
@@ -262,21 +262,18 @@ class SummaryFormatter(Formatter):
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
-        try:
-            import numpy
-            self.np = numpy
-        except ImportError:
-            self.np = None
 
     def format(self, results):
         self.open_output()
         for r in results:
-            self.write("Summary of %s test run " % r.meta('NAME'))
+            self.write("\nSummary of %s test run from %s" % (r.meta('NAME'),
+                                                             r.meta("TIME")))
             if r.meta('TITLE'):
-                self.write("'%s' (at %s)" % (r.meta('TITLE'), r.meta("TIME")))
-            else:
-                self.write("at %s" % r.meta("TIME"))
-            self.write(":\n\n")
+                self.write("\n  Title: '%s'" % r.meta('TITLE'))
+            if self.settings.DATA_CUTOFF:
+                self.write("\n  Cut data to interval: [%.2f, %.2f]" %
+                           self.settings.DATA_CUTOFF)
+            self.write("\n\n")
 
             if 'FROM_COMBINER' in r.meta():
                 m = {}
@@ -294,6 +291,18 @@ class SummaryFormatter(Formatter):
                            width=self.COL_WIDTH,
                            lwidth=self.COL_WIDTH + unit_len))
 
+            # The calls here are a bit awkward because the combiners were
+            # originally tailored to plotting; but the benefit is that we can
+            # re-use the same code that is used to make combination plots for
+            # this summary output, ensuring consistency and feature parity.
+            comb = combiners.new('groups',
+                                 data_cutoff=self.settings.DATA_CUTOFF)
+            series = []
+            for s in r.series_names:
+                series.append({'data': s})
+            mean_res = comb([r], {'series': series}, combine_mode='mean')[0]
+            median_res = comb([r], {'series': series}, combine_mode='median')[0]
+
             for s in sorted(r.series_names):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
                 try:
@@ -309,19 +318,15 @@ class SummaryFormatter(Formatter):
                 units = (md.get('UNITS') or
                          self.settings.DATA_SETS.get(s, {}).get('units', ''))
 
-                mean = md.get('MEAN_VALUE')
-                median = md.get('RTT_MEDIAN') if units == 'ms' else None
+                mean = mean_res[s][0]
+                median = median_res[s][0]
+                # The combiners store the pre-reduction N values in a special
+                # series_meta specifically this usage
+                n = mean_res.series_meta(s, 'orig_n')[0]
 
-                if not mean and not d:
+                if mean is None:
                     self.write("No data.\n")
                     continue
-
-                if d and self.np is not None:
-                    mean = mean or self.np.mean(d)
-                    median = median or self.np.median(d)
-                elif d:
-                    mean = mean or sum(d) / len(d)
-                    median = median or sorted(d)[len(d) // 2]
 
                 if mean and units == 'bytes':
                     factor, units = format_bytes(max(mean, median))
@@ -341,7 +346,7 @@ class SummaryFormatter(Formatter):
                     self.write("{0:>{width}} {1}".format("N/A", units,
                                                          width=self.COL_WIDTH))
 
-                self.write("{0:{width}d}\n".format(len(d),
+                self.write("{0:{width}d}\n".format(n,
                                                    width=(self.COL_WIDTH +
                                                           unit_len - len(units))))
 
