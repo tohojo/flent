@@ -564,16 +564,50 @@ class MedianReducer(TryReducer):
         return np.median(data)
 
 
-class MinReducer(Reducer):
+class StdReducer(TryReducer):
+    numpy_req = True
+    meta_key = None
+    raw_key = "std"
+
+    def _reduce(self, data):
+        return np.std(data)
+
+
+class VarReducer(TryReducer):
+    numpy_req = True
+    meta_key = None
+    raw_key = "var"
+
+    def _reduce(self, data):
+        return np.var(data)
+
+
+class MinReducer(TryReducer):
+    meta_key = None
+    raw_key = "min"
 
     def _reduce(self, data):
         return min(data)
 
 
-class MaxReducer(Reducer):
+class MaxReducer(TryReducer):
+    meta_key = None
+    raw_key = "max"
 
     def _reduce(self, data):
         return max(data)
+
+
+class CumsumReducer(TryReducer):
+    meta_key = None
+    raw_key = "cumsum"
+
+    def reduce(self, resultset, series, data=None):
+        self.stepsize = resultset.meta("STEP_SIZE")
+        return super(CumsumReducer, self).reduce(resultset, series, data)
+
+    def _reduce(self, data):
+        return np.cumsum(data)[-1] * self.stepsize
 
 
 class SpanReducer(Reducer):
@@ -620,7 +654,7 @@ class RawReducer(Reducer):
 
         return data
 
-    def reduce(self, resultset, series, data=None):
+    def get_rawdata(self, resultset, series):
         key = series['data']
         raw_key = series.get("raw_key", "val")
         try:
@@ -635,6 +669,13 @@ class RawReducer(Reducer):
             else:
                 return None
 
+        return rawdata, raw_key
+
+    def reduce(self, resultset, series, data=None):
+        rawdata, raw_key = self.get_rawdata(resultset, series)
+
+        if rawdata is None:
+            return None
         if self.filter_none:
             data = [d[raw_key] for d in rawdata if d[raw_key] is not None]
         else:
@@ -655,6 +696,41 @@ class RawMedianReducer(RawReducer):
 
     def _reduce(self, data):
         return np.median(data)
+
+
+class RawStdReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.std(data)
+
+
+class RawVarReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.var(data)
+
+
+class RawMinReducer(RawReducer):
+
+    def _reduce(self, data):
+        return min(data)
+
+
+class RawMaxReducer(RawReducer):
+
+    def _reduce(self, data):
+        return max(data)
+
+
+class RawCumsumReducer(RawReducer):
+
+    def reduce(self, resultset, series, data=None):
+        rawdata, raw_key = self.get_rawdata(resultset, series)
+
+        if rawdata is None:
+            return None
+
+        return sum([d[raw_key] * d['dur'] for d in rawdata if 'dur' in d])
 
 
 class RawSeqLossReducer(RawReducer):
