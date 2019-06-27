@@ -223,14 +223,18 @@ class GroupsCombiner(Combiner):
             res = ResultSet(TITLE=title, NAME=self.orig_name)
             res.create_series([s['data'] for s in self.orig_series])
             x = 0
+            orig_n = {s['data']: [] for s in self.orig_series}
             for r in groups[k]:
                 data = {}
                 for s in self.orig_series:
                     reducer = self.get_reducer(s)
                     data[s['data']] = reducer(r, s)
+                    orig_n[s['data']].append(reducer.N)
 
                 res.append_datapoint(x, data)
                 x += 1
+            for k, v in orig_n.items():
+                res.series_meta(k, 'orig_n', v)
             new_results.append(res)
         return new_results
 
@@ -450,6 +454,7 @@ class Reducer(object):
         self.arg = arg
         self.cutoff = cutoff
         self.filter_series = filter_series
+        self.N = 0
 
     def __call__(self, resultset, series, data=None):
         return self.reduce(resultset, series, data)
@@ -490,6 +495,7 @@ class Reducer(object):
         if not data:
             return None
 
+        self.N = len(data)
         val = self._reduce(data)
 
         if norm_data:
@@ -526,6 +532,7 @@ class TryReducer(Reducer):
             r = get_reducer("meta:" + self.meta_key, None, self.filter_series)
             res = r.reduce(resultset, series, data)
             if res:
+                self.N = r.N
                 return res
 
         if self.raw_key:
@@ -533,6 +540,7 @@ class TryReducer(Reducer):
                             self.filter_series)
             res = r.reduce(resultset, series, data)
             if res:
+                self.N = r.N
                 return res
 
         return super(TryReducer, self).reduce(resultset, series, data)
@@ -633,6 +641,7 @@ class RawReducer(Reducer):
             data = [d[raw_key] for d in rawdata]
         if not data:
             return None
+        self.N = len(data)
         return self._reduce(data)
 
 
@@ -731,7 +740,9 @@ class MetaReducer(Reducer):
         key = series['data']
         metakey = self.arg
         try:
-            return resultset.meta('SERIES_META')[key][metakey]
+            val = resultset.series_meta(key, metakey)
+            self.N = len(resultset[key])
+            return val
         except KeyError:
             return None
 
