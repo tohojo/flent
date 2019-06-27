@@ -72,11 +72,8 @@ class Combiner(object):
         self.filter_prefix = True
         self.print_n = print_n
         self.save_dir = save_dir
-        if filter_regexps is not None:
-            self.filter_regexps = filter_regexps
-        else:
-            self.filter_regexps = []
-        self.filter_series = filter_series
+        self.filter_regexps = filter_regexps if filter_regexps else []
+        self.filter_series = filter_series if filter_series else []
         self.data_cutoff = data_cutoff
 
     def __call__(self, results, config):
