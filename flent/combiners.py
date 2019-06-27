@@ -248,22 +248,25 @@ class GroupsPointsCombiner(Combiner):
             for r in groups[k]:
                 if len(r.x_values) > len(x_values):
                     x_values = r.x_values
+            length = max([r.meta("TOTAL_LENGTH") for r in groups[k]])
             cutoff = self.data_cutoff or config.get('cutoff', None)
             if cutoff is not None:
+                start, end = cutoff
+                if end <= 0:
+                    end += length
                 res.x_values = [x for x in x_values
-                                if x >= cutoff[0] and
-                                x <= max(x_values) - cutoff[1]]
+                                if x >= start and
+                                x <= end]
             else:
                 res.x_values = x_values
             for s in config['series']:
-                length = max([r.meta("TOTAL_LENGTH") for r in groups[k]])
                 data = zip_longest(x_values, *[r[s['data']] for r in groups[k]])
                 new_data = []
                 reducer = self.get_reducer(s)
                 reducer.cutoff = None
                 for d in data:
-                    if cutoff is None or (d[0] >= cutoff[0] and
-                                          d[0] <= length - cutoff[1]):
+                    if cutoff is None or (d[0] >= start and
+                                          d[0] <= end):
                         new_data.append(reducer(res, s, data=d[1:]))
                 res.add_result(s['data'], new_data)
             new_results.append(res)
