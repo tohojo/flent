@@ -521,7 +521,7 @@ class MeanReducer(Reducer):
             if res:
                 return res
 
-        r = get_reducer("raw_mean", None, self.filter_series)
+        r = get_reducer("raw_mean", self.cutoff, self.filter_series)
         res = r.reduce(resultset, series, data)
         if res:
             return res
