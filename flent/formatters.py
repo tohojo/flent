@@ -213,7 +213,37 @@ class CsvFormatter(TableFormatter):
             return
 
 
-class StatsFormatter(Formatter):
+class CombiningFormatter(Formatter):
+
+    def make_combines(self, results, modes):
+        # The calls here are a bit awkward because the combiners were
+        # originally tailored to plotting; but the benefit is that we can
+        # re-use the same code that is used to make combination plots for
+        # this summary output, ensuring consistency and feature parity.
+        comb = combiners.new('groups',
+                             data_cutoff=self.settings.DATA_CUTOFF)
+        series = []
+        for s in results.series_names:
+            series.append({'data': s})
+
+        self.combined_res = {}
+        for m in modes:
+            self.combined_res[m] = comb([results], {'series': series},
+                                        combine_mode=m)[0]
+
+    def get_res(self, series, mode):
+        if mode == 'N':
+            # The combiners store the pre-reduction N values in a special
+            # series_meta specifically this usage
+            return self.combined_res['mean'].series_meta(series, 'orig_n')[0]
+
+        if mode not in self.combined_res:
+            return 0
+
+        return self.combined_res[mode][series][0]
+
+
+class StatsFormatter(CombiningFormatter):
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
@@ -235,28 +265,30 @@ class StatsFormatter(Formatter):
                 self.write(" - %s" % r.meta('TITLE'))
             self.write(":\n")
 
+            self.make_combines(r, ['mean', 'median', 'min', 'max',
+                                   'std', 'var', 'cumsum'])
+
             for s in sorted(r.series_names):
                 self.write(" %s:\n" % s)
-                d = [i for i in r.series(s) if i]
-                if not d:
+                if not self.get_res(s, 'mean'):
                     self.write("  No data.\n")
                     continue
-                cs = self.np.cumsum(d)
+
                 units = self.settings.DATA_SETS[s]['units']
-                self.write("  Data points: %d\n" % len(d))
+                self.write("  Data points: %d\n" % self.get_res(s, 'N'))
                 if units != "ms":
                     self.write("  Total:       %f %s\n" % (
-                        cs[-1] * r.meta('STEP_SIZE'),
+                        self.get_res(s, 'cumsum'),
                         units.replace("/s", "")))
-                self.write("  Mean:        %f %s\n" % (self.np.mean(d), units))
-                self.write("  Median:      %f %s\n" % (self.np.median(d), units))
-                self.write("  Min:         %f %s\n" % (self.np.min(d), units))
-                self.write("  Max:         %f %s\n" % (self.np.max(d), units))
-                self.write("  Std dev:     %f\n" % (self.np.std(d)))
-                self.write("  Variance:    %f\n" % (self.np.var(d)))
+                self.write("  Mean:        %f %s\n" % (self.get_res(s, 'mean'), units))
+                self.write("  Median:      %f %s\n" % (self.get_res(s, 'median'), units))
+                self.write("  Min:         %f %s\n" % (self.get_res(s, 'min'), units))
+                self.write("  Max:         %f %s\n" % (self.get_res(s, 'max'), units))
+                self.write("  Std dev:     %f\n" % (self.get_res(s, 'std')))
+                self.write("  Variance:    %f\n" % (self.get_res(s, 'var')))
 
 
-class SummaryFormatter(Formatter):
+class SummaryFormatter(CombiningFormatter):
 
     COL_WIDTH = 12
 
@@ -291,18 +323,7 @@ class SummaryFormatter(Formatter):
                            width=self.COL_WIDTH,
                            lwidth=self.COL_WIDTH + unit_len))
 
-            # The calls here are a bit awkward because the combiners were
-            # originally tailored to plotting; but the benefit is that we can
-            # re-use the same code that is used to make combination plots for
-            # this summary output, ensuring consistency and feature parity.
-            comb = combiners.new('groups',
-                                 data_cutoff=self.settings.DATA_CUTOFF)
-            series = []
-            for s in r.series_names:
-                series.append({'data': s})
-            mean_res = comb([r], {'series': series}, combine_mode='mean')[0]
-            median_res = comb([r], {'series': series}, combine_mode='median')[0]
-
+            self.make_combines(r, ['mean', 'median'])
             for s in sorted(r.series_names):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
                 try:
@@ -318,11 +339,9 @@ class SummaryFormatter(Formatter):
                 units = (md.get('UNITS') or
                          self.settings.DATA_SETS.get(s, {}).get('units', ''))
 
-                mean = mean_res[s][0]
-                median = median_res[s][0]
-                # The combiners store the pre-reduction N values in a special
-                # series_meta specifically this usage
-                n = mean_res.series_meta(s, 'orig_n')[0]
+                mean = self.get_res(s, 'mean')
+                median = self.get_res(s, 'median')
+                n = self.get_res(s, 'N')
 
                 if mean is None:
                     self.write("No data.\n")
