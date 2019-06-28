@@ -139,7 +139,7 @@ class ResultSet(object):
         self._raw_keys = None
         self.metadata = SeparatorDict(kwargs, sep=":")
         self.SUFFIX = SUFFIX
-        self.t0 = None
+        self._t0 = None
         if 'TIME' not in self.metadata or self.metadata['TIME'] is None:
             self.metadata['TIME'] = datetime.utcnow()
         if 'NAME' not in self.metadata or self.metadata['NAME'] is None:
@@ -163,12 +163,22 @@ class ResultSet(object):
                                                   fmt="%Y-%m-%d %H:%M:%S"))
             self.long_title = self.title
 
+        if 'SERIES_META' not in self.metadata:
+            self.metadata['SERIES_META'] = {}
+
     def meta(self, key=None, value=_EMPTY):
         if key:
             if value is not _EMPTY:
                 self.metadata[key] = value
             return self.metadata[key]
         return self.metadata
+
+    def series_meta(self, series, key=None, value=_EMPTY):
+        if key:
+            if value is not _EMPTY:
+                self.metadata['SERIES_META'][series][key] = value
+            return self.metadata['SERIES_META'][series][key]
+        return self.metadata['SERIES_META'][series]
 
     def label(self):
         return self._label or self.metadata["TITLE"] \
@@ -204,6 +214,7 @@ class ResultSet(object):
     def create_series(self, series_names):
         for n in series_names:
             self._results[n] = []
+            self.metadata['SERIES_META'][n] = {}
 
     def append_datapoint(self, x, data):
         """Append a datapoint to each series. Missing data results in append
@@ -253,8 +264,17 @@ class ResultSet(object):
         return self._results[name]
 
     def _calculate_t0(self):
-        self.t0 = timegm(self.metadata['T0'].timetuple(
+        self._t0 = timegm(self.metadata['T0'].timetuple(
         )) + self.metadata['T0'].microsecond / 1000000.0
+
+    def get_t0(self):
+        if self._t0 is None:
+            self._calculate_t0()
+        return self._t0
+
+    def set_t0(self, value):
+        self._t0 = value
+    t0 = property(get_t0, set_t0)
 
     def raw_series(self, name, absolute=False, raw_key=None):
         if name not in self.raw_values:
@@ -262,9 +282,6 @@ class ResultSet(object):
 
         if raw_key is None:
             raw_key = 'val'
-
-        if self.t0 is None:
-            self._calculate_t0()
 
         for i in self.raw_values[name]:
             try:

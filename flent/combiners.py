@@ -67,18 +67,19 @@ class Combiner(object):
     serial_regex = re.compile(r'\W?\b\d+\b\W?')
 
     def __init__(self, print_n=False, filter_regexps=None, filter_series=None,
-                 save_dir=None):
+                 save_dir=None, data_cutoff=None):
         self.filter_serial = True
         self.filter_prefix = True
         self.print_n = print_n
         self.save_dir = save_dir
-        if filter_regexps is not None:
-            self.filter_regexps = filter_regexps
-        else:
-            self.filter_regexps = []
-        self.filter_series = filter_series
+        self.filter_regexps = filter_regexps if filter_regexps else []
+        self.filter_series = filter_series if filter_series else []
+        self.data_cutoff = data_cutoff
+        self.mode_override = None
 
-    def __call__(self, results, config):
+    def __call__(self, results, config, combine_mode=None):
+        self.mode_override = combine_mode
+
         if self.check_intermediate(results, config):
             return results
 
@@ -203,8 +204,8 @@ class Combiner(object):
         return new_results
 
     def get_reducer(self, s_config):
-        reducer_name = s_config.get('combine_mode', 'mean')
-        cutoff = self.config.get('cutoff', None)
+        reducer_name = self.mode_override or s_config.get('combine_mode', 'mean')
+        cutoff = self.data_cutoff or self.config.get('cutoff', None)
         return get_reducer(reducer_name, cutoff, self.filter_series)
 
 
@@ -222,14 +223,18 @@ class GroupsCombiner(Combiner):
             res = ResultSet(TITLE=title, NAME=self.orig_name)
             res.create_series([s['data'] for s in self.orig_series])
             x = 0
+            orig_n = {s['data']: [] for s in self.orig_series}
             for r in groups[k]:
                 data = {}
                 for s in self.orig_series:
                     reducer = self.get_reducer(s)
                     data[s['data']] = reducer(r, s)
+                    orig_n[s['data']].append(reducer.N)
 
                 res.append_datapoint(x, data)
                 x += 1
+            for k, v in orig_n.items():
+                res.series_meta(k, 'orig_n', v)
             new_results.append(res)
         return new_results
 
@@ -247,22 +252,25 @@ class GroupsPointsCombiner(Combiner):
             for r in groups[k]:
                 if len(r.x_values) > len(x_values):
                     x_values = r.x_values
-            cutoff = config.get('cutoff', None)
+            length = max([r.meta("TOTAL_LENGTH") for r in groups[k]])
+            cutoff = self.data_cutoff or config.get('cutoff', None)
             if cutoff is not None:
+                start, end = cutoff
+                if end <= 0:
+                    end += length
                 res.x_values = [x for x in x_values
-                                if x >= cutoff[0] and
-                                x <= max(x_values) - cutoff[1]]
+                                if x >= start and
+                                x <= end]
             else:
                 res.x_values = x_values
             for s in config['series']:
-                length = max([r.meta("TOTAL_LENGTH") for r in groups[k]])
                 data = zip_longest(x_values, *[r[s['data']] for r in groups[k]])
                 new_data = []
                 reducer = self.get_reducer(s)
                 reducer.cutoff = None
                 for d in data:
-                    if cutoff is None or (d[0] >= cutoff[0] and
-                                          d[0] <= length - cutoff[1]):
+                    if cutoff is None or (d[0] >= start and
+                                          d[0] <= end):
                         new_data.append(reducer(res, s, data=d[1:]))
                 res.add_result(s['data'], new_data)
             new_results.append(res)
@@ -279,12 +287,18 @@ class GroupsConcatCombiner(Combiner):
             title = "%s (n=%d)" % (k, len(groups[k])) if self.print_n else k
             res = ResultSet(TITLE=title, NAME=self.orig_name)
             res.create_series([s['data'] for s in self.orig_series])
-            cutoff = config.get('cutoff', None)
+            cutoff = self.data_cutoff or config.get('cutoff', None)
             x = 0
             for r in groups[k]:
                 if cutoff:
-                    start = min(r.x_values) + cutoff[0]
-                    end = min(r.x_values) + r.meta("TOTAL_LENGTH") - cutoff[1]
+                    start, end = cutoff
+                    offset = min(r.x_values)
+
+                    if end <= 0:
+                        end += r.meta("TOTAL_LENGTH")
+
+                    start += offset
+                    end += offset
                 keys, minvals = [], {}
                 for s in self.orig_series:
                     k = s['data']
@@ -440,6 +454,7 @@ class Reducer(object):
         self.arg = arg
         self.cutoff = cutoff
         self.filter_series = filter_series
+        self.N = 0
 
     def __call__(self, resultset, series, data=None):
         return self.reduce(resultset, series, data)
@@ -458,9 +473,15 @@ class Reducer(object):
             norm_data = []
 
         if self.cutoff:
-            start = min(resultset.x_values) + self.cutoff[0]
-            end = min(resultset.x_values) + \
-                resultset.meta("TOTAL_LENGTH") - self.cutoff[1]
+            start, end = self.cutoff
+            offset = min(resultset.x_values)
+
+            if end <= 0:
+                end += resultset.meta("TOTAL_LENGTH")
+
+            start += offset
+            end += offset
+
             start_idx = bisect_left(resultset.x_values, start)
             end_idx = bisect_right(resultset.x_values, end)
             data = data[start_idx:end_idx]
@@ -474,6 +495,7 @@ class Reducer(object):
         if not data:
             return None
 
+        self.N = len(data)
         val = self._reduce(data)
 
         if norm_data:
@@ -501,32 +523,91 @@ class FairnessReducer(Reducer):
         return math.fsum(values)**2 / (len(values) * valsum)
 
 
-class MeanReducer(Reducer):
+class TryReducer(Reducer):
+    meta_key = None
+    raw_key = None
+
+    def reduce(self, resultset, series, data=None):
+        if not self.cutoff and self.meta_key:
+            r = get_reducer("meta:" + self.meta_key, None, self.filter_series)
+            res = r.reduce(resultset, series, data)
+            if res:
+                self.N = r.N
+                return res
+
+        if self.raw_key:
+            r = get_reducer("raw_" + self.raw_key, self.cutoff,
+                            self.filter_series)
+            res = r.reduce(resultset, series, data)
+            if res:
+                self.N = r.N
+                return res
+
+        return super(TryReducer, self).reduce(resultset, series, data)
+
+
+class MeanReducer(TryReducer):
     numpy_req = True
+    meta_key = "MEAN_VALUE"
+    raw_key = "mean"
 
     def _reduce(self, data):
         return np.mean(data)
 
 
-class MedianReducer(Reducer):
+class MedianReducer(TryReducer):
     numpy_req = True
+    meta_key = None
+    raw_key = "median"
 
     def _reduce(self, data):
         return np.median(data)
 
 
-class MinReducer(Reducer):
+class StdReducer(TryReducer):
     numpy_req = True
+    meta_key = None
+    raw_key = "std"
 
     def _reduce(self, data):
-        return np.mean(data)
+        return np.std(data)
 
 
-class MaxReducer(Reducer):
+class VarReducer(TryReducer):
     numpy_req = True
+    meta_key = None
+    raw_key = "var"
 
     def _reduce(self, data):
-        return np.mean(data)
+        return np.var(data)
+
+
+class MinReducer(TryReducer):
+    meta_key = None
+    raw_key = "min"
+
+    def _reduce(self, data):
+        return min(data)
+
+
+class MaxReducer(TryReducer):
+    meta_key = None
+    raw_key = "max"
+
+    def _reduce(self, data):
+        return max(data)
+
+
+class CumsumReducer(TryReducer):
+    meta_key = None
+    raw_key = "cumsum"
+
+    def reduce(self, resultset, series, data=None):
+        self.stepsize = resultset.meta("STEP_SIZE")
+        return super(CumsumReducer, self).reduce(resultset, series, data)
+
+    def _reduce(self, data):
+        return np.cumsum(data)[-1] * self.stepsize
 
 
 class SpanReducer(Reducer):
@@ -562,43 +643,94 @@ class RawReducer(Reducer):
 
         if data and self.cutoff is not None:
             start, end = self.cutoff
-            min_t = min((d['t'] for d in data if 't' in d))
+            min_t = resultset.t0
             start_t = min_t + start if start else min_t - 1
-            if end is not None:
-                end_t = min_t + resultset.meta("TOTAL_LENGTH") - end
-                return [d for d in data
-                        if 't' in d and d['t'] > start_t and d['t'] < end_t]
-            else:
-                return [d for d in data if 't' in d and d['t'] > start_t]
+            end_t = min_t + end
+            if end <= 0:
+                end_t += resultset.meta("TOTAL_LENGTH")
+
+            return [d for d in data
+                    if 't' in d and d['t'] > start_t and d['t'] < end_t]
 
         return data
 
-    def reduce(self, resultset, series, data=None):
+    def get_rawdata(self, resultset, series):
         key = series['data']
-        if '::' in key and 'raw_key' not in series:
-            key = key.split("::")[0]
         raw_key = series.get("raw_key", "val")
         try:
             rawdata = self._get_series(resultset, key, ensure=raw_key)
         except KeyError:
+            if '::' in key and 'raw_key' not in series:
+                key, raw_key = key.split("::")
+                try:
+                    rawdata = self._get_series(resultset, key, ensure=raw_key)
+                except KeyError:
+                    return None, raw_key
+            else:
+                return None, raw_key
+
+        return rawdata, raw_key
+
+    def reduce(self, resultset, series, data=None):
+        rawdata, raw_key = self.get_rawdata(resultset, series)
+
+        if rawdata is None:
             return None
-        if not rawdata and self.cutoff:
-            logger.warning(
-                "No data points with current cutoff settings, "
-                "relaxing end cutoff.")
-            self.cutoff = (self.cutoff[0], None)
-            rawdata = self._get_series(resultset, key)
         if self.filter_none:
             data = [d[raw_key] for d in rawdata if d[raw_key] is not None]
         else:
             data = [d[raw_key] for d in rawdata]
         if not data:
             return None
+        self.N = len(data)
         return self._reduce(data)
 
 
-class RawMeanReducer(MeanReducer, RawReducer):
-    pass
+class RawMeanReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.mean(data)
+
+
+class RawMedianReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.median(data)
+
+
+class RawStdReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.std(data)
+
+
+class RawVarReducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.var(data)
+
+
+class RawMinReducer(RawReducer):
+
+    def _reduce(self, data):
+        return min(data)
+
+
+class RawMaxReducer(RawReducer):
+
+    def _reduce(self, data):
+        return max(data)
+
+
+class RawCumsumReducer(RawReducer):
+
+    def reduce(self, resultset, series, data=None):
+        rawdata, raw_key = self.get_rawdata(resultset, series)
+
+        if rawdata is None:
+            return None
+
+        return sum([d[raw_key] * d['dur'] for d in rawdata if 'dur' in d])
 
 
 class RawSeqLossReducer(RawReducer):
@@ -629,7 +761,7 @@ class MosReducer(RawReducer):
     def _calc_delay_loss(self, resultset, key):
         data = self._get_series(resultset, key)
         if not data:
-            return None
+            return None, None
         jitter_samples = []
         delay_samples = []
         loss = 0
@@ -670,6 +802,8 @@ class MosReducer(RawReducer):
             lossrate = smeta['PACKET_LOSS_RATE']
         else:
             delay, lossrate = self._calc_delay_loss(resultset, key)
+            if delay is None:
+                return None
 
         mos = mos_score(delay, lossrate)
         return mos
@@ -682,7 +816,9 @@ class MetaReducer(Reducer):
         key = series['data']
         metakey = self.arg
         try:
-            return resultset.meta('SERIES_META')[key][metakey]
+            val = resultset.series_meta(key, metakey)
+            self.N = len(resultset[key])
+            return val
         except KeyError:
             return None
 

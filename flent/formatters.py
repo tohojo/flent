@@ -28,7 +28,7 @@ import sys
 
 from functools import reduce
 
-from flent import plotters
+from flent import plotters, combiners
 from flent.util import classname, format_bytes
 from flent.loggers import get_logger
 
@@ -213,7 +213,37 @@ class CsvFormatter(TableFormatter):
             return
 
 
-class StatsFormatter(Formatter):
+class CombiningFormatter(Formatter):
+
+    def make_combines(self, results, modes):
+        # The calls here are a bit awkward because the combiners were
+        # originally tailored to plotting; but the benefit is that we can
+        # re-use the same code that is used to make combination plots for
+        # this summary output, ensuring consistency and feature parity.
+        comb = combiners.new('groups',
+                             data_cutoff=self.settings.DATA_CUTOFF)
+        series = []
+        for s in results.series_names:
+            series.append({'data': s})
+
+        self.combined_res = {}
+        for m in modes:
+            self.combined_res[m] = comb([results], {'series': series},
+                                        combine_mode=m)[0]
+
+    def get_res(self, series, mode):
+        if mode == 'N':
+            # The combiners store the pre-reduction N values in a special
+            # series_meta specifically this usage
+            return self.combined_res['mean'].series_meta(series, 'orig_n')[0]
+
+        if mode not in self.combined_res:
+            return 0
+
+        return self.combined_res[mode][series][0]
+
+
+class StatsFormatter(CombiningFormatter):
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
@@ -235,48 +265,47 @@ class StatsFormatter(Formatter):
                 self.write(" - %s" % r.meta('TITLE'))
             self.write(":\n")
 
+            self.make_combines(r, ['mean', 'median', 'min', 'max',
+                                   'std', 'var', 'cumsum'])
+
             for s in sorted(r.series_names):
                 self.write(" %s:\n" % s)
-                d = [i for i in r.series(s) if i]
-                if not d:
+                if not self.get_res(s, 'mean'):
                     self.write("  No data.\n")
                     continue
-                cs = self.np.cumsum(d)
+
                 units = self.settings.DATA_SETS[s]['units']
-                self.write("  Data points: %d\n" % len(d))
+                self.write("  Data points: %d\n" % self.get_res(s, 'N'))
                 if units != "ms":
                     self.write("  Total:       %f %s\n" % (
-                        cs[-1] * r.meta('STEP_SIZE'),
+                        self.get_res(s, 'cumsum'),
                         units.replace("/s", "")))
-                self.write("  Mean:        %f %s\n" % (self.np.mean(d), units))
-                self.write("  Median:      %f %s\n" % (self.np.median(d), units))
-                self.write("  Min:         %f %s\n" % (self.np.min(d), units))
-                self.write("  Max:         %f %s\n" % (self.np.max(d), units))
-                self.write("  Std dev:     %f\n" % (self.np.std(d)))
-                self.write("  Variance:    %f\n" % (self.np.var(d)))
+                self.write("  Mean:        %f %s\n" % (self.get_res(s, 'mean'), units))
+                self.write("  Median:      %f %s\n" % (self.get_res(s, 'median'), units))
+                self.write("  Min:         %f %s\n" % (self.get_res(s, 'min'), units))
+                self.write("  Max:         %f %s\n" % (self.get_res(s, 'max'), units))
+                self.write("  Std dev:     %f\n" % (self.get_res(s, 'std')))
+                self.write("  Variance:    %f\n" % (self.get_res(s, 'var')))
 
 
-class SummaryFormatter(Formatter):
+class SummaryFormatter(CombiningFormatter):
 
     COL_WIDTH = 12
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
-        try:
-            import numpy
-            self.np = numpy
-        except ImportError:
-            self.np = None
 
     def format(self, results):
         self.open_output()
         for r in results:
-            self.write("Summary of %s test run " % r.meta('NAME'))
+            self.write("\nSummary of %s test run from %s" % (r.meta('NAME'),
+                                                             r.meta("TIME")))
             if r.meta('TITLE'):
-                self.write("'%s' (at %s)" % (r.meta('TITLE'), r.meta("TIME")))
-            else:
-                self.write("at %s" % r.meta("TIME"))
-            self.write(":\n\n")
+                self.write("\n  Title: '%s'" % r.meta('TITLE'))
+            if self.settings.DATA_CUTOFF:
+                self.write("\n  Cut data to interval: [%.2f, %.2f]" %
+                           self.settings.DATA_CUTOFF)
+            self.write("\n\n")
 
             if 'FROM_COMBINER' in r.meta():
                 m = {}
@@ -294,6 +323,7 @@ class SummaryFormatter(Formatter):
                            width=self.COL_WIDTH,
                            lwidth=self.COL_WIDTH + unit_len))
 
+            self.make_combines(r, ['mean', 'median'])
             for s in sorted(r.series_names):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
                 try:
@@ -309,19 +339,13 @@ class SummaryFormatter(Formatter):
                 units = (md.get('UNITS') or
                          self.settings.DATA_SETS.get(s, {}).get('units', ''))
 
-                mean = md.get('MEAN_VALUE')
-                median = md.get('RTT_MEDIAN') if units == 'ms' else None
+                mean = self.get_res(s, 'mean')
+                median = self.get_res(s, 'median')
+                n = self.get_res(s, 'N')
 
-                if not mean and not d:
+                if mean is None:
                     self.write("No data.\n")
                     continue
-
-                if d and self.np is not None:
-                    mean = mean or self.np.mean(d)
-                    median = median or self.np.median(d)
-                elif d:
-                    mean = mean or sum(d) / len(d)
-                    median = median or sorted(d)[len(d) // 2]
 
                 if mean and units == 'bytes':
                     factor, units = format_bytes(max(mean, median))
@@ -341,7 +365,7 @@ class SummaryFormatter(Formatter):
                     self.write("{0:>{width}} {1}".format("N/A", units,
                                                          width=self.COL_WIDTH))
 
-                self.write("{0:{width}d}\n".format(len(d),
+                self.write("{0:{width}d}\n".format(n,
                                                    width=(self.COL_WIDTH +
                                                           unit_len - len(units))))
 

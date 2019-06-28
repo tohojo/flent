@@ -43,6 +43,12 @@ except:
     pass
 
 
+class FilterAll(object):
+
+    def filter(self, record):
+        return 0
+
+
 class MaxFilter(object):
 
     def __init__(self, maxlvl):
@@ -212,6 +218,7 @@ def setup_console():
 
     logging.captureWarnings(True)
     logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))
+    logging.getLogger("matplotlib.font_manager").addFilter(FilterAll())
 
 
 def set_console_level(level):

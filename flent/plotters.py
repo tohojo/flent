@@ -29,7 +29,8 @@ import warnings
 
 from flent import combiners
 from flent.util import classname, long_substr, format_date, diff_parts, \
-    Glob, Update, float_pair, keyval, comma_list, ArgParam, ArgParser
+    Glob, Update, float_pair, float_pair_noomit, keyval, comma_list, ArgParam, \
+    ArgParser
 from flent.build_info import VERSION
 from flent.loggers import get_logger
 
@@ -293,6 +294,13 @@ def add_plotting_args(parser):
         default=[], help="Data normalisation factor. Divide all data "
         "points by this value. Can be specified multiple times, in which case "
         "each value corresponds to a data series.")
+
+    parser.add_argument(
+        "--data-cutoff",
+        action="store", type=float_pair_noomit, dest="DATA_CUTOFF",
+        help="Data cutoff interval. Cut off all data points outside this "
+        "interval before plotting. For aggregate plots, this will happen "
+        "*before* aggregation, so for instance mean values will be affected.")
 
     parser.add_argument(
         "--bounds-x",
@@ -702,11 +710,8 @@ class Plotter(ArgParam):
         self.configs = [self.config]
 
     def verify(self):
-        for a in self.figure.axes:
-            if len(a.get_lines()) > 0:
-                return True
-
-        return False
+        lengths = [len(a.get_lines()) for a in self.figure.axes]
+        return any(lengths), lengths
 
     def axes_iter(self):
         return iter(reduce(lambda x, y: x + y, [i['axes'] for i in self.configs]))
@@ -1297,12 +1302,16 @@ class Plotter(ArgParam):
                                  results.series(series['data'])),
                                 dtype=float)
 
-        if 'cutoff' in config and config['cutoff'] and data.any():
-            min_x = data[0].min() + config['cutoff'][0]
-            max_x = data[0].max() + config['cutoff'][1]
+        if data.any() and (self.data_cutoff or config.get('cutoff')):
+            start, end = self.data_cutoff or config['cutoff']
+            if self.absolute_time:
+                start += results.t0
 
-            min_idx = data[0].searchsorted(min_x, side='right')
-            max_idx = data[0].searchsorted(max_x, side='left')
+            if end <= 0:
+                end += results.meta("TOTAL_LENGTH")
+
+            min_idx = data[0].searchsorted(start, side='right')
+            max_idx = data[0].searchsorted(end, side='left')
 
             data = data[:, min_idx:max_idx]
 
@@ -1319,9 +1328,14 @@ class Plotter(ArgParam):
             l = series['smoothing']
             if l % 2 != 1:
                 l += 1
-            kern = np.ones(l, dtype=float)
-            kern /= l
-            data[1] = np.convolve(data[1], kern, mode=str('same'))
+
+            if l <= len(data[1]):
+                kern = np.ones(l, dtype=float)
+                kern /= l
+                data[1] = np.convolve(data[1], kern, mode=str('same'))
+            else:
+                logger.warn("Smoothing length longer than data series %s; "
+                            "not smoothing", series['data'])
 
         return data
 
@@ -1342,7 +1356,8 @@ class CombineManyPlotter(object):
         combiner = combiners.new(combine_mode, print_n=self.combine_print_n,
                                  filter_regexps=self.filter_regexp,
                                  filter_series=self.filter_series,
-                                 save_dir=self.combine_save_dir)
+                                 save_dir=self.combine_save_dir,
+                                 data_cutoff=self.data_cutoff)
         super(CombineManyPlotter, self).plot(
             combiner(results, config),
             config,
