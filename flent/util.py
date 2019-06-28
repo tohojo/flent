@@ -88,7 +88,7 @@ def format_bytes(nbytes):
 def parse_date(timestring, min_t=None, offset=None):
     try:
         # Try to parse the straight UTC time string (has a Z at the end)
-        return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%fZ"), None
     except ValueError:
         try:
             dt = datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%f")
