@@ -407,8 +407,6 @@ class ProcessRunner(RunnerBase, threading.Thread):
         if self.command is None:
             raise RunnerCheckError("No command set for %s" %
                                    self.__class__.__name__)
-        self.args = shlex.split(self.command)
-        self.metadata['COMMAND'] = self.command
         if self.units:
             self.metadata['UNITS'] = self.units
 
@@ -422,6 +420,9 @@ class ProcessRunner(RunnerBase, threading.Thread):
                         self.__class__.__name__, self.idx))
             self.command = "ssh %s '%s'" % (self.remote_host, self.command)
             self.metadata['REMOTE_HOST'] = self.remote_host
+
+        self.args = shlex.split(self.command)
+        self.metadata['COMMAND'] = self.command
 
     def handle_usr2(self, signal, frame):
         if self.start_event is not None:
