@@ -34,7 +34,7 @@ import time
 
 from copy import copy
 from calendar import timegm
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import log10, exp, sqrt
 
 from flent.loggers import get_logger
@@ -85,7 +85,7 @@ def format_bytes(nbytes):
         return (nbytes, 'bytes')
 
 
-def parse_date(timestring):
+def parse_date(timestring, min_t=None, offset=None):
     try:
         # Try to parse the straight UTC time string (has a Z at the end)
         return datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -94,12 +94,40 @@ def parse_date(timestring):
             dt = datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S.%f")
         except ValueError:
             dt = datetime.strptime(timestring, "%Y-%m-%dT%H:%M:%S")
-        # The timestamp is in local time, so get the (UTC) timestamp and
-        # subtract the time zone offset at that time to get the UTC datetime
-        # object.
-        ts = time.mktime(dt.timetuple())
-        offset = datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)
-        return dt - offset
+
+        if offset is None:
+            # The timestamp is in local time, so we need to find the timezone
+            # offset. Guess this by computing the nearest whole-hour offset for
+            # from the minimum timestamp in the data series (passed as min_t)
+            #
+            # If not min_t is available, compute the offset from the system time
+            # zone.
+            #
+            # Return the offset so it can be re-used the next time this function
+            # is called.
+
+            logger.debug("Non-UTC timestamp %s, computing timezone offset",
+                         timestring)
+
+            if min_t is not None:
+                ts = orig_ts = timegm(dt.timetuple())
+                hours = 0
+                mult = 1 if ts < min_t else -1
+                while abs(ts - min_t) > 1800:
+                    hours -= 1 * mult
+                    ts += 3600 * mult
+                offset = timedelta(hours=hours)
+                logger.debug("Guessed timezone offset of %d hours for "
+                             "ts %f min_t %f diff %f",
+                             hours, orig_ts, min_t, orig_ts-min_t)
+            else:
+                ts = time.mktime(dt.timetuple())
+                offset = (datetime.fromtimestamp(ts) -
+                          datetime.utcfromtimestamp(ts))
+                logger.debug("Computed offset of %s from system timezone",
+                             offset)
+
+        return dt - offset, offset
 
 
 def clean_path(path, allow_dirs=False):

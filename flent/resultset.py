@@ -77,7 +77,7 @@ MAX_FILENAME_LEN = 250  # most filesystems have 255 as their limit
 
 # Time settings will be serialised as ISO timestamps and stored in memory as
 # datetime instances
-TIME_SETTINGS = ("TIME", "BATCH_TIME", "T0")
+TIME_SETTINGS = ("TIME", "T0", "BATCH_TIME")
 
 _EMPTY = object()
 
@@ -467,9 +467,17 @@ class ResultSet(object):
         if 'TOTAL_LENGTH' not in metadata or metadata['TOTAL_LENGTH'] is None:
             metadata['TOTAL_LENGTH'] = max(obj['x_values'])
 
+        # We need the minimum timestamp to guess a timezone offset, which we
+        # store for subsequent values because it shouldn't be used for
+        # BATCH_TIME
+        min_t = 10**10
+        offset = None
+        for v in obj['raw_values'].values():
+            min_t = min([min_t] + [i['t'] for i in v if 't' in i])
         for t in TIME_SETTINGS:
             if t in metadata and metadata[t] is not None:
-                metadata[t] = parse_date(metadata[t])
+                metadata[t], offset = parse_date(metadata[t],
+                                                 min_t=min_t, offset=offset)
         rset = cls(SUFFIX=SUFFIX, **metadata)
         if absolute:
             t0 = metadata.get('T0', metadata.get('TIME'))
