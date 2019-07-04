@@ -68,6 +68,7 @@ env:
   - MATPLOTLIB_VERSION=3.1.*
 install:
   - pip install mock
+  - pip install pyqt5
   - pip install matplotlib==${MATPLOTLIB_VERSION}
 notifications:
   pushover:
