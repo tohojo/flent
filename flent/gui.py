@@ -1642,6 +1642,7 @@ class SettingsWidget(QScrollArea):
     _widget_type_map = {int: IntActionWidget,
                         float: FloatActionWidget,
                         util.float_pair: FloatPairActionWidget,
+                        util.float_pair_noomit: FloatPairActionWidget,
                         util.comma_list: MultiValWidget,
                         util.keyval: PairActionWidget,
                         unicode: TextActionWidget}
