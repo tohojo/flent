@@ -76,7 +76,7 @@ addons:
     - libxkbcommon-x11-0
 install:
   - pip install mock
-  - '[ -n "$PYQT" ] && pip install ${PYQT}'
+  - '[ -n "$PYQT" ] && pip install ${PYQT} || true'
   - pip install matplotlib==${MATPLOTLIB_VERSION}
 notifications:
   pushover:
