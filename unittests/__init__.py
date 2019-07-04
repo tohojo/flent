@@ -27,6 +27,8 @@ from . import test_metadata
 from . import test_parsers
 from . import test_plotters
 from . import test_tests
+from . import test_gui
+
 
 class TestResult(unittest.TextTestResult):
     def _exc_info_to_string(self, err, test):
@@ -48,6 +50,7 @@ test_suite = unittest.TestSuite([test_util.test_suite,
                                  test_parsers.test_suite,
                                  test_plotters.test_suite,
                                  test_tests.test_suite,
+                                 test_gui.test_suite,
                                  ])
 
 all_tests = unittest.TestSuite([test_suite, test_plotters.plot_suite])

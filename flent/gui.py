@@ -172,7 +172,7 @@ file an issue on Github<a>.</p>"""
 __all__ = ['run_gui']
 
 
-def run_gui(settings):
+def run_gui(settings, test_mode=False):
     if check_running(settings):
         return 0
 
@@ -187,6 +187,8 @@ def run_gui(settings):
     app = QApplication(sys.argv[:1])
     mainwindow = MainWindow(settings)
     mainwindow.show()
+    if test_mode:
+        mainwindow.defer_close()
     return app.exec_()
 
 
@@ -340,8 +342,10 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.expandButton.clicked.connect(self.metadata_column_resize)
 
         self.checkHighlight.setChecked(self.settings.HOVER_HIGHLIGHT)
-        self.checkDebugLog.setChecked(loggers.out_handler.level == loggers.DEBUG)
         self.checkExceptionLog.setChecked(self.settings.DEBUG_ERROR)
+
+        if loggers.out_handler:
+            self.checkDebugLog.setChecked(loggers.out_handler.level == loggers.DEBUG)
 
         self.checkHighlight.toggled.connect(self.update_checkboxes)
         self.checkDebugLog.toggled.connect(self.update_checkboxes)
@@ -643,6 +647,11 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if self.defer_load:
             self.load_files(self.defer_load)
             self.defer_load = None
+
+    def defer_close(self):
+        self.close_timer = QTimer(self)
+        self.close_timer.timeout.connect(self.close)
+        self.close_timer.start()
 
     def shorten_titles(self, titles):
         new_titles = []
