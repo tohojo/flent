@@ -22,8 +22,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
+import os
 
-from flent.gui import run_gui
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
@@ -32,9 +32,20 @@ class TestGui(unittest.TestCase):
 
     def setUp(self):
         self.settings = settings.copy()
+        FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
+
+        if FORCE_QT4:
+            self.skipTest("Not running with FORCE_QT4")
+            return
+
+        try:
+            from PyQt5 import QtCore
+        except ImportError:
+            self.skipTest("No usable PyQt found")
 
     def test_start_gui(self):
-        run_gui(self.settings, test_mode=True)
+        from flent import gui
+        gui.run_gui(self.settings, test_mode=True)
 
 
 test_suite = unittest.TestSuite(
