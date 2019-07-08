@@ -25,9 +25,15 @@ import unittest
 import os
 
 from flent import metadata
+from flent import util
 
 
 class TestMetadataFunctions(unittest.TestCase):
+
+    def setUp(self):
+        sysctl = util.which("sysctl")
+        if sysctl is None:
+            self.skipTest("Could not find sysctl utility")
 
     def test_get_sysctls(self):
         sysctls = metadata.get_sysctls()
