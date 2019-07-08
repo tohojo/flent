@@ -91,7 +91,9 @@ data_files = [('share/doc/flent',
               ('share/mime/packages',
                ['flent-mime.xml']),
               ('share/applications',
-               ['flent.desktop'])]
+               ['flent.desktop']),
+              ('share/metainfo',
+               ['flent.appdata.xml'])]
 
 classifiers = [
     'Development Status :: 4 - Beta',

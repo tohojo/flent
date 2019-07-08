@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>flent.desktop</id>
+  <metadata_license>CC-BY-SA-3.0</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <name>Flent</name>
+  <summary>The FLExible Network Tester</summary>
+  <description>
+    <p>
+      The FLExible Network Tester is a Python wrapper to run multiple simultaneous
+      netperf/iperf/ping instances and aggregate the results.
+    </p>
+    <p>
+      Tests are specified as config files (which are really Python), and
+      various parsers for tool output are supplied. At the moment, parsers for
+      netperf in -D mode, iperf in csv mode and ping/ping6 in -D mode are
+      supplied, as well as a generic parser for commands that just outputs a
+      single number.
+    </p>
+    <p>
+      Several commands can be run in parallel and, provided they output
+      timestamped values, (which netperf ping and iperf do, the latter with a
+      small patch, available in the misc/ directory), the test data points can
+      be aligned with each other in time, interpolating differences between
+      the actual measurement points. This makes it possible to graph (e.g.)
+      ping times before, during and after a link is loaded.
+    </p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://flent.org/_static/flent-screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://flent.org/</url>
+  <update_contact>toke_at_toke.dk</update_contact>
+</component>
