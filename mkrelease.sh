@@ -24,6 +24,7 @@ if [[ ! "$VERSION" =~ -git$ ]]; then
 
     echo ==== Updating Arch PKGBUILD version... ====
     sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" packaging/archlinux/PKGBUILD  || die error
+    sed -i -e "s/\(Version:\s*\)[0-9\.]*/\1${VERSION}/" packaging/rpm/flent.spec  || die error
 
     echo ==== Creating and signing release tarball... ====
     python setup.py sdist bdist_wheel  || die error
