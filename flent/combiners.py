@@ -547,20 +547,24 @@ class TryReducer(Reducer):
 
 
 class MeanReducer(TryReducer):
-    numpy_req = True
     meta_key = "MEAN_VALUE"
     raw_key = "mean"
 
     def _reduce(self, data):
+        if not HAS_NUMPY:
+            return sum(data) / len(data)
+
         return np.mean(data)
 
 
 class MedianReducer(TryReducer):
-    numpy_req = True
     meta_key = None
     raw_key = "median"
 
     def _reduce(self, data):
+        if not HAS_NUMPY:
+            return sorted(data)[len(data) // 2]
+
         return np.median(data)
 
 
@@ -689,12 +693,18 @@ class RawReducer(Reducer):
 class RawMeanReducer(RawReducer):
 
     def _reduce(self, data):
+        if not HAS_NUMPY:
+            return sum(data) / len(data)
+
         return np.mean(data)
 
 
 class RawMedianReducer(RawReducer):
 
     def _reduce(self, data):
+        if not HAS_NUMPY:
+            return sorted(data)[len(data) // 2]
+
         return np.median(data)
 
 
