@@ -274,7 +274,10 @@ class StatsFormatter(CombiningFormatter):
                     self.write("  No data.\n")
                     continue
 
-                units = self.settings.DATA_SETS[s]['units']
+                if s in self.settings.DATA_SETS:
+                    units = self.settings.DATA_SETS[s]['units']
+                else:
+                    units = ''
                 self.write("  Data points: %d\n" % self.get_res(s, 'N'))
                 if units != "ms":
                     self.write("  Total:       %f %s\n" % (
