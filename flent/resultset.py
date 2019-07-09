@@ -24,6 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import math
 import os
 import re
+import gzip
+import bz2
 
 from datetime import datetime
 from calendar import timegm
@@ -33,7 +35,7 @@ from collections import OrderedDict
 
 from flent import transformers
 from flent.loggers import get_logger
-from flent.util import gzip_open, bz2_open, parse_date, format_date
+from flent.util import parse_date, format_date
 
 try:
     import ujson as json
@@ -393,9 +395,9 @@ class ResultSet(object):
     def dump_file(self, filename):
         try:
             if filename.endswith(".gz"):
-                o = gzip_open
+                o = gzip.open
             elif filename.endswith(".bz2"):
-                o = bz2_open
+                o = bz2.open
             else:
                 o = open
             with o(filename, "wt") as fp:
@@ -434,9 +436,9 @@ class ResultSet(object):
         self._dump_file = os.path.join(dirname, self._gen_filename())
         try:
             if self._dump_file.endswith(".gz"):
-                o = gzip_open
+                o = gzip.open
             elif self._dump_file.endswith(".bz2"):
-                o = bz2_open
+                o = bz2.open
             else:
                 o = open
             with o(self._dump_file, "wt") as fp:
@@ -627,9 +629,9 @@ class ResultSet(object):
         logger.debug("Loading data file %s", filename)
         try:
             if filename.endswith(".gz"):
-                o = gzip_open
+                o = gzip.open
             elif filename.endswith(".bz2") or filename.endswith(".flnt"):
-                o = bz2_open
+                o = bz2.open
             else:
                 o = open
             fp = o(filename, 'rt')

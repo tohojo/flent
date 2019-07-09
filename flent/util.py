@@ -22,10 +22,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
-import bz2
 import fnmatch
-import gzip
-import io
 import os
 import re
 import shlex
@@ -221,82 +218,6 @@ def lookup_host(hostname, version=None):
         raise RuntimeError("Found no hostnames on lookup of %s" % hostname)
 
     return hostnames[0]
-
-
-# In Python 2.6, the GzipFile object does not have a 'closed' property, which
-# makes the io module blow up when trying to close it. This tidbit tries to
-# detect that and substitute a subclass that does have the property, while not
-# touching anything if the property is already present.
-if hasattr(gzip.GzipFile, "closed"):
-    _gzip_open = gzip.open
-else:
-    class GzipFile(gzip.GzipFile):
-
-        def get_closed(self):
-            return self.fileobj is None
-        # Setter needed for python3.1-compatibility
-
-        def set_closed(self, closed):
-            self._closed = closed
-        closed = property(get_closed, set_closed)
-    _gzip_open = GzipFile
-
-
-def gzip_open(filename, mode="rb"):
-    """Compatibility layer for gzip to work in Python 3.1 and 3.2."""
-    wrap_text = False
-    if "t" in mode:
-        wrap_text = True
-        mode = mode.replace("t", "")
-    binary_file = _gzip_open(filename, mode)
-
-    if wrap_text:
-        # monkey-patching required to make gzip object compatible with
-        # TextIOWrapper in Python 3.1.
-        if not hasattr(binary_file, "readable"):
-            def readable():
-                return binary_file.mode == gzip.READ
-            binary_file.readable = readable
-        if not hasattr(binary_file, "writable"):
-            def writable():
-                return binary_file.mode == gzip.WRITE
-            binary_file.writable = writable
-        if not hasattr(binary_file, "seekable"):
-            def seekable():
-                return True
-            binary_file.seekable = seekable
-
-        # This wrapping is done by the builtin gzip module in python 3.3.
-        return io.TextIOWrapper(binary_file)
-    else:
-        return binary_file
-
-
-if hasattr(bz2, 'open'):
-    bz2_open = bz2.open
-else:
-    # compatibility with io.TextIOWrapper for Python 2
-    class bz2file(bz2.BZ2File):
-
-        def readable(self):
-            return 'r' in self.mode
-
-        def writable(self):
-            return 'w' in self.mode
-
-        def seekable(self):
-            return True
-
-        def flush(self):
-            pass
-
-    def bz2_open(filename, mode='rb', compresslevel=9):
-        bz_mode = mode.replace("t", "")
-        binary_file = bz2file(filename, bz_mode, compresslevel=compresslevel)
-        if "t" in mode:
-            return io.TextIOWrapper(binary_file)
-        else:
-            return binary_file
 
 
 class DefaultConfigParser(configparser.ConfigParser):
