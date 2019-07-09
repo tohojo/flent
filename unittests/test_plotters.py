@@ -29,7 +29,6 @@ import traceback
 
 from multiprocessing import Pool
 from unittest.util import strclass
-from distutils.version import LooseVersion
 
 from .test_helpers import prefork, get_test_data_files
 
@@ -281,6 +280,7 @@ def plot_one(settings, plot, results):
     return plotters.draw_worker(settings, [results])
 
 
+@unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
 class TestGUIPlotting(unittest.TestCase):
 
     def __init__(self, filename):
@@ -288,8 +288,6 @@ class TestGUIPlotting(unittest.TestCase):
         unittest.TestCase.__init__(self)
 
     def setUp(self):
-        if plotters.MPL_VER < LooseVersion("1.4.2"):
-            self.skipTest('matplotlib too old')
         self.output_dir = tempfile.mkdtemp()
         self.settings = settings.copy()
 

@@ -38,7 +38,6 @@ from argparse import SUPPRESS
 from datetime import datetime
 from itertools import chain
 from multiprocessing import Pool, Queue
-from distutils.version import LooseVersion
 
 from flent import util, batch, loggers, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
@@ -46,6 +45,9 @@ from flent.loggers import get_logger, add_log_handler, remove_log_handler, \
     set_queue_handler
 from flent.resultset import ResultSet
 from flent.settings import ListTests, new as new_settings, plot_group
+
+import matplotlib
+matplotlib.use("Agg")
 
 logger = get_logger(__name__)
 
@@ -61,11 +63,6 @@ try:
 except NotImplementedError:
     CPU_COUNT = 1
 
-if plotters.MPL_VER < LooseVersion("1.4.2"):
-    raise RuntimeError("The GUI requires matplotlib version >= 1.4.2 to work.")
-else:
-    import matplotlib
-    matplotlib.use("Agg")
 
 FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
 try:
