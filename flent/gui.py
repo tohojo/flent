@@ -64,11 +64,7 @@ except NotImplementedError:
     CPU_COUNT = 1
 
 
-FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
 try:
-    if FORCE_QT4:
-        raise ImportError("Force fallback to Qt4")
-
     from PyQt5 import QtCore, QtGui, uic
 
     from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
@@ -79,8 +75,6 @@ try:
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices, QValidator, QGuiApplication
-
-    get_clipboard = QGuiApplication.clipboard
 
     from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
         QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
@@ -93,39 +87,9 @@ try:
         as FigureCanvas
     from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
         as NavigationToolbar
-    QTVER = 5
+
 except ImportError:
-    try:
-        from PyQt4 import QtCore, QtGui, uic
-
-        from PyQt4.QtGui import QMessageBox, QFileDialog, QTreeView, \
-            QAbstractItemView, QMenu, QAction, QFont, QTableView, QCursor, \
-            QHeaderView, QFormLayout, QHBoxLayout, QVBoxLayout, \
-            QItemSelectionModel, QMouseEvent, QApplication, QStringListModel, \
-            QKeySequence, QResizeEvent, QPlainTextEdit, QDesktopServices, \
-            QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea,\
-            QPushButton, QValidator, QShortcut
-
-        get_clipboard = QApplication.clipboard
-
-        from PyQt4.QtCore import Qt, QIODevice, QByteArray, \
-            QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
-            QAbstractItemModel, QAbstractTableModel, QModelIndex, QUrl
-
-        from PyQt4.QtNetwork import QLocalSocket, QLocalServer
-
-        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg \
-            as FigureCanvas
-        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT \
-            as NavigationToolbar
-
-        QTVER = 4
-
-        if not FORCE_QT4:
-            logger.warning("Falling back to Qt4 for the GUI. "
-                           "Please consider installing PyQt5.\n")
-    except ImportError:
-        raise RuntimeError("Unable to find a usable PyQt version.")
+    raise RuntimeError("Unable to find a usable PyQt5 version.")
 
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
@@ -1266,7 +1230,7 @@ class MetadataView(QTreeView):
                                                    1,
                                                    idx.parent()),
                                 Qt.DisplayRole)
-        get_clipboard().setText(val)
+        QGuiApplication.clipboard().setText(val)
 
     def setModel(self, model):
         super(MetadataView, self).setModel(model)
