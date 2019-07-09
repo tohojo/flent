@@ -51,12 +51,6 @@ logger = get_logger(__name__)
 
 mswindows = (sys.platform == "win32")
 
-# Python 2/3 compatibility
-try:
-    unicode
-except NameError:
-    unicode = str
-
 try:
     from os import cpu_count
 except ImportError:
@@ -485,7 +479,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
 
     def keyPressEvent(self, event):
         widget = self.viewArea.currentWidget()
-        text = unicode(event.text())
+        text = str(event.text())
         if widget and text in ('x', 'X', 'y', 'Y'):
             a = text.lower()
             d = 'in' if a == text else 'out'
@@ -561,7 +555,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         if isinstance(filenames, tuple):
             filenames = filenames[0]
         if filenames:
-            self.last_dir = os.path.dirname(unicode(filenames[0]))
+            self.last_dir = os.path.dirname(str(filenames[0]))
 
         return filenames
 
@@ -851,7 +845,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
             titles = self.shorten_titles([r.title for r in results])
         else:
             results = list(filter(None, self.worker_pool.map(results_load_helper,
-                                                             map(unicode,
+                                                             map(str,
                                                                  filenames))))
 
             titles = self.shorten_titles([r['title'] for r in results])
@@ -862,7 +856,7 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         self.load_timer.start()
 
         if set_last_dir:
-            self.last_dir = os.path.dirname(unicode(filenames[-1]))
+            self.last_dir = os.path.dirname(str(filenames[-1]))
 
     def load_one(self):
         if not self.load_queue:
@@ -1015,13 +1009,13 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
             logger.error("Output directory does not exist.")
             return
 
-        test = unicode(test)
-        host = unicode(host)
-        path = unicode(path)
+        test = str(test)
+        host = str(host)
+        path = str(path)
 
         self.settings.HOSTS = [host]
         self.settings.NAME = test
-        self.settings.TITLE = unicode(self.testTitle.text())
+        self.settings.TITLE = str(self.testTitle.text())
         self.settings.LENGTH = self.testLength.value()
         self.settings.DATA_DIR = path
         self.settings.EXTENDED_METADATA = self.extendedMetadata.isChecked()
@@ -1197,7 +1191,7 @@ class MetadataModel(QAbstractItemModel):
         if idx.column() == 0:
             return item.name
         elif idx.column() == 1:
-            return unicode(item.value)
+            return str(item.value)
 
     def parent(self, idx):
         item = idx.internalPointer()
@@ -1654,7 +1648,7 @@ class SettingsWidget(QScrollArea):
                         util.float_pair_noomit: FloatPairActionWidget,
                         util.comma_list: MultiValWidget,
                         util.keyval: PairActionWidget,
-                        unicode: TextActionWidget}
+                        str: TextActionWidget}
 
     def __init__(self, parent, options, settings, compact=False):
         super(SettingsWidget, self).__init__(parent)
@@ -1755,7 +1749,7 @@ class ResultsetStore(object):
 
         def get_key(itm):
             try:
-                return unicode(itm.meta(key))
+                return str(itm.meta(key))
             except KeyError:
                 return ''
         if only:
@@ -1910,7 +1904,7 @@ class OpenFilesModel(QAbstractTableModel):
 
     def get_metadata(self, idx, name):
         try:
-            return unicode(self.open_files[idx].meta(name))
+            return str(self.open_files[idx].meta(name))
         except KeyError:
             return None
 
@@ -2076,10 +2070,10 @@ class AddColumnDialog(get_ui_class("addcolumn.ui")):
         self.columnNameEdit.setText(parts[-1])
 
     def get_path(self):
-        return unicode(self.metadataPathEdit.text())
+        return str(self.metadataPathEdit.text())
 
     def get_name(self):
-        return unicode(self.columnNameEdit.text())
+        return str(self.columnNameEdit.text())
 
 
 class UpdateDisabler(object):
@@ -2189,7 +2183,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
         elif isinstance(results, ResultSet):
             self.results = results
         else:
-            self.results = ResultSet.load_file(unicode(results))
+            self.results = ResultSet.load_file(str(results))
             self.settings.compute_missing_results(self.results)
 
         if plot and plot in self.settings.PLOTS:
@@ -2228,7 +2222,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
     def load_files(self, filenames):
         added = 0
         for f in filenames:
-            if self.add_extra(ResultSet.load_file(unicode(f))):
+            if self.add_extra(ResultSet.load_file(str(f))):
                 self.update(False)
                 added += 1
         self.redraw()
@@ -2300,7 +2294,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
             return
         if isinstance(plot_name, QModelIndex):
             plot_name = self.plotModel.name_of(plot_name)
-        plot_name = unicode(plot_name)
+        plot_name = str(plot_name)
         if plot_name != self.settings.PLOT and plot_name in self.settings.PLOTS:
             self.settings.PLOT = plot_name
             self.plotSelectionModel.setCurrentIndex(
