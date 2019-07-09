@@ -2,6 +2,28 @@
 
 Changes since v1.2.2 include:
 
+- New --data-cutoff parameter filter data outside a specified time interval when
+  plotting or formatting. This is useful for, e.g., showing flow behaviour after
+  steady state has been reached for long-running tests.
+
+- New cc_algos test parameter to set per-flow congestion control algorithm being
+  used by Netperf for TCP flows.
+
+- Storing lots more metadata from Netperf data series, including total elapsed
+  time, total bytes sent and received and reported TOS.
+
+- Fixes to plot label override settings.
+
+- Option to copy metadata to clipboard from GUI right-click menu.
+
+- Support for passing DSCP mark values to Iperf.
+
+- Lots of bug fixes, mostly in the plotting and display code. And better test
+  coverage to hopefully prevent things regressing again.
+
+- Addition of .appdata.xml file for the GUI, and an RPM spec file for packaging
+  on RPM-based distros.
+
 # Flent v1.2.2 #
 Released on 2018-04-17.
 
