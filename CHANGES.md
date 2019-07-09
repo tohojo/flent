@@ -1,4 +1,7 @@
-# Changes since latest release #
+# Flent v1.3.0 #
+Released on 2019-07-09.
+
+Note that this will be the last release with Python 2 support!
 
 Changes since v1.2.2 include:
 
