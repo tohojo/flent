@@ -31,11 +31,13 @@ from unittest.util import strclass
 
 from .test_helpers import get_test_data_files
 
-from flent import resultset, formatters
+from flent import resultset, formatters, combiners
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
-TEST_FORMATTERS = ('table', 'org_table', 'csv', 'stats', 'summary', 'metadata')
+TEST_FORMATTERS = ['table', 'org_table', 'csv', 'summary', 'metadata']
+if combiners.HAS_NUMPY:
+    TEST_FORMATTERS.append('stats')
 
 
 class TestFormatters(unittest.TestCase):
