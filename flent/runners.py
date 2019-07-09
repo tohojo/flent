@@ -592,23 +592,23 @@ class ProcessRunner(RunnerBase, threading.Thread):
 
         return float(output.split()[-1].strip())
 
-    def test_run(self, args, kill=False, errmsg=None):
-            proc = subprocess.Popen(args,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+    def run_simple(self, args, kill=False, errmsg=None):
+        proc = subprocess.Popen(args,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
 
-            if kill:
-                time.sleep(0.1)
-                proc.kill()
+        if kill:
+            time.sleep(0.1)
+            proc.kill()
 
-            out, err = proc.communicate()
-            out = out.decode(ENCODING)
-            err = err.decode(ENCODING)
+        out, err = proc.communicate()
+        out = out.decode(ENCODING)
+        err = err.decode(ENCODING)
 
-            if proc.returncode != 0 and errmsg:
-                raise RunnerCheckError(errmsg.format(err=err))
+        if proc.returncode != 0 and errmsg:
+            raise RunnerCheckError(errmsg.format(err=err))
 
-            return out, err
+        return out, err
 
     def parse_marking(self, marking, fmtstr):
         # Try to convert netperf-style textual marking specs into integers
@@ -969,8 +969,8 @@ class NetperfDemoRunner(ProcessRunner):
             # stall, so we kill the process almost immediately.
 
             # should be enough time for netperf to output any error messages
-            out, err = self.test_run([netperf, '-l', '1', '-D', '-0.2',
-                                      '--', '-e', '1'], kill=True)
+            out, err = self.run_simple([netperf, '-l', '1', '-D', '-0.2',
+                                        '--', '-e', '1'], kill=True)
 
             if "Demo Mode not configured" in out:
                 raise RunnerCheckError("%s does not support demo mode." % netperf)
@@ -1162,10 +1162,7 @@ class PingRunner(RegexpRunner):
         pingargs = []
 
         if fping is not None:
-            proc = subprocess.Popen([fping, '-h'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate()
+            out, err = self.run_simple([fping, '-h'])
             # check for presence of timestamp option
             if ip_version == 6 and not fping.endswith("6") and \
                "--ipv6" not in str(out):
@@ -1205,11 +1202,7 @@ class PingRunner(RegexpRunner):
         if ping is None and ip_version == 6:
             # See if we have a combined ping binary (new versions of iputils)
             ping6 = util.which("ping")
-            proc = subprocess.Popen([ping6, '-h'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate()
-            err = err.decode(ENCODING)
+            out, err = self.run_simple([ping6, '-h'])
             if '-6' in err:
                 ping = ping6
                 pingargs = ['-6']
@@ -1224,12 +1217,8 @@ class PingRunner(RegexpRunner):
             # returned from the parser. This should pick up e.g. the ping on OSX
             # not having a -D option and allow us to supply a better error
             # message.
-            proc = subprocess.Popen([ping, '-D', '-n',
-                                     '-c', '1', 'localhost'] + pingargs,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate()
-            out = out.decode(ENCODING)
+            out, err = self.run_simple([ping, '-D', '-n', '-c', '1',
+                                        'localhost'] + pingargs)
             if not self._parse(out)[0]:
                 raise RunnerCheckError(
                     "Cannot parse output of the system ping binary ({ping}). "
@@ -1458,11 +1447,7 @@ class IperfCsvRunner(ProcessRunner):
         iperf = util.which('iperf')
 
         if iperf is not None:
-            proc = subprocess.Popen([iperf, '-h'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate()
-            err = err.decode(ENCODING)
+            out, err = self.run_simple([iperf, '-h'])
 
             if "--enhancedreports" in err:
                 if udp:
@@ -1484,11 +1469,7 @@ class IperfCsvRunner(ProcessRunner):
                         marking=self.parse_marking(marking, "--tos {}"),
                         udp=udp_args)
             else:
-                proc = subprocess.Popen([iperf, '-v'],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-                out, err = proc.communicate()
-                err = err.decode(ENCODING)
+                out, err = self.run_simple([iperf, '-v'])
 
                 logger.warning(
                     "Found iperf binary (%s), but it does not have "
@@ -1611,7 +1592,7 @@ class IrttRunner(ProcessRunner):
         if not self._irtt:
             irtt = util.which('irtt', fail=RunnerCheckError)
 
-            out, err = self.test_run([irtt, 'help', 'client'])
+            out, err = self.run_simple([irtt, 'help', 'client'])
             if re.search('--[a-z]', out) is None:
                 raise RunnerCheckError("%s is too old to support gnu style args. "
                                        "Please upgrade to irtt v0.9+." % irtt)
@@ -1629,8 +1610,8 @@ class IrttRunner(ProcessRunner):
 
             args.append(self.host)
 
-            out, err = self.test_run(args,
-                                     errmsg="Irtt connection check failed: {err}")
+            out, err = self.run_simple(args,
+                                       errmsg="Irtt connection check failed: {err}")
 
             self._irtt['binary'] = irtt
         else:
