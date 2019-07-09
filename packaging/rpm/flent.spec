@@ -66,6 +66,7 @@ rm -f doc/_build/html/index.html
 %py3_install
 
 %check
+%make_build test PYTHON=%{__python3}
 desktop-file-validate %{buildroot}/%{_datadir}/applications/flent.desktop
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.appdata.xml
 
