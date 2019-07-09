@@ -40,16 +40,20 @@ from itertools import cycle, islice, chain
 from collections import OrderedDict
 from distutils.version import LooseVersion
 
+logger = get_logger(__name__)
+
 try:
     import matplotlib
     import numpy as np
     HAS_MATPLOTLIB = True
     MPL_VER = LooseVersion(matplotlib.__version__)
+    if MPL_VER < LooseVersion("1.5"):
+        logger.warning("Cannot use old matplotlib version %s, please upgrade!",
+                       matplotlib.__version__)
+        raise ImportError()
 except ImportError:
     HAS_MATPLOTLIB = False
     MPL_VER = LooseVersion("0")
-
-logger = get_logger(__name__)
 
 PLOT_KWARGS = (
     'alpha',
@@ -658,20 +662,6 @@ class Plotter(ArgParam):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-
-        for c in state['configs']:
-            for a in c['axes']:
-                # There is a bug in matplotlib prior to 1.4.2 where the renderer
-                # can't be pickled. Work around this by monkey-patching the
-                # renderer object as needed.
-                if getattr(a, "_cachedRenderer", None) \
-                   and not hasattr(a._cachedRenderer, "__getstate__"):
-                    def getState():
-                        return {'width': a._cachedRenderer.width,
-                                'height': a._cachedRenderer.height,
-                                'dpi': a._cachedRenderer.dpi}
-                    a._cachedRenderer.__getstate__ = getState
-
         return state
 
     def init(self, config=None, axis=None):
