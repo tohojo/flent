@@ -79,7 +79,7 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.appdata.xml
 %{_datadir}/mime/packages/flent-mime.xml
 %{_metainfodir}/flent.appdata.xml
 %{_mandir}/man1/flent.1.gz
-%doc README.rst BUGS batchfile.example newbatch.example flentrc.example flent-paper.batch misc/
+%doc README.rst BUGS batchfile.example flentrc.example flent-paper.batch misc/
 %license LICENSE
 
 %files doc
