@@ -33,8 +33,8 @@ def handle_sigterm(sig, frame):
 
 
 def run_flent(gui=False):
-    if sys.version_info[:3] < (2, 7, 3):
-        sys.stderr.write("Sorry, Flent requires v2.7.3 or later of Python.\n")
+    if sys.version_info[:2] < (3, 5):
+        sys.stderr.write("Sorry, Flent requires v3.5 or later of Python.\n")
         sys.exit(1)
     try:
         try:

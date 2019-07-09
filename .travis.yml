@@ -1,79 +1,29 @@
 language: python
 script: make test_long
+dist: xenial
+sudo: true
 matrix:
   exclude:
-    - python: "2.7"
-      env: MATPLOTLIB_VERSION=3.0.*
-    - python: "2.7"
-      env: MATPLOTLIB_VERSION=3.1.*
-    - python: "3.3"
-      env: MATPLOTLIB_VERSION=2.0.*
-    - python: "3.3"
-      env: MATPLOTLIB_VERSION=2.1.*
-    - python: "3.3"
-      env: MATPLOTLIB_VERSION=2.2.*
-    - python: "3.3"
-      env: MATPLOTLIB_VERSION=3.0.*
-    - python: "3.3"
-      env: MATPLOTLIB_VERSION=3.1.*
-    - python: "3.4"
-      env: MATPLOTLIB_VERSION=3.0.*
-    - python: "3.4"
-      env: MATPLOTLIB_VERSION=3.1.*
     - python: "3.5"
       env: MATPLOTLIB_VERSION=3.1.*
-  include:
-    - python: "2.7"
-      env: MATPLOTLIB_VERSION=1.1.1
-    - python: "2.7"
-      env: MATPLOTLIB_VERSION=1.2.0
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: MATPLOTLIB_VERSION=1.5.*
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: MATPLOTLIB_VERSION=2.0.*
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: MATPLOTLIB_VERSION=2.1.*
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: MATPLOTLIB_VERSION=2.2.*
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: MATPLOTLIB_VERSION=3.0.* PYQT=PyQt5
-      services:
-        - xvfb
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: MATPLOTLIB_VERSION=3.1.* PYQT=PyQt5
-      services:
-        - xvfb
-
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
+  - "3.8-dev"
 env:
-  - MATPLOTLIB_VERSION=1.4.3
   - MATPLOTLIB_VERSION=1.5.*
   - MATPLOTLIB_VERSION=2.0.*
   - MATPLOTLIB_VERSION=2.1.*
   - MATPLOTLIB_VERSION=2.2.*
-  - MATPLOTLIB_VERSION=3.0.*
-  - MATPLOTLIB_VERSION=3.1.*
+  - MATPLOTLIB_VERSION=3.0.* PYQT=PyQt5
+  - MATPLOTLIB_VERSION=3.1.* PYQT=PyQt5
 addons:
   apt:
     packages:
     - libxkbcommon-x11-0
+services:
+  - xvfb
 install:
   - pip install mock
   - '[ -n "$PYQT" ] && pip install ${PYQT} || true'
