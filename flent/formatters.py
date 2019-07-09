@@ -115,7 +115,7 @@ class Formatter(object):
             pass
 
     def verify(self):
-        return True
+        return True, None
 
 
 class NullFormatter(Formatter):
