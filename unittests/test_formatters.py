@@ -27,11 +27,9 @@ import tempfile
 import unittest
 import traceback
 
-from multiprocessing import Pool
 from unittest.util import strclass
-from distutils.version import LooseVersion
 
-from .test_helpers import prefork, get_test_data_files
+from .test_helpers import get_test_data_files
 
 from flent import resultset, formatters
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
