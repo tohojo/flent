@@ -112,8 +112,6 @@ class LogFormatter(Formatter):
             if s[-1:] != "\n":
                 s = s + "\n"
             output = record.output
-            if hasattr(output, 'decode'):
-                output = output.decode(ENCODING)
             s = s + self.start_marker + output + self.end_marker
 
         elif hasattr(record, 'runner'):

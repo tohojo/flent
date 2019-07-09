@@ -387,9 +387,6 @@ class ResultSet(object):
 
     def dump(self, fp):
         data = self.dumps()
-        if hasattr(data, "decode"):
-            data = data.decode()
-
         return fp.write(data)
 
     def dump_file(self, filename):

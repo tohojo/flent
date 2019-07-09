@@ -602,10 +602,8 @@ class ProcessRunner(RunnerBase, threading.Thread):
                 proc.kill()
 
             out, err = proc.communicate()
-            if hasattr(out, 'decode'):
-                out = out.decode(ENCODING)
-            if hasattr(err, 'decode'):
-                err = err.decode(ENCODING)
+            out = out.decode(ENCODING)
+            err = err.decode(ENCODING)
 
             if proc.returncode != 0 and errmsg:
                 raise RunnerCheckError(errmsg.format(err=err))
@@ -1211,8 +1209,7 @@ class PingRunner(RegexpRunner):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
-            if hasattr(err, 'decode'):
-                err = err.decode(ENCODING)
+            err = err.decode(ENCODING)
             if '-6' in err:
                 ping = ping6
                 pingargs = ['-6']
@@ -1232,8 +1229,7 @@ class PingRunner(RegexpRunner):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
-            if hasattr(out, 'decode'):
-                out = out.decode(ENCODING)
+            out = out.decode(ENCODING)
             if not self._parse(out)[0]:
                 raise RunnerCheckError(
                     "Cannot parse output of the system ping binary ({ping}). "
@@ -1466,8 +1462,7 @@ class IperfCsvRunner(ProcessRunner):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             out, err = proc.communicate()
-            if hasattr(err, 'decode'):
-                err = err.decode(ENCODING)
+            err = err.decode(ENCODING)
 
             if "--enhancedreports" in err:
                 if udp:
@@ -1493,8 +1488,7 @@ class IperfCsvRunner(ProcessRunner):
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE)
                 out, err = proc.communicate()
-                if hasattr(err, 'decode'):
-                    err = err.decode(ENCODING)
+                err = err.decode(ENCODING)
 
                 logger.warning(
                     "Found iperf binary (%s), but it does not have "
