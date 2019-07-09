@@ -33,8 +33,8 @@ from glob import glob
 
 version_string = VERSION
 
-if sys.version_info[:3] < (2, 7, 3):
-    sys.stderr.write("Sorry, Flent requires v2.7.3 or later of Python.\n")
+if sys.version_info[:3] < (3, 5, 0):
+    sys.stderr.write("Sorry, Flent requires v3.5 or later of Python.\n")
     sys.exit(1)
 
 
@@ -97,11 +97,11 @@ data_files = [('share/doc/flent',
                ['flent.appdata.xml'])]
 
 classifiers = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Environment :: Console',
     'Environment :: MacOS X',
     'Environment :: X11 Applications',
-    'Environment :: X11 Applications :: KDE',
+    'Environment :: X11 Applications :: Qt',
     'Intended Audience :: Developers',
     'Intended Audience :: Education',
     'Intended Audience :: Science/Research',
@@ -111,12 +111,11 @@ classifiers = [
     'Operating System :: MacOS :: MacOS X',
     'Operating System :: POSIX',
     'Programming Language :: Python',
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.3',
-    'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3 :: Only',
     'Topic :: Internet',
     'Topic :: System :: Benchmark',
     'Topic :: System :: Networking',
@@ -143,7 +142,7 @@ setup(name="flent",
       data_files=data_files,
       cmdclass={'build_py': build_py, 'sdist': sdist},
       extras_require={
-          'GUI': ['PyQt4>=4.9'],
-          'Plots': ['matplotlib>=1.1'],
+          'GUI': ['PyQt5'],
+          'Plots': ['matplotlib>=1.5'],
       },
       )
