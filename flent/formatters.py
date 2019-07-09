@@ -37,11 +37,6 @@ try:
 except ImportError:
     import json
 
-try:
-    pipe_error = BrokenPipeError
-except NameError:
-    pipe_error = IOError
-
 logger = get_logger(__name__)
 
 
@@ -116,7 +111,7 @@ class Formatter(object):
     def write(self, string):
         try:
             self.output.write(string)
-        except pipe_error:
+        except BrokenPipeError:
             pass
 
     def verify(self):
@@ -214,7 +209,7 @@ class CsvFormatter(TableFormatter):
             for row in self.combine_results(results):
                 writer.writerow(list(map(format_item, row)))
 
-        except pipe_error:
+        except BrokenPipeError:
             return
 
 
