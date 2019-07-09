@@ -49,14 +49,6 @@ except ImportError:
     HAS_MATPLOTLIB = False
     MPL_VER = LooseVersion("0")
 
-# Python 2/3 compatibility
-try:
-    unicode
-    PY2 = True
-except NameError:
-    unicode = str
-    PY2 = False
-
 logger = get_logger(__name__)
 
 PLOT_KWARGS = (
@@ -126,28 +118,6 @@ MATPLOTLIB_STYLES = {'axes.axisbelow': True,
                      'ytick.minor.size': 0.0}
 
 MATPLOTLIB_INIT = False
-
-if PY2:
-    # Matplotlib will tend to pass the values directly to backends where they
-    # will be converted into native types. This breaks on some versions of
-    # matplotlib running on Python 2 if the values are unicode objects (which
-    # can't always be automatically converted). To work around this, encode
-    # everything if we are running on Python 2.
-
-    def filt(x):
-        try:
-            return x.encode()
-        except AttributeError:
-            return x
-
-    LINESTYLES = list(map(filt, LINESTYLES))
-    MARKERS = list(map(filt, MARKERS))
-    COLOURS = list(map(filt, COLOURS))
-
-    for k, v in MATPLOTLIB_STYLES.items():
-        MATPLOTLIB_STYLES[k] = filt(v)
-
-    del filt
 
 
 def init_matplotlib(output, use_markers, load_rc):
@@ -257,13 +227,13 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--label-x",
-        action="append", dest="LABEL_X", type=unicode, default=[],
+        action="append", dest="LABEL_X", type=str, default=[],
         help="Override X axis labels. "
         "Can be specified twice, corresponding to figures with multiple axes.")
 
     parser.add_argument(
         "--label-y",
-        action="append", dest="LABEL_Y", type=unicode, default=[],
+        action="append", dest="LABEL_Y", type=str, default=[],
         help="Override Y axis labels. "
         "Can be specified twice, corresponding to figures with multiple axes.")
 
@@ -285,7 +255,7 @@ def add_plotting_args(parser):
                         const="log10", help=SUPPRESS)
     parser.add_argument(
         "--log-scale-y",
-        action="store", type=unicode, dest="LOG_SCALE", choices=("log2", "log10"),
+        action="store", type=str, dest="LOG_SCALE", choices=("log2", "log10"),
         help="Use logarithmic scale.")
 
     parser.add_argument(
@@ -372,7 +342,7 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--figure-note", "--fig-note",
-        action="store", type=unicode, dest="FIG_NOTE",
+        action="store", type=str, dest="FIG_NOTE",
         help="Figure note. Will be added to the bottom-left corner of the "
         "figure.")
 
@@ -383,7 +353,7 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--override-title",
-        action="store", type=unicode, dest="OVERRIDE_TITLE", metavar="TITLE",
+        action="store", type=str, dest="OVERRIDE_TITLE", metavar="TITLE",
         help="Override plot title. This parameter takes "
         "precedence over --no-title.")
 
@@ -417,12 +387,12 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--legend-title",
-        action="store", type=unicode, dest="LEGEND_TITLE",
+        action="store", type=str, dest="LEGEND_TITLE",
         help="Override legend title.")
 
     parser.add_argument(
         "--legend-placement",
-        action="store", type=unicode, dest="LEGEND_PLACEMENT",
+        action="store", type=str, dest="LEGEND_PLACEMENT",
         choices=('best',
                  'upper right',
                  'upper left',
@@ -464,27 +434,27 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--filter-regexp",
-        action="append", type=unicode, dest="FILTER_REGEXP", metavar="REGEXP",
+        action="append", type=str, dest="FILTER_REGEXP", metavar="REGEXP",
         default=[], help="Filter labels (regex). Filter out supplied regular "
         "expression from label names. Can be specified multiple times, in which "
         "case the regular expressions will be filtered in the order specified.")
 
     parser.add_argument(
         "--override-label",
-        action="append", type=unicode, dest="OVERRIDE_LABELS", metavar="LABEL",
+        action="append", type=str, dest="OVERRIDE_LABELS", metavar="LABEL",
         default=[],
         help="Override dataset labels. Must be specified multiple times "
         "corresponding to the datasets being overridden.")
 
     parser.add_argument(
         "--filter-series",
-        action="append", type=unicode, dest="FILTER_SERIES", metavar="SERIES",
+        action="append", type=str, dest="FILTER_SERIES", metavar="SERIES",
         default=[], help="Filter (hide) data series. Filters out specified "
         "series names from the plot. Can be specified multiple times.")
 
     parser.add_argument(
         "--split-group",
-        action="append", type=unicode, dest="SPLIT_GROUPS", default=[],
+        action="append", type=str, dest="SPLIT_GROUPS", default=[],
         metavar="LABEL",
         help="New groups for box and bar plots. Specify this option multiple "
         "times to define the new groups that data sets should be split into on "
@@ -499,7 +469,7 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--override-colour-mode",
-        action="store", type=unicode, dest="OVERRIDE_COLOUR_MODE", metavar="MODE",
+        action="store", type=str, dest="OVERRIDE_COLOUR_MODE", metavar="MODE",
         help="Override colour_mode attribute. This changes the way colours "
         "are assigned to bar plots. The default is 'groups' which assigns a "
         "separate colour to each group of data series. The alternative is "
@@ -508,14 +478,14 @@ def add_plotting_args(parser):
 
     parser.add_argument(
         "--override-group-by",
-        action="store", type=unicode, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
+        action="store", type=str, dest="OVERRIDE_GROUP_BY", metavar="GROUP",
         help="Override group_by attribute. This changes the way combination "
         "plots are created by overriding the function that is used to combine "
         "several data series into one.")
 
     hide_gui(parser.add_argument(
         "--combine-save-dir",
-        action="store", type=unicode, dest="COMBINE_SAVE_DIR",
+        action="store", type=str, dest="COMBINE_SAVE_DIR",
         metavar="DIRNAME",
         help="Save intermediate combination data. When doing a combination plot "
         "save the intermediate data to DIRNAME. This can then be used for "
@@ -564,7 +534,7 @@ def add_plotting_args(parser):
 
     hide_gui(parser.add_argument(
         "--scale-data",
-        action="append", type=unicode, dest="SCALE_DATA", default=[],
+        action="append", type=str, dest="SCALE_DATA", default=[],
         help="Extra scale data. Additional data files to consider when scaling "
         "the plot axes "
         "(for plotting several plots with identical axes). Note, this displays "
