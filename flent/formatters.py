@@ -197,9 +197,6 @@ class CsvFormatter(TableFormatter):
     """Format the output as csv."""
 
     def format(self, results):
-        if sys.version_info[0] == 2:
-            raise RuntimeError(
-                "Unfortunately, CSV output doesn't work with Python 2.")
         self.open_output()
         if not results[0]:
             return

@@ -22,7 +22,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import sys
 import shutil
 import tempfile
 import unittest
@@ -36,11 +35,9 @@ from flent import resultset, formatters, combiners
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
-TEST_FORMATTERS = ['table', 'org_table', 'summary', 'metadata']
+TEST_FORMATTERS = ['table', 'org_table', 'csv', 'summary', 'metadata']
 if combiners.HAS_NUMPY:
     TEST_FORMATTERS.append('stats')
-if sys.version_info[0] > 2:
-    TEST_FORMATTERS.append('csv')
 
 
 class TestFormatters(unittest.TestCase):
