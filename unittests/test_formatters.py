@@ -54,8 +54,8 @@ class TestFormatters(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def __str__(self):
-        return "%s (%s)" % (os.path.basename(self.filename),
-                            strclass(self.__class__))
+        return "format %s (%s)" % (os.path.basename(self.filename),
+                                   strclass(self.__class__))
 
     def runTest(self):
         r = resultset.load(self.filename)
