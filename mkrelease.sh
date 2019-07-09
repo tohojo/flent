@@ -24,6 +24,8 @@ if [[ ! "$VERSION" =~ -git$ ]]; then
 
     echo ==== Updating Arch PKGBUILD version... ====
     sed -i -e "s/pkgver=.*/pkgver=${VERSION}/" packaging/archlinux/PKGBUILD  || die error
+
+    echo ==== Updating RPM spec file... ====
     sed -i -e "s/\(Version:\s*\)[0-9\.]*/\1${VERSION}/" packaging/rpm/flent.spec  || die error
     sed -i -e "s/%changelog/%changelog\n* $(date '+%a %b %e %Y') $(git config --get user.name) <$(git config --get user.email)> ${VERSION}-1\n- Upstream release ${VERSION}\n/" packaging/rpm/flent.spec || die error
 
@@ -45,7 +47,8 @@ fi
 
 echo ==== Staging changed files ====
 git add flent/build_info.py man/flent.1 doc/conf.py \
-    packaging/archlinux/PKGBUILD CHANGES.md || die error
+    packaging/archlinux/PKGBUILD packaging/rpm/flent.spec \
+    CHANGES.md || die error
 
 echo ==== Done. Review changes and commit \(and tag\). ====
 [[ ! "$VERSION" =~ -git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
