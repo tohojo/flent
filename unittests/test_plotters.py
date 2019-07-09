@@ -23,20 +23,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import shutil
-import sys
 import tempfile
 import unittest
-import warnings
 import traceback
 
 from multiprocessing import Pool
 from unittest.util import strclass
 from distutils.version import LooseVersion
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+from .test_helpers import prefork, get_test_data_files
 
 try:
     from unittest import mock
@@ -45,14 +40,6 @@ except ImportError:
         import mock
     except ImportError:
         raise RuntimeError("Needs 'mock' library for these tests.")
-
-try:
-    from tblib import pickling_support
-    from six import reraise
-    pickling_support.install()
-    HAS_TBLIB = True
-except ImportError:
-    HAS_TBLIB = False
 
 from flent import plotters, resultset, formatters
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
@@ -93,44 +80,6 @@ MATPLOTLIB_RC_VALUES = {
 # Plots that may fail validation
 PLOTS_MAY_FAIL = set(('tcp_cwnd', 'tcp_rtt', 'tcp_rtt_cdf',
                       'tcp_rtt_box_combine', 'tcp_rtt_bar_combine', 'tcp_pacing'))
-
-
-def setup_warnings():
-    warnings.filterwarnings('ignore',
-                            message="Matplotlib is building the font cache")
-    warnings.simplefilter('error', append=True)
-
-
-def prefork(method):
-    def new_method(*args, **kwargs):
-        pipe_r, pipe_w = os.pipe()
-        pid = os.fork()
-        if pid:
-            os.close(pipe_w)
-            os.waitpid(pid, 0)
-            res = pickle.loads(os.read(pipe_r, 65535))
-            if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1],
-                                                                   Exception):
-                reraise(*res)
-            if isinstance(res, Exception):
-                raise res
-            return res
-        else:
-            os.close(pipe_r)
-            try:
-                setup_warnings()
-                res = method(*args, **kwargs)
-                os.write(pipe_w, pickle.dumps(res))
-            except Exception as e:
-                if not hasattr(e, 'orig_tb'):
-                    e.orig_tb = traceback.format_exc()
-                if HAS_TBLIB:
-                    os.write(pipe_w, pickle.dumps(sys.exc_info()))
-                else:
-                    os.write(pipe_w, pickle.dumps(e))
-            finally:
-                os._exit(0)
-    return new_method
 
 
 class TestPlottersInit(unittest.TestCase):
@@ -369,12 +318,10 @@ class TestGUIPlotting(unittest.TestCase):
 dirname = os.path.join(os.path.dirname(__file__), "test_data")
 output_formats = ['svg', 'pdf', 'png']
 plot_suite = unittest.TestSuite()
-for fname in os.listdir(dirname):
-    if not fname.endswith(resultset.SUFFIX):
-        continue
-    plot_suite.addTest(TestGUIPlotting(os.path.join(dirname, fname)))
+for fname in get_test_data_files():
+    plot_suite.addTest(TestGUIPlotting(fname))
     for fmt in output_formats:
-        plot_suite.addTest(TestPlotting(os.path.join(dirname, fname), fmt))
+        plot_suite.addTest(TestPlotting(fname, fmt))
 
 
 test_suite = unittest.TestSuite(
