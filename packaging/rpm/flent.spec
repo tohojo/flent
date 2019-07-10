@@ -60,7 +60,7 @@ ping times before, during and after a link is loaded.
 %build
 %py3_build
 %make_build -C doc/ html PYTHON=%{__python3} SPHINXBUILD=sphinx-build-3
-rm -f doc/_build/html/index.html
+rm -f doc/_build/html/index.html doc/_build/html/.buildinfo
 
 %install
 %py3_install
