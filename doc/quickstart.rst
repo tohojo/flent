@@ -8,6 +8,10 @@ Installing Flent can be done in several ways, depending on your operating system
 
 - **Arch Linux:** Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
 
+- **Fedora rawhide:** ``dnf install flent``.
+
+- **Fedora 28-30:** Add the `tohojo/Flent Copr repository <https://copr.fedorainfracloud.org/coprs/tohojo/Flent/>`_.
+
 - **FreeBSD:**
   ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
 
