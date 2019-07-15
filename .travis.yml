@@ -6,6 +6,7 @@ matrix:
   exclude:
     - python: "3.5"
       env: MATPLOTLIB_VERSION=3.1.* PYQT=PyQt5
+    - python: "3.5"
       env: MATPLOTLIB_VERSION=3.1.* PYQT=PySide2
 python:
   - "3.5"
