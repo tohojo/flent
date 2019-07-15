@@ -11,7 +11,7 @@ Source0:          %{pypi_source}
 
 BuildArch:        noarch
 BuildRequires:    python3-devel python3-mock python3-sphinx desktop-file-utils libappstream-glib
-Recommends:       python3-matplotlib python3-qt5
+Recommends:       python3-matplotlib python3-qt5 python3-qtpy
 
 %description
 The FLExible Network Tester is a Python wrapper to run multiple simultaneous
