@@ -32,16 +32,11 @@ class TestGui(unittest.TestCase):
 
     def setUp(self):
         self.settings = settings.copy()
-        FORCE_QT4 = bool(os.getenv("FORCE_QT4", False))
-
-        if FORCE_QT4:
-            self.skipTest("Not running with FORCE_QT4")
-            return
 
         try:
-            from PyQt5 import QtCore
+            from qtpy import QtCore
         except ImportError:
-            self.skipTest("No usable PyQt found")
+            self.skipTest("No usable Qt module found")
 
     def test_start_gui(self):
         from flent import gui
