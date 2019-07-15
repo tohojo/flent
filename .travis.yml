@@ -28,8 +28,8 @@ addons:
 services:
   - xvfb
 install:
-  - pip install mock QtPy
-  - '[ -n "$PYQT" ] && pip install ${PYQT} || true'
+  - pip install mock
+  - '[ -n "$PYQT" ] && pip install QtPy ${PYQT} || true'
   - pip install matplotlib==${MATPLOTLIB_VERSION}
 notifications:
   pushover:
