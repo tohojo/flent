@@ -65,23 +65,24 @@ except NotImplementedError:
 
 
 try:
-    from PyQt5 import QtCore, QtGui, uic
+    import qtpy
+    from qtpy import QtCore, QtGui, uic
 
-    from PyQt5.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
+    from qtpy.QtWidgets import QMessageBox, QFileDialog, QTreeView, \
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
         QFormLayout, QHBoxLayout, QVBoxLayout, QApplication, QPlainTextEdit, \
         QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea, \
         QPushButton, QShortcut, QMainWindow, QDialog
 
-    from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
+    from qtpy.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices, QValidator, QGuiApplication
 
-    from PyQt5.QtCore import Qt, QIODevice, QByteArray, \
-        QDataStream, QSettings, QTimer, QEvent, pyqtSignal, \
+    from qtpy.QtCore import Qt, QIODevice, QByteArray, \
+        QDataStream, QSettings, QTimer, QEvent, Signal, \
         QAbstractItemModel, QAbstractTableModel, QModelIndex, \
         QItemSelectionModel, QStringListModel, QUrl
 
-    from PyQt5.QtNetwork import QLocalSocket, QLocalServer
+    from qtpy.QtNetwork import QLocalSocket, QLocalServer
 
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
         as FigureCanvas
@@ -89,7 +90,7 @@ try:
         as NavigationToolbar
 
 except ImportError:
-    raise RuntimeError("Unable to find a usable PyQt5 version.")
+    raise RuntimeError("Unable to find a usable Qt version.")
 
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
@@ -344,7 +345,8 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("Ctrl+Up"),
                   self).activated.connect(self.prev_plot)
 
-        logger.info("GUI loaded. Running on PyQt v%s.", QtCore.PYQT_VERSION_STR)
+        logger.info("GUI loaded. Using Qt through %s v%s.", qtpy.API,
+                    QtCore.__version__)
 
     def read_log_queue(self):
         while not self.log_queue.empty():
@@ -1277,7 +1279,7 @@ class ActionWidget(object):
 
 class BooleanActionWidget(ActionWidget, QComboBox):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super(BooleanActionWidget, self).__init__(*args, **kwargs)
@@ -1302,7 +1304,7 @@ class BooleanActionWidget(ActionWidget, QComboBox):
 
 class ChoicesActionWidget(ActionWidget, QComboBox):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super(ChoicesActionWidget, self).__init__(*args, **kwargs)
@@ -1350,12 +1352,12 @@ class NoneSpinBoxMixin(object):
 
 
 class NoneDoubleSpinBox(NoneSpinBoxMixin, QDoubleSpinBox):
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
 
 class IntActionWidget(ActionWidget, NoneSpinBoxMixin, QSpinBox):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super(IntActionWidget, self).__init__(*args, **kwargs)
@@ -1375,7 +1377,7 @@ class IntActionWidget(ActionWidget, NoneSpinBoxMixin, QSpinBox):
 
 class FloatActionWidget(ActionWidget, NoneSpinBoxMixin, QDoubleSpinBox):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super(FloatActionWidget, self).__init__(*args, **kwargs)
@@ -1394,7 +1396,7 @@ class FloatActionWidget(ActionWidget, NoneSpinBoxMixin, QDoubleSpinBox):
 
 class PairActionWidget(ActionWidget, QWidget):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, parent, action, widget=QLineEdit, **kwargs):
         super(PairActionWidget, self).__init__(parent, action, **kwargs)
@@ -1426,7 +1428,7 @@ class PairActionWidget(ActionWidget, QWidget):
 
 class FloatPairActionWidget(PairActionWidget):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         kwargs["widget"] = NoneDoubleSpinBox
@@ -1454,7 +1456,7 @@ class FloatPairActionWidget(PairActionWidget):
 
 class TextActionWidget(ActionWidget, QLineEdit):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super(TextActionWidget, self).__init__(*args, **kwargs)
@@ -1475,9 +1477,9 @@ class TextActionWidget(ActionWidget, QLineEdit):
 
 class AddRemoveWidget(QWidget):
 
-    add_pressed = pyqtSignal()
-    remove_pressed = pyqtSignal('QWidget')
-    value_changed = pyqtSignal()
+    add_pressed = Signal()
+    remove_pressed = Signal('QWidget')
+    value_changed = Signal()
 
     def __init__(self, parent, subwidget):
         super(AddRemoveWidget, self).__init__(parent)
@@ -1513,7 +1515,7 @@ class AddRemoveWidget(QWidget):
 
 class MultiValWidget(ActionWidget, QWidget):
 
-    value_changed = pyqtSignal()
+    value_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         widget = kwargs.get("widget", TextActionWidget)
@@ -1589,7 +1591,7 @@ class MultiValWidget(ActionWidget, QWidget):
 
 class SettingsWidget(QScrollArea):
 
-    values_changed = pyqtSignal()
+    values_changed = Signal()
 
     _widget_type_map = {int: IntActionWidget,
                         float: FloatActionWidget,
@@ -2050,11 +2052,11 @@ class FigureManager(matplotlib.backend_bases.FigureManagerBase):
 
 class ResultWidget(QWidget):
 
-    update_start = pyqtSignal()
-    update_end = pyqtSignal()
-    plot_changed = pyqtSignal('QString', 'QString')
-    new_plot = pyqtSignal()
-    name_changed = pyqtSignal()
+    update_start = Signal()
+    update_end = Signal()
+    plot_changed = Signal('QString', 'QString')
+    new_plot = Signal()
+    name_changed = Signal()
     default_title = "New tab"
 
     def __init__(self, parent, settings, worker_pool):
