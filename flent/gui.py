@@ -71,7 +71,7 @@ try:
         QAbstractItemView, QMenu, QAction, QTableView, QHeaderView, \
         QFormLayout, QHBoxLayout, QVBoxLayout, QApplication, QPlainTextEdit, \
         QWidget, QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QScrollArea, \
-        QPushButton, QShortcut
+        QPushButton, QShortcut, QMainWindow, QDialog
 
     from PyQt5.QtGui import QFont, QCursor, QMouseEvent, QKeySequence, \
         QResizeEvent, QDesktopServices, QValidator, QGuiApplication
@@ -205,24 +205,8 @@ def check_running(settings):
     return False
 
 
-def get_ui_class(filename):
-    """Helper method to dynamically load a .ui file, construct a class
-    inheriting from the ui class and the associated base class, and return
-    that constructed class.
-
-    This allows subclasses to inherit from the output of this function."""
-
-    try:
-        ui, base = uic.loadUiType(os.path.join(DATA_DIR, 'ui', filename))
-    except Exception as e:
-        raise RuntimeError("While loading ui file '%s': %s" % (filename, e))
-
-    class C(ui, base):
-
-        def __init__(self, *args):
-            base.__init__(self, *args)
-            self.setupUi(self)
-    return C
+def get_ui_file(filename):
+    return os.path.join(DATA_DIR, 'ui', filename)
 
 
 class LoadedResultset(dict):
@@ -247,10 +231,11 @@ def results_load_helper(filename):
         return None
 
 
-class MainWindow(get_ui_class("mainwindow.ui")):
+class MainWindow(QMainWindow):
 
     def __init__(self, settings):
         super(MainWindow, self).__init__()
+        uic.loadUi(get_ui_file("mainwindow.ui"), self)
         self.settings = settings
         self.last_dir = os.getcwd()
 
@@ -886,17 +871,20 @@ class MainWindow(get_ui_class("mainwindow.ui")):
         dlg.exec_()
 
 
-class AboutDialog(get_ui_class("aboutdialog.ui")):
+class AboutDialog(QDialog):
 
     def __init__(self, parent):
         super(AboutDialog, self).__init__(parent)
+        uic.loadUi(get_ui_file("aboutdialog.ui"), self)
+
         self.aboutText.setText(ABOUT_TEXT.format(version=VERSION))
 
 
-class NewTestDialog(get_ui_class("newtestdialog.ui")):
+class NewTestDialog(QDialog):
 
     def __init__(self, parent, settings, log_queue):
         super(NewTestDialog, self).__init__(parent)
+        uic.loadUi(get_ui_file("newtestdialog.ui"), self)
         self.settings = settings.copy()
         self.settings.INPUT = []
         self.settings.GUI = False
@@ -2009,10 +1997,11 @@ class OpenFilesHeader(QHeaderView):
         event.accept()
 
 
-class AddColumnDialog(get_ui_class("addcolumn.ui")):
+class AddColumnDialog(QDialog):
 
     def __init__(self, parent, path=None):
         super(AddColumnDialog, self).__init__(parent)
+        uic.loadUi(get_ui_file("addcolumn.ui"), self)
 
         self.metadataPathEdit.textChanged.connect(self.update_name)
         self.columnNameEdit.textEdited.connect(self.name_entered)
@@ -2059,7 +2048,7 @@ class FigureManager(matplotlib.backend_bases.FigureManagerBase):
         return self.widget.title
 
 
-class ResultWidget(get_ui_class("resultwidget.ui")):
+class ResultWidget(QWidget):
 
     update_start = pyqtSignal()
     update_end = pyqtSignal()
@@ -2070,6 +2059,7 @@ class ResultWidget(get_ui_class("resultwidget.ui")):
 
     def __init__(self, parent, settings, worker_pool):
         super(ResultWidget, self).__init__(parent)
+        uic.loadUi(get_ui_file("resultwidget.ui"), self)
         self.results = None
         self.settings = settings.copy()
         self.dirty = True
