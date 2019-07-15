@@ -6,6 +6,7 @@ matrix:
   exclude:
     - python: "3.5"
       env: MATPLOTLIB_VERSION=3.1.* PYQT=PyQt5
+      env: MATPLOTLIB_VERSION=3.1.* PYQT=PySide2
 python:
   - "3.5"
   - "3.6"
@@ -16,7 +17,9 @@ env:
   - MATPLOTLIB_VERSION=2.1.*
   - MATPLOTLIB_VERSION=2.2.*
   - MATPLOTLIB_VERSION=3.0.* PYQT=PyQt5
+  - MATPLOTLIB_VERSION=3.0.* PYQT=PySide2
   - MATPLOTLIB_VERSION=3.1.* PYQT=PyQt5
+  - MATPLOTLIB_VERSION=3.1.* PYQT=PySide2
 addons:
   apt:
     packages:
@@ -24,7 +27,7 @@ addons:
 services:
   - xvfb
 install:
-  - pip install mock
+  - pip install mock QtPy
   - '[ -n "$PYQT" ] && pip install ${PYQT} || true'
   - pip install matplotlib==${MATPLOTLIB_VERSION}
 notifications:
