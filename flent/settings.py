@@ -84,14 +84,11 @@ class Version(FuncAction):
         except ImportError:
             logger.info("No matplotlib found. Plots won't be available.")
         try:
-            from PyQt5 import QtCore
-            logger.info("Using PyQt5 version %s.", QtCore.PYQT_VERSION_STR)
+            import qtpy
+            from qtpy import QtCore
+            logger.info("Using Qt: %s v%s.", qtpy.API, QtCore.__version__)
         except ImportError:
-            try:
-                from PyQt4 import QtCore
-                logger.info("Using PyQt4 version %s.", QtCore.PYQT_VERSION_STR)
-            except ImportError:
-                logger.info("No usable PyQt found. GUI won't work.")
+            logger.info("No usable Qt version found. GUI won't work.")
         sys.exit(0)
 
 
