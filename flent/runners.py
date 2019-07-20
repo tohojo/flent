@@ -1828,9 +1828,9 @@ class SsRunner(ProcessRunner):
         if val.endswith("Mbps"):
             return float(val[:-4])
         if val.endswith("Kbps"):
-            return float(val[:-4])*1000
+            return float(val[:-4])/1000
         if val.endswith("bps"):
-            return float(val[:-3])*10**6
+            return float(val[:-3])/10**6
         return float(val)
 
     def parse_part(self, part):
