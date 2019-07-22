@@ -5,8 +5,10 @@
 
 PING_HOSTS=get_test_parameter('ping_hosts', default=[], split=True)
 PING_LOCAL_BINDS=get_test_parameter('ping_local_binds', default=[], split=True)
+PING_MARKINGS=get_test_parameter('ping_markings', default=[], split=True)
 
-for host, local_bind in zip_longest(PING_HOSTS, PING_LOCAL_BINDS):
+for host, local_bind, marking in zip_longest(PING_HOSTS, PING_LOCAL_BINDS,
+                                             PING_MARKINGS):
     if not host:
         break
     DATA_SETS['Ping (ms) ICMP %s (extra)' % host] = {'ip_version': IP_VERSION,
@@ -14,6 +16,7 @@ for host, local_bind in zip_longest(PING_HOSTS, PING_LOCAL_BINDS):
                                                      'length': TOTAL_LENGTH,
                                                      'host': host,
                                                      'local_bind': local_bind,
+                                                     'marking': marking,
                                                      'units': 'ms',
                                                      'id': host,
                                                      'runner': 'ping'}
