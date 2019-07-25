@@ -1361,7 +1361,7 @@ class TimeseriesPlotter(Plotter):
             else:
                 a = 0
             s_unit = self.data_config[s['data']]['units']
-            if unit[a] is not None and s_unit != unit[a]:
+            if unit[a] is not None and s_unit != unit[a] and 'raw_key' not in s:
                 raise RuntimeError(
                     "Plot axis unit mismatch: %s/%s" % (unit[a], s_unit))
             unit[a] = s_unit
