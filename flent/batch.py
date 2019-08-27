@@ -102,11 +102,12 @@ class BatchRunner(object):
             for name, vals in obj.items():
                 # Expand inheritance
                 if 'inherits' in vals:
-                    if not vals['inherits'] in obj:
-                        raise RuntimeError(
-                            "%s inherits from non-existent parent %s."
-                            % (name, vals['inherits']))
-                    obj[name] = self.inherit(obj[vals['inherits']], vals)
+                    for inh in [x.strip() for x in reversed(vals['inherits'].split(','))]:
+                        if not inh in obj:
+                            raise RuntimeError(
+                                "%s inherits from non-existent parent %s."
+                                % (name, inh))
+                        obj[name] = self.inherit(obj[inh], obj[name])
 
                 # Parse boolean options
                 for k, v in obj[name].items():
