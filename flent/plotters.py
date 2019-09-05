@@ -50,8 +50,9 @@ try:
     if MPL_VER < LooseVersion("1.5"):
         logger.warning("Cannot use old matplotlib version %s, please upgrade!",
                        matplotlib.__version__)
-        raise ImportError()
-except ImportError:
+        raise ImportError("Matplotlib %s too old" % matplotlib.__version__)
+except ImportError as e:
+    logger.debug("Unable to import matplotlib: %s", e)
     HAS_MATPLOTLIB = False
     MPL_VER = LooseVersion("0")
 
