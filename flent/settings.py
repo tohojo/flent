@@ -279,6 +279,13 @@ parser.add_argument(
     help="Do not randomise the order of test runs within each batch.")
 
 parser.add_argument(
+    "--batch-no-timestamp",
+    action="store_false", dest="BATCH_TIMESTAMP",
+    help="Do not add a timestamp to batch output filenames. This keeps filenames "
+    "stable, but requires that the filename_extra variable be unique for each "
+    "test run. Results will be overwritten and a warning emitted if not.")
+
+parser.add_argument(
     "--batch-repetitions", action="store", type=int, dest="BATCH_REPS",
     metavar="REPETITIONS",
     help="Shorthand for --batch-override 'repetitions=REPETITIONS'.")

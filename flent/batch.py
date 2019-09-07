@@ -261,12 +261,11 @@ class BatchRunner(object):
                         raise
 
     def gen_filename(self, settings, batch, argset, rep):
-        filename = "batch-%s-%s-%s" % (
-            settings.BATCH_NAME,
-            batch['batch_time'],
-            batch.get('filename_extra', "%s-%s" % (argset, rep))
-        )
-        return clean_path(filename)
+        p = ["batch", settings.BATCH_NAME]
+        if self.settings.BATCH_TIMESTAMP:
+            p.append(batch['batch_time'])
+        p.append(batch.get('filename_extra', "%s-%s" % (argset, rep)))
+        return clean_path("-".join(p))
 
     def expand_argsets(self, batch, argsets, batch_time, batch_name,
                        print_status=True, no_shuffle=False):
