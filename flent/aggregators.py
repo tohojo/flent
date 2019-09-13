@@ -236,11 +236,13 @@ class TimeseriesAggregator(Aggregator):
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log "
                                "file to investigate.")
+
+        results.create_series(list(measurements.keys()))
+        results.raw_values = raw_values
+
         results.meta('SERIES_META', metadata['series'])
         results.meta('TEST_PARAMETERS').update(metadata['test_parameters'])
         results.meta('FAILED_RUNNERS', self.failed_runners)
-        results.raw_values = raw_values
-        results.create_series(list(measurements.keys()))
 
         # We start steps at the minimum time value, and do as many steps as are
         # necessary to get past the maximum time value with the selected step
