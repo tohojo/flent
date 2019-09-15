@@ -519,7 +519,7 @@ class BatchRunner(object):
                                 settings.REMOTE_METADATA)
         res.dump_dir(output_path)
         logger.log(loggers.INFO if print_datafile_loc else loggers.DEBUG,
-                   "Data file written to %s.", res.dump_filename)
+                   "Data file written to %s", res.dump_filename)
 
         formatter = formatters.new(settings)
         formatter.format([res])
