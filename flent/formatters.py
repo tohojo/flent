@@ -353,7 +353,7 @@ class SummaryFormatter(CombiningFormatter):
                 mean = self.get_res(s, 'mean')
                 median = self.get_res(s, 'median')
                 n = self.get_res(s, 'N')
-                is_computed = 'COMPUTED_LATE' in m[s]
+                is_computed = 'COMPUTED_LATE' in m.get(s, {})
 
                 if mean is None:
                     self.write("No data.\n")
