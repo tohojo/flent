@@ -877,6 +877,9 @@ class NetperfDemoRunner(ProcessRunner):
             try:
                 # The THROUGHPUT key contains the mean value even for UDP_RR tests
                 self.metadata['MEAN_VALUE'] = float(data_dict['THROUGHPUT'])
+                if self.test == 'UDP_RR':
+                    self.metadata['MEAN_VALUE'] = transformers.rr_to_ms(self.metadata['MEAN_VALUE'])
+
                 self.metadata['ELAPSED_TIME'] = float(data_dict.get('ELAPSED_TIME', 0))
                 self.metadata['UPSTREAM_TOS'] = int(data_dict.get('LOCAL_SOCKET_TOS', 0),
                                                     base=0)
