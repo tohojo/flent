@@ -18,7 +18,7 @@ for host, local_bind, marking in zip_longest(PING_HOSTS, PING_LOCAL_BINDS,
                                                      'local_bind': local_bind,
                                                      'marking': marking,
                                                      'units': 'ms',
-                                                     'id': host,
+                                                     'id': host + ' ICMP',
                                                      'runner': 'ping'}
 
 if PING_HOSTS:
