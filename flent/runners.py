@@ -1069,17 +1069,19 @@ class RegexpRunner(ProcessRunner):
     # Parse is split into a stateless class method in _parse to be able to call
     # it from find_binary.
     def parse(self, output, error=""):
-        result, raw_values, metadata = self._parse(output)
+        result, raw_values, metadata = self._parse(output, error)
         self.raw_values = raw_values
         self.metadata.update(metadata)
         return result
 
     @classmethod
-    def _parse(cls, output):
+    def _parse(cls, output, error=None):
         result = []
         raw_values = []
         metadata = {}
         lines = output.split("\n")
+        if error:
+            lines.extend(error.split("\n"))
         for line in lines:
             for regexp in cls.regexes:
                 match = regexp.match(line)
