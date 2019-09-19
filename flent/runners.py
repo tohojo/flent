@@ -538,6 +538,8 @@ class ProcessRunner(RunnerBase, threading.Thread):
                                  self.__class__.__name__,
                                  self.name, extra={'runner': self})
                     try:
+                        os.kill(self.pid, signal.SIGINT)
+                        time.sleep(0.5)
                         os.kill(self.pid, signal.SIGTERM)
                     except OSError:
                         pass
