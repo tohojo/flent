@@ -514,3 +514,27 @@ def get_module_versions():
             module_versions[m] = v
 
     return module_versions
+
+def get_wifi_data(iface):
+    wifi_data = {}
+    unwanted_keys = ["Interface", "ifindex", "wdev", "wiphy"]
+    output = get_command_output("iw dev %s info" % iface)
+    if output is not None:
+        for line in output.splitlines():
+            parts = line.split() 
+
+            if parts[0]  in unwanted_keys:
+                continue
+            k,v = parts[0], parts[1]
+            if parts[0] == 'txpower':
+               v = float(parts[1])
+            if parts[0] == 'channel':
+                v = {}
+                v['number'] =int(parts[1])
+                v['band'] = int(parts[2].strip("("));
+                v['width'] = int(parts[5])
+                v['center1'] = int(parts[8])
+                
+            wifi_data[k] = v
+
+    return wifi_data
