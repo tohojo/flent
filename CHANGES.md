@@ -2,6 +2,17 @@
 
 Changes since v1.3.0 include:
 
+- Fix calculation of pacing and delivery rate
+
+- Make sure series metadata is saved properly
+
+- Try to kill subprocesses with SIGINT before sending SIGTERM
+
+- Also try to parse stderr of runners; fixes issues with missing fping aggregate
+  statistics.
+
+- Fix summary output with median values.
+
 # Flent v1.3.0 #
 Released on 2019-07-09.
 
