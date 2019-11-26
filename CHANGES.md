@@ -1,3 +1,12 @@
+# Flent v1.3.2 #
+Released on 2019-11-26.
+
+This is a bugfix-only release of the 1.3 series of Flent.
+
+Changes since v1.3.1 include:
+
+- Fix 'make test' which broke from partial bugfix backport
+
 # Flent v1.3.1 #
 Released on 2019-11-26.
 
