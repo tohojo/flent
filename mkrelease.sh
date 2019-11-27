@@ -10,6 +10,8 @@ die()
 
 [ -n "$VERSION" ] || die "Usage: $0 <version>."
 
+make test || die "Test failed"
+
 echo ==== Updating source code version numbers to ${VERSION}... ====
 
 sed -i s/VERSION\ =\ \"[0-9\\.]\\+\\\(-git\\\)\\?\"/VERSION\ =\ \"${VERSION}\"/ flent/build_info.py  || die error
