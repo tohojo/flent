@@ -138,7 +138,7 @@ def record_metadata(results, extended, hostnames):
     if extended:
         m['IP_ADDRS'] = get_ip_addrs()
         m['GATEWAYS'] = get_gateways()
-        m['WIFI_DATA'] =get_wifi_data()
+        m['WIFI_DATA'] = get_wifi_data()
 
     m['REMOTE_METADATA'] = {}
 
@@ -527,27 +527,31 @@ def get_wifi_data(iface):
 
         for line in output.splitlines():
 
-            if len(line.strip()) >= 1:
-                parts = line.split() 
-                k,v = parts[0], parts[1]
+            if not line.strip():
+                continue
+            
+            parts = line.split() 
+            k,v = parts[0], parts[1]
 
-                if k  in unwanted_keys:
-                  continue
+            if k  in unwanted_keys:
+              continue
 
-                if k == 'txpower':
-                   v = float(parts[1])
+            if k == 'txpower':
+               v = float(parts[1])
 
-                if k == 'channel':
-                    # This condition will return a dict with all the values of the channel
-		            # Output will be {'addr':..., channel': {'band': 2462, 'center1': 2462, 'number': 11, 'width': 20}, 'ssid':...}
-                    v = {}
-                    v['number'] =int(parts[1])
-                    v['band'] = int(parts[2].strip("("));
-                    v['width'] = int(parts[5])
-                    v['center1'] = int(parts[8])
+            if k == 'channel':
+                # This condition will return a dict with all the values of the channel
+                # With the input "channel 1 (2412 MHz), width: 20 MHz, center1: 2412 MHz" 
+                # the output will be {'addr':..., channel': {'band': 2462, 'center1': 2462, 'number': 11, 'width': 20}, 'ssid':...}
+                v = {}
+                v['number'] =int(parts[1])
+                v['band'] = int(parts[2].strip("("));
+                v['width'] = int(parts[5])
+                v['center1'] = int(parts[8])
 
-                if k == "multicast TXQ":
-                    break
+            if k == "multicast TXQ":
+                #No interesting output after this
+                break
 
             wifi_data[k] = v
 
