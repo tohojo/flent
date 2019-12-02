@@ -2,6 +2,9 @@
 
 Changes since v1.3.0 include:
 
+- Add parsing of WiFi device information as extended metadata (from Emilly
+  Albuquerque).
+
 # Flent v1.3.0 #
 Released on 2019-07-09.
 
