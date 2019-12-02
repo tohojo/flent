@@ -517,42 +517,52 @@ def get_module_versions():
 
     return module_versions
 
-def get_wifi_data(iface):
+
+def get_wifi_data():
     wifi_data = {}
 
     unwanted_keys = ["Interface", "ifindex", "wdev", "wiphy"]
 
-    output = get_command_output("iw dev %s info" % iface)
+    output = get_command_output("iw dev")
+    iface = None
     if output is not None:
 
         for line in output.splitlines():
 
-            if not line.strip():
+            parts = line.split()
+            if len(parts) < 2:
                 continue
 
-            parts = line.split()
-            k,v = parts[0], parts[1]
+            k, v = parts[0], parts[1]
 
-            if k  in unwanted_keys:
-              continue
+            if k == 'Interface':
+                iface = v
+                wifi_data[iface] = {}
+                continue
+            elif iface is None:
+                continue
+
+            if k in unwanted_keys:
+                continue
 
             if k == 'txpower':
-               v = float(parts[1])
+                v = float(v)
 
             if k == 'channel':
                 # This condition will return a dict with all the values of the channel
                 # With the input "channel 1 (2412 MHz), width: 20 MHz, center1: 2412 MHz"
                 # the output will be {'addr':..., channel': {'band': 2462, 'center1': 2462, 'number': 11, 'width': 20}, 'ssid':...}
                 v = {}
-                v['number'] =int(parts[1])
-                v['band'] = int(parts[2].strip("("));
+                v['number'] = int(parts[1])
+                v['band'] = int(parts[2].strip("("))
                 v['width'] = int(parts[5])
                 v['center1'] = int(parts[8])
 
-            if k == "multicast TXQ":
-                #No interesting output after this
-                break
+            if line.strip() == "multicast TXQ:":
+                # No interesting output after this
+                iface = None
+                continue
 
-            wifi_data[k] = v
+            wifi_data[iface][k] = v
 
     return wifi_data
