@@ -942,9 +942,10 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
 
     def __init__(self, parent, settings, log_queue):
         super(NewTestDialog, self).__init__(parent)
-        self.settings = settings.copy()
-        self.settings.INPUT = []
-        self.settings.GUI = False
+        self.orig_settings = settings.copy()
+        self.orig_settings.INPUT = []
+        self.orig_settings.GUI = False
+        self.settings = self.orig_settings.copy()
         self.log_queue = log_queue
         self.pid = None
         self.aborted = False
@@ -1067,6 +1068,7 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
         self.monitor_timer.stop()
         self.pid = None
         self.aborted = False
+        self.settings = self.orig_settings.copy()
 
     def keyPressEvent(self, evt):
         if evt.key() == Qt.Key_Escape:
@@ -1086,11 +1088,11 @@ class NewTestDialog(get_ui_class("newtestdialog.ui")):
                 elapsed = time.time() - self.start_time
                 self.progressBar.setValue(100 * elapsed / self.total_time)
         else:
-            self.reset()
             fn = os.path.join(self.settings.DATA_DIR,
                               self.settings.DATA_FILENAME)
             if os.path.exists(fn):
                 self.parent().load_files([fn])
+            self.reset()
 
 
 class QPlainTextLogger(loggers.Handler):

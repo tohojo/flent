@@ -134,6 +134,7 @@ class ListTests(FuncAction):
 
     @classmethod
     def get_tests(cls, settings):
+        settings = settings.copy()
         tests = []
         for t in sorted([os.path.splitext(i)[0] for i in os.listdir(TEST_PATH)
                          if i.endswith('.conf')]):
