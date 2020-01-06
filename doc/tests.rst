@@ -59,10 +59,18 @@ behave. These are:
    control used is stored in the ``CONG_CONTROL`` per-test metadata field.
 
 .. envvar:: udp_bandwidth
+.. envvar:: udp_bandwidths
+.. envvar:: udp_pktsize
+.. envvar:: udp_pktsizes
 
-   This sets the bandwidth of each UDP stream in the ``udp_*`` tests. The option
-   is passed to ``iperf`` so can be in any syntax the iperf understands (e.g.
-   ``20M`` for 20 Mbps).
+   This sets the bandwidth and packet size of each UDP stream in the ``udp_*``
+   tests. The option is passed to ``iperf`` so can be in any syntax the iperf
+   understands (e.g. ``20M`` for 20 Mbps).
+
+   When running multiple UDP streams use the plural versions of the options
+   (``udp_bandwidths`` and ``udp_pktsizes``) to specify individual per-stream
+   values (comma-separated per stream), or the singular versions to specify the
+   same value for all streams.
 
 .. envvar:: burst_length
 .. envvar:: burst_ports

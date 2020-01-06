@@ -1379,7 +1379,8 @@ class IperfCsvRunner(ProcessRunner):
     transformed_metadata = ('MEAN_VALUE',)
 
     def __init__(self, host, interval, length, ip_version, local_bind=None,
-                 no_delay=False, udp=False, bw=None, marking=None, **kwargs):
+                 no_delay=False, udp=False, bw=None, pktsize=None, marking=None,
+                 **kwargs):
         self.host = host
         self.interval = interval
         self.length = length
@@ -1388,6 +1389,7 @@ class IperfCsvRunner(ProcessRunner):
         self.no_delay = no_delay
         self.udp = udp
         self.bw = bw
+        self.pktsize = pktsize
         self.marking = marking
         super(IperfCsvRunner, self).__init__(**kwargs)
 
@@ -1446,11 +1448,13 @@ class IperfCsvRunner(ProcessRunner):
                                         no_delay=self.no_delay,
                                         udp=self.udp,
                                         bw=self.bw,
+                                        pktsize=self.pktsize,
                                         marking=self.marking)
         super(IperfCsvRunner, self).check()
 
     def find_binary(self, host, interval, length, ip_version, local_bind=None,
-                    no_delay=False, udp=False, bw=None, marking=None):
+                    no_delay=False, udp=False, bw=None, pktsize=None,
+                    marking=None):
         iperf = util.which('iperf')
 
         if iperf is not None:
@@ -1459,6 +1463,8 @@ class IperfCsvRunner(ProcessRunner):
             if "--enhancedreports" in err:
                 if udp:
                     udp_args = "--udp --bandwidth {}".format(bw if bw else "100M")
+                    if pktsize:
+                        udp_args = "{} --len {}".format(udp_args, pktsize)
                 else:
                     udp_args = ""
                 return "{binary} --enhancedreports --reportstyle C --format m " \

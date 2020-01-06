@@ -56,7 +56,8 @@ SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 # add_stream callback. In addition to these, 'stream_delay' is handled specially
 # in the code below
 STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
-                             'control_host', 'local_bind', 'cc_algo']
+                             'control_host', 'local_bind', 'cc_algo',
+                             'udp_bandwidth', 'udp_pktsize']
 
 class _no_default():
     pass
