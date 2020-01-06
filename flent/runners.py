@@ -511,6 +511,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             raise RuntimeError(
                 "Process management currently doesn't work on Windows, "
                 "so running tests is not possible.")
+        logger.debug("Forking to run command %s", self.command)
         self.fork()
         super(ProcessRunner, self).start()
 
