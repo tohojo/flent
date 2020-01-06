@@ -230,8 +230,9 @@ class TestEnvironment(object):
                     pass
 
             try:
-                kwargs['length'] = stream_length - int(stream_delays[i])
-                kwargs['delay'] = global_delay + int(stream_delays[i])
+                delay = int(stream_delays[i])
+                kwargs['length'] = stream_length - delay
+                kwargs['delay'] = global_delay + delay
             except IndexError:
                 pass
 
