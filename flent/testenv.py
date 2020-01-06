@@ -161,14 +161,15 @@ class TestEnvironment(object):
                 return None
             raise RuntimeError("Missing required test parameter: %s" % name)
 
-    def try_test_parameters(self, names, default=_no_default):
-        for name in names:
-            if name in self.env['TEST_PARAMETERS']:
-                return self.env['TEST_PARAMETERS'][name]
+    def try_test_parameters(self, names, default=_no_default, split=False,
+                            cast=None):
+        name = names[0]
+        for n in names:
+            if n in self.env['TEST_PARAMETERS']:
+                name = n
+                break
 
-        # Didn't find a value; hand over to get_test_parameter for error
-        # handling
-        return self.get_test_parameter(names[0], default)
+        return self.get_test_parameter(name, default, split, cast)
 
     def parse_int(self, val):
         try:
