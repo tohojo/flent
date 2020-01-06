@@ -148,3 +148,12 @@ behave. These are:
    packets of each flow (so no "CS0,CS0" setting as can be used for Netperf). If
    not set, defaults to CS0 (best effort). If set, each value corresponds to a
    flow, and any extra flows will be set to CS0.
+
+.. envvar:: stream_delays
+
+   Specify a per-stream delay (in seconds) for the different streams started up
+   by a test. Use commas to separate values for the different streams. This can
+   be used to create tests with staggered start times, for example to test TCP
+   flow startup convergence times. What exactly constitutes a stream depends on
+   the test. For example, the rtt_fair* tests considers each hostname a stream,
+   whether or not there is one or two flows going to that host.
