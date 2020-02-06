@@ -369,6 +369,15 @@ test_group.add_argument(
     "to disable.")
 
 test_group.add_argument(
+    "--send-size",
+    action="store", type=unicode, dest="SEND_SIZE",
+    help="Send size (in bytes) used for TCP tests. netperf uses the socket "
+    "buffer size by default, which if too large can cause spikes in the "
+    "throughput results. Lowering this value will increase CPU usage but "
+    "also improves the fidelity of the throughput results without having "
+    "to decrease the socket buffer size.")
+
+test_group.add_argument(
     "--test-parameter",
     action=Update, type=keyval, dest="TEST_PARAMETERS", metavar='key=value',
     help="Arbitrary test parameter in key=value format. "
