@@ -956,7 +956,9 @@ class NetperfDemoRunner(ProcessRunner):
         args.setdefault('cong_control',
                         self.settings.TEST_PARAMETERS.get('tcp_cong_control', ''))
         args.setdefault('socket_timeout', self.settings.SOCKET_TIMEOUT)
-        args.setdefault('send_size', self.settings.SEND_SIZE)
+        args.setdefault('send_size',
+                        self.settings.SEND_SIZE[0]
+                        if self.settings.SEND_SIZE else None)
 
         if self.settings.SWAP_UPDOWN:
             if self.test == 'TCP_STREAM':

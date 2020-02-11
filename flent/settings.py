@@ -370,12 +370,13 @@ test_group.add_argument(
 
 test_group.add_argument(
     "--send-size",
-    action="store", type=unicode, dest="SEND_SIZE",
+    action="append", type=unicode, dest="SEND_SIZE",
     help="Send size (in bytes) used for TCP tests. netperf uses the socket "
     "buffer size by default, which if too large can cause spikes in the "
     "throughput results. Lowering this value will increase CPU usage but "
     "also improves the fidelity of the throughput results without having "
-    "to decrease the socket buffer size.")
+    "to decrease the socket buffer size. Can be specified multiple times, "
+    "with each value corresponding to a stream of a test.")
 
 test_group.add_argument(
     "--test-parameter",
@@ -739,10 +740,12 @@ class Settings(argparse.Namespace):
         if self.DATA_DIR is None:
             self.DATA_DIR = os.path.dirname(self.OUTPUT) or '.'
 
-        # Backwards compatibility for when LOCAL_BIND could only be specified
-        # once - just duplicate the value
+        # For per-stream options, if only specified once duplicate them for each
+        # host so they apply to all flows
         if len(self.LOCAL_BIND) == 1 and len(self.HOSTS) > 1:
             self.LOCAL_BIND *= len(self.HOSTS)
+        if len(self.SEND_SIZE) == 1 and len(self.HOSTS) > 1:
+            self.SEND_SIZE *= len(self.HOSTS)
 
         for k, v in self.BATCH_OVERRIDE.items():
             if not hasattr(v, 'lower'):
