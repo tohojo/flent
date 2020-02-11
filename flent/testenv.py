@@ -57,7 +57,12 @@ SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 # in the code below
 STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
                              'control_host', 'local_bind', 'cc_algo',
-                             'udp_bandwidth', 'udp_pktsize']
+                             'udp_bandwidth', 'udp_pktsize', 'send_size']
+
+# Mapping of test parameters that will be picked up from the global settings if
+# they are not set
+GLOBAL_TEST_PARAMS_MAP = {'local_binds': 'LOCAL_BIND',
+                          'send_sizes': 'SEND_SIZE'}
 
 class _no_default():
     pass
@@ -155,6 +160,10 @@ class TestEnvironment(object):
                 ret = cast(ret)
             return ret
         except KeyError:
+            if name in GLOBAL_TEST_PARAMS_MAP:
+                ret = self.env[GLOBAL_TEST_PARAMS_MAP[name]]
+                if ret:
+                    return ret
             if default is not _no_default:
                 return default
             if self.informational:

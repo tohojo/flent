@@ -217,6 +217,17 @@ parsing input files.
    can be measured. As such you may need to adjust it if you are experiencing
    latency above the default value. Set to 0 to disable.
 
+.. option:: --send-size=SEND_SIZE
+
+    Send size (in bytes) used for TCP tests. Netperf uses the socket buffer size
+    by default, which if too large can cause spikes in the throughput results.
+    Lowering this value will increase CPU usage but also improves the fidelity
+    of the throughput results without having to decrease the socket buffer size.
+
+    Can be specified multiple times, with each value corresponding to a stream
+    of a test. If only specified once, the same value will be applied to all
+    flows.
+
 .. option:: --test-parameter=key=value
 
    Arbitrary test parameter in key=value format. Key will be case folded to

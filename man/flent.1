@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "July 09, 2019" "1.9.9-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "February 11, 2020" "1.9.9-git" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .
@@ -315,6 +315,18 @@ For the default value, see the output of flent \fI\%\-h\fP\&. The value of
 this parameter is an implicit upper bound on how long a round\-trip time that
 can be measured. As such you may need to adjust it if you are experiencing
 latency above the default value. Set to 0 to disable.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-\-send\-size=SEND_SIZE
+Send size (in bytes) used for TCP tests. Netperf uses the socket buffer size
+by default, which if too large can cause spikes in the throughput results.
+Lowering this value will increase CPU usage but also improves the fidelity
+of the throughput results without having to decrease the socket buffer size.
+.sp
+Can be specified multiple times, with each value corresponding to a stream
+of a test. If only specified once, the same value will be applied to all
+flows.
 .UNINDENT
 .INDENT 0.0
 .TP

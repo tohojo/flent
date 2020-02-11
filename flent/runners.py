@@ -956,6 +956,9 @@ class NetperfDemoRunner(ProcessRunner):
         args.setdefault('cong_control',
                         self.settings.TEST_PARAMETERS.get('tcp_cong_control', ''))
         args.setdefault('socket_timeout', self.settings.SOCKET_TIMEOUT)
+        args.setdefault('send_size',
+                        self.settings.SEND_SIZE[0]
+                        if self.settings.SEND_SIZE else None)
 
         if self.settings.SWAP_UPDOWN:
             if self.test == 'TCP_STREAM':
@@ -1030,6 +1033,8 @@ class NetperfDemoRunner(ProcessRunner):
 
         if self.test in ("TCP_STREAM", "TCP_MAERTS"):
             args['format'] = "-f m"
+            if args['send_size']:
+                args['send_size'] = "-m {0} -M {0}".format(args['send_size'])
             self.units = 'Mbits/s'
 
             if args['test'] == 'TCP_STREAM' and self.settings.SOCKET_STATS:
@@ -1050,7 +1055,7 @@ class NetperfDemoRunner(ProcessRunner):
                        "{marking} -H {control_host} -p {control_port} " \
                        "-t {test} -l {length:d} {buffer} {format} " \
                        "{control_local_bind} {extra_args} -- " \
-                       "{socket_timeout} {local_bind} -H {host} -k {output_vars} " \
+                       "{socket_timeout} {send_size} {local_bind} -H {host} -k {output_vars} " \
                        "{cong_control} {extra_test_args}".format(**args)
 
         super(NetperfDemoRunner, self).check()

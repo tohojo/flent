@@ -34,7 +34,7 @@ DATA_SETS = o([
     ])
 
 def add_stream(i, host=None, label='BE', ping_label='ICMP', marking='CS0',
-               control_host=None, local_bind=None, cc_algo=None,
+               control_host=None, local_bind=None, cc_algo=None, send_size=None,
                length=LENGTH, delay=DELAY, **kwargs):
     if host is None:
         return
@@ -46,12 +46,12 @@ def add_stream(i, host=None, label='BE', ping_label='ICMP', marking='CS0',
      {'test': 'TCP_STREAM', 'length': length, 'host': host, 'marking': marking or
                               'CS0', 'control_host': control_host or host, 'local_bind': local_bind,
                               'delay': delay, 'id': host, 'units': 'Mbits/s', 'runner': 'netperf_demo',
-                              'cong_control': cc_algo}
+                              'cong_control': cc_algo, 'send_size': send_size}
     DATA_SETS['TCP download %s %s' % (label or "BE", host)] = \
      {'test': 'TCP_MAERTS', 'length': length, 'host': host, 'marking': marking or
                               'CS0', 'control_host': control_host or host, 'local_bind': local_bind,
                               'delay': delay, 'id': host, 'units': 'Mbits/s', 'runner': 'netperf_demo',
-                              'cong_control': cc_algo}
+                              'cong_control': cc_algo, 'send_size': send_size}
     DATA_SETS['Ping (ms) %s %s' % (ping_label or "ICMP", host)] = \
      {'ip_version': IP_VERSION, 'interval': STEP_SIZE, 'length': TOTAL_LENGTH,
       'host': host, 'local_bind': local_bind, 'id': host, 'units': 'ms',
