@@ -370,7 +370,7 @@ test_group.add_argument(
 
 test_group.add_argument(
     "--send-size",
-    action="append", type=unicode, dest="SEND_SIZE",
+    action="append", type=unicode, dest="SEND_SIZE", default=[],
     help="Send size (in bytes) used for TCP tests. netperf uses the socket "
     "buffer size by default, which if too large can cause spikes in the "
     "throughput results. Lowering this value will increase CPU usage but "
