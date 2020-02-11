@@ -57,7 +57,7 @@ SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 # in the code below
 STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
                              'control_host', 'local_bind', 'cc_algo',
-                             'udp_bandwidth', 'udp_pktsize']
+                             'udp_bandwidth', 'udp_pktsize', 'send_size']
 
 class _no_default():
     pass
