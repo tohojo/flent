@@ -507,7 +507,7 @@ class ResultSet(object):
                 # relying on their presence in future code.
                 logger.debug("No raw values found; synthesising from parsed data")
 
-                t0 = parse_date(obj['metadata'].get(
+                t0, offset = parse_date(obj['metadata'].get(
                     'T0', obj['metadata'].get('TIME')))
                 x0 = timegm(t0.timetuple()) + t0.microsecond / 1000000.0
                 for name in obj['results'].keys():
