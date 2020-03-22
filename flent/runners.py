@@ -1277,8 +1277,12 @@ class HttpGetterRunner(RegexpRunner):
 
         http_getter = util.which('http-getter', fail=RunnerCheckError)
 
-        url_file = (self.url_file or self.settings.HTTP_GETTER_URLLIST
-                    or "http://{}/filelist.txt".format(self.settings.HOST))
+        if self.url_file:
+            url_file = self.url_file
+        elif self.settings.HTTP_GETTER_URLLIST:
+            url_file = self.settings.HTTP_GETTER_URLLIST[0]
+        else:
+            url_file = "http://{}/filelist.txt".format(self.settings.HOST)
         dns_servers = self.dns_servers or self.settings.HTTP_GETTER_DNS
         timeout = (self.timeout or self.settings.HTTP_GETTER_TIMEOUT
                    or int(self.length * 1000))

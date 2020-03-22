@@ -445,11 +445,12 @@ tool_group.add_argument(
 
 tool_group.add_argument(
     "--http-getter-urllist",
-    action="store", type=unicode, dest="HTTP_GETTER_URLLIST", metavar="FILENAME",
+    action="append", type=unicode, dest="HTTP_GETTER_URLLIST", metavar="FILENAME",
     help="Filename containing the list of HTTP URLs to get. Can also be a URL, "
     "which will then be downloaded as part of each test iteration. If not "
     "specified, this is set to http://<hostname>/filelist.txt where <hostname> "
-    "is the first test hostname.")
+    "is the first test hostname. Can be specified multiple times, in which case "
+    "one http-getter instance will be run for each URL list.")
 
 tool_group.add_argument(
     "--http-getter-dns-servers",
