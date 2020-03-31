@@ -39,11 +39,14 @@ behave. These are:
 
 .. envvar:: upload_streams
 .. envvar:: download_streams
+.. envvar:: bidir_streams
 
-   These set the number of upload or download streams for the ``tcp_nup``,
-   ``tcp_ndown`` and ``rrul_be_nflows`` tests. If set to the special value
-   ``num_cpus`` the number of streams will be set to the number of CPUs on the
-   system (if this information is available).
+   These set the number of streams for the tests that are configurable. The
+   ``tcp_nup``, ``tcp_ndown`` and ``rrul_be_nflows`` tests understand
+   ``upload_streams`` and ``download_streams``, while the ``rrul_var`` test
+   understands ``bidir_streams``. If any of these parameter is set to the
+   special value ``num_cpus`` the number of streams will be set to the number of
+   CPUs on the system (if this information is available).
 
 .. envvar:: tcp_cong_control
 

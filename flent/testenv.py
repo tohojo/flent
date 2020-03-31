@@ -49,7 +49,7 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest
 
-SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams']
+SPECIAL_PARAM_NAMES = ['upload_streams', 'download_streams', 'bidir_streams']
 SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 
 # Test parameters that will be parsed and from test parameters and passed to the
