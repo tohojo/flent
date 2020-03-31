@@ -95,6 +95,7 @@ class TestEnvironment(object):
             'parse_int': self.parse_int,
             'zip_longest': zip_longest,
             'for_stream_config': self.for_stream_config,
+            'test_error': self.test_error,
         })
 
         self.informational = informational
@@ -111,8 +112,9 @@ class TestEnvironment(object):
                 self.env['HOSTS'] = self.orig_hosts
             return self.expand_duplicates(self.env)
         except Exception as e:
+            testn = os.path.basename(filename).replace(".conf", "")
             raise RuntimeError(
-                "Unable to read test config file '%s': '%s'." % (filename, e))
+                "Error loading test '%s': %s." % (testn, e))
 
     def replace_testparms(self, env):
         if 'TEST_PARAMETERS' not in env:
@@ -207,6 +209,10 @@ class TestEnvironment(object):
             else:
                 raise RuntimeError("Need %d hosts, only %d specified" %
                                    (count, len(self.env['HOSTS'])))
+
+    def test_error(self, msg):
+        if not self.informational:
+            raise RuntimeError(msg)
 
     def for_stream_config(self, func, n=None):
         if n is None:
