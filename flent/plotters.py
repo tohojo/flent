@@ -1271,8 +1271,8 @@ class Plotter(ArgParam):
             if end <= 0:
                 end += results.meta("TOTAL_LENGTH")
 
-            min_idx = data[0].searchsorted(start, side='right')
-            max_idx = data[0].searchsorted(end, side='left')
+            min_idx = data[0].searchsorted(start, side='left')
+            max_idx = data[0].searchsorted(end, side='right')
 
             data = data[:, min_idx:max_idx]
 
