@@ -43,6 +43,7 @@ fi
 command_string=$(cat <<EOF
 for i in \$(seq $count); do
     ss -t -i -p -n state connected "dst $target $filter"
+    echo ''
     date '+Time: %s.%N';
     echo "---";
     sleep $interval || exit 1;
