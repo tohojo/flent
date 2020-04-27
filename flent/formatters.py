@@ -290,6 +290,55 @@ class StatsFormatter(CombiningFormatter):
                 self.write("  Std dev:     %f\n" % (self.get_res(s, 'std')))
                 self.write("  Variance:    %f\n" % (self.get_res(s, 'var')))
 
+class StatsCsvFormatter(CombiningFormatter):
+
+    combines = {'mean': 'mean', 'median': 'median',
+                'min': 'min', 'max': 'max',
+                'std': 'std_dev', 'var': 'variance',
+                'cumsum': 'cumul_total'}
+
+    def __init__(self, settings):
+        Formatter.__init__(self, settings)
+        try:
+            import numpy
+            self.np = numpy
+        except ImportError:
+            raise RuntimeError(
+                "Stats formatter requires numpy, which seems to be missing. "
+                "Please install it and try again.")
+
+    def format(self, results):
+        self.open_output()
+        writer = csv.writer(self.output)
+
+        try:
+            writer.writerow(["filename", "title", "series", "units", "datapoints"] +
+                            list(self.combines.values()))
+
+            for r in results:
+                if r.meta('TITLE'):
+                    rtitle = "{} - {}".format(r.meta('TIME'), r.meta('TITLE'))
+                else:
+                    rtitle = "{}".format(r.meta('TIME'))
+
+                self.make_combines(r, self.combines.keys())
+
+                for s in sorted(r.series_names):
+                    if s in self.settings.DATA_SETS:
+                        units = self.settings.DATA_SETS[s]['units']
+                    else:
+                        units = ''
+
+                    row = [r.meta('DATA_FILENAME'), rtitle, s, units,
+                           self.get_res(s, 'N')]
+
+                    if not self.get_res(s, 'mean'):
+                        writer.writerow(row)
+                    else:
+                        writer.writerow(row + [self.get_res(s, k)
+                                               for k in self.combines.keys()])
+        except BrokenPipeError:
+            return
 
 class SummaryFormatter(CombiningFormatter):
 
