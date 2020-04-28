@@ -116,6 +116,7 @@ behave. These are:
 
 .. envvar:: ping_hosts
 .. envvar:: ping_local_binds
+.. envvar:: ping_labels
 
    These are used to define one or more extra host names that will receive a
    ping flow while a test is run. The ``ping_hosts`` variable simply specifies
@@ -123,7 +124,9 @@ behave. These are:
    The ``ping_local_binds`` variable sets local IP address(es) to bind to for
    the extra ping flows. If specified, it must contain the same number of local
    addresses as the number of ping hosts. The same local address can be
-   specified multiple times, however.
+   specified multiple times, however. The ``ping_labels`` variable is used to
+   label each of the ping flows; if not specified, Flent will create a default
+   label based on the target hostname for each flow.
 
 .. envvar:: voip_host
 .. envvar:: voip_local_bind
@@ -144,13 +147,16 @@ behave. These are:
    number of target hostnames specified for the test.
 
 .. envvar:: markings
+.. envvar:: labels
 
    Flow markings to use for each of the flows in the ``rtt_fair*`` tests.
    Comma-separated values of markings understood by Netperf (such as "CS0").
    Only supports setting the same marking on both the upstream and downstream
    packets of each flow (so no "CS0,CS0" setting as can be used for Netperf). If
    not set, defaults to CS0 (best effort). If set, each value corresponds to a
-   flow, and any extra flows will be set to CS0.
+   flow, and any extra flows will be set to CS0. By default each flow will be
+   labelled according to its marking; to override these labels, use the
+   ``labels`` parameter.
 
 .. envvar:: stream_delays
 
