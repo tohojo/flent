@@ -38,8 +38,8 @@ except ImportError:
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent.loggers import get_logger
-from flent.util import FuncAction, Update, keyval, keyval_int, ArgParser, \
-    token_split
+from flent.util import FuncAction, Update, keyval, keyval_int, keyval_transformer, \
+    ArgParser, token_split
 from flent.plotters import add_plotting_args
 from flent import loggers, util, resultset, runners
 
@@ -403,6 +403,20 @@ test_group.add_argument(
     "values to the test data. Requires the 'ss' utility to be present on the "
     "system, and can fail if there are too many simultaneous upload flows; which "
     "is why this option is not enabled by default.")
+
+test_group.add_argument(
+    "--marking-name",
+    action=Update, dest="MARKING_NAMES", metavar='name=hexcode',
+    type=keyval_transformer(keyfunc=lambda x: x.upper(),
+                            valfunc=util.parse_int,
+                            errmsg="Values must be integers"),
+    help="Define a new symbolic name that can be used when specifying flow "
+    "markings using the 'markings' test parameter. This can be used to make "
+    "it easier to specify custom diffserv markings on flows by using symbolic "
+    "names for each marking value instead of the hex codes. Values specified "
+    "here will be used in addition to the common values (AFxx, CSx and EF - "
+    "see man page for full list), and cannot override the built-in names. "
+    "Names will be case-folded when matching.")
 
 plot_group = parser.add_argument_group(
     "Plot configuration",

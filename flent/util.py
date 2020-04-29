@@ -472,11 +472,21 @@ def keyval(value):
     return ret
 
 
-def keyval_int(value):
-    try:
-        return {int(k): v for k, v in keyval(value).items()}
-    except ValueError:
-        raise argparse.ArgumentTypeError("Keys must be integers.")
+def noop(x):
+    return x
+
+
+def keyval_transformer(keyfunc=noop, valfunc=noop,
+                       errmsg="Parse error"):
+    def typefunc(value):
+        try:
+            return {keyfunc(k): valfunc(v) for k, v in keyval(value).items()}
+        except ValueError:
+            raise argparse.ArgumentTypeError(errmsg)
+    return typefunc
+
+
+keyval_int = keyval_transformer(keyfunc=int, errmsg="Keys must be integers.")
 
 
 def comma_list(value):

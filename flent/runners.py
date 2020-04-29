@@ -617,11 +617,19 @@ class ProcessRunner(RunnerBase, threading.Thread):
         mk = marking.upper()
 
         if mk in MARKING_MAP:
-            return "0x%x" % MARKING_MAP[mk]
-        return marking
+            mkval = MARKING_MAP[mk]
+        elif mk in self.settings.MARKING_NAMES:
+            mkval = self.settings.MARKING_NAMES[mk]
+        else:
+            try:
+                mkval = util.parse_int(marking)
+            except ValueError:
+                raise RuntimeError("Invalid marking: %s" % marking)
+
+        return "0x%x" % mkval
 
     def parse_marking(self, marking, fmtstr, paired=False):
-        # Try to convert netperf-style textual marking specs into integers
+        """Convert netperf-style textual marking specs into integers"""
         if marking is not None:
             try:
                 mk = marking.split(",")
