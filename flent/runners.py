@@ -613,12 +613,22 @@ class ProcessRunner(RunnerBase, threading.Thread):
 
         return out, err
 
-    def parse_marking(self, marking, fmtstr):
+    def _get_marking(self, marking):
+        mk = marking.upper()
+
+        if mk in MARKING_MAP:
+            return "0x%x" % MARKING_MAP[mk]
+        return marking
+
+    def parse_marking(self, marking, fmtstr, paired=False):
         # Try to convert netperf-style textual marking specs into integers
         if marking is not None:
             try:
-                mk = marking.split(",")[0]
-                return fmtstr.format(MARKING_MAP[mk.upper()])
+                mk = marking.split(",")
+                if paired and len(mk) > 1:
+                    return fmtstr.format("{},{}".format(self._get_marking(mk[0]),
+                                                        self._get_marking(mk[1])))
+                return fmtstr.format(self._get_marking(mk[0]))
             except (AttributeError, KeyError):
                 return fmtstr.format(self.marking)
 
@@ -1017,7 +1027,7 @@ class NetperfDemoRunner(ProcessRunner):
             self.watchdog_timer = self.length + self.delay + 10
 
         if args['marking']:
-            args['marking'] = "-Y {0}".format(args['marking'])
+            args['marking'] = self.parse_marking(args['marking'], "-Y {}", True)
 
         if args['cong_control']:
             args['cong_control'] = "-K {0}".format(args['cong_control'])
@@ -1207,7 +1217,7 @@ class PingRunner(RegexpRunner):
                         # full test length). This only affects fping v4.0+;
                         # earlier versions will ignore -t when running in -c mode.
                         timeout=length * 2000,
-                        marking="-O {0}".format(marking) if marking else "",
+                        marking=self.parse_marking(marking, "-O {0}"),
                         local_bind=("-I {0}".format(local_bind)
                                     if local_bind else ""),
                         host=host)
@@ -1242,7 +1252,7 @@ class PingRunner(RegexpRunner):
                     binary=ping,
                     interval=max(0.2, interval),
                     length=length,
-                    marking="-Q {0}".format(marking) if marking else "",
+                    marking=self.parse_marking(marking, "-Q {0}"),
                     local_bind="-I {0}".format(local_bind) if local_bind else "",
                     host=host,
                     pingargs=" ".join(pingargs))
