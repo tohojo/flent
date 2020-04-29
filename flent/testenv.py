@@ -27,7 +27,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from itertools import cycle, islice
 
-from flent.util import Glob, token_split
+from flent.util import Glob, token_split, parse_int
 from flent.build_info import DATA_DIR
 from flent.loggers import get_logger
 
@@ -184,13 +184,8 @@ class TestEnvironment(object):
 
     def parse_int(self, val):
         try:
-            try:
-                return int(val)
-            except ValueError:
-                if val.startswith("0x"):
-                    return int(val, 16)
-                raise
-        except (ValueError, AttributeError):
+            return parse_int(val)
+        except ValueError:
             raise RuntimeError("Invalid integer value: %s" % val)
 
     def require_host_count(self, count):

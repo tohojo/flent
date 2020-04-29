@@ -127,6 +127,18 @@ def parse_date(timestring, min_t=None, offset=None):
         return dt - offset, offset
 
 
+def parse_int(val):
+    try:
+        try:
+            return int(val)
+        except ValueError:
+            if val.strip().startswith("0x"):
+                return int(val, 16)
+            raise
+    except (ValueError, AttributeError):
+        raise ValueError("Invalid integer value: %s" % val)
+
+
 def clean_path(path, allow_dirs=False):
     if allow_dirs:
         return re.sub("[^A-Za-z0-9_/-]", "_", path)
