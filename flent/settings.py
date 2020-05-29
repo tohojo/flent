@@ -562,6 +562,7 @@ class Settings(argparse.Namespace):
                            OLD_RCFILE, self.RCFILE)
             self.RCFILE = OLD_RCFILE
         if os.path.exists(self.RCFILE):
+            logger.debug("Loading rc file %s", self.RCFILE)
 
             config = RawConfigParser()
             config.optionxform = lambda x: x.upper()
@@ -595,6 +596,7 @@ class Settings(argparse.Namespace):
                     vals[k] = False
                 else:
                     raise ValueError("Not a boolean: %s" % v)
+                logger.debug("Set value %s=%s from rc file", k, vals[k])
                 continue
 
             elif t:
@@ -611,6 +613,7 @@ class Settings(argparse.Namespace):
                     vals[k] = [t(i.strip()) for i in token_split(v)]
                 else:
                     vals[k] = val
+                logger.debug("Set value %s=%s from rc file", k, vals[k])
 
         return vals
 
