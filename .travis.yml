@@ -48,7 +48,7 @@ addons:
     - libxcb-shape0
     - libxcb-shm0
     - libxcb-sync1
-    - libxcb-util
+    - libxcb-util1
     - libxcb-xfixes0
     - libxcb-xinerama0
     - libxcb-xkb1
