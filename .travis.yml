@@ -38,6 +38,7 @@ addons:
   apt:
     packages:
     - libxcb-xinerama0
+    - libxcb-icccm4
     - libxkbcommon-x11-0
 services:
   - xvfb
