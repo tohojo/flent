@@ -37,6 +37,7 @@ env:
 addons:
   apt:
     packages:
+    - libxcb-xinerama0
     - libxkbcommon-x11-0
 services:
   - xvfb
