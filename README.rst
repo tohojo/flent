@@ -11,19 +11,71 @@ Installing Flent
 Installing Flent can be done in several ways, depending on your operating system:
 
 
-- **Debian and Ubuntu:** ``apt install flent``.
+- **Debian and Ubuntu:**
 
-- **Ubuntu pre-18.04:** Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
+    .. code-block:: bash
 
-- **Arch Linux:** Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
+      apt install flent
+
+- **Ubuntu pre-18.04:**
+
+  Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
+
+- **Arch Linux:**
+
+  Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
+
+- **Other Linux:**
+
+  Install from the `Python Package Index <https://pypi.python.org/pypi/flent>`_:
+  
+    .. code-block:: bash
+
+      pip install flent
 
 - **FreeBSD:**
-  ``pkg install flent`` to install the package or ``cd /usr/ports/net/flent && make install`` to install the port.
 
-- **Other Linux and OSX with Macbrew:** Install from the `Python Package Index <https://pypi.python.org/pypi/flent>`_:
-  ``pip install flent``.
+  Install the package
 
+    .. code-block:: bash
 
+      pkg install flent
+
+  Or install the port
+  
+    .. code-block:: bash
+
+        cd /usr/ports/net/flent && make install
+
+- **macOS:**
+
+  `Homebrew <https://brew.sh/>`_ and Python 3 must be installed (Python 3 can be installed using Homebrew)
+
+  Install the `patched netperf package <https://github.com/kris-anderson/homebrew-netperf>`_
+
+    .. code-block:: bash
+
+      brew tap kris-anderson/netperf
+      brew install netperf-enable-demo
+
+  Install other dependencies
+
+    .. code-block:: bash
+
+      brew install fping
+      pip3 install matplotlib --user
+
+  Install Flent using pip
+
+    .. code-block:: bash
+
+      pip3 install flent --user
+
+  Optional (install this if you want to use `flent-gui`)
+
+    .. code-block:: bash
+
+      pip3 install pyqt5 --user
 
 Quick Start
 -----------
