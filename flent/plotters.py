@@ -1034,11 +1034,17 @@ class Plotter(ArgParam):
            and self.legends:
 
             # Make sure we have a renderer to get size from
-            if not getattr(self.figure, '_cachedRenderer', None):
+            renderer = getattr(self.figure, '_cachedRenderer', None)
+            if not renderer:
                 self.figure.canvas.draw()
+                renderer = getattr(self.figure, '_cachedRenderer', None)
 
-            legend_width = max(
-                [l.get_window_extent().width for l in self.legends])
+            try:
+                legend_width = max(
+                    [l.get_window_extent(renderer).width for l in self.legends])
+            except Exception as e:
+                logger.debug("Error getting legend sizes: %s", e)
+                return
 
             canvas_width = self.figure.canvas.get_width_height()[0]
             for a in self.axes_iter():
