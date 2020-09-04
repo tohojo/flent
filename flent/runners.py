@@ -1028,6 +1028,11 @@ class NetperfDemoRunner(ProcessRunner):
         args['test'] = self.test
         args['host'] = self.host
 
+        # make sure all unset args are empty strings (and not e.g. None)
+        for k, v in args.items():
+            if v is None:
+                args[k] = ""
+
         if self.bytes:
             args['length'] = -self.bytes
         else:
