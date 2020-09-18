@@ -530,6 +530,8 @@ def rangedict(key, value):
                 raise ValueError
             for i in range(s, e+1):
                 ret[i] = value
+        elif k == '*':
+            ret['*'] = value
         else:
             ret[int(k)] = value
     return ret

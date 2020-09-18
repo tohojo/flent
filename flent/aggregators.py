@@ -88,6 +88,8 @@ class Aggregator(object):
 
         if idx in self.settings.REMOTE_HOSTS:
             instance['remote_host'] = self.settings.REMOTE_HOSTS[idx]
+        elif '*' in self.settings.REMOTE_HOSTS:
+            instance['remote_host'] = self.settings.REMOTE_HOSTS['*']
         else:
             instance['remote_host'] = None
 
