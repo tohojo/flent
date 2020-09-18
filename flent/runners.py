@@ -41,7 +41,7 @@ from threading import Event
 
 from flent import util, transformers
 from flent.build_info import DATA_DIR
-from flent.util import classname, ENCODING, Glob
+from flent.util import classname, ENCODING, Glob, normalise_host
 from flent.loggers import get_logger
 
 try:
@@ -391,7 +391,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
         super(ProcessRunner, self).__init__(**kwargs)
 
         self.delay = delay
-        self.remote_host = remote_host
+        self.remote_host = normalise_host(remote_host)
         self.units = units
         self.killed = False
         self.pid = None
@@ -667,6 +667,7 @@ class DitgRunner(ProcessRunner):
 
         if not control_host:
             control_host = self.settings.CONTROL_HOST or self.settings.HOST
+        control_host = normalise_host(control_host)
 
         if not local_bind and self.settings.LOCAL_BIND:
             local_bind = self.settings.LOCAL_BIND[0]
@@ -679,7 +680,7 @@ class DitgRunner(ProcessRunner):
 
         self.test_args = test_args
         self.length = length
-        self.host = host
+        self.host = normalise_host(host)
         self.interval = interval
         self.local_bind = local_bind
 
@@ -826,7 +827,7 @@ class NetperfDemoRunner(ProcessRunner):
     def __init__(self, test, length, host, bytes=None, **kwargs):
         self.test = test
         self.length = length
-        self.host = host
+        self.host = normalise_host(host)
         self.bytes = bytes
         super(NetperfDemoRunner, self).__init__(**kwargs)
 
@@ -1027,6 +1028,7 @@ class NetperfDemoRunner(ProcessRunner):
         args['buffer'] = self.netperf['buffer']
         args['test'] = self.test
         args['host'] = self.host
+        args['control_host'] = normalise_host(args['control_host'])
 
         # make sure all unset args are empty strings (and not e.g. None)
         for k, v in args.items():
@@ -1168,7 +1170,7 @@ class PingRunner(RegexpRunner):
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
 
     def __init__(self, host, **kwargs):
-        self.host = host
+        self.host = normalise_host(host)
         super(PingRunner, self).__init__(**kwargs)
 
     def check(self):
@@ -1305,7 +1307,7 @@ class HttpGetterRunner(RegexpRunner):
         elif self.settings.HTTP_GETTER_URLLIST:
             url_file = self.settings.HTTP_GETTER_URLLIST[0]
         else:
-            url_file = "http://{}/filelist.txt".format(self.settings.HOST)
+            url_file = "http://{}/filelist.txt".format(normalise_host(self.settings.HOST))
         dns_servers = self.dns_servers or self.settings.HTTP_GETTER_DNS
         timeout = (self.timeout or self.settings.HTTP_GETTER_TIMEOUT
                    or int(self.length * 1000))
@@ -1360,7 +1362,7 @@ class DashJsRunner(RegexpRunner):
 
         self.length = length
         self.url = url
-        self.host = host
+        self.host = normalise_host(host)
 
     def parse(self, output, error=""):
         result = super(DashJsRunner, self).parse(output, error)
@@ -1414,7 +1416,7 @@ class IperfCsvRunner(ProcessRunner):
     def __init__(self, host, interval, length, ip_version, local_bind=None,
                  no_delay=False, udp=False, bw=None, pktsize=None, marking=None,
                  **kwargs):
-        self.host = host
+        self.host = normalise_host(host)
         self.interval = interval
         self.length = length
         self.ip_version = ip_version
@@ -1531,7 +1533,7 @@ class IrttRunner(ProcessRunner):
     def __init__(self, host, length, interval=None, ip_version=None,
                  local_bind=None, marking=None, multi_results=False,
                  sample_freq=0, data_size=None, **kwargs):
-        self.host = host
+        self.host = normalise_host(host)
         self.interval = interval
         self.length = length
         self.ip_version = ip_version
@@ -1783,7 +1785,7 @@ class SsRunner(ProcessRunner):
                  length, target, **kwargs):
         self.exclude_ports = exclude_ports
         self.ip_version = ip_version
-        self.host = host
+        self.host = normalise_host(host)
         self.interval = interval
         self.length = length
         self.target = target
@@ -2004,7 +2006,7 @@ class TcRunner(ProcessRunner):
         self.interface = interface
         self.interval = interval
         self.length = length
-        self.host = host
+        self.host = normalise_host(host)
         super(TcRunner, self).__init__(**kwargs)
 
     # Normalise time values (seconds, ms, us) to milliseconds and bit values
@@ -2149,7 +2151,7 @@ class CpuStatsRunner(ProcessRunner):
     def __init__(self, interval, length, host='localhost', **kwargs):
         self.interval = interval
         self.length = length
-        self.host = host
+        self.host = normalise_host(host)
         super(CpuStatsRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):
@@ -2227,7 +2229,7 @@ class WifiStatsRunner(ProcessRunner):
         self.interface = interface
         self.interval = interval
         self.length = length
-        self.host = host
+        self.host = normalise_host(host)
 
         self.stations = stations or []
         if self.stations in (["all"], ["ALL"]):
@@ -2347,7 +2349,7 @@ class NetstatRunner(ProcessRunner):
     def __init__(self, interval, length, host='localhost', **kwargs):
         self.interval = interval
         self.length = length
-        self.host = host
+        self.host = normalise_host(host)
         super(NetstatRunner, self).__init__(**kwargs)
 
     def parse(self, output, error=""):

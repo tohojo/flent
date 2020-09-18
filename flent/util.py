@@ -36,6 +36,7 @@ from math import log10, exp, sqrt
 
 from flent.loggers import get_logger
 
+MULTIHOST_SEP = '//'
 ENCODING = "UTF-8"
 try:
     import locale
@@ -211,8 +212,13 @@ def path_components(path):
         folders.insert(0, path)
     return folders
 
+def normalise_host(hostname):
+    if hostname and MULTIHOST_SEP in hostname:
+        return hostname.split(MULTIHOST_SEP, 1)[0]
+    return hostname
 
 def lookup_host(hostname, version=None):
+    hostname = normalise_host(hostname)
     logger.debug("Looking up hostname '%s'.", hostname)
     if version == 4:
         version = socket.AF_INET
@@ -438,6 +444,44 @@ class Update(argparse.Action):
             setattr(namespace, self.dest, self.default)
         getattr(namespace, self.dest).update(values)
 
+
+def _copy_items(items):
+    if items is None:
+        return []
+    # The copy module is used only in the 'append' and 'append_const'
+    # actions, and it is needed only when the default value isn't a list.
+    # Delay its import for speeding up the common case.
+    if type(items) is list:
+        return items[:]
+    return copy(items)
+
+def append_host(items, new_host):
+    host, suffix, idx = (None, None, None)
+    for k, v in enumerate(items):
+        if MULTIHOST_SEP in v:
+            h, s = v.split(MULTIHOST_SEP, 1)
+            s = int(s)
+        else:
+            h, s = (v, 1)
+        if h == new_host:
+            host, suffix, idx = h, s, k
+    if host:
+        new_host = MULTIHOST_SEP.join((new_host, str(suffix+1)))
+        items[idx] = MULTIHOST_SEP.join((host, str(suffix)))
+    items.append(new_host)
+
+class AddHost(argparse.Action):
+
+    def __init__(self, *args, **kwargs):
+        if 'default' not in kwargs:
+            kwargs['default'] = []
+        super(AddHost, self).__init__(*args, **kwargs)
+
+    def __call__(self, parser, namespace, new_host, option_string=None):
+        items = getattr(namespace, self.dest, None)
+        items = _copy_items(items)
+        append_host(items, new_host)
+        setattr(namespace, self.dest, items)
 
 def float_pair(value):
     try:

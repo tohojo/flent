@@ -38,8 +38,8 @@ except ImportError:
 from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent.loggers import get_logger
-from flent.util import FuncAction, Update, keyval, keyval_int, keyval_transformer, \
-    ArgParser, token_split
+from flent.util import FuncAction, Update, AddHost, append_host, keyval, \
+    keyval_int, keyval_transformer, ArgParser, token_split
 from flent.plotters import add_plotting_args
 from flent import loggers, util, resultset, runners
 
@@ -310,7 +310,7 @@ test_group = parser.add_argument_group(
 
 test_group.add_argument(
     "-H", "--host",
-    action="append", type=unicode, dest="HOSTS", metavar='HOST', default=[],
+    action=AddHost, type=unicode, dest="HOSTS", metavar='HOST', default=[],
     help="Host to connect to for tests. For tests that support it, multiple "
     "hosts can be specified by supplying this option multiple times. Hosts can "
     "also be specified as unqualified arguments; this parameter guarantees that "
@@ -547,7 +547,7 @@ class Settings(argparse.Namespace):
 
         if not os.path.exists(filename):
             # Test not found, assume it's a hostname
-            self.HOSTS.append(test_name)
+            append_host(self.HOSTS, test_name)
         elif self.NAME is not None and self.NAME != test_name:
             raise RuntimeError("Multiple test names specified.")
         else:
