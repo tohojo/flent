@@ -515,22 +515,42 @@ def keyval(value):
                 "Invalid value '%s' (missing =)" % p)
     return ret
 
-
 def noop(x):
     return x
 
+def todict(k, v):
+    return dict(k=v)
 
-def keyval_transformer(keyfunc=noop, valfunc=noop,
-                       errmsg="Parse error"):
+def rangedict(key, value):
+    ret = {}
+    for k in key.split(","):
+        if '-' in k:
+            s, e = (int(i) for i in k.split("-", 1))
+            if not s < e:
+                raise ValueError
+            for i in range(s, e+1):
+                ret[i] = value
+        else:
+            ret[int(k)] = value
+    return ret
+
+def keyval_pair_transformer(pairfunc=todict, errmsg="Parse error"):
     def typefunc(value):
+        ret = {}
         try:
-            return {keyfunc(k): valfunc(v) for k, v in keyval(value).items()}
+            for k, v in keyval(value).items():
+                ret.update(pairfunc(k, v))
+            return ret
         except ValueError:
             raise argparse.ArgumentTypeError(errmsg)
     return typefunc
 
+def keyval_transformer(keyfunc=noop, valfunc=noop, errmsg="Parse error"):
+    return keyval_pair_transformer(pairfunc=lambda k, v: {keyfunc(k): valfunc(v)},
+                                   errmsg=errmsg)
 
-keyval_int = keyval_transformer(keyfunc=int, errmsg="Keys must be integers.")
+keyval_int = keyval_pair_transformer(pairfunc=rangedict,
+                                     errmsg="Keys must be integers.")
 
 
 def comma_list(value):
