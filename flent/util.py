@@ -28,6 +28,7 @@ import re
 import shlex
 import socket
 import time
+import subprocess
 
 from copy import copy
 from calendar import timegm
@@ -180,12 +181,24 @@ def is_executable(filename):
     return os.path.isfile(filename) and os.access(filename, os.X_OK)
 
 
-def which(executable, fail=None):
+def which(executable, fail=None, remote_host=None):
     pathname, filename = os.path.split(executable)
     if pathname:
         if is_executable(executable):
             logger.debug("which: %s is a full path and executable", executable)
             return executable
+    elif remote_host:
+        logger.debug("running 'which' for binary '%s' on host '%s'",
+                     executable, remote_host)
+        try:
+            output = subprocess.check_output(['ssh', remote_host,
+                                              'which {}'.format(executable)],
+                                             timeout=1)
+            output = output.decode(ENCODING).strip()
+            logger.debug("Got path '%s' for '%s' on '%s'", output, executable, remote_host)
+            return output
+        except subprocess.CalledProcessError:
+            pass
     else:
         for path in [i.strip('""') for i in os.environ["PATH"].split(os.pathsep)]:
             filename = os.path.join(path, executable)

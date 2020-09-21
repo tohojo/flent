@@ -595,20 +595,22 @@ class ProcessRunner(RunnerBase, threading.Thread):
 
         return float(output.split()[-1].strip())
 
-    def run_simple(self, args, kill=False, errmsg=None):
-        proc = subprocess.Popen(args,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+    def run_simple(self, args, kill=None, errmsg=None):
+        if self.remote_host:
+            args = ['ssh', self.remote_host, ' '.join(args)]
+            if kill:
+                kill = max(kill, 1)
+        try:
+            proc = subprocess.run(args, capture_output=True, timeout=kill)
+            out = proc.stdout.decode(ENCODING)
+            err = proc.stderr.decode(ENCODING)
+            ret = proc.returncode
+        except subprocess.TimeoutExpired as e:
+            out = e.stdout.decode(ENCODING) if e.stdout else ""
+            err = e.stderr.decode(ENCODING) if e.stderr else ""
+            ret = 1
 
-        if kill:
-            time.sleep(0.1)
-            proc.kill()
-
-        out, err = proc.communicate()
-        out = out.decode(ENCODING)
-        err = err.decode(ENCODING)
-
-        if proc.returncode != 0 and errmsg:
+        if ret != 0 and errmsg:
             raise RunnerCheckError(errmsg.format(err=err))
 
         return out, err
@@ -985,8 +987,11 @@ class NetperfDemoRunner(ProcessRunner):
             elif self.test == 'TCP_MAERTS':
                 self.test = 'TCP_STREAM'
 
-        if not self.netperf:
-            netperf = util.which('netperf', fail=RunnerCheckError)
+        if self.netperf and not self.remote_host:
+            netperf = self.netperf
+        else:
+            nperf = util.which('netperf', fail=RunnerCheckError,
+                               remote_host=self.remote_host)
 
             # Try to figure out whether this version of netperf supports the -e
             # option for socket timeout on UDP_RR tests, and whether it has been
@@ -997,35 +1002,39 @@ class NetperfDemoRunner(ProcessRunner):
             # stall, so we kill the process almost immediately.
 
             # should be enough time for netperf to output any error messages
-            out, err = self.run_simple([netperf, '-l', '1', '-D', '-0.2',
-                                        '--', '-e', '1'], kill=True)
+            out, err = self.run_simple([nperf, '-l', '1', '-D', '-0.2',
+                                        '--', '-e', '1'], kill=0.1)
 
             if "Demo Mode not configured" in out:
-                raise RunnerCheckError("%s does not support demo mode." % netperf)
+                raise RunnerCheckError("%s does not support demo mode." % nperf)
 
             if "invalid option -- '0'" in err:
                 raise RunnerCheckError(
                     "%s does not support accurate intermediate time reporting. "
-                    "You need netperf v2.6.0 or newer." % netperf)
+                    "You need netperf v2.6.0 or newer." % nperf)
 
-            self.netperf['executable'] = netperf
-            self.netperf['-e'] = False
+            netperf = {'executable': nperf, '-e': False}
 
             if "netperf: invalid option -- 'e'" not in err:
-                self.netperf['-e'] = True
+                netperf['-e'] = True
 
             try:
                 # Sanity check; is /dev/urandom readable? If so, use it to
                 # pre-fill netperf's buffers
-                with open("/dev/urandom", "rb") as fp:
-                    fp.read(1)
-                self.netperf['buffer'] = '-F /dev/urandom'
-            except:
-                self.netperf['buffer'] = ''
+                self.run_simple(['dd', 'if=/dev/urandom', 'of=/dev/null', 'bs=1', 'count=1'], errmsg="Err")
+                netperf['buffer'] = '-F /dev/urandom'
+            except RunnerCheckError:
+                netperf['buffer'] = ''
 
-        args['binary'] = self.netperf['executable']
+            if not self.remote_host:
+                # only cache values if we're not executing the checks on a
+                # remote host (since that might differ on subsequent runner
+                # invocations)
+                self.netperf = netperf
+
+        args['binary'] = netperf['executable']
+        args['buffer'] = netperf['buffer']
         args['output_vars'] = self.output_vars
-        args['buffer'] = self.netperf['buffer']
         args['test'] = self.test
         args['host'] = self.host
         args['control_host'] = normalise_host(args['control_host'])
@@ -1051,7 +1060,7 @@ class NetperfDemoRunner(ProcessRunner):
             if args[c]:
                 args[c] = "-L {0}".format(args[c])
 
-        if self.test == "UDP_RR" and self.netperf["-e"]:
+        if self.test == "UDP_RR" and netperf["-e"]:
             args['socket_timeout'] = "-e {0:d}".format(args['socket_timeout'])
         else:
             args['socket_timeout'] = ""
@@ -1195,8 +1204,8 @@ class PingRunner(RegexpRunner):
         else:
             suffix = ""
 
-        fping = util.which('fping' + suffix) or util.which('fping')
-        ping = util.which('ping' + suffix)
+        fping = util.which('fping' + suffix, remote_host=self.remote_host) or util.which('fping', remote_host=self.remote_host)
+        ping = util.which('ping' + suffix, remote_host=self.remote_host)
         pingargs = []
 
         if fping is not None:
@@ -1239,7 +1248,7 @@ class PingRunner(RegexpRunner):
 
         if ping is None and ip_version == 6:
             # See if we have a combined ping binary (new versions of iputils)
-            ping6 = util.which("ping")
+            ping6 = util.which("ping", remote_host=self.remote_host)
             out, err = self.run_simple([ping6, '-h'])
             if '-6' in err:
                 ping = ping6
@@ -1300,7 +1309,7 @@ class HttpGetterRunner(RegexpRunner):
 
     def check(self):
 
-        http_getter = util.which('http-getter', fail=RunnerCheckError)
+        http_getter = util.which('http-getter', fail=RunnerCheckError, remote_host=self.remote_host)
 
         if self.url_file:
             url_file = self.url_file
@@ -1490,7 +1499,7 @@ class IperfCsvRunner(ProcessRunner):
     def find_binary(self, host, interval, length, ip_version, local_bind=None,
                     no_delay=False, udp=False, bw=None, pktsize=None,
                     marking=None):
-        iperf = util.which('iperf')
+        iperf = util.which('iperf', remote_host=self.remote_host)
 
         if iperf is not None:
             out, err = self.run_simple([iperf, '-h'])
@@ -1638,7 +1647,7 @@ class IrttRunner(ProcessRunner):
     def check(self):
 
         if not self._irtt:
-            irtt = util.which('irtt', fail=RunnerCheckError)
+            irtt = util.which('irtt', fail=RunnerCheckError, remote_host=self.remote_host)
 
             out, err = self.run_simple([irtt, 'help', 'client'])
             if re.search('--[a-z]', out) is None:
