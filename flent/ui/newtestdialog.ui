@@ -81,7 +81,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>&amp;Destination host</string>
+         <string>&amp;Destination hosts</string>
         </property>
         <property name="buddy">
          <cstring>hostName</cstring>
@@ -91,7 +91,7 @@
       <item row="2" column="1">
        <widget class="QLineEdit" name="hostName">
         <property name="toolTip">
-         <string>Enter host name or IP address of test destination</string>
+         <string>Enter host name(s) or IP address(es) of test destination(s), separate with , or ;</string>
         </property>
        </widget>
       </item>

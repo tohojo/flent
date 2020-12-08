@@ -965,7 +965,7 @@ class NewTestDialog(QDialog):
         host = str(host)
         path = str(path)
 
-        self.settings.HOSTS = [host]
+        self.settings.HOSTS = util.token_split(host)
         self.settings.NAME = test
         self.settings.TITLE = str(self.testTitle.text())
         self.settings.LENGTH = self.testLength.value()
