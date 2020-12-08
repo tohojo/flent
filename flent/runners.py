@@ -601,7 +601,8 @@ class ProcessRunner(RunnerBase, threading.Thread):
             if kill:
                 kill = max(kill, 1)
         try:
-            proc = subprocess.run(args, capture_output=True, timeout=kill)
+            proc = subprocess.run(args, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, timeout=kill)
             out = proc.stdout.decode(ENCODING)
             err = proc.stderr.decode(ENCODING)
             ret = proc.returncode
