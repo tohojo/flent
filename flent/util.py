@@ -483,7 +483,7 @@ def append_host(items, new_host):
         items[idx] = MULTIHOST_SEP.join((host, str(suffix)))
     items.append(new_host)
 
-class AddHost(argparse.Action):
+class AddHost(argparse._AppendAction):
 
     def __init__(self, *args, **kwargs):
         if 'default' not in kwargs:
