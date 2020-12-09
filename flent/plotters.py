@@ -1769,7 +1769,6 @@ class BarPlotter(BoxPlotter):
             if len(l) > self._max_label_length:
                 ticklabels[i] = l[:self._max_label_length] + "..."
 
-        axis.set_xticklabels(ticklabels, rotation=90, ha='center')
         axis.set_xlim(0, pos - 1)
         axis.set_xticks(ticks)
         axis.set_xticks([], minor=True)
