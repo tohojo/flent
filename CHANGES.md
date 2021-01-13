@@ -2,8 +2,53 @@
 
 Changes since v1.3.0 include:
 
+- Drop support for Python 2; the minimum required Python version is now 3.5.
+
+- Drop support for old versions of libraries. The minimum supported version of
+  matplotlib is 1.5, and for the GUI, Qt 5 is required, using either PyQt or
+  PySide2. A new dependency on the 'QtPy' package is added to support both Qt
+  bindings.
+
 - Add parsing of WiFi device information as extended metadata (from Emilly
   Albuquerque).
+
+- Add the ping_markings test parameter for setting DSCP values on ping flows.
+
+- Add new plot types to rrul_be, tcp_nup and related tests (from Pete Heist).
+
+- Add multiple-inheritance support for batch files (from Pete Heist).
+
+- Support running multiple instances of http-getter for HTTP tests, by supplying
+  the --http-getter-urllist option multiple times.
+
+- Add new rrul_var test where the number of bidirectional streams can be
+  configured via the bidir_streams test parameter.
+
+- Support output of aggregate statistics per series also in csv format (via the
+  'stats_csv' formatter).
+
+- Make sure all underlying tools use the same values for symbolic diffserv
+  markings by parsing the symbolic names into numeric values before passing them
+  down to the tools.
+
+- Support specifying custom symbolic diffserv markings using the --marking-name
+  options. This can be used to specify site-specific names for diffserv markings
+  (e.g., 'gaming') that can then be used when running a test.
+
+- Support specifying the same hostname multiple times (for tests that take
+  multiple targets). Previously, this could only be achieved by using different
+  hostnames that all resolve to the same IP address; now, Flent will accept the
+  same hostname multiple times, but will turn append a number after two slashes
+  ('//N') to the display of the hostname when doing so.
+
+- Support ranges and wildcards in the --remote-hosts parameter for running test
+  runners remotely via SSH. For instance '--remote-host=1-3=host1' will run the
+  first three runners on 'host1', or '--remote-host=*=host2' will run all
+  runners on host2. If both concrete numbers (or ranges) and the wildcard are
+  specified, the concrete numbers will take precedence.
+
+- Fix several bugs related to plotting, the loading of old data files and RC
+  files, running of commands etc.
 
 # Flent v1.3.0 #
 Released on 2019-07-09.
