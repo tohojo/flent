@@ -1,7 +1,7 @@
 %global srcname flent
 
 Name:             flent
-Version:          1.3.0
+Version:          2.0.0
 Release:          1%{?dist}
 Summary:          FLExible Network Tester for bufferbloat testing and more
 
@@ -86,6 +86,9 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.appdata.xml
 %doc doc/_build/html
 
 %changelog
+* Thu Jan 14 2021 Toke Høiland-Jørgensen <toke@toke.dk> 2.0.0-1
+- Upstream release 2.0.0
+
 * Tue Jul  9 2019 Toke Høiland-Jørgensen <toke@toke.dk> 1.3.0-1
 - Upstream release 1.3.0
 

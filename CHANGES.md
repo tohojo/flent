@@ -1,4 +1,9 @@
-# Changes since latest release #
+# Flent v2.0.0 #
+Released on 2021-01-14.
+
+This release drops support for Python 2 and Qt4, and associated older versions
+of matplotlib. The major version bump is to signify this change; otherwise
+consider this a (long overdue) regular incremental release over v1.3.0.
 
 Changes since v1.3.0 include:
 
