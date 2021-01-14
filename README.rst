@@ -17,6 +17,12 @@ Installing Flent can be done in several ways, depending on your operating system
 
       apt install flent
 
+- **Fedora:**
+
+    .. code-block:: bash
+
+      dnf install flent
+
 - **Ubuntu pre-18.04:**
 
   Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
@@ -75,7 +81,7 @@ Installing Flent can be done in several ways, depending on your operating system
 
     .. code-block:: bash
 
-      pip3 install pyqt5 --user
+      pip3 install pyqt5 qtpy --user
 
 Quick Start
 -----------
