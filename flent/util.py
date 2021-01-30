@@ -313,8 +313,7 @@ class Glob(object):
             pattern = self.pattern
 
         # Exclude * from matching :, make ** match everything
-        re_pat = fnmatch.translate(pattern)
-        re_pat = re_pat.replace(".*.*", ":::PLACEHOLDER:::")
+        re_pat = fnmatch.translate(pattern.replace("**", ":::PLACEHOLDER:::"))
         re_pat = re_pat.replace(".*", "[^:]*")
         re_pat = re_pat.replace(":::PLACEHOLDER:::", ".*")
         regex = re.compile(re_pat)
