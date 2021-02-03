@@ -163,8 +163,8 @@ class RunnerBase(object):
 
         for k, v in self.__dict__.items():
             if k not in ('start_event', 'kill_event', 'finish_event',
-                         'kill_lock', 'stdout', 'stderr') and \
-                         not k.startswith("_"):
+                         'kill_lock', 'stdout', 'stderr') \
+                    and not k.startswith("_"):
                 state[k] = v
 
         state['_pickled'] = True
@@ -356,8 +356,8 @@ class FileMonitorRunner(RunnerBase, threading.Thread):
 
             # Add an extra interval to comparison to avoid getting one too few
             # samples due to small time differences.
-            while (current_time < start_time + self.length + self.interval and
-                   not self.kill_event.is_set()):
+            while current_time < start_time + self.length + self.interval \
+                  and not self.kill_event.is_set():
                 try:
                     with open(self.filename, 'r') as fp:
                         val = fp.read()
@@ -487,7 +487,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             logger.debug("Sending signal %d to pid %d.", sig, self.pid)
             try:
                 os.kill(self.pid, sig)
-            except OSError as e:
+            except OSError:
                 pass
 
     def cleanup_tmpfiles(self):
@@ -1360,7 +1360,7 @@ class DashJsRunner(RegexpRunner):
         sec, mil = tstamp.split(".")
         dt = datetime.strptime(sec, "%m%d/%H%M%S")
         dt = dt.replace(year=datetime.now().year)
-        timestamp = time.mktime(dt.timetuple()) + float("0."+mil)
+        timestamp = time.mktime(dt.timetuple()) + float("0." + mil)
         return timestamp
 
     transformers = {'val': transformers.kbits_to_mbits,
@@ -1556,10 +1556,10 @@ class IrttRunner(ProcessRunner):
 
     # irtt outputs all durations in nanoseconds
     def _to_ms(self, value):
-        return value/10**6
+        return value / 10**6
 
     def _to_s(self, value):
-        return value/10**9
+        return value / 10**9
 
     def parse(self, output, error=""):
         result = {'rtt': [], 'delay': [], 'jitter': [], 'loss': []}
@@ -1754,21 +1754,21 @@ class SsRunner(ProcessRunner):
     # class).
     _duplicate_map = {}
 
-    ip_v4_addr_sub_re = "([0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)"
+    ip_v4_addr_sub_re = r"([0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)"
     # ref.: to commented, untinkered version: ISBN 978-0-596-52068-7
-    ip_v6_addr_sub_re = "(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
-                        "(?=(?:[A-F0-9]{0,4}:){0,7}[A-F0-9]{0,4})" \
-                        "(([0-9A-F]{1,4}:){1,7}|:)((:[0-9A-F]{1,4})" \
-                        "{1,7}|:))(:\d+)"
+    ip_v6_addr_sub_re = r"(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
+                        r"(?=(?:[A-F0-9]{0,4}:){0,7}[A-F0-9]{0,4})" \
+                        r"(([0-9A-F]{1,4}:){1,7}|:)((:[0-9A-F]{1,4})" \
+                        r"{1,7}|:))(:\d+)"
 
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     pid_re = re.compile(r"pid=(?P<pid>\d+)", re.MULTILINE)
     ports_ipv4_re = re.compile(r"" + "(?P<src_p>" + ip_v4_addr_sub_re + ")" +
-                               "\s+" + "(?P<dst_p>" + ip_v4_addr_sub_re + ")")
+                               r"\s+" + "(?P<dst_p>" + ip_v4_addr_sub_re + ")")
     ports_ipv6_re = re.compile(r"" + "(?P<src_p>" + ip_v6_addr_sub_re + ")" +
-                               "\s+" + "(?P<dst_p>" + ip_v6_addr_sub_re + ")",
+                               r"\s+" + "(?P<dst_p>" + ip_v6_addr_sub_re + ")",
                                re.IGNORECASE)
-    ss_header_re = re.compile(r"" + "State\s+Recv-Q\s+Send-Q\s+Local")
+    ss_header_re = re.compile(r"" + r"State\s+Recv-Q\s+Send-Q\s+Local")
 
     data_res = [re.compile(r"cwnd:(?P<cwnd>\d+)", re.MULTILINE),
                 re.compile(r"rtt:(?P<rtt>\d+\.\d+)/(?P<rtt_var>\d+\.\d+)",
@@ -1861,9 +1861,9 @@ class SsRunner(ProcessRunner):
         if val.endswith("Mbps"):
             return float(val[:-4])
         if val.endswith("Kbps"):
-            return float(val[:-4])/1000
+            return float(val[:-4]) / 1000
         if val.endswith("bps"):
-            return float(val[:-3])/10**6
+            return float(val[:-3]) / 10**6
         return float(val)
 
     def parse_part(self, part):
@@ -2084,8 +2084,8 @@ class TcRunner(ProcessRunner):
                 start = m.end()
                 for key in self.cake_keys:
                     m = re.search(
-                        "^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (key,
-                                                                   len(tins)),
+                        r"^  %s(:?\s*([0-9\.kmbitus]+)){%d}\s*$" % (key,
+                                                                    len(tins)),
                         part[start:],
                         re.IGNORECASE | re.MULTILINE)
                     if m:
