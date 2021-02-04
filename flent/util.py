@@ -313,9 +313,9 @@ class Glob(object):
             pattern = self.pattern
 
         # Exclude * from matching :, make ** match everything
-        re_pat = fnmatch.translate(pattern.replace("**", ":::PLACEHOLDER:::"))
+        re_pat = fnmatch.translate(pattern.replace("**", "___PLACEHOLDER___"))
         re_pat = re_pat.replace(".*", "[^:]*")
-        re_pat = re_pat.replace(":::PLACEHOLDER:::", ".*")
+        re_pat = re_pat.replace("___PLACEHOLDER___", ".*")
         regex = re.compile(re_pat)
 
         exclude += self.exclude
