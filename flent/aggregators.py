@@ -179,6 +179,7 @@ class Aggregator(object):
                         result[key] = v
 
         except KeyboardInterrupt:
+            logger.debug("Received SIGINT")
             self.kill_runners()
             raise
 
@@ -194,6 +195,7 @@ class Aggregator(object):
             t.kill(graceful)
 
     def postprocess(self, result):
+        logger.debug("Postprocessing data using %d postprocessors", len(self.postprocessors))
         for p in self.postprocessors:
             result = p(result)
         return result
@@ -234,6 +236,7 @@ class TimeseriesAggregator(Aggregator):
     def aggregate(self, results):
         measurements, metadata, raw_values = self.collect()
         if self.killed:
+            logger.debug("Aggregator was killed, skipping aggregation")
             return results
         if not measurements:
             raise RuntimeError("No data to aggregate. Run with -L and check log "

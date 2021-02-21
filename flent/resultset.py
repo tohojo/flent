@@ -431,6 +431,7 @@ class ResultSet(object):
 
     def dump_dir(self, dirname):
         self._dump_file = os.path.join(dirname, self._gen_filename())
+        logger.debug("Writing data file to '%s'", self._dump_file)
         try:
             if self._dump_file.endswith(".gz"):
                 o = gzip.open

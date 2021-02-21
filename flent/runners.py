@@ -539,8 +539,10 @@ class ProcessRunner(RunnerBase, threading.Thread):
                                  self.__class__.__name__,
                                  self.name, extra={'runner': self})
                     try:
+                        logger.debug("Sending SIGINT to pid %d", self.pid)
                         os.kill(self.pid, signal.SIGINT)
                         time.sleep(0.5)
+                        logger.debug("Sending SIGTERM to pid %d", self.pid)
                         os.kill(self.pid, signal.SIGTERM)
                     except OSError:
                         pass

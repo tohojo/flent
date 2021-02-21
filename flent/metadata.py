@@ -103,7 +103,11 @@ class CommandRunner(object):
         return the strip()'ed output, else None."""
         try:
             if self.hostname:
+                logger.debug("Executing '%s' on host '%s'", command, self.hostname)
                 command = "ssh %s '%s'" % (self.hostname, command)
+            else:
+                logger.debug("Executing '%s' on localhost", command)
+
             try:
                 res = subprocess.check_output(command, universal_newlines=True,
                                               shell=True, stderr=subprocess.STDOUT,
@@ -171,6 +175,7 @@ def record_metadata(results, extended, hostnames):
 
 
 def record_postrun_metadata(results, extended, hostnames):
+    logger.debug("Recording postrun metadata")
     m = results.meta()
     get_command_output.set_hostname(None)
     if m['EGRESS_INFO'] is not None:

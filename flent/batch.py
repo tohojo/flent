@@ -514,6 +514,7 @@ class BatchRunner(object):
         self.agg = aggregators.new(settings)
         res = self.agg.postprocess(self.agg.aggregate(res))
         if self.killed:
+            logger.debug("Killed while running, not writing data")
             return
         record_postrun_metadata(res, settings.EXTENDED_METADATA,
                                 settings.REMOTE_METADATA)
