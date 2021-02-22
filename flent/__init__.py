@@ -47,6 +47,7 @@ def run_flent(gui=False):
 
         setup_console()
         logger = get_logger(__name__)
+        logger.debug("Flent executed as %s", sys.argv)
 
         try:
             signal.signal(signal.SIGTERM, handle_sigterm)

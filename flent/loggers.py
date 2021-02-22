@@ -212,7 +212,7 @@ def setup_console():
     cache_handler = CachingHandler()
     logger.addHandler(cache_handler)
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     logging.captureWarnings(True)
     logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))

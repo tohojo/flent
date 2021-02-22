@@ -780,6 +780,9 @@ def load_gui(settings):
 
 
 def load(argv):
+    logger.info("Starting Flent %s using Python %s.", VERSION,
+                sys.version.split()[0])
+
     # We parse the args twice - the first pass is just to get the test name and
     # the name of the rcfile to parse in order to get the defaults
     settings = parser.parse_args(argv, namespace=Settings(DEFAULT_SETTINGS))
@@ -806,9 +809,6 @@ def load(argv):
 
     if settings.LIST_PLOTS:
         list_plots(settings)
-
-    logger.info("Started Flent %s using Python %s.", VERSION,
-                sys.version.split()[0])
 
     return settings
 
