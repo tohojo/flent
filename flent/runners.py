@@ -1225,29 +1225,43 @@ class PingRunner(RegexpRunner):
                 logger.warning("Found fping, but it appears to be missing "
                                "permissions (no SUID?). Not using.")
             else:
-                # Since there is not timeout parameter to fping, set a watchdog
-                # timer to kill it in case it runs over time
-                self.watchdog_timer = self.delay + length + 1
-                return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
-                    "-t {timeout} {marking} {local_bind} {host}".format(
-                        binary=fping,
-                        ipver='-6' if (ip_version == 6 and
-                                       not fping.endswith("6")) else "",
-                        interval=interval * 1000,  # fping expects interval in ms
-                        # since there's no timeout parameter for fping,
-                        # calculate a total number of pings to send
-                        count=length // interval + 1,
-                        # the timeout parameter is not the kind of timeout we
-                        # want, rather it is the time after which fping will
-                        # ignore late replies. We don't ever want to ignore late
-                        # replies, so set this to a really high value (twice the
-                        # full test length). This only affects fping v4.0+;
-                        # earlier versions will ignore -t when running in -c mode.
-                        timeout=length * 2000,
-                        marking=self.parse_marking(marking, "-O {0}"),
-                        local_bind=("-I {0}".format(local_bind)
-                                    if local_bind else ""),
-                        host=host)
+                out, err = self.run_simple([fping, '-D', '-c', '1', 'localhost'])
+                res = self._parse(out)
+                try:
+                    tdiff = abs(res[1][0]['t'] - time.time())
+                except (TypeError, IndexError):
+                    tdiff = None
+
+                if tdiff is None:
+                    logger.warning("Found fping, but couldn't parse its output. "
+                                   "Not using.")
+                elif tdiff > 100:
+                    logger.warning("Found fping, but it outputs broken timestamps (off by %fs). "
+                                   "Not using.", tdiff)
+                else:
+                    # Since there is not timeout parameter to fping, set a watchdog
+                    # timer to kill it in case it runs over time
+                    self.watchdog_timer = self.delay + length + 1
+                    return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
+                        "-t {timeout} {marking} {local_bind} {host}".format(
+                            binary=fping,
+                            ipver='-6' if (ip_version == 6 and
+                                           not fping.endswith("6")) else "",
+                            interval=interval * 1000,  # fping expects interval in ms
+                            # since there's no timeout parameter for fping,
+                            # calculate a total number of pings to send
+                            count=length // interval + 1,
+                            # the timeout parameter is not the kind of timeout we
+                            # want, rather it is the time after which fping will
+                            # ignore late replies. We don't ever want to ignore late
+                            # replies, so set this to a really high value (twice the
+                            # full test length). This only affects fping v4.0+;
+                            # earlier versions will ignore -t when running in -c mode.
+                            timeout=length * 2000,
+                            marking=self.parse_marking(marking, "-O {0}"),
+                            local_bind=("-I {0}".format(local_bind)
+                                        if local_bind else ""),
+                            host=host)
 
         if ping is None and ip_version == 6:
             # See if we have a combined ping binary (new versions of iputils)
