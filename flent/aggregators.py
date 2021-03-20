@@ -261,7 +261,15 @@ class TimeseriesAggregator(Aggregator):
                                "file to investigate.")
         t_0 = min(first_times)
         t_max = max(last_times)
-        steps = int(math.ceil((t_max - t_0) / self.step))
+        t_total = t_max - t_0
+        steps = int(math.ceil(t_total / self.step))
+
+        if t_total > self.settings.TOTAL_LENGTH * 10:
+            logger.warning("Data shows test duration %fs more than 10 times the expected %ds "
+                           "- clock issue or buggy timestamps from test tool?",
+                           t_total, self.settings.TOTAL_LENGTH)
+        if steps > 10**6:
+            raise RuntimeError("Refusing to iterate more than 1 million steps during aggregation (got %d)" % steps)
 
         results.meta('T0', datetime.utcfromtimestamp(t_0))
 
