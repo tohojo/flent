@@ -15,6 +15,12 @@ Installing Flent can be done in several ways, depending on your operating system
 
       dnf install flent
 
+- **Gentoo:**
+
+    .. code-block:: bash
+
+      emerge net-analyzer/flent
+
 - **Ubuntu pre-18.04:**
 
   Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
