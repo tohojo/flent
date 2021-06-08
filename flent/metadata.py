@@ -515,10 +515,11 @@ def get_module_versions():
             "hexdump -ve \"/1 \\\"%02x\\\"\" {}".format(
                 " ".join([m[1] for m in modules])))
 
-        for (m, f), v in zip(modules,
-                             version_strings.split(
-                                 "040000001400000003000000474e5500")[1:]):
-            module_versions[m] = v
+        if version_strings:
+            for (m, f), v in zip(modules,
+                                 version_strings.split(
+                                     "040000001400000003000000474e5500")[1:]):
+                module_versions[m] = v
 
     return module_versions
 
