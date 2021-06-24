@@ -2,6 +2,17 @@
 
 Changes since v2.0.0 include:
 
+- Fix globbing in plot and test definitions so it works on newer Python
+  versions
+
+- Don't hang forever while trying to process invalid time series data, and
+  check fping timestamp output before using it (fixes a hang bug when using
+  certain versions of fping on BSD and OSX)
+
+- Don't crash on metadata collection if hexdump is not available on the system.
+
+- Clarify that the Flent license doesn't apply to its output
+
 # Flent v2.0.0 #
 Released on 2021-01-14.
 
