@@ -13,8 +13,6 @@ replaces=('netperf-wrapper')
 optdepends=(
     'python-matplotlib: for outputting graphs'
     'python-qtpy: for the GUI'
-    'python-pyqt5: for the GUI'
-    'python-pyside2: for the GUI'
 )
 source=(https://files.pythonhosted.org/packages/source/f/flent/flent-${pkgver}.tar.gz{,.asc})
 sha256sums=('300a09938dc2b4a0463c9144626f25e0bd736fd47806a9444719fa024d671796'
