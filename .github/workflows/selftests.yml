@@ -62,6 +62,7 @@ jobs:
     env:
       MATPLOTLIB_VERSION: ${{ matrix.matplotlib }}
       PYQT: ${{ matrix.pyqt }}
+      DISPLAY: :0
 
     steps:
       - name: Check out repository code
