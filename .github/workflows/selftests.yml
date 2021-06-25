@@ -12,47 +12,44 @@ jobs:
     strategy:
       matrix:
         python: ["3.5", "3.6", "3.7", "3.8", "3.9", "3.10"]
-        matplotlib: ["1.5", "2.0", "2.1", "2.2", "3.0", "3.1", "3.2", "3.3", "3.4"]
+        matplotlib: ["2.1", "2.2", "3.0", "3.1", "3.2", "3.3", "3.4"]
         pyqt: ["PyQt5", "PySide2"]
+        include:
+          - python: "3.5"
+            matplotlib: "1.5"
+            pyqt: PyQt5
+          - python: "3.5"
+            matplotlib: "2.0"
+            pyqt: PyQt5
+          - python: "3.6"
+            matplotlib: "1.5"
+            pyqt: PyQt5
+          - python: "3.6"
+            matplotlib: "2.0"
+            pyqt: PyQt5
+          - python: "3.7"
+            matplotlib: "1.5"
+            pyqt: PyQt5
+          - python: "3.7"
+            matplotlib: "2.0"
+            pyqt: PyQt5
         exclude:
           - python: "3.5"
             matplotlib: "3.1"
-            pyqt: "PyQt5"
-          - python: "3.5"
-            matplotlib: "3.1"
-            pyqt: PySide2
           - python: "3.5"
             matplotlib: "3.2"
-            pyqt: "PyQt5"
-          - python: "3.5"
-            matplotlib: "3.2"
-            pyqt: "PySide2"
           - python: "3.5"
             matplotlib: "3.3"
-            pyqt: "PyQt5"
           - python: "3.5"
-            matplotlib: "3.3"
-            pyqt: "PySide2"
-          - python: "3.8"
-            matplotlib: "1.5"
-          - python: "3.8"
-            matplotlib: "2.0"
+            matplotlib: "3.4"
           - python: "3.8"
             matplotlib: "2.1"
           - python: "3.8"
             matplotlib: "2.2"
           - python: "3.9"
-            matplotlib: "1.5"
-          - python: "3.9"
-            matplotlib: "2.0"
-          - python: "3.9"
             matplotlib: "2.1"
           - python: "3.9"
             matplotlib: "2.2"
-          - python: "3.10"
-            matplotlib: "1.5"
-          - python: "3.10"
-            matplotlib: "2.0"
           - python: "3.10"
             matplotlib: "2.1"
           - python: "3.10"
