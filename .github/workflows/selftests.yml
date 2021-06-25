@@ -42,6 +42,8 @@ jobs:
             matplotlib: "3.3"
           - python: "3.5"
             matplotlib: "3.4"
+          - python: "3.6"
+            matplotlib: "3.4"
           - python: "3.8"
             matplotlib: "2.1"
           - python: "3.8"
@@ -64,10 +66,10 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
       - name: Setup xvfb (Linux)
         if: runner.os == 'Linux'
         run: |
