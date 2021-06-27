@@ -1772,10 +1772,10 @@ class SsRunner(ProcessRunner):
 
     ip_v4_addr_sub_re = r"([0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)"
     # ref.: to commented, untinkered version: ISBN 978-0-596-52068-7
-    ip_v6_addr_sub_re = r"(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
+    ip_v6_addr_sub_re = r"\[?(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|" \
                         r"(?=(?:[A-F0-9]{0,4}:){0,7}[A-F0-9]{0,4})" \
                         r"(([0-9A-F]{1,4}:){1,7}|:)((:[0-9A-F]{1,4})" \
-                        r"{1,7}|:))(:\d+)"
+                        r"{1,7}|:))\]?(:\d+)"
 
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
     pid_re = re.compile(r"pid=(?P<pid>\d+)", re.MULTILINE)
