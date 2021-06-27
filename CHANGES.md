@@ -2,6 +2,9 @@
 
 Changes since v2.0.1 include:
 
+- Add --irtt-sampling-interval parameter to run irtt at a different sampling
+  interval than the rest of the test.
+
 # Flent v2.0.1 #
 Released on 2021-06-24.
 

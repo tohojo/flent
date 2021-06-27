@@ -595,6 +595,13 @@ Test tool-related options
 
    Number of workers to use for getting HTTP urls. Default is 4.
 
+.. option:: --irtt-sampling-interval=MILLISECONDS
+
+   Override the sampling interval passed to irtt, in milliseconds. Can be used
+   to run irtt with a higher sampling frequency than the rest of the test. If
+   set, this will override the sampling interval for all instances of irtt used
+   in the test.
+
 Misc and debugging options:
 ---------------------------
 

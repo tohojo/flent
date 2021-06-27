@@ -1708,12 +1708,17 @@ class IrttRunner(ProcessRunner):
         else:
             data_size = ""
 
+        if self.settings.IRTT_INTERVAL:
+            interval = "{}ms".format(self.settings.IRTT_INTERVAL)
+        else:
+            interval = "{}s".format(self.interval or self.settings.STEP_SIZE)
+
         self.command = "{binary} client -o - --fill=rand -Q " \
-                       "-d {length}s -i {interval}s {ip_version} {marking} " \
+                       "-d {length}s -i {interval} {ip_version} {marking} " \
                        "{local_bind} {data_size} {host}".format(
                            binary=irtt,
                            length=self.length,
-                           interval=self.interval or self.settings.STEP_SIZE,
+                           interval=interval,
                            host=self.host,
                            ip_version=ip_version,
                            local_bind=local_bind,

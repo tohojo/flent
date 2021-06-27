@@ -485,6 +485,14 @@ tool_group.add_argument(
     default=4, help="Number of workers to use for getting HTTP urls. "
     "Default is 4.")
 
+tool_group.add_argument(
+    "--irtt-sampling-interval",
+    action="store", type=int, dest="IRTT_INTERVAL", metavar="MILLISECONDS",
+    help="Override the sampling interval passed to irtt, in milliseconds. Can be "
+    "used to run irtt with a higher sampling frequency than the rest of the test. "
+    "If set, this will override the sampling interval for all instances of irtt "
+    "used in the test.")
+
 misc_group = parser.add_argument_group("Misc and debugging options")
 
 misc_group.add_argument(
