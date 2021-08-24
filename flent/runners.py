@@ -2024,6 +2024,17 @@ class TcRunner(ProcessRunner):
                    r"dropped (?P<dropped_pie>\d+) "
                    r"maxq (?P<maxq>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+)"),
+        
+        # fq_pie
+        re.compile(r"pkts_in (?P<pkts_in>\d+) "
+                   r"overlimit (?P<overlimit_pie>\d+) "
+                   r"overmemory (?P<overmemory>\d+) "
+                   r"dropped (?P<dropped_pie>\d+) "
+                   r"ecn_mark (?P<ecn_mark>\d+)"),
+        re.compile(r"new_flow_count (?P<new_flow_count>\d+) "
+                   r"new_flows_len (?P<new_flows_len>\d+) "
+                   r"old_flows_len (?P<old_flows_len>\d+) "
+                   r"memory_used (?P<memory_used>\d+)"),
     ]
 
     cake_tin_re = r"(Tin \d|Bulk|Best Effort|Video|Voice)"
