@@ -601,6 +601,12 @@ class MaxReducer(TryReducer):
     def _reduce(self, data):
         return max(data)
 
+class Pct99Reducer(TryReducer):
+    meta_key = None
+    raw_key = "pct99"
+
+    def _reduce(self, data):
+        return np.percentile(data, 99)
 
 class CumsumReducer(TryReducer):
     meta_key = None
@@ -731,6 +737,10 @@ class RawMaxReducer(RawReducer):
     def _reduce(self, data):
         return max(data)
 
+class RawPct99Reducer(RawReducer):
+
+    def _reduce(self, data):
+        return np.percentile(data, 99)
 
 class RawCumsumReducer(RawReducer):
 

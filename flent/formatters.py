@@ -266,7 +266,7 @@ class StatsFormatter(CombiningFormatter):
             self.write(":\n")
 
             self.make_combines(r, ['mean', 'median', 'min', 'max',
-                                   'std', 'var', 'cumsum'])
+                                   'std', 'var', 'cumsum', 'pct99'])
 
             for s in sorted(r.series_names):
                 self.write(" %s:\n" % s)
@@ -283,10 +283,11 @@ class StatsFormatter(CombiningFormatter):
                     self.write("  Total:       %f %s\n" % (
                         self.get_res(s, 'cumsum'),
                         units.replace("/s", "")))
-                self.write("  Mean:        %f %s\n" % (self.get_res(s, 'mean'), units))
-                self.write("  Median:      %f %s\n" % (self.get_res(s, 'median'), units))
                 self.write("  Min:         %f %s\n" % (self.get_res(s, 'min'), units))
+                self.write("  Median:      %f %s\n" % (self.get_res(s, 'median'), units))
+                self.write("  99th %%:      %f %s\n" % (self.get_res(s, 'pct99'), units))
                 self.write("  Max:         %f %s\n" % (self.get_res(s, 'max'), units))
+                self.write("  Mean:        %f %s\n" % (self.get_res(s, 'mean'), units))
                 self.write("  Std dev:     %f\n" % (self.get_res(s, 'std')))
                 self.write("  Variance:    %f\n" % (self.get_res(s, 'var')))
 
@@ -295,7 +296,7 @@ class StatsCsvFormatter(CombiningFormatter):
     combines = {'mean': 'mean', 'median': 'median',
                 'min': 'min', 'max': 'max',
                 'std': 'std_dev', 'var': 'variance',
-                'cumsum': 'cumul_total'}
+                'cumsum': 'cumul_total', 'pct99': 'pct99'}
 
     def __init__(self, settings):
         Formatter.__init__(self, settings)
@@ -369,13 +370,13 @@ class SummaryFormatter(CombiningFormatter):
                             self.settings.DATA_SETS.values()))
 
             self.write("{spc:{txtlen}s} {avg:>{width}s}"
-                       " {med:>{width}s} {datapoints:>{lwidth}s}\n".format(
-                           spc="", avg="avg", med="median",
+                       " {med:>{width}s} {pct99:>{width}s} {datapoints:>{lwidth}s}\n".format(
+                           spc="", avg="avg", med="median", pct99='99th %',
                            datapoints="# data pts", txtlen=txtlen + 3,
                            width=self.COL_WIDTH,
                            lwidth=self.COL_WIDTH + unit_len))
 
-            self.make_combines(r, ['mean', 'median'])
+            self.make_combines(r, ['mean', 'median', 'pct99'])
             for s in sorted(r.series_names):
                 self.write((" %-" + str(txtlen) + "s : ") % s)
                 try:
@@ -393,6 +394,7 @@ class SummaryFormatter(CombiningFormatter):
 
                 mean = self.get_res(s, 'mean')
                 median = self.get_res(s, 'median')
+                pct99 = self.get_res(s, 'pct99')
                 n = self.get_res(s, 'N')
                 is_computed = 'COMPUTED_LATE' in m.get(s, {})
 
@@ -412,7 +414,14 @@ class SummaryFormatter(CombiningFormatter):
                     self.write("{0:>{width}}".format("N/A", width=self.COL_WIDTH))
 
                 if median is not None and not is_computed:
-                    self.write("{0:{width}.2f} {1}".format(median, units,
+                    self.write("{0:{width}.2f} ".format(median,
+                                                        width=self.COL_WIDTH))
+                else:
+                    self.write("{0:>{width}} ".format("N/A",
+                                                      width=self.COL_WIDTH))
+
+                if pct99 is not None and not is_computed:
+                    self.write("{0:{width}.2f} {1}".format(pct99, units,
                                                            width=self.COL_WIDTH))
                 else:
                     self.write("{0:>{width}} {1}".format("N/A", units,
