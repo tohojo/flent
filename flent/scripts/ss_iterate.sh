@@ -14,19 +14,19 @@
 #You should have received a copy of the GNU General Public License
 #along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-count=10
+length=20
 interval=0.1
 host=localhost
 filter=""
 
 usage()
 {
-    echo "$0 -c count -I interval -H host -t target"
+    echo "$0 -l length -I interval -H host -t target"
 }
 
-while getopts "c:I:H:t:p:f:" opt; do
+while getopts "l:I:H:t:p:f:" opt; do
     case $opt in
-        c) count="$OPTARG" ;;
+        l) length="$OPTARG" ;;
         I) interval="$OPTARG" ;;
         H) host="$OPTARG" ;;
         t) target="$OPTARG" ;;
@@ -41,7 +41,8 @@ then
 fi
 
 command_string=$(cat <<EOF
-for i in \$(seq $count); do
+endtime=\$(date -d "$length sec" +%s%N);
+while (( \$(date +%s%N) <= \$endtime )); do
     ss -t -i -p -n state connected "dst $target $filter"
     echo ''
     date '+Time: %s.%N';
