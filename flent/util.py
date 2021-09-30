@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import argparse
 import fnmatch
+import ipaddress
 import os
 import re
 import shlex
@@ -225,9 +226,15 @@ def path_components(path):
         folders.insert(0, path)
     return folders
 
-def normalise_host(hostname):
+def normalise_host(hostname, bracket_v6=False):
     if hostname and MULTIHOST_SEP in hostname:
-        return hostname.split(MULTIHOST_SEP, 1)[0]
+        hostname = hostname.split(MULTIHOST_SEP, 1)[0]
+    if bracket_v6:
+        try:
+            ipaddress.IPv6Address(hostname)
+            hostname = "[{}]".format(hostname)
+        except ValueError:
+            pass
     return hostname
 
 def lookup_host(hostname, version=None):
