@@ -1663,6 +1663,19 @@ class IrttRunner(ProcessRunner):
 
     def check(self):
 
+        if self.local_bind:
+            local_bind = "--local={}".format(self.local_bind)
+        elif self.settings.LOCAL_BIND:
+            local_bind = "--local={}".format(self.settings.LOCAL_BIND[0])
+        else:
+            local_bind = ""
+
+        ip_version = self.ip_version or self.settings.IP_VERSION
+        if ip_version is not None:
+            ip_version = "-{}".format(ip_version)
+        else:
+            ip_version = ""
+
         if not self._irtt:
             irtt = util.which('irtt', fail=RunnerCheckError, remote_host=self.remote_host)
 
@@ -1674,13 +1687,11 @@ class IrttRunner(ProcessRunner):
             args = [irtt, 'client', '-n', '-Q',
                     '--timeouts=200ms,300ms,400ms']
 
-            if self.local_bind:
-                args.append('--local={}'.format(self.local_bind))
-            elif self.settings.LOCAL_BIND:
-                args.append('--local={}'.format(self.settings.LOCAL_BIND[0]))
+            if local_bind:
+                args.append(local_bind)
 
-            if self.ip_version is not None:
-                args.append("-{}".format(self.ip_version))
+            if ip_version:
+                args.append(ip_version)
 
             args.append(self.host)
 
@@ -1690,18 +1701,6 @@ class IrttRunner(ProcessRunner):
             self._irtt['binary'] = irtt
         else:
             irtt = self._irtt['binary']
-
-        if self.local_bind:
-            local_bind = "--local={}".format(self.local_bind)
-        elif self.settings.LOCAL_BIND:
-            local_bind = "--local={}".format(self.settings.LOCAL_BIND[0])
-        else:
-            local_bind = ""
-
-        if self.ip_version is not None:
-            ip_version = "-{}".format(self.ip_version)
-        else:
-            ip_version = ""
 
         if self.data_size is not None:
             data_size = "-l {}".format(self.data_size)
