@@ -1061,7 +1061,7 @@ class NetperfDemoRunner(ProcessRunner):
 
         for c in 'local_bind', 'control_local_bind':
             if args[c]:
-                args[c] = "-L {0}".format(args[c])
+                args[c] = "-L {0},{1}".format(args[c], args['ip_version'])
 
         if self.test == "UDP_RR" and netperf["-e"]:
             args['socket_timeout'] = "-e {0:d}".format(args['socket_timeout'])
@@ -1207,6 +1207,11 @@ class PingRunner(RegexpRunner):
         else:
             suffix = ""
 
+        # Ping and fping can't handle hostnames for the -I parameter, so do a
+        # lookup first.
+        if local_bind:
+            local_bind = util.lookup_host(local_bind, ip_version)[4][0]
+
         fping = util.which('fping' + suffix, remote_host=self.remote_host) or util.which('fping', remote_host=self.remote_host)
         ping = util.which('ping' + suffix, remote_host=self.remote_host)
         pingargs = []
@@ -1259,7 +1264,7 @@ class PingRunner(RegexpRunner):
                             # earlier versions will ignore -t when running in -c mode.
                             timeout=length * 2000,
                             marking=self.parse_marking(marking, "-O {0}"),
-                            local_bind=("-I {0}".format(local_bind)
+                            local_bind=("-S {0}".format(local_bind)
                                         if local_bind else ""),
                             host=host)
 
@@ -1272,11 +1277,6 @@ class PingRunner(RegexpRunner):
                 pingargs = ['-6']
 
         if ping is not None:
-            # Ping can't handle hostnames for the -I parameter, so do a lookup
-            # first.
-            if local_bind:
-                local_bind = util.lookup_host(local_bind, ip_version)[4][0]
-
             # Try parsing the output of 'ping' and complain if no data is
             # returned from the parser. This should pick up e.g. the ping on OSX
             # not having a -D option and allow us to supply a better error
