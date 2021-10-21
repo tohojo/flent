@@ -379,6 +379,12 @@ test_group.add_argument(
     "with each value corresponding to a stream of a test.")
 
 test_group.add_argument(
+    "--test-payload",
+    action="store", type=unicode, dest="TEST_PAYLOAD", default='/dev/urandom',
+    help="Path to file containing payload to pre-fill the netperf buffers with "
+    "defaults to randomised payload")
+
+test_group.add_argument(
     "--test-parameter",
     action=Update, type=keyval, dest="TEST_PARAMETERS", metavar='key=value',
     help="Arbitrary test parameter in key=value format. "

@@ -57,7 +57,7 @@ SPECIAL_PARAM_MAP = {'num_cpus': CPU_COUNT}
 # in the code below
 STREAM_CONFIG_PARAM_NAMES = ['label', 'ping_label', 'marking',
                              'control_host', 'local_bind', 'cc_algo',
-                             'udp_bandwidth', 'udp_pktsize', 'send_size']
+                             'udp_bandwidth', 'udp_pktsize', 'send_size', 'test_payload']
 
 # Mapping of test parameters that will be picked up from the global settings if
 # they are not set
