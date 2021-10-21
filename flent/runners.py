@@ -983,6 +983,7 @@ class NetperfDemoRunner(ProcessRunner):
         args.setdefault('send_size',
                         self.settings.SEND_SIZE[0]
                         if self.settings.SEND_SIZE else "")
+        args.setdefault('test_payload', self.settings.TEST_PAYLOAD)
 
         if self.settings.SWAP_UPDOWN:
             if self.test == 'TCP_STREAM':
@@ -1022,12 +1023,19 @@ class NetperfDemoRunner(ProcessRunner):
                 netperf['-e'] = True
 
             try:
-                # Sanity check; is /dev/urandom readable? If so, use it to
+                # If --test-payload option is specified, use data from that file
+                # else use the default value /dev/urandom. 
+                fill_file = args['test_payload']
+                # Sanity check; is /dev/urandom or the custom file readable? If so, use it to
                 # pre-fill netperf's buffers
-                self.run_simple(['dd', 'if=/dev/urandom', 'of=/dev/null', 'bs=1', 'count=1'], errmsg="Err")
-                netperf['buffer'] = '-F /dev/urandom'
+                self.run_simple(['dd', 'if='+fill_file, 'of=/dev/null', 'bs=1', 'count=1'], errmsg="Err")
+                netperf['buffer'] = '-F '+fill_file
             except RunnerCheckError:
-                netperf['buffer'] = ''
+                if(fill_file == '/dev/urandom'):
+                    netperf['buffer'] = ''
+                else:
+                    # If the custom file is not readable, fail noisily
+                    raise RunnerCheckError("The specified test payload file does not exist or is not readable.")
 
             if not self.remote_host:
                 # only cache values if we're not executing the checks on a
