@@ -791,7 +791,7 @@ class DitgRunner(ProcessRunner):
         raw_values = []
 
         for line in data.splitlines():
-            parts = re.split(r">?\s*", line)
+            parts = list(filter(None, re.split(r"(\S+)>\s*", line)))
             vals = dict(zip(parts[::2], parts[1::2]))
             times = {}
             for v in ('txTime', 'rxTime'):
