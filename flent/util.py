@@ -367,7 +367,7 @@ def mos_score(T, loss):
     Based on ITU G.107 06/2015.
 
     Verified against the online reference implementation at
-    https://www.itu.int/ITU-T/studygroups/com12/emodelv1/calcul.php
+    https://www.itu.int/ITU-T/studygroups/com12/emodel/calculnb.php
 
     This version assumes the default values are used for all parameters other
     than delay and loss.
@@ -425,7 +425,7 @@ def mos_score(T, loss):
 
     Id = Idte + Idle + Idd  # (7-18)
 
-    Ieeff = 95 * (Ppl / (Ppl + 1))  # (7-29) with BurstR = Bpl = 1
+    Ieeff = 95 * (Ppl / (Ppl + 4.3))  # (7-29) with BurstR = 1, Bpl = 4.3
 
     R = Ro - Is - Id - Ieeff
 
