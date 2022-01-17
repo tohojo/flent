@@ -1053,16 +1053,23 @@ class QPlainTextLogger(loggers.Handler):
         self.widget = widget or QPlainTextEdit(parent)
         self.widget.setFont(font)
         self.widget.setReadOnly(True)
+        self.widget.destroyed.connect(self.destroy_widget)
 
         self.statusbar = statusbar
         self.timeout = timeout
 
     def emit(self, record):
+        if self.widget is None:
+            return
+
         msg = self.format(record)
         self.widget.appendPlainText(msg)
 
         if self.statusbar:
             self.statusbar.showMessage(record.message, self.timeout)
+
+    def destroy_widget(self):
+        self.widget = None
 
     def write(self, p):
         pass
