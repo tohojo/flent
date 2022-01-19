@@ -1863,6 +1863,10 @@ class SsRunner(ProcessRunner):
                      and not self.ss_header_re.search(sp)]
 
         for sp in sub_parts:
+            # Filter out stats from netserver when it's run along with ss
+            if "netserver" in sp:
+                continue
+
             pid = self.pid_re.search(sp)
             if None is pid:
                 continue
