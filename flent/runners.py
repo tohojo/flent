@@ -220,6 +220,7 @@ class RunnerBase(object):
         self.finish_event.set()
         if self._watchdog:
             self._watchdog.kill()
+            self._watchdog.join()
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
