@@ -329,9 +329,9 @@ class TimerRunner(RunnerBase, threading.Thread):
         self.command = 'Timeout after %f seconds' % self.timeout
 
     def _run(self):
-        self.kill_event.wait(self.timeout)
-        logger.debug("%s %s: timer expired", self.__class__.__name__,
-                     self.name, extra={'runner': self})
+        if not self.kill_event.wait(self.timeout):
+            logger.debug("%s %s: timer expired", self.__class__.__name__,
+                         self.name, extra={'runner': self})
 
 
 class FileMonitorRunner(RunnerBase, threading.Thread):
