@@ -218,9 +218,7 @@ class RunnerBase(object):
             self.start_event.wait()
         self._run()
         self.finish_event.set()
-        if self._watchdog:
-            self._watchdog.kill()
-            self._watchdog.join()
+        self.stop_watchdog()
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
@@ -239,6 +237,11 @@ class RunnerBase(object):
                                      parent=self)
         self.kill_event = self._watchdog.finish_event
         self._watchdog.start()
+
+    def stop_watchdog(self):
+        if self._watchdog:
+            self._watchdog.kill()
+            self._watchdog.join()
 
     def add_child(self, cls, **kwargs):
         logger.debug("%s: Adding child %s", self.name, cls.__name__)
@@ -589,6 +592,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             logger.warning("Command produced no valid data.",
                            extra={'runner': self})
 
+        self.stop_watchdog()
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
