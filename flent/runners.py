@@ -1259,7 +1259,8 @@ class PingRunner(RegexpRunner):
                 else:
                     # Since there is not timeout parameter to fping, set a watchdog
                     # timer to kill it in case it runs over time
-                    self.watchdog_timer = self.delay + length + 1
+                    self.watchdog_timer = self.delay + length + max(1,
+                                                                    int((self.delay + length) * 0.05))
                     return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
                         "-t {timeout} {marking} {local_bind} {host}".format(
                             binary=fping,
