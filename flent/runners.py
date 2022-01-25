@@ -158,6 +158,13 @@ class RunnerBase(object):
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
         self.runner_args = kwargs
 
+        cache_file = getattr(settings, "CACHE_FILE", None)
+        if cache_file:
+            self.cache = util.CachingDictView(cache_file,
+                                              self.__class__.__name__)
+        else:
+            self.cache = getattr(self.__class__, "cls_cache", {})
+
     def __getstate__(self):
         state = {}
 
@@ -831,7 +838,7 @@ class NetperfDemoRunner(ProcessRunner):
                   'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE,' \
                   'LOCAL_BYTES_SENT,LOCAL_BYTES_RECVD,' \
                   'REMOTE_BYTES_SENT,REMOTE_BYTES_RECVD'
-    netperf = {}
+    cls_cache = {}
     _env = {"DUMP_TCP_INFO": "1"}
 
     def __init__(self, test, length, host, bytes=None, **kwargs):
@@ -996,8 +1003,9 @@ class NetperfDemoRunner(ProcessRunner):
             elif self.test == 'TCP_MAERTS':
                 self.test = 'TCP_STREAM'
 
-        if self.remote_host in self.netperf:
-            netperf = self.netperf[self.remote_host]
+        cache_key = self.remote_host or ""
+        if cache_key in self.cache:
+            netperf = self.cache[cache_key]
         else:
             nperf = util.which('netperf', fail=RunnerCheckError,
                                remote_host=self.remote_host)
@@ -1044,7 +1052,7 @@ class NetperfDemoRunner(ProcessRunner):
 
             # cache the value keyed on the remote_host, since the outcome might
             # differ depending on which host we're running on
-            self.netperf[self.remote_host] = netperf
+            self.cache[cache_key] = netperf
 
         args['binary'] = netperf['executable']
         args['buffer'] = netperf['buffer']
@@ -1191,7 +1199,7 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
-    cached_runners = {}
+    cls_cache = {}
 
     def __init__(self, host, **kwargs):
         self.host = normalise_host(host)
@@ -1252,16 +1260,16 @@ class PingRunner(RegexpRunner):
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
 
-        key_fping = ('fping', ip_version, self.remote_host)
-        key_ping = ('ping', ip_version, self.remote_host)
+        key_fping = f"fping,{ip_version},{self.remote_host or ''}"
+        key_ping = f"ping,{ip_version},{self.remote_host or ''}"
 
-        if key_fping in self.cached_runners:
-            return self.use_fping(self.cached_runners[key_fping],
+        if key_fping in self.cache:
+            return self.use_fping(self.cache[key_fping],
                                   ip_version, interval, length,
                                   host, marking, local_bind)
 
-        if key_ping in self.cached_runners:
-            ping, pingargs = self.cached_runners[key_ping]
+        if key_ping in self.cache:
+            ping, pingargs = self.cache[key_ping]
             return self.use_ping(ping, pingargs, interval, length,
                                  host, marking, local_bind)
 
@@ -1307,7 +1315,7 @@ class PingRunner(RegexpRunner):
                     logger.warning("Found fping, but it outputs broken timestamps (off by %fs). "
                                    "Not using.", tdiff)
                 else:
-                    self.cached_runners[key_fping] = fping
+                    self.cache[key_fping] = fping
                     return self.use_fping(fping, ip_version, interval, length, host, marking, local_bind)
 
         if ping is None and ip_version == 6:
@@ -1330,7 +1338,7 @@ class PingRunner(RegexpRunner):
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
 
-            self.cached_runners[key_ping] = (ping, pingargs)
+            self.cache[key_ping] = (ping, pingargs)
             return self.use_ping(ping, pingargs, interval, length,
                                  host, marking, local_bind)
 
