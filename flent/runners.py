@@ -218,8 +218,7 @@ class RunnerBase(object):
             self.start_event.wait()
         self._run()
         self.finish_event.set()
-        if self._watchdog:
-            self._watchdog.kill()
+        self.stop_watchdog()
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
@@ -238,6 +237,11 @@ class RunnerBase(object):
                                      parent=self)
         self.kill_event = self._watchdog.finish_event
         self._watchdog.start()
+
+    def stop_watchdog(self):
+        if self._watchdog:
+            self._watchdog.kill()
+            self._watchdog.join()
 
     def add_child(self, cls, **kwargs):
         logger.debug("%s: Adding child %s", self.name, cls.__name__)
@@ -329,9 +333,9 @@ class TimerRunner(RunnerBase, threading.Thread):
         self.command = 'Timeout after %f seconds' % self.timeout
 
     def _run(self):
-        self.kill_event.wait(self.timeout)
-        logger.debug("%s %s: timer expired", self.__class__.__name__,
-                     self.name, extra={'runner': self})
+        if not self.kill_event.wait(self.timeout):
+            logger.debug("%s %s: timer expired", self.__class__.__name__,
+                         self.name, extra={'runner': self})
 
 
 class FileMonitorRunner(RunnerBase, threading.Thread):
@@ -588,6 +592,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             logger.warning("Command produced no valid data.",
                            extra={'runner': self})
 
+        self.stop_watchdog()
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
@@ -1254,7 +1259,8 @@ class PingRunner(RegexpRunner):
                 else:
                     # Since there is not timeout parameter to fping, set a watchdog
                     # timer to kill it in case it runs over time
-                    self.watchdog_timer = self.delay + length + 1
+                    self.watchdog_timer = self.delay + length + max(1,
+                                                                    int((self.delay + length) * 0.05))
                     return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
                         "-t {timeout} {marking} {local_bind} {host}".format(
                             binary=fping,
