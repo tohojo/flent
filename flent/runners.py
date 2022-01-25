@@ -1191,6 +1191,7 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
+    cached_runners = {}
 
     def __init__(self, host, **kwargs):
         self.host = normalise_host(host)
@@ -1207,11 +1208,62 @@ class PingRunner(RegexpRunner):
         self.command = self.find_binary(host=self.host, **args)
         super(PingRunner, self).check()
 
+    def use_fping(self, fping, ip_version, interval, length, host, marking, local_bind):
+            # Since there is not timeout parameter to fping, set a watchdog
+            # timer to kill it in case it runs over time
+            self.watchdog_timer = self.delay + length + max(1,
+                                                            int((self.delay + length) * 0.05))
+            return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
+                "-t {timeout} {marking} {local_bind} {host}".format(
+                    binary=fping,
+                    ipver='-6' if (ip_version == 6 and
+                                   not fping.endswith("6")) else "",
+                    interval=interval * 1000,  # fping expects interval in ms
+                    # since there's no timeout parameter for fping,
+                    # calculate a total number of pings to send
+                    count=length // interval + 1,
+                    # the timeout parameter is not the kind of timeout we
+                    # want, rather it is the time after which fping will
+                    # ignore late replies. We don't ever want to ignore late
+                    # replies, so set this to a really high value (twice the
+                    # full test length). This only affects fping v4.0+;
+                    # earlier versions will ignore -t when running in -c mode.
+                    timeout=length * 2000,
+                    marking=self.parse_marking(marking, "-O {0}"),
+                    local_bind=("-S {0}".format(local_bind)
+                                if local_bind else ""),
+                    host=host)
+
+    def use_ping(self, ping, pingargs, interval, length, host, marking, local_bind):
+
+            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} " \
+                "{local_bind} {pingargs} {host}".format(
+                    binary=ping,
+                    interval=max(0.2, interval),
+                    length=length,
+                    marking=self.parse_marking(marking, "-Q {0}"),
+                    local_bind="-I {0}".format(local_bind) if local_bind else "",
+                    host=host,
+                    pingargs=" ".join(pingargs))
+
     def find_binary(self, ip_version, interval, length, host,
                     marking=None, local_bind=None, **kwargs):
         """Find a suitable ping executable, looking first for a compatible
         `fping`, then falling back to the `ping` binary. Binaries are checked
         for the required capabilities."""
+
+        key_fping = ('fping', ip_version, self.remote_host)
+        key_ping = ('ping', ip_version, self.remote_host)
+
+        if key_fping in self.cached_runners:
+            return self.use_fping(self.cached_runners[key_fping],
+                                  ip_version, interval, length,
+                                  host, marking, local_bind)
+
+        if key_ping in self.cached_runners:
+            ping, pingargs = self.cached_runners[key_ping]
+            return self.use_ping(ping, pingargs, interval, length,
+                                 host, marking, local_bind)
 
         if ip_version == 6:
             suffix = "6"
@@ -1255,30 +1307,8 @@ class PingRunner(RegexpRunner):
                     logger.warning("Found fping, but it outputs broken timestamps (off by %fs). "
                                    "Not using.", tdiff)
                 else:
-                    # Since there is not timeout parameter to fping, set a watchdog
-                    # timer to kill it in case it runs over time
-                    self.watchdog_timer = self.delay + length + max(1,
-                                                                    int((self.delay + length) * 0.05))
-                    return "{binary} {ipver} -D -p {interval:.0f} -c {count:.0f} " \
-                        "-t {timeout} {marking} {local_bind} {host}".format(
-                            binary=fping,
-                            ipver='-6' if (ip_version == 6 and
-                                           not fping.endswith("6")) else "",
-                            interval=interval * 1000,  # fping expects interval in ms
-                            # since there's no timeout parameter for fping,
-                            # calculate a total number of pings to send
-                            count=length // interval + 1,
-                            # the timeout parameter is not the kind of timeout we
-                            # want, rather it is the time after which fping will
-                            # ignore late replies. We don't ever want to ignore late
-                            # replies, so set this to a really high value (twice the
-                            # full test length). This only affects fping v4.0+;
-                            # earlier versions will ignore -t when running in -c mode.
-                            timeout=length * 2000,
-                            marking=self.parse_marking(marking, "-O {0}"),
-                            local_bind=("-S {0}".format(local_bind)
-                                        if local_bind else ""),
-                            host=host)
+                    self.cached_runners[key_fping] = fping
+                    return self.use_fping(fping, ip_version, interval, length, host, marking, local_bind)
 
         if ping is None and ip_version == 6:
             # See if we have a combined ping binary (new versions of iputils)
@@ -1300,15 +1330,9 @@ class PingRunner(RegexpRunner):
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
 
-            return "{binary} -n -D -i {interval:.2f} -w {length:d} {marking} " \
-                "{local_bind} {pingargs} {host}".format(
-                    binary=ping,
-                    interval=max(0.2, interval),
-                    length=length,
-                    marking=self.parse_marking(marking, "-Q {0}"),
-                    local_bind="-I {0}".format(local_bind) if local_bind else "",
-                    host=host,
-                    pingargs=" ".join(pingargs))
+            self.cached_runners[key_ping] = (ping, pingargs)
+            return self.use_ping(ping, pingargs, interval, length,
+                                 host, marking, local_bind)
 
         raise RunnerCheckError("No suitable ping tool found.")
 
