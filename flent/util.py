@@ -22,8 +22,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
+import fcntl
 import fnmatch
 import ipaddress
+import json
 import os
 import re
 import shlex
@@ -177,11 +179,82 @@ def diff_parts(strings, sep):
 
     return [sep.join(p) for p in zip(*np)]
 
+class CachingDictionary(dict):
+
+    def __init__(self, filename, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.filename = filename
+        if filename is not None:
+            self.read_file()
+
+    def read_file(self):
+        try:
+            with open(self.filename) as fp:
+                fcntl.flock(fp, fcntl.LOCK_EX)
+                obj = json.load(fp)
+                self.update(obj)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            pass
+
+    def write_file(self):
+        if self.filename is None:
+            return
+
+        with open(self.filename, 'w') as fp:
+            fcntl.flock(fp, fcntl.LOCK_EX)
+            json.dump(self, fp)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.write_file()
+
+
+class CachingDictView:
+
+    def __init__(self, parent, key):
+        if key not in parent:
+            parent[key] = {}
+        self.parent = parent
+        self.key = key
+
+    def __getitem__(self, key):
+        return self.parent[self.key][key]
+
+    def __setitem__(self, key, value):
+        self.parent[self.key][key] = value
+        self.parent.write_file()
+
+    def __delitem__(self, key):
+        del self.parent[self.key][key]
+        self.parent.write_file()
+
+    def __contains__(self, key):
+        return key in self.parent[self.key]
+
+    def __iter__(self):
+        return iter(self.parent[self.key])
+
+    def update(self, *args, **kwargs):
+        return self.parent[self.key].update(*args, **kwargs)
+        self.parent.write_file()
+
+    def keys(self):
+        return self.parent[self.key].keys()
+
+    def values(self):
+        return self.parent[self.key].values()
+
+    def items(self):
+        return self.parent[self.key].items()
+
 
 class WhichCache:
 
     def __init__(self):
         self.cache = {}
+
+    def set_persistent(self, cache):
+        self.cache = CachingDictView(cache, "which")
 
     @staticmethod
     def is_executable(filename):
@@ -227,9 +300,9 @@ class WhichCache:
         return None
 
     def __call__(self, executable, fail=None, remote_host=None):
-        key = (executable, remote_host)
+        key = f"{executable},{remote_host or ''}"
         if key in self.cache:
-            logger.debug("which: found %s in cache: %s", key, self.cache[key])
+            logger.debug("which: found '%s' in cache: %s", key, self.cache[key])
             return self.cache[key]
 
         if remote_host:
