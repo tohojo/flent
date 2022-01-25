@@ -25,6 +25,7 @@ import io
 import math
 import os
 import re
+import sys
 import warnings
 
 from flent import combiners
@@ -151,7 +152,7 @@ def init_matplotlib(output, use_markers, load_rc):
             raise RuntimeError(
                 "Unrecognised file format for output '%s'" % output)
 
-    elif not os.getenv("DISPLAY"):
+    elif (sys.platform == 'linux' and not os.getenv("DISPLAY")):
         matplotlib.use("agg")
 
     from matplotlib import pyplot
