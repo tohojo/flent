@@ -996,8 +996,8 @@ class NetperfDemoRunner(ProcessRunner):
             elif self.test == 'TCP_MAERTS':
                 self.test = 'TCP_STREAM'
 
-        if self.netperf and not self.remote_host:
-            netperf = self.netperf
+        if self.remote_host in self.netperf:
+            netperf = self.netperf[self.remote_host]
         else:
             nperf = util.which('netperf', fail=RunnerCheckError,
                                remote_host=self.remote_host)
@@ -1029,7 +1029,7 @@ class NetperfDemoRunner(ProcessRunner):
 
             try:
                 # If --test-payload option is specified, use data from that file
-                # else use the default value /dev/urandom. 
+                # else use the default value /dev/urandom.
                 fill_file = args['test_payload']
                 # Sanity check; is /dev/urandom or the custom file readable? If so, use it to
                 # pre-fill netperf's buffers
@@ -1042,11 +1042,9 @@ class NetperfDemoRunner(ProcessRunner):
                     # If the custom file is not readable, fail noisily
                     raise RunnerCheckError("The specified test payload file does not exist or is not readable.")
 
-            if not self.remote_host:
-                # only cache values if we're not executing the checks on a
-                # remote host (since that might differ on subsequent runner
-                # invocations)
-                self.netperf = netperf
+            # cache the value keyed on the remote_host, since the outcome might
+            # differ depending on which host we're running on
+            self.netperf[self.remote_host] = netperf
 
         args['binary'] = netperf['executable']
         args['buffer'] = netperf['buffer']
@@ -2041,7 +2039,7 @@ class TcRunner(ProcessRunner):
                    r"dropped (?P<dropped_pie>\d+) "
                    r"maxq (?P<maxq>\d+) "
                    r"ecn_mark (?P<ecn_mark>\d+)"),
-        
+
         # fq_pie
         re.compile(r"pkts_in (?P<pkts_in>\d+) "
                    r"overlimit (?P<overlimit_pie>\d+) "
