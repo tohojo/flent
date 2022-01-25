@@ -10,7 +10,7 @@ The Realtime Response Under Load (RRUL) test
 
 This test exists in a couple of variants and is a partial implementation of the
 RRUL specification as written by Dave Taht (see
-https://github.com/dtaht/deBloat/blob/master/spec/rrule.doc?raw=true). It works
+https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/). It works
 by running RTT measurement using ICMP ping and UDP roundtrip time measurement,
 while loading up the link with eight TCP streams (four downloads, four uploads).
 This quite reliably saturates the measured link (wherever the bottleneck might
