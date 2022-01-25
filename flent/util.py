@@ -178,41 +178,74 @@ def diff_parts(strings, sep):
     return [sep.join(p) for p in zip(*np)]
 
 
-def is_executable(filename):
-    return os.path.isfile(filename) and os.access(filename, os.X_OK)
+class WhichCache:
 
+    def __init__(self):
+        self.cache = {}
 
-def which(executable, fail=None, remote_host=None):
-    pathname, filename = os.path.split(executable)
-    if pathname:
-        if is_executable(executable):
-            logger.debug("which: %s is a full path and executable", executable)
-            return executable
-    elif remote_host:
-        logger.debug("running 'which' for binary '%s' on host '%s'",
+    @staticmethod
+    def is_executable(filename):
+        return os.path.isfile(filename) and os.access(filename, os.X_OK)
+
+    @staticmethod
+    def lookup_remote(executable, remote_host):
+        logger.debug("running 'command -v' for binary '%s' on host '%s'",
                      executable, remote_host)
         try:
             output = subprocess.check_output(['ssh', remote_host,
-                                              'which {}'.format(executable)],
+                                              'command -v {}'.format(executable)],
                                              timeout=1)
             output = output.decode(ENCODING).strip()
-            logger.debug("Got path '%s' for '%s' on '%s'", output, executable, remote_host)
+            logger.debug("Got path '%s' for '%s' on '%s'",
+                         output, executable, remote_host)
             return output
         except subprocess.CalledProcessError:
             pass
-    else:
+
+        return None
+
+    def lookup_local(self, executable):
+        pathname, filename = os.path.split(executable)
+        if pathname:
+            if not self.is_executable(executable):
+                logger.debug("which: %s not executable", executable)
+                return None
+
+            logger.debug("which: %s is a full path and executable", executable)
+            return executable
+
         for path in [i.strip('""') for i in os.environ["PATH"].split(os.pathsep)]:
             filename = os.path.join(path, executable)
-            if is_executable(filename):
-                logger.debug("which: Found %s executable at %s",
-                             executable, filename)
-                return filename
-            else:
+            if not self.is_executable(filename):
                 logger.debug("which: %s is not an executable file", filename)
+                continue
 
-    if fail:
-        raise fail("No %s binary found in PATH." % executable)
-    return None
+            logger.debug("which: Found %s executable at %s",
+                         executable, filename)
+            return filename
+
+        return None
+
+    def __call__(self, executable, fail=None, remote_host=None):
+        key = (executable, remote_host)
+        if key in self.cache:
+            logger.debug("which: found %s in cache: %s", key, self.cache[key])
+            return self.cache[key]
+
+        if remote_host:
+            binary = self.lookup_remote(executable, remote_host)
+        else:
+            binary = self.lookup_local(executable)
+
+        if not binary and fail:
+            raise fail("No %s binary found in PATH." % executable)
+
+        if binary:
+            self.cache[key] = binary
+        return binary
+
+# callers call 'util.which', so make that an instance of the cache
+which = WhichCache()
 
 
 def path_components(path):
