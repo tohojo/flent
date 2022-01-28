@@ -39,7 +39,7 @@ from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent.loggers import get_logger
 from flent.util import FuncAction, Update, AddHost, append_host, keyval, \
-    keyval_int, keyval_transformer, ArgParser, token_split, CachingDictionary, which
+    keyval_int, keyval_transformer, ArgParser, token_split, global_cache
 from flent.plotters import add_plotting_args
 from flent import loggers, util, resultset, runners
 
@@ -114,17 +114,6 @@ class LogFile(argparse.Action):
         else:
             loggers.setup_logfile(values)
             setattr(namespace, self.dest, values)
-
-
-class CacheFile(argparse.Action):
-
-    def __init__(self, option_strings, dest, level=None, **kwargs):
-        super(CacheFile, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        cache = CachingDictionary(values)
-        which.set_persistent(cache)
-        setattr(namespace, self.dest, cache)
 
 
 class Debug(argparse.Action):
@@ -521,7 +510,7 @@ misc_group.add_argument(
 
 misc_group.add_argument(
     "--cache-file",
-    action=CacheFile, type=unicode, dest="CACHE_FILE",
+    action="store", type=unicode, dest="CACHE_FILE", metavar="FILENAME",
     help="Use this file for caching lookup of runner file names and "
     "versions between runs.")
 
@@ -770,6 +759,9 @@ class Settings(argparse.Namespace):
         # is loaded, this has the desired effect.
         elif self.NEW_GUI_INSTANCE:
             self.GUI = True
+
+        if self.CACHE_FILE:
+            global_cache.read_file(self.CACHE_FILE)
 
         if self.REMOTE_METADATA:
             self.EXTENDED_METADATA = True

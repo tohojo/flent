@@ -30,6 +30,7 @@ import os
 import re
 import shlex
 import socket
+import threading
 import time
 import subprocess
 
@@ -181,15 +182,14 @@ def diff_parts(strings, sep):
 
 class CachingDictionary(dict):
 
-    def __init__(self, filename, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.filename = filename
-        if filename is not None:
-            self.read_file()
+        self.filename = None
+        self.lock = threading.Lock()
 
-    def read_file(self):
+    def read_file(self, filename):
         try:
-            with open(self.filename) as fp:
+            with open(filename) as fp:
                 fcntl.flock(fp, fcntl.LOCK_EX)
                 if fp.read(1) == '':
                     # JSON parser chokes on an empty file, so turn this into a
@@ -199,35 +199,45 @@ class CachingDictionary(dict):
                 fp.seek(0)
                 obj = json.load(fp)
                 self.update(obj)
-                logger.debug("Loaded cache from file '%s'", self.filename)
+                logger.debug("Read cache '%s' from file '%s'", self, filename)
         except FileNotFoundError:
-            if not self.write_file():
+            if not self.write_file(filename):
                 # File doesn't exist (or is empty), make sure we can write to it
                 logger.warning("Couldn't write to cache file '%s'; not using.",
-                               self.filename)
-                self.filename = None
+                               filename)
+                return
             else:
-                logger.debug("Created cache file at '%s'", self.filename)
+                logger.debug("Created cache file at '%s'", filename)
         except (IOError, json.decoder.JSONDecodeError) as e:
             logger.warning("Error reading cache file '%s' (%s); not using.",
                            self.filename, e)
-            self.filename = None
+            return
 
-    def write_file(self):
-        if self.filename is None:
+        self.filename = filename
+
+    def write_file(self, filename=None):
+        if filename is None:
+            filename = self.filename
+
+        if filename is None:
             return
 
         try:
-            with open(self.filename, 'w') as fp:
+            with open(filename, 'w') as fp:
                 fcntl.flock(fp, fcntl.LOCK_EX)
                 json.dump(self, fp)
                 return True
-        except IOError:
+        except IOError as e:
+            logger.debug("Writing cache file failed: '%s'", e)
             return False
 
     def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        self.write_file()
+        with self.lock:
+            super().__setitem__(key, value)
+            self.write_file()
+
+    def get_view(self, key):
+        return CachingDictView(self, key)
 
 
 class CachingDictView:
@@ -242,12 +252,14 @@ class CachingDictView:
         return self.parent[self.key][key]
 
     def __setitem__(self, key, value):
-        self.parent[self.key][key] = value
-        self.parent.write_file()
+        with self.parent.lock:
+            self.parent[self.key][key] = value
+            self.parent.write_file()
 
     def __delitem__(self, key):
-        del self.parent[self.key][key]
-        self.parent.write_file()
+        with self.parent.lock:
+            del self.parent[self.key][key]
+            self.parent.write_file()
 
     def __contains__(self, key):
         return key in self.parent[self.key]
@@ -256,8 +268,9 @@ class CachingDictView:
         return iter(self.parent[self.key])
 
     def update(self, *args, **kwargs):
-        return self.parent[self.key].update(*args, **kwargs)
-        self.parent.write_file()
+        with self.parent.lock:
+            self.parent[self.key].update(*args, **kwargs)
+            self.parent.write_file()
 
     def keys(self):
         return self.parent[self.key].keys()
@@ -268,14 +281,14 @@ class CachingDictView:
     def items(self):
         return self.parent[self.key].items()
 
+global_cache = CachingDictionary()
+get_cache = global_cache.get_view
+
 
 class WhichCache:
 
     def __init__(self):
-        self.cache = {}
-
-    def set_persistent(self, cache):
-        self.cache = CachingDictView(cache, "which")
+        self.cache = get_cache("which")
 
     @staticmethod
     def is_executable(filename):

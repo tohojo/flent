@@ -158,12 +158,7 @@ class RunnerBase(object):
         self.metadata = {'RUNNER': self.__class__.__name__, 'IDX': idx}
         self.runner_args = kwargs
 
-        cache_file = getattr(settings, "CACHE_FILE", None)
-        if cache_file:
-            self.cache = util.CachingDictView(cache_file,
-                                              self.__class__.__name__)
-        else:
-            self.cache = getattr(self.__class__, "cls_cache", {})
+        self._cache = None
 
     def __getstate__(self):
         state = {}
@@ -177,6 +172,12 @@ class RunnerBase(object):
         state['_pickled'] = True
 
         return state
+
+    @property
+    def cache(self):
+        if self._cache is None:
+            self._cache = util.get_cache(self.__class__.__name__)
+        return self._cache
 
     def check(self):
         pass
@@ -838,7 +839,6 @@ class NetperfDemoRunner(ProcessRunner):
                   'REMOTE_SEND_SIZE,REMOTE_RECV_SIZE,' \
                   'LOCAL_BYTES_SENT,LOCAL_BYTES_RECVD,' \
                   'REMOTE_BYTES_SENT,REMOTE_BYTES_RECVD'
-    cls_cache = {}
     _env = {"DUMP_TCP_INFO": "1"}
 
     def __init__(self, test, length, host, bytes=None, **kwargs):
@@ -1199,7 +1199,6 @@ class PingRunner(RegexpRunner):
                                    r'(?P<MEAN_VALUE>[0-9]+(?:\.[0-9]+)?)/'
                                    r'(?P<MAX_VALUE>[0-9]+(?:\.[0-9]+)?).*$')]
     transformed_metadata = ('MEAN_VALUE', 'MIN_VALUE', 'MAX_VALUE')
-    cls_cache = {}
 
     def __init__(self, host, **kwargs):
         self.host = normalise_host(host)
