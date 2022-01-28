@@ -191,18 +191,39 @@ class CachingDictionary(dict):
         try:
             with open(self.filename) as fp:
                 fcntl.flock(fp, fcntl.LOCK_EX)
+                if fp.read(1) == '':
+                    # JSON parser chokes on an empty file, so turn this into a
+                    # FileNotFoundError (which is handled below)
+                    raise FileNotFoundError
+
+                fp.seek(0)
                 obj = json.load(fp)
                 self.update(obj)
-        except (FileNotFoundError, json.decoder.JSONDecodeError):
-            pass
+                logger.debug("Loaded cache from file '%s'", self.filename)
+        except FileNotFoundError:
+            if not self.write_file():
+                # File doesn't exist (or is empty), make sure we can write to it
+                logger.warning("Couldn't write to cache file '%s'; not using.",
+                               self.filename)
+                self.filename = None
+            else:
+                logger.debug("Created cache file at '%s'", self.filename)
+        except (IOError, json.decoder.JSONDecodeError) as e:
+            logger.warning("Error reading cache file '%s' (%s); not using.",
+                           self.filename, e)
+            self.filename = None
 
     def write_file(self):
         if self.filename is None:
             return
 
-        with open(self.filename, 'w') as fp:
-            fcntl.flock(fp, fcntl.LOCK_EX)
-            json.dump(self, fp)
+        try:
+            with open(self.filename, 'w') as fp:
+                fcntl.flock(fp, fcntl.LOCK_EX)
+                json.dump(self, fp)
+                return True
+        except IOError:
+            return False
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
