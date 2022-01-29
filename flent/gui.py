@@ -142,9 +142,9 @@ def run_gui(settings, test_mode=False):
     # Start up the Qt application and exit when it does
     app = QApplication(sys.argv[:1])
     mainwindow = MainWindow(settings)
-    mainwindow.show()
     if test_mode:
-        mainwindow.defer_close()
+        mainwindow.defer_close(app)
+    mainwindow.show()
     return app.exec_()
 
 
@@ -590,9 +590,9 @@ class MainWindow(QMainWindow):
             self.load_files(self.defer_load)
             self.defer_load = None
 
-    def defer_close(self):
+    def defer_close(self, qapp):
         self.close_timer = QTimer(self)
-        self.close_timer.timeout.connect(self.close)
+        self.close_timer.timeout.connect(qapp.quit, Qt.QueuedConnection)
         self.close_timer.start()
 
     def shorten_titles(self, titles):
