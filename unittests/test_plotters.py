@@ -30,7 +30,7 @@ import traceback
 from multiprocessing import Pool
 from unittest.util import strclass
 
-from .test_helpers import prefork, get_test_data_files
+from .test_helpers import ForkingTestCase, get_test_data_files
 
 try:
     from unittest import mock
@@ -40,7 +40,7 @@ except ImportError:
     except ImportError:
         raise RuntimeError("Needs 'mock' library for these tests.")
 
-from flent import plotters, resultset, formatters
+from flent import resultset, formatters
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
@@ -81,152 +81,135 @@ PLOTS_MAY_FAIL = set(('tcp_cwnd', 'tcp_rtt', 'tcp_rtt_cdf',
                       'tcp_rtt_box_combine', 'tcp_rtt_bar_combine', 'tcp_pacing',
                       'all_scaled_delivery', 'tcp_delivery_rate', 'tcp_delivery_with_rtt'))
 
-
-class TestPlottersInit(unittest.TestCase):
-
-    def init_test_backend(self, filename):
-        plotters.init_matplotlib(filename, False, False)
-        return plotters.matplotlib.get_backend()
+class PlottersTestCase(ForkingTestCase):
 
     def setUp(self):
+        from flent import plotters
         if not plotters.HAS_MATPLOTLIB:
             self.skipTest('no matplotlib available')
+        self.plotters = plotters
 
-    @mock.patch.object(plotters, 'HAS_MATPLOTLIB', False)
+    def __getstate__(self):
+        state = {}
+
+        for k, v in self.__dict__.items():
+            if k != 'plotters':
+                state[k] = v
+
+        return state
+
+
+class TestPlottersInit(PlottersTestCase):
+
+    def init_test_backend(self, filename):
+        self.plotters.init_matplotlib(filename, False, False)
+        return self.plotters.matplotlib.get_backend()
+
     def test_init_fail(self):
+        self.plotters.HAS_MATPLOTLIB = False
         self.assertRaises(
-            RuntimeError, plotters.init_matplotlib, None, None, None)
+            RuntimeError, self.plotters.init_matplotlib, None, None, None)
 
-    @prefork
     def test_init_svg(self):
         self.assertEqual(self.init_test_backend('test.svg'), 'svg')
 
-    @prefork
     def test_init_svgz(self):
         self.assertEqual(self.init_test_backend('test.svgz'), 'svg')
 
-    @prefork
     def test_init_ps(self):
         self.assertEqual(self.init_test_backend('test.ps'), 'ps')
 
-    @prefork
     def test_init_eps(self):
         self.assertEqual(self.init_test_backend('test.eps'), 'ps')
 
-    @prefork
     def test_init_pdf(self):
         self.assertEqual(self.init_test_backend('test.pdf'), 'pdf')
 
-    @prefork
     def test_init_png(self):
         self.assertEqual(self.init_test_backend('test.png'), 'agg')
 
-    @prefork
     def test_init_styles(self):
-        plotters.init_matplotlib('test.svg', True, False)
-        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES) +
-                         len(plotters.DASHES) + len(plotters.MARKERS))
-        for ls in plotters.LINESTYLES:
-            self.assertIn(dict(linestyle=ls), plotters.STYLES)
-        for d in plotters.DASHES:
-            self.assertIn(dict(dashes=d), plotters.STYLES)
-        for m in plotters.MARKERS:
-            self.assertIn(dict(marker=m, markevery=10), plotters.STYLES)
+        self.plotters.init_matplotlib('test.svg', True, False)
+        self.assertEqual(len(self.plotters.STYLES), len(self.plotters.LINESTYLES) +
+                         len(self.plotters.DASHES) + len(self.plotters.MARKERS))
+        for ls in self.plotters.LINESTYLES:
+            self.assertIn(dict(linestyle=ls), self.plotters.STYLES)
+        for d in self.plotters.DASHES:
+            self.assertIn(dict(dashes=d), self.plotters.STYLES)
+        for m in self.plotters.MARKERS:
+            self.assertIn(dict(marker=m, markevery=10), self.plotters.STYLES)
 
-    @prefork
     def test_init_styles_nomarkers(self):
-        plotters.init_matplotlib('test.svg', False, False)
-        self.assertEqual(len(plotters.STYLES), len(plotters.LINESTYLES) +
-                         len(plotters.DASHES))
-        for ls in plotters.LINESTYLES:
-            self.assertIn(dict(linestyle=ls), plotters.STYLES)
-        for d in plotters.DASHES:
-            self.assertIn(dict(dashes=d), plotters.STYLES)
+        self.plotters.init_matplotlib('test.svg', False, False)
+        self.assertEqual(len(self.plotters.STYLES), len(self.plotters.LINESTYLES) +
+                         len(self.plotters.DASHES))
+        for ls in self.plotters.LINESTYLES:
+            self.assertIn(dict(linestyle=ls), self.plotters.STYLES)
+        for d in self.plotters.DASHES:
+            self.assertIn(dict(dashes=d), self.plotters.STYLES)
 
 
-@unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
-class TestPlotters(unittest.TestCase):
+class TestPlotters(PlottersTestCase):
 
     def setUp(self):
+        super().setUp()
         self.plot_config = {'series': [{'data': 'Test 1'}]}
         self.data_config = {'Test 1': {'units': 'ms'}}
+        self.plotters.init_matplotlib('test.svg', True, True)
 
-    def create_plotter(self, plotter_class):
+    def create_plotter(self, plotter_class_name, init=True):
+        plotter_class = getattr(self.plotters, plotter_class_name)
         p = plotter_class(self.plot_config, self.data_config)
-        p.init()
         self.assertIsInstance(p, plotter_class)
+        if init:
+            p.init()
+        return p
 
-    @prefork
     def test_create_timeseries(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.TimeseriesPlotter)
+        self.create_plotter("TimeseriesPlotter")
 
-    @prefork
     def test_create_timeseries_combine(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.TimeseriesCombinePlotter)
+        self.create_plotter("TimeseriesCombinePlotter")
 
-    @prefork
     def test_create_box(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.BoxPlotter)
+        self.create_plotter("BoxPlotter")
 
-    @prefork
     def test_create_box_combine(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.BoxCombinePlotter)
+        self.create_plotter("BoxCombinePlotter")
 
-    @prefork
     def test_create_bar(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.BarPlotter)
+        self.create_plotter("BarPlotter")
 
-    @prefork
     def test_create_bar_combine(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.BarCombinePlotter)
+        self.create_plotter("BarCombinePlotter")
 
-    @prefork
     def test_create_cdf(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.CdfPlotter)
+        self.create_plotter("CdfPlotter")
 
-    @prefork
     def test_create_cdf_combine(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.CdfCombinePlotter)
+        self.create_plotter("CdfCombinePlotter")
 
-    @prefork
     def test_create_qq(self):
-        plotters.init_matplotlib('test.svg', True, True)
         # QQ plots only work with only 1 data series
-        p = plotters.QqPlotter(self.plot_config, self.data_config)
-        p.init()
-        self.assertIsInstance(p, plotters.QqPlotter)
+        p = self.create_plotter("QqPlotter")
         self.plot_config['series'].append({'data': 'Test 1'})
 
-        p = plotters.QqPlotter(self.plot_config, self.data_config)
+        p = self.create_plotter("QqPlotter", init=False)
         self.assertRaises(RuntimeError, p.init)
 
-    @prefork
     def test_create_ellipsis(self):
-        plotters.init_matplotlib('test.svg', True, True)
         # Ellipsis plots only work with >=2 data series
-        p = plotters.EllipsisPlotter(self.plot_config, self.data_config)
+        p = self.create_plotter("EllipsisPlotter", init=False)
         self.assertRaises(RuntimeError, p.init)
 
         self.plot_config['series'].append({'data': 'Test 1'})
-        p = plotters.EllipsisPlotter(self.plot_config, self.data_config)
-        p.init()
-        self.assertIsInstance(p, plotters.EllipsisPlotter)
+        p = self.create_plotter("EllipsisPlotter")
 
-    @prefork
     def test_create_subplot_combine(self):
-        plotters.init_matplotlib('test.svg', True, True)
-        self.create_plotter(plotters.SubplotCombinePlotter)
+        self.create_plotter("SubplotCombinePlotter")
 
 
-class TestPlotting(unittest.TestCase):
+class TestPlotting(PlottersTestCase):
 
     def __init__(self, filename, fmt):
         self.filename = filename
@@ -234,6 +217,7 @@ class TestPlotting(unittest.TestCase):
         unittest.TestCase.__init__(self)
 
     def setUp(self):
+        super().setUp()
         self.output_dir = tempfile.mkdtemp()
         self.settings = settings.copy()
 
@@ -244,7 +228,6 @@ class TestPlotting(unittest.TestCase):
         return "%s - %s (%s)" % (os.path.basename(self.filename), self.fmt,
                                  strclass(self.__class__))
 
-    @prefork
     def runTest(self):
         r = resultset.load(self.filename)
         self.settings.update(r.meta())
@@ -271,24 +254,20 @@ class TestPlotting(unittest.TestCase):
                 new_exc.orig_tb = tb
                 raise new_exc
 
-
-def initfunc():
-    plotters.init_matplotlib("-", False, True)
-
-
 def plot_one(settings, plot, results):
+    from flent import plotters
+    plotters.init_matplotlib("-", False, True)
     settings.PLOT = plot
     return plotters.draw_worker(settings, [results])
 
-
-@unittest.skipUnless(plotters.HAS_MATPLOTLIB, 'no matplotlib available')
-class TestGUIPlotting(unittest.TestCase):
+class TestGUIPlotting(PlottersTestCase):
 
     def __init__(self, filename):
         self.filename = filename
         unittest.TestCase.__init__(self)
 
     def setUp(self):
+        super().setUp()
         self.output_dir = tempfile.mkdtemp()
         self.settings = settings.copy()
 
@@ -299,19 +278,18 @@ class TestGUIPlotting(unittest.TestCase):
         return "%s - GUI (%s)" % (os.path.basename(self.filename),
                                   strclass(self.__class__))
 
-    @prefork
     def runTest(self):
-        pool = Pool(initializer=initfunc)
         results = resultset.load(self.filename)
         self.settings.update(results.meta())
         self.settings.load_test(informational=True)
-        plotters.init_matplotlib("-", False, True)
-        for p in self.settings.PLOTS.keys():
-            plot = pool.apply(plot_one, (self.settings, p, results))
-            res, plen = plot.verify()
-            if not res and p not in PLOTS_MAY_FAIL:
-                raise self.failureException(
-                    "Verification of plot '%s' failed: %s" % (p, plen))
+
+        with Pool() as pool:
+            for p in self.settings.PLOTS.keys():
+                plot = pool.apply(plot_one, (self.settings, p, results))
+                res, plen = plot.verify()
+                if not res and p not in PLOTS_MAY_FAIL:
+                    raise self.failureException(
+                        "Verification of plot '%s' failed: %s" % (p, plen))
 
 
 dirname = os.path.join(os.path.dirname(__file__), "test_data")

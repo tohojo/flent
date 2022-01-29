@@ -31,20 +31,11 @@ from . import test_tests
 from . import test_gui
 
 
-class TestResult(unittest.TextTestResult):
-    def _exc_info_to_string(self, err, test):
-        exctype, value, tb = err
-
-        if hasattr(value, 'orig_tb'):
-            return str(value) + ":\n\n" + value.orig_tb
-
-        return super(TestResult, self)._exc_info_to_string(err, test)
-
 class TestRunner(unittest.TextTestRunner):
     def __init__(self, *args, **kwargs):
-        kwargs['resultclass'] = TestResult
         kwargs['verbosity'] = 2
         super(TestRunner, self).__init__(*args, **kwargs)
+
 
 test_suite = unittest.TestSuite([test_util.test_suite,
                                  test_formatters.test_suite,

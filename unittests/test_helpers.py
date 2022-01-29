@@ -19,10 +19,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import io
 import os
 import sys
 import warnings
 import traceback
+import unittest
 
 from flent import resultset
 
@@ -80,6 +82,60 @@ def prefork(method):
                 os.close(pipe_w)
                 os._exit(0)
     return new_method
+
+class StreamProxy(io.StringIO):
+    def writeln(self, line):
+        super().write(line + "\n")
+
+
+class ProxyTestResult(unittest.TextTestResult):
+    def __init__(self):
+        super().__init__(stream=StreamProxy(), descriptions=True, verbosity=2)
+        self.stream_output = ""
+
+    def _exc_info_to_string(self, err, test):
+        exctype, value, tb = err
+
+        if hasattr(value, 'orig_tb'):
+            return str(value) + ":\n\n" + value.orig_tb
+
+        return super()._exc_info_to_string(err, test)
+
+    def __getstate__(self):
+        state = {}
+
+        for k, v in self.__dict__.items():
+            if not k.startswith("_") and k != 'stream':
+                state[k] = v
+
+        state['stream_output'] = self.stream.getvalue()
+
+        return state
+
+    def copy_to_parent(self, parent):
+        if parent is None:
+            return
+        parent.errors.extend(self.errors)
+        parent.failures.extend(self.failures)
+        parent.skipped.extend(self.skipped)
+        parent.expectedFailures.extend(self.expectedFailures)
+        parent.unexpectedSuccesses.extend(self.unexpectedSuccesses)
+        parent.testsRun += self.testsRun
+        parent.stream.write(self.stream_output)
+        parent.stream.flush()
+
+
+class ForkingTestCase(unittest.TestCase):
+
+    @prefork
+    def _run(self):
+        res = ProxyTestResult()
+        super().run(res)
+        return res
+
+    def run(self, result):
+        res = self._run()
+        res.copy_to_parent(result)
 
 
 def get_test_data_files():

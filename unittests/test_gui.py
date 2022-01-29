@@ -24,11 +24,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import unittest
 import os
 
+from .test_helpers import ForkingTestCase
+
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
 
-class TestGui(unittest.TestCase):
+class TestGui(ForkingTestCase):
 
     def setUp(self):
         self.settings = settings.copy()
