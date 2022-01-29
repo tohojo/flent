@@ -52,7 +52,10 @@ def prefork(method):
         pid = os.fork()
         if pid:
             os.close(pipe_w)
-            os.waitpid(pid, 0)
+            status = os.waitpid(pid, 0)
+            if not os.WIFEXITED(status[1]):
+                raise RuntimeError("Child exited non-zero")
+
             res = pickle.loads(os.read(pipe_r, 65535))
             if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1],
                                                                    Exception):
@@ -74,6 +77,7 @@ def prefork(method):
                 else:
                     os.write(pipe_w, pickle.dumps(e))
             finally:
+                os.close(pipe_w)
                 os._exit(0)
     return new_method
 
