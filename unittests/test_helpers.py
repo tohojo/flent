@@ -50,6 +50,9 @@ def setup_warnings():
 
 def prefork(method):
     def new_method(*args, **kwargs):
+        sys.stderr.flush()
+        sys.stdout.flush()
+
         pipe_r, pipe_w = os.pipe()
         pid = os.fork()
         if pid:
