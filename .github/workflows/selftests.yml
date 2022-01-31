@@ -46,7 +46,6 @@ jobs:
     env:
       MATPLOTLIB_VERSION: ${{ matrix.matplotlib }}
       PYQT: ${{ matrix.pyqt }}
-      DISPLAY: :0
       XDG_RUNTIME_DIR: "/tmp/runtime-runner"
 
     steps:
@@ -56,14 +55,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-      - name: Setup xvfb (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
-          # start xvfb on (default) display :0
-          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
       - name: Install dependencies
         run: |
+          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
           pip install QtPy ${PYQT} "matplotlib==${MATPLOTLIB_VERSION}.*"
       - name: Run tests
-        run: make test_long
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: make test_long
