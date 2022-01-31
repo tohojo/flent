@@ -32,14 +32,6 @@ from unittest.util import strclass
 
 from .test_helpers import ForkingTestCase, get_test_data_files
 
-try:
-    from unittest import mock
-except ImportError:
-    try:
-        import mock
-    except ImportError:
-        raise RuntimeError("Needs 'mock' library for these tests.")
-
 from flent import resultset, formatters
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))

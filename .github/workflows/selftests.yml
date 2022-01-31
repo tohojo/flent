@@ -70,6 +70,6 @@ jobs:
           sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
       - name: Install dependencies
         run: |
-          pip install mock QtPy ${PYQT} "matplotlib==${MATPLOTLIB_VERSION}.*"
+          pip install QtPy ${PYQT} "matplotlib==${MATPLOTLIB_VERSION}.*"
       - name: Run tests
         run: make test_long
