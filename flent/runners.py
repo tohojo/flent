@@ -595,8 +595,11 @@ class ProcessRunner(RunnerBase, threading.Thread):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
 
-        self.result = self.parse(self.out, self.err)
-        if not self.result and not self.silent:
+        result, raw_values, metadata = self.parse(self.out, self.err)
+        self.result = result
+        self.raw_values = raw_values
+        self.metadata.update(metadata)
+        if not result and not self.silent:
             logger.warning("Command produced no valid data.",
                            extra={'runner': self})
 
@@ -754,6 +757,8 @@ class DitgRunner(ProcessRunner):
         data = ""
         utc_offset = 0
         results = {}
+        raw_values = []
+        metadata = {}
         try:
             # The control server has a grace period after the test ends, so we
             # don't know exactly when the test results are going to be ready. We
@@ -786,7 +791,7 @@ class DitgRunner(ProcessRunner):
             return results
 
         if 'raw' in res:
-            self.parse_raw(res['raw'])
+            raw_values = self.parse_raw(res['raw'])
 
         for line in data.splitlines():
             if not line.strip():
@@ -798,7 +803,7 @@ class DitgRunner(ProcessRunner):
                     results[n] = []
                 results[n].append([timestamp, self.transformers[n](parts[i])])
 
-        return results
+        return results, raw_values, metadata
 
     def parse_raw(self, data):
         raw_values = []
@@ -825,7 +830,7 @@ class DitgRunner(ProcessRunner):
                 'size': int(vals['Size'])
             })
 
-        self.raw_values = raw_values
+        return raw_values
 
 
 class NetperfDemoRunner(ProcessRunner):
@@ -854,6 +859,7 @@ class NetperfDemoRunner(ProcessRunner):
 
         result = []
         raw_values = []
+        metadata = {}
         lines = output.strip().splitlines()
         avg_dur = None
         alpha = 0.5
@@ -915,60 +921,58 @@ class NetperfDemoRunner(ProcessRunner):
 
             try:
                 # The THROUGHPUT key contains the mean value even for UDP_RR tests
-                self.metadata['MEAN_VALUE'] = float(data_dict['THROUGHPUT'])
+                metadata['MEAN_VALUE'] = float(data_dict['THROUGHPUT'])
                 if self.test == 'UDP_RR':
-                    self.metadata['MEAN_VALUE'] = transformers.rr_to_ms(self.metadata['MEAN_VALUE'])
+                    metadata['MEAN_VALUE'] = transformers.rr_to_ms(metadata['MEAN_VALUE'])
 
-                self.metadata['ELAPSED_TIME'] = float(data_dict.get('ELAPSED_TIME', 0))
-                self.metadata['UPSTREAM_TOS'] = int(data_dict.get('LOCAL_SOCKET_TOS', 0),
+                metadata['ELAPSED_TIME'] = float(data_dict.get('ELAPSED_TIME', 0))
+                metadata['UPSTREAM_TOS'] = int(data_dict.get('LOCAL_SOCKET_TOS', 0),
                                                     base=0)
-                self.metadata['DOWNSTREAM_TOS'] = int(data_dict.get(
+                metadata['DOWNSTREAM_TOS'] = int(data_dict.get(
                     'REMOTE_SOCKET_TOS', 0), base=0)
 
                 if data_dict['PROTOCOL'] == 'TCP':
-                    self.metadata['TCP_MSS'] = int(data_dict.get('TRANSPORT_MSS',
+                    metadata['TCP_MSS'] = int(data_dict.get('TRANSPORT_MSS',
                                                                  0))
                     if data_dict['DIRECTION'] == 'Send':
-                        self.metadata['CONG_CONTROL'] = data_dict.get(
+                        metadata['CONG_CONTROL'] = data_dict.get(
                             'LOCAL_CONG_CONTROL')
-                        self.metadata['TCP_RETRANSMIT'] = data_dict.get(
+                        metadata['TCP_RETRANSMIT'] = data_dict.get(
                             'LOCAL_TRANSPORT_RETRANS')
-                        self.metadata['SEND_SIZE'] = int(data_dict.get(
+                        metadata['SEND_SIZE'] = int(data_dict.get(
                             'LOCAL_SEND_SIZE', -1))
-                        self.metadata['RECV_SIZE'] = int(data_dict.get(
+                        metadata['RECV_SIZE'] = int(data_dict.get(
                             'REMOTE_RECV_SIZE', -1))
-                        self.metadata['BYTES_SENT'] = int(data_dict.get(
+                        metadata['BYTES_SENT'] = int(data_dict.get(
                             'LOCAL_BYTES_SENT', -1))
-                        self.metadata['BYTES_RECVD'] = int(data_dict.get(
+                        metadata['BYTES_RECVD'] = int(data_dict.get(
                             'REMOTE_BYTES_RECVD', -1))
-                        self.metadata['DATA_TOS'] = self.metadata['UPSTREAM_TOS']
+                        metadata['DATA_TOS'] = metadata['UPSTREAM_TOS']
                     else:
-                        self.metadata['CONG_CONTROL'] = data_dict.get(
+                        metadata['CONG_CONTROL'] = data_dict.get(
                             'REMOTE_CONG_CONTROL')
-                        self.metadata['TCP_RETRANSMIT'] = int(data_dict.get(
+                        metadata['TCP_RETRANSMIT'] = int(data_dict.get(
                             'REMOTE_TRANSPORT_RETRANS', 0))
-                        self.metadata['SEND_SIZE'] = int(data_dict.get(
+                        metadata['SEND_SIZE'] = int(data_dict.get(
                             'REMOTE_SEND_SIZE', -1))
-                        self.metadata['RECV_SIZE'] = int(data_dict.get(
+                        metadata['RECV_SIZE'] = int(data_dict.get(
                             'LOCAL_RECV_SIZE', -1))
-                        self.metadata['BYTES_SENT'] = int(data_dict.get(
+                        metadata['BYTES_SENT'] = int(data_dict.get(
                             'REMOTE_BYTES_SENT', -1))
-                        self.metadata['BYTES_RECVD'] = int(data_dict.get(
+                        metadata['BYTES_RECVD'] = int(data_dict.get(
                             'LOCAL_BYTES_RECVD', -1))
-                        self.metadata['DATA_TOS'] = self.metadata['DOWNSTREAM_TOS']
+                        metadata['DATA_TOS'] = metadata['DOWNSTREAM_TOS']
 
                     for k in data_dict.keys():
                         if k.startswith("tcpi"):
-                            self.metadata[k.upper()] = int(data_dict[k])
+                            metadata[k.upper()] = int(data_dict[k])
             except KeyError as e:
                 logger.warning("Missing required netperf metadata: %s", e.args[0])
 
         except KeyError:
             pass  # No valid data
 
-        self.raw_values = raw_values
-
-        return result
+        return result, raw_values, metadata
 
     def check(self):
         args = self.runner_args.copy()
@@ -1128,16 +1132,7 @@ class RegexpRunner(ProcessRunner):
     metadata_regexes = []
     transformers = {}
 
-    # Parse is split into a stateless class method in _parse to be able to call
-    # it from find_binary.
-    def parse(self, output, error=""):
-        result, raw_values, metadata = self._parse(output, error)
-        self.raw_values = raw_values
-        self.metadata.update(metadata)
-        return result
-
-    @classmethod
-    def _parse(cls, output, error=None):
+    def parse(self, output, error=None):
         result = []
         raw_values = []
         metadata = {}
@@ -1145,23 +1140,23 @@ class RegexpRunner(ProcessRunner):
         if error:
             lines.extend(error.split("\n"))
         for line in lines:
-            for regexp in cls.regexes:
+            for regexp in self.regexes:
                 match = regexp.match(line)
                 if match:
                     rw = match.groupdict()
                     for k, v in rw.items():
                         try:
                             rw[k] = float(v)
-                            if k in cls.transformers:
-                                rw[k] = cls.transformers[k](rw[k])
+                            if k in self.transformers:
+                                rw[k] = self.transformers[k](rw[k])
                         except ValueError:
-                            if k in cls.transformers:
-                                rw[k] = cls.transformers[k](rw[k])
+                            if k in self.transformers:
+                                rw[k] = self.transformers[k](rw[k])
                     raw_values.append(rw)
                     if 'val' in rw:
                         result.append([rw['t'], rw['val']])
                     break  # only match one regexp per line
-            for regexp in cls.metadata_regexes:
+            for regexp in self.metadata_regexes:
                 match = regexp.match(line)
                 if match:
                     for k, v in match.groupdict().items():
@@ -1169,9 +1164,9 @@ class RegexpRunner(ProcessRunner):
                             continue
                         try:
                             metadata[k] = float(v)
-                            if k in cls.transformed_metadata and \
-                               'val' in cls.transformers:
-                                metadata[k] = cls.transformers['val'](
+                            if k in self.transformed_metadata and \
+                               'val' in self.transformers:
+                                metadata[k] = self.transformers['val'](
                                     metadata[k])
                         except ValueError:
                             metadata[k] = v
@@ -1301,7 +1296,7 @@ class PingRunner(RegexpRunner):
                                "permissions (no SUID?). Not using.")
             else:
                 out, err = self.run_simple([fping, '-D', '-c', '1', 'localhost'])
-                res = self._parse(out)
+                res = self.parse(out)
                 try:
                     tdiff = abs(res[1][0]['t'] - time.time())
                 except (TypeError, IndexError):
@@ -1332,7 +1327,7 @@ class PingRunner(RegexpRunner):
             # message.
             out, err = self.run_simple([ping, '-D', '-n', '-c', '1',
                                         'localhost'] + pingargs)
-            if not self._parse(out)[0]:
+            if not self.parse(out)[0]:
                 raise RunnerCheckError(
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
@@ -1434,14 +1429,14 @@ class DashJsRunner(RegexpRunner):
         self.host = normalise_host(host)
 
     def parse(self, output, error=""):
-        result = super(DashJsRunner, self).parse(output, error)
+        result, raw_values, metadata = super().parse(output, error)
         last_bitrate = None
         new_rv = []
 
         # Since the bitrate output happens when the bitrate changes, we insert a
         # value just before the change so the output becomes abrupt staircase
         # changes instead of gradual transitions when plotting
-        for rw in self.raw_values:
+        for rw in raw_values:
             if 'bitrate' in rw:
                 if last_bitrate is not None:
                     new_rv.append({'t': rw['t'], 'bitrate': last_bitrate})
@@ -1453,8 +1448,7 @@ class DashJsRunner(RegexpRunner):
             new_rv.append({'t': new_rv[-1]['t'],
                            'bitrate': last_bitrate})
 
-        self.raw_values = new_rv
-        return result
+        return result, new_rv, metadata
 
     def check(self):
         self.command = self.find_binary(self.length, self.url, self.host)
@@ -1500,6 +1494,7 @@ class IperfCsvRunner(ProcessRunner):
     def parse(self, output, error=""):
         result = []
         raw_values = []
+        metadata = {}
         lines = output.strip().split("\n")
         dest = None
         for line in lines[:-1]:  # The last line is an average over the whole test
@@ -1527,19 +1522,18 @@ class IperfCsvRunner(ProcessRunner):
             except ValueError:
                 pass
 
-        self.raw_values = raw_values
         try:
             parts = lines[-1].split(",")
             # src and dest should be reversed if this was a reply from the
             # server. Track this for UDP where it may be missing.
             if parts[1] == dest or not self.udp:
-                self.metadata['MEAN_VALUE'] = transformers.bits_to_mbits(
+                metadata['MEAN_VALUE'] = transformers.bits_to_mbits(
                     float(parts[8]))
             else:
-                self.metadata['MEAN_VALUE'] = None
+                metadata['MEAN_VALUE'] = None
         except (ValueError, IndexError):
             pass
-        return result
+        return result, raw_values, metadata
 
     def check(self):
         local_bind = self.local_bind
@@ -1623,35 +1617,36 @@ class IrttRunner(ProcessRunner):
     def parse(self, output, error=""):
         result = {'rtt': [], 'delay': [], 'jitter': [], 'loss': []}
         raw_values = []
+        metadata = {}
         try:
             data = json.loads(output)
         except ValueError as e:
             logger.warning("Unable to parse irtt JSON output: %s", e)
             return
 
-        self.metadata['RTT_MEAN'] = self._to_ms(data['stats']['rtt']['mean'])
-        self.metadata['RTT_MEDIAN'] = self._to_ms(data['stats']['rtt']['median'])
-        self.metadata['RTT_MAX'] = self._to_ms(data['stats']['rtt']['max'])
-        self.metadata['RTT_MIN'] = self._to_ms(data['stats']['rtt']['min'])
+        metadata['RTT_MEAN'] = self._to_ms(data['stats']['rtt']['mean'])
+        metadata['RTT_MEDIAN'] = self._to_ms(data['stats']['rtt']['median'])
+        metadata['RTT_MAX'] = self._to_ms(data['stats']['rtt']['max'])
+        metadata['RTT_MIN'] = self._to_ms(data['stats']['rtt']['min'])
 
-        self.metadata['OWD_UP_MEAN'] = self._to_ms(
+        metadata['OWD_UP_MEAN'] = self._to_ms(
             data['stats']['send_delay']['mean'])
-        self.metadata['OWD_DOWN_MEAN'] = self._to_ms(
+        metadata['OWD_DOWN_MEAN'] = self._to_ms(
             data['stats']['receive_delay']['mean'])
-        self.metadata['IPDV_MEAN'] = self._to_ms(
+        metadata['IPDV_MEAN'] = self._to_ms(
             data['stats']['ipdv_round_trip']['mean'])
-        self.metadata['IPDV_UP_MEAN'] = self._to_ms(
+        metadata['IPDV_UP_MEAN'] = self._to_ms(
             data['stats']['ipdv_send']['mean'])
-        self.metadata['IPDV_DOWN_MEAN'] = self._to_ms(
+        metadata['IPDV_DOWN_MEAN'] = self._to_ms(
             data['stats']['ipdv_receive']['mean'])
 
-        self.metadata['MEAN_VALUE'] = self.metadata['RTT_MEAN']
-        self.metadata['PACKETS_SENT'] = data['stats']['packets_sent']
-        self.metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
-        self.metadata['PACKET_LOSS_RATE'] = (data['stats']['packet_loss_percent']
+        metadata['MEAN_VALUE'] = metadata['RTT_MEAN']
+        metadata['PACKETS_SENT'] = data['stats']['packets_sent']
+        metadata['PACKETS_RECEIVED'] = data['stats']['packets_received']
+        metadata['PACKET_LOSS_RATE'] = (data['stats']['packet_loss_percent']
                                              / 100.0)
-        self.metadata['SEND_RATE'] = data['stats']['send_rate']['bps'] / 10**6
-        self.metadata['RECEIVE_RATE'] = (data['stats']['receive_rate']['bps']
+        metadata['SEND_RATE'] = data['stats']['send_rate']['bps'] / 10**6
+        metadata['RECEIVE_RATE'] = (data['stats']['receive_rate']['bps']
                                          / 10**6)
 
         next_sample = 0
@@ -1698,11 +1693,9 @@ class IrttRunner(ProcessRunner):
                                e, extra={'output': str(pkt)})
                 continue
 
-        self.raw_values = raw_values
-
-        if self.multi_results:
-            return result
-        return result['rtt']
+        if not self.multi_results:
+            result = result['rtt']
+        return result, raw_values, metadata
 
     def check(self):
 
@@ -1984,6 +1977,8 @@ class SsRunner(ProcessRunner):
 
         par_pid = str(self._parent.pid)
         results = {}
+        raw_values = []
+        metadata = {}
         for res_dict in self.parsed_parts:
             if res_dict['pid'] != par_pid or res_dict['dst_p'] in self.exclude_ports:
                 continue
@@ -1998,9 +1993,9 @@ class SsRunner(ProcessRunner):
             rw = res_dict.copy()
             del rw['pid']
             del rw['dst_p']
-            self.raw_values.append(rw)
+            raw_values.append(rw)
 
-        return results
+        return results, raw_values, metadata
 
     def check(self):
         dup_key = (self.host, self.interval, self.length, self.target,
@@ -2143,6 +2138,8 @@ class TcRunner(ProcessRunner):
 
     def parse(self, output, error=""):
         results = {}
+        raw_values = []
+        metadata = {}
         parts = output.split("\n---\n")
         last_vals = {}
         for part in parts:
@@ -2215,8 +2212,8 @@ class TcRunner(ProcessRunner):
                 else:
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
-            self._raw_values.append(matches)
-        return results
+            raw_values.append(matches)
+        return results, raw_values, metadata
 
     def check(self):
         self.command = self.find_binary(self.interface, self.interval,
@@ -2265,6 +2262,8 @@ class CpuStatsRunner(ProcessRunner):
 
     def parse(self, output, error=""):
         results = {}
+        raw_values = []
+        metadata = {}
         parts = output.split("\n---\n")
         for part in parts:
             # Split out individual qdisc entries (in case there are more than
@@ -2294,8 +2293,8 @@ class CpuStatsRunner(ProcessRunner):
                 else:
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
-            self._raw_values.append(matches)
-        return results
+            raw_values.append(matches)
+        return results, raw_values, metadata
 
     def check(self):
         self.command = self.find_binary(self.interval,
@@ -2350,6 +2349,8 @@ class WifiStatsRunner(ProcessRunner):
 
     def parse(self, output, error=""):
         results = {}
+        raw_values = []
+        metadata = {}
         parts = output.split("\n---\n")
         last_airtime = {}
         for part in parts:
@@ -2414,11 +2415,11 @@ class WifiStatsRunner(ProcessRunner):
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
             matches['stations'] = stations
-            self._raw_values.append(matches)
+            raw_values.append(matches)
 
         if self.all_stations:
             self.test_parameters['wifi_stats_stations'] = ",".join(self.stations)
-        return results
+        return results, raw_values, metadata
 
     def check(self):
         self.command = self.find_binary(self.interface, self.interval,
@@ -2463,6 +2464,8 @@ class NetstatRunner(ProcessRunner):
 
     def parse(self, output, error=""):
         results = {}
+        raw_values = []
+        metadata = {}
         parts = output.split("\n---\n")
         for part in parts:
             matches = {}
@@ -2492,8 +2495,8 @@ class NetstatRunner(ProcessRunner):
                 else:
                     results[k].append([timestamp, v])
             matches['t'] = timestamp
-            self._raw_values.append(matches)
-        return results
+            raw_values.append(matches)
+        return results, raw_values, metadata
 
     def check(self):
         self.command = self.find_binary(self.interval,
