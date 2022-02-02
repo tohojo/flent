@@ -2443,8 +2443,12 @@ class WifiStatsRunner(ProcessRunner):
             raw_values.append(matches)
 
         if self.all_stations:
-            self.test_parameters['wifi_stats_stations'] = ",".join(self.stations)
+            metadata['test_parameters'] = {'wifi_stats_stations': ",".join(self.stations)}
         return results, raw_values, metadata
+
+    def post_parse(self):
+        self.test_parameters = self.metadata.pop('test_parameters', {})
+        super().post_parse()
 
     def check(self):
         self.command = self.find_binary(self.interface, self.interval,
