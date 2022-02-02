@@ -1863,6 +1863,7 @@ class SsRunner(ProcessRunner):
         self.length = length
         self.target = target
         self._dup_key = None
+        self.parsed_parts = None
         super(SsRunner, self).__init__(**kwargs)
 
     def fork(self):
@@ -1883,6 +1884,8 @@ class SsRunner(ProcessRunner):
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
+        self.parsed_parts = self._dup_runner.parsed_parts
+
         self.out = self._dup_runner.out
         self.err = self._dup_runner.err
 
@@ -1892,7 +1895,7 @@ class SsRunner(ProcessRunner):
                            extra={'runner': self})
 
     def filter_np_parent(self, part):
-        sub_part = []
+        parsed_parts = []
         sub_parts = self.ss_states_re.split(part)
         sub_parts = [sp for sp in sub_parts if sp.strip()
                      and not self.ss_header_re.search(sp)]
@@ -1916,13 +1919,9 @@ class SsRunner(ProcessRunner):
 
             dst_p = int(f_ports.group('dst_p').split(":")[-1])
 
-            if self.par_pid == pid_str and dst_p not in self.exclude_ports:
-                sub_part.append(sp)
+            parsed_parts.append({'dst_p': dst_p, 'sp': sp, 'pid': pid_str})
 
-        if 1 != len(sub_part):
-            raise ParseError()
-
-        return sub_part[0]
+        return parsed_parts
 
     def parse_val(self, val):
         if val.endswith("Mbps"):
@@ -1933,16 +1932,8 @@ class SsRunner(ProcessRunner):
             return float(val[:-3]) / 10**6
         return float(val)
 
-    def parse_part(self, part):
-        sub_part = self.filter_np_parent(part)
-
-        timestamp = self.time_re.search(part)
-        if timestamp is None:
-            raise ParseError()
-        timestamp = float(timestamp.group('timestamp'))
-
-        vals = {'t': timestamp}
-
+    def parse_subpart(self, sub_part):
+        vals = {}
         for r in self.data_res:
             m = r.search(sub_part)
             if m is not None:
@@ -1952,32 +1943,62 @@ class SsRunner(ProcessRunner):
                         vals['tcp_%s' % k] = self.parse_val(v)
                     except ValueError:
                         pass
+        return vals
 
-        if len(vals.keys()) == 1:
+    def parse_part(self, part):
+        sub_parts = self.filter_np_parent(part)
+
+        timestamp = self.time_re.search(part)
+        if timestamp is None:
             raise ParseError()
+        timestamp = float(timestamp.group('timestamp'))
 
-        self._raw_values.append(vals)
+        vals = []
+        for sp in sub_parts:
+            v = self.parse_subpart(sp['sp'])
+            if not v:
+                continue
+            v.update({'t': timestamp,
+                      'dst_p': sp['dst_p'],
+                      'pid': sp['pid']})
+            vals.append(v)
 
         return vals
 
-    def parse(self, output, error=""):
-        self.par_pid = str(self._parent.pid)
-        results = {}
+    def parse_parts(self, output):
         parts = output.split("\n---\n")
+        parsed_parts = []
         for part in parts:
             try:
-                res_dict = self.parse_part(part)
-                t = res_dict['t']
-                for k, v in res_dict.items():
-                    if k == 't':
-                        continue
-                    if k not in results:
-                        results[k] = [[t, v]]
-                    else:
-                        results[k].append([t, v])
-
+                parsed_parts.extend(self.parse_part(part))
             except ParseError:
+                pass
+        self.parsed_parts = parsed_parts
+
+    def parse(self, output, error=""):
+        if self.parsed_parts is None:
+            logger.debug("SsRunner: Parsing output")
+            self.parse_parts(output)
+        else:
+            logger.debug("SsRunner: Output already parsed")
+
+        par_pid = str(self._parent.pid)
+        results = {}
+        for res_dict in self.parsed_parts:
+            if res_dict['pid'] != par_pid or res_dict['dst_p'] in self.exclude_ports:
                 continue
+            t = res_dict['t']
+            for k, v in res_dict.items():
+                if k in ('t', 'pid', 'dst_p'):
+                    continue
+                if k not in results:
+                    results[k] = [[t, v]]
+                else:
+                    results[k].append([t, v])
+            rw = res_dict.copy()
+            del rw['pid']
+            del rw['dst_p']
+            self.raw_values.append(rw)
 
         return results
 
