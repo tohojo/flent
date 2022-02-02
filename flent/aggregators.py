@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import math
 import pprint
 import signal
@@ -28,10 +29,11 @@ import signal
 from collections import OrderedDict
 from datetime import datetime
 from threading import Event
+from multiprocessing import Pool, Manager
 
 from flent import runners
 from flent.util import classname
-from flent.loggers import get_logger
+from flent.loggers import get_logger, set_queue_handler
 
 logger = get_logger(__name__)
 
@@ -57,7 +59,6 @@ class GracefulShutdown(Exception):
 def handle_usr1(signal, frame):
     raise GracefulShutdown()
 
-
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
 
@@ -70,6 +71,11 @@ class Aggregator(object):
         self.killed = False
 
         self.postprocessors = []
+
+    def read_log_queue(self, queue):
+        while not queue.empty():
+            msg = queue.get_nowait()
+            logging.getLogger().handle(msg)
 
     def add_instance(self, name, config):
         instance = dict(config)
@@ -147,6 +153,29 @@ class Aggregator(object):
                             logger.info(
                                 "Already initiated graceful shutdown. "
                                 "Patience, please...")
+            if shutting_down:
+                return
+
+            pre_parse = datetime.now()
+
+            with Manager() as mngr:
+                queue = mngr.Queue()
+                with Pool(initializer=set_queue_handler, initargs=(queue, )) as parser_pool:
+                    for t in self.threads.values():
+                        t.do_parse(parser_pool)
+
+                    parser_pool.close()
+                    parser_pool.join()
+                self.read_log_queue(queue)
+
+            for t in self.threads.values():
+                # used by SsRunner to copy over results from duplicate runners
+                # after parsing has completed
+                t.post_parse()
+
+            logger.debug("Parsing completed in %s", datetime.now() - pre_parse)
+
+            for n, t in self.threads.items():
 
                 metadata['series'][n] = t.metadata
                 if t.test_parameters:

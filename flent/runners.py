@@ -182,6 +182,13 @@ class RunnerBase(object):
     def check(self):
         pass
 
+    def do_parse(self, pool):
+        pass
+
+    def post_parse(self):
+        for c in self._child_runners:
+            c.post_parse()
+
     # Emulate threading interface to fit into aggregator usage.
     def start(self):
         if self._pickled:
@@ -595,23 +602,31 @@ class ProcessRunner(RunnerBase, threading.Thread):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
 
-        result, raw_values, metadata = self.parse(self.out, self.err)
+        self.stop_watchdog()
+        logger.debug("%s %s finished", self.__class__.__name__,
+                     self.name, extra={'runner': self})
+
+    def parse(self, output, error=""):
+        raise NotImplementedError()
+
+    def parse_error(self, error):
+        logger.exception("Parse error in %s: %s", self.__class__.__name__, error,
+                         exc_info=error.__cause__)
+
+    def do_parse(self, pool):
+        pool.apply_async(self.parse, (self.out, self.err),
+                         callback=self.recv_result, error_callback=self.parse_error)
+        for c in self._child_runners:
+            c.do_parse(pool)
+
+    def recv_result(self, res):
+        result, raw_values, metadata = res
         self.result = result
         self.raw_values = raw_values
         self.metadata.update(metadata)
         if not result and not self.silent:
             logger.warning("Command produced no valid data.",
                            extra={'runner': self})
-
-        self.stop_watchdog()
-        logger.debug("%s %s finished", self.__class__.__name__,
-                     self.name, extra={'runner': self})
-
-    def parse(self, output, error=""):
-        """Default parser returns the last (whitespace-separated) word of
-        output as a float."""
-
-        return float(output.split()[-1].strip())
 
     def run_simple(self, args, kill=None, errmsg=None):
         if self.remote_host:
@@ -1847,6 +1862,8 @@ class SsRunner(ProcessRunner):
                  "LISTEN", "CLOSING"]
     ss_states_re = re.compile(r"|".join(ss_states))
 
+    silent = True
+
     def __init__(self, exclude_ports, ip_version, host, interval,
                  length, target, **kwargs):
         self.exclude_ports = exclude_ports
@@ -1855,8 +1872,9 @@ class SsRunner(ProcessRunner):
         self.interval = interval
         self.length = length
         self.target = target
+        self.is_dup = False
         self._dup_key = None
-        self.parsed_parts = None
+        self._parsed_parts = None
         super(SsRunner, self).__init__(**kwargs)
 
     def fork(self):
@@ -1877,15 +1895,8 @@ class SsRunner(ProcessRunner):
         logger.debug("%s %s finished", self.__class__.__name__,
                      self.name, extra={'runner': self})
 
-        self.parsed_parts = self._dup_runner.parsed_parts
-
         self.out = self._dup_runner.out
         self.err = self._dup_runner.err
-
-        self.result = self.parse(self.out)
-        if not self.result and not self.silent:
-            logger.warning("Command produced no valid data.",
-                           extra={'runner': self})
 
     def filter_np_parent(self, part):
         parsed_parts = []
@@ -1958,7 +1969,10 @@ class SsRunner(ProcessRunner):
 
         return vals
 
-    def parse_parts(self, output):
+    def parse(self, output, error=""):
+        if self.is_dup:
+            return [], [], {}
+
         parts = output.split("\n---\n")
         parsed_parts = []
         for part in parts:
@@ -1966,19 +1980,24 @@ class SsRunner(ProcessRunner):
                 parsed_parts.extend(self.parse_part(part))
             except ParseError:
                 pass
-        self.parsed_parts = parsed_parts
 
-    def parse(self, output, error=""):
-        if self.parsed_parts is None:
-            logger.debug("SsRunner: Parsing output")
-            self.parse_parts(output)
-        else:
-            logger.debug("SsRunner: Output already parsed")
+        # we return an empty result and store the parsed data in metadata, so we
+        # can retrieve it later
+        return [], [], {'parsed_parts': parsed_parts}
 
+    @property
+    def parsed_parts(self):
+        if self.is_dup:
+            return self._dup_runner.parsed_parts
+        if self._parsed_parts is None:
+            self._parsed_parts = self.metadata.pop('parsed_parts', [])
+        return self._parsed_parts
+
+    def post_parse(self):
         par_pid = str(self._parent.pid)
         results = {}
         raw_values = []
-        metadata = {}
+
         for res_dict in self.parsed_parts:
             if res_dict['pid'] != par_pid or res_dict['dst_p'] in self.exclude_ports:
                 continue
@@ -1995,7 +2014,12 @@ class SsRunner(ProcessRunner):
             del rw['dst_p']
             raw_values.append(rw)
 
-        return results, raw_values, metadata
+        if not results:
+            logger.warning("%s: Found no results for pid %s",
+                           self.__class__.__name__, par_pid,
+                           extra={'runner': self})
+        self.result = results
+        self.raw_values = raw_values
 
     def check(self):
         dup_key = (self.host, self.interval, self.length, self.target,
@@ -2004,6 +2028,7 @@ class SsRunner(ProcessRunner):
         if dup_key in self._duplicate_map:
             logger.debug("Found duplicate SsRunner (%s), reusing output", dup_key)
             self._dup_runner = self._duplicate_map[dup_key]
+            self.is_dup = True
             self.command = "%s (duplicate)" % self._dup_runner.command
         else:
             logger.debug("Starting new SsRunner (dup key %s)", dup_key)
