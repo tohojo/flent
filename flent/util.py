@@ -29,6 +29,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import socket
 import threading
 import time
@@ -321,12 +322,8 @@ class WhichCache:
             logger.debug("which: %s is a full path and executable", executable)
             return executable
 
-        for path in [i.strip('""') for i in os.environ["PATH"].split(os.pathsep)]:
-            filename = os.path.join(path, executable)
-            if not self.is_executable(filename):
-                logger.debug("which: %s is not an executable file", filename)
-                continue
-
+        filename = shutil.which(executable)
+        if filename is not None:
             logger.debug("which: Found %s executable at %s",
                          executable, filename)
             return filename
