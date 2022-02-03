@@ -353,52 +353,6 @@ class TimerRunner(RunnerBase, threading.Thread):
                          self.name, extra={'runner': self})
 
 
-class FileMonitorRunner(RunnerBase, threading.Thread):
-
-    def __init__(self, filename, length, interval, delay, **kwargs):
-        super(FileMonitorRunner, self).__init__(**kwargs)
-        self.filename = filename
-        self.length = length
-        self.interval = interval
-        self.delay = delay
-        self.metadata['FILENAME'] = self.filename
-        self.command = 'File monitor for %s' % self.filename
-
-    def _run(self):
-        if self.delay:
-            self.kill_event.wait(self.delay)
-
-        if not self.kill_event.is_set():
-            start_time = current_time = time.time()
-
-            result = []
-
-            # Add an extra interval to comparison to avoid getting one too few
-            # samples due to small time differences.
-            while current_time < start_time + self.length + self.interval \
-                  and not self.kill_event.is_set():
-                try:
-                    with open(self.filename, 'r') as fp:
-                        val = fp.read()
-                    self.out += val
-                    try:
-                        val = float(val)
-                        result.append((current_time, val))
-                    except ValueError:
-                        val = val.strip()
-                    self._raw_values.append({'t': current_time, 'val': val})
-                except IOError as e:
-                    self.err += "Error opening file {}: {}\n".format(
-                        self.filename, e)
-                finally:
-                    self.kill_event.wait(self.interval)
-                    current_time = time.time()
-            if result:
-                self.result = result
-            else:
-                self.returncode = 1
-
-
 class ProcessRunner(RunnerBase, threading.Thread):
     """Default process runner for any process."""
     silent = False
