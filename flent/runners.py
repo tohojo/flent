@@ -133,7 +133,7 @@ class RunnerBase(object):
                  finish_event=None, kill_event=None, parent=None,
                  watchdog_timer=None, **kwargs):
         super(RunnerBase, self).__init__()
-        self.name = name
+        self.runner_name = name
         self.settings = settings
         self.idx = idx
         self.test_parameters = {}
@@ -174,6 +174,14 @@ class RunnerBase(object):
         return state
 
     @property
+    def name(self):
+        return f"{self.__class__.__name__}({self.runner_name})"
+
+    def debug(self, msg, *args, **kwargs):
+        logger.debug("%s: " + msg,
+                     self.name, *args, **kwargs)
+
+    @property
     def cache(self):
         if self._cache is None:
             self._cache = util.get_cache(self.__class__.__name__)
@@ -203,8 +211,7 @@ class RunnerBase(object):
         if hasattr(s, 'start'):
             s.start()
 
-            logger.debug("Started %s idx %d ('%s')", self.__class__.__name__,
-                         self.idx, self.name)
+            self.debug("Started with idx %d", self.idx)
 
     def join(self, timeout=None):
         s = super(RunnerBase, self)
@@ -234,17 +241,15 @@ class RunnerBase(object):
         self._run()
         self.finish_event.set()
         self.stop_watchdog()
-        logger.debug("%s %s finished", self.__class__.__name__,
-                     self.name, extra={'runner': self})
+        self.debug("Finished", extra={'runner': self})
 
     def start_watchdog(self):
         if self._watchdog or not self.watchdog_timer:
             return
 
-        logger.debug("%s: Starting watchdog with timeout %d",
-                     self.name, self.watchdog_timer)
+        self.debug("Starting watchdog with timeout %d", self.watchdog_timer)
         self._watchdog = TimerRunner(self.watchdog_timer,
-                                     name="Watchdog [%s]" % self.name,
+                                     name="Watchdog [%s]" % self.runner_name,
                                      idx=self.idx,
                                      settings=self.settings,
                                      start_event=self.start_event,
@@ -259,8 +264,8 @@ class RunnerBase(object):
             self._watchdog.join()
 
     def add_child(self, cls, **kwargs):
-        logger.debug("%s: Adding child %s", self.name, cls.__name__)
-        c = cls(name="%s :: child %d" % (self.name, len(self._child_runners)),
+        self.debug("Adding child %s", cls.__name__)
+        c = cls(name="%s :: child %d" % (self.runner_name, len(self._child_runners)),
                 settings=self.settings,
                 idx=self.idx,
                 start_event=self.start_event,
@@ -349,8 +354,7 @@ class TimerRunner(RunnerBase, threading.Thread):
 
     def _run(self):
         if not self.kill_event.wait(self.timeout):
-            logger.debug("%s %s: timer expired", self.__class__.__name__,
-                         self.name, extra={'runner': self})
+            self.debug("Timer expired", extra={'runner': self})
 
 
 class ProcessRunner(RunnerBase, threading.Thread):
@@ -441,7 +445,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             prog = self.args[0]
             os.execvpe(prog, self.args, env)
         else:
-            logger.debug("Forked %s as pid %d", self.args[0], pid)
+            self.debug("Forked %s as pid %d", self.args[0], pid)
             self.pid = pid
 
     def kill(self, graceful=False):
@@ -457,7 +461,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             self.cleanup_tmpfiles()
         if self.pid is not None:
             sig = signal.SIGINT if graceful else signal.SIGTERM
-            logger.debug("Sending signal %d to pid %d.", sig, self.pid)
+            self.debug("Sending signal %d to pid %d.", sig, self.pid)
             try:
                 os.kill(self.pid, sig)
             except OSError:
@@ -484,7 +488,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             raise RuntimeError(
                 "Process management currently doesn't work on Windows, "
                 "so running tests is not possible.")
-        logger.debug("Forking to run command %s", self.command)
+        self.debug("Forking to run command %s", self.command)
         self.fork()
         super(ProcessRunner, self).start()
 
@@ -508,14 +512,12 @@ class ProcessRunner(RunnerBase, threading.Thread):
                 self.kill_event.wait(1)
                 if self.kill_event.is_set():
                     self.silent_exit = True
-                    logger.debug("%s %s killed by kill event",
-                                 self.__class__.__name__,
-                                 self.name, extra={'runner': self})
+                    self.debug("Killed by kill event", extra={'runner': self})
                     try:
-                        logger.debug("Sending SIGINT to pid %d", self.pid)
+                        self.debug("Sending SIGINT to pid %d", self.pid)
                         os.kill(self.pid, signal.SIGINT)
                         time.sleep(0.5)
-                        logger.debug("Sending SIGTERM to pid %d", self.pid)
+                        self.debug("Sending SIGTERM to pid %d", self.pid)
                         os.kill(self.pid, signal.SIGTERM)
                     except OSError:
                         pass
@@ -557,8 +559,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
                            extra={'runner': self})
 
         self.stop_watchdog()
-        logger.debug("%s %s finished", self.__class__.__name__,
-                     self.name, extra={'runner': self})
+        self.debug("Finished", extra={'runner': self})
 
     def parse(self, output, error=""):
         raise NotImplementedError()
@@ -1738,10 +1739,9 @@ class UdpRttRunner(DelegatingRunner):
     def check(self):
         try:
             self.add_child(IrttRunner, **self.runner_args)
-            logger.debug("UDP RTT test: Using irtt")
+            self.debug("Using irtt")
         except RunnerCheckError as e:
-            logger.debug("UDP RTT test: Cannot use irtt runner (%s). "
-                         "Using netperf UDP_RR", e)
+            self.debug("Cannot use irtt runner (%s). Using netperf UDP_RR", e)
             self.add_child(NetperfDemoRunner,
                            **dict(self.runner_args, test='UDP_RR'))
 
@@ -1760,10 +1760,9 @@ class VoipRunner(DelegatingRunner):
                                   # ref.: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=SIP_CALL_RTP_G711
                                   interval=0.02,
                                   data_size=172))
-            logger.debug("VoIP test: Using irtt")
+            self.debug("Using irtt")
         except RunnerCheckError as e:
-            logger.debug("VoIP test: Cannot use irtt runner (%s). "
-                         "Using D-ITG", e)
+            self.debug("Cannot use irtt runner (%s). Using D-ITG", e)
             self.add_child(DitgRunner,
                            **dict(self.runner_args, test_args='VoIP'))
 
@@ -1833,11 +1832,10 @@ class SsRunner(ProcessRunner):
 
     def fork(self):
         if self._dup_runner is None:
-            logger.debug("SsRunner for dup key %s: forking", self._dup_key)
+            self.debug("Active runner for dup key %s: forking", self._dup_key)
             super(SsRunner, self).fork()
         else:
-            logger.debug("Duplicate SsRunner for dup key %s. Not forking",
-                         self._dup_key)
+            self.debug("Duplicate for dup key %s. Not forking", self._dup_key)
 
     def run(self):
         if self._dup_runner is None:
@@ -1846,8 +1844,7 @@ class SsRunner(ProcessRunner):
             return
 
         self._dup_runner.join()
-        logger.debug("%s %s finished", self.__class__.__name__,
-                     self.name, extra={'runner': self})
+        self.debug("Finished", extra={'runner': self})
 
         self.out = self._dup_runner.out
         self.err = self._dup_runner.err
@@ -1980,12 +1977,12 @@ class SsRunner(ProcessRunner):
                    self.ip_version, tuple(self.exclude_ports))
 
         if dup_key in self._duplicate_map:
-            logger.debug("Found duplicate SsRunner (%s), reusing output", dup_key)
+            self.debug("Found duplicate runner (%s), reusing output", dup_key)
             self._dup_runner = self._duplicate_map[dup_key]
             self.is_dup = True
             self.command = "%s (duplicate)" % self._dup_runner.command
         else:
-            logger.debug("Starting new SsRunner (dup key %s)", dup_key)
+            self.debug("Starting new runner (dup key %s)", dup_key)
             self._dup_runner = None
             self._duplicate_map[dup_key] = self
             self.command = self.find_binary(self.ip_version, self.host,
@@ -2526,7 +2523,7 @@ class ComputingRunner(RunnerBase):
             return res
 
         new_res = []
-        keys = Glob.expand_list(self.keys, res.series_names, [self.name])
+        keys = Glob.expand_list(self.keys, res.series_names, [self.runner_name])
 
         for r in res.zipped(keys):
             values = [v for v in r[1:] if v is not None]
@@ -2536,7 +2533,7 @@ class ComputingRunner(RunnerBase):
                 new_res.append(self.compute(values))
 
         meta = res.meta('SERIES_META') if 'SERIES_META' in res.meta() else {}
-        meta[self.name] = self.metadata
+        meta[self.runner_name] = self.metadata
         for mk in self.supported_meta:
             vals = []
             for k in keys:
@@ -2544,9 +2541,9 @@ class ComputingRunner(RunnerBase):
                     vals.append(meta[k][mk])
             if vals:
                 try:
-                    meta[self.name][mk] = self.compute(vals)
+                    meta[self.runner_name][mk] = self.compute(vals)
                 except TypeError:
-                    meta[self.name][mk] = None
+                    meta[self.runner_name][mk] = None
 
         for mk in self.copied_meta:
             vals = []
@@ -2556,9 +2553,9 @@ class ComputingRunner(RunnerBase):
             if vals:
                 # If all the source values of the copied metadata are the same,
                 # just use that value, otherwise include all of them.
-                meta[self.name][mk] = vals if len(set(vals)) > 1 else vals[0]
+                meta[self.runner_name][mk] = vals if len(set(vals)) > 1 else vals[0]
 
-        res.add_result(self.name, new_res)
+        res.add_result(self.runner_name, new_res)
         return res
 
     def compute(self, values):
@@ -2608,12 +2605,12 @@ class DiffMinRunner(ComputingRunner):
 
         data = [i for i in res[key] if i is not None]
         if not data:
-            res.add_result(self.name, [None] * len(res[key]))
+            res.add_result(self.runner_name, [None] * len(res[key]))
         else:
             min_val = min(data)
             res.add_result(
-                self.name, [i - min_val if i is not None else None
-                            for i in res[key]])
+                self.runner_name, [i - min_val if i is not None else None
+                                   for i in res[key]])
         return res
 
 
