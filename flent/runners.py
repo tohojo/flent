@@ -340,6 +340,10 @@ class DelegatingRunner(RunnerBase):
 
     result = property(get_result, set_result)
 
+    def fork(self):
+        for c in self._child_runners:
+            c.fork()
+
     def _run(self):
         for c in self._child_runners:
             c.join()
@@ -406,6 +410,14 @@ class ProcessRunner(RunnerBase, threading.Thread):
             self.start_event.set()
 
     def fork(self):
+        if mswindows:
+            raise RuntimeError(
+                "Process management currently doesn't work on Windows, "
+                "so running tests is not possible.")
+
+        for c in self._child_runners:
+            c.fork()
+
         # Use named temporary files to avoid errors on double-delete when
         # running on Windows/cygwin.
         try:
@@ -421,6 +433,7 @@ class ProcessRunner(RunnerBase, threading.Thread):
             else:
                 raise RuntimeError("Unable to create temporary files: %s" % e)
 
+        self.debug("Forking to run command %s", self.command)
         pid = os.fork()
 
         if pid == 0:
@@ -484,12 +497,6 @@ class ProcessRunner(RunnerBase, threading.Thread):
             return self.killed
 
     def start(self):
-        if mswindows:
-            raise RuntimeError(
-                "Process management currently doesn't work on Windows, "
-                "so running tests is not possible.")
-        self.debug("Forking to run command %s", self.command)
-        self.fork()
         super(ProcessRunner, self).start()
 
     def run(self):

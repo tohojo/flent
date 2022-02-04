@@ -133,7 +133,13 @@ class Aggregator(object):
                 self.threads[n] = t
 
             # Start in a separate loop once we're sure we successfully created
-            # all runners
+            # all runners. To prevent fork() from inheriting all the management
+            # threads, run a separate loop to fork off all threads before
+            # starting the actual supervisor threads afterwards
+            for t in self.threads.values():
+                if hasattr(t, "fork"):
+                    t.fork()
+
             for t in self.threads.values():
                 t.start()
 
