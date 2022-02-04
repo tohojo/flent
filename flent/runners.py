@@ -159,6 +159,7 @@ class RunnerBase(object):
         self.runner_args = kwargs
 
         self._cache = None
+        self._thread = None
 
     def __getstate__(self):
         state = {}
@@ -207,25 +208,17 @@ class RunnerBase(object):
 
         self.start_watchdog()
 
-        s = super(RunnerBase, self)
-        if hasattr(s, 'start'):
-            s.start()
-
-            self.debug("Started with idx %d", self.idx)
-
     def join(self, timeout=None):
-        s = super(RunnerBase, self)
-        if hasattr(s, 'join'):
-            s.join(timeout)
+        if self._thread is not None:
+            self._thread.join(timeout)
 
         for c in self._child_runners:
             c.join(timeout)
 
     def is_alive(self):
         alive = []
-        s = super(RunnerBase, self)
-        if hasattr(s, "is_alive"):
-            alive.append(s.is_alive())
+        if self._thread is not None:
+            alive.append(self._thread.is_alive())
 
         alive.extend([c.is_alive() for c in self._child_runners])
         return any(alive)
@@ -349,19 +342,24 @@ class DelegatingRunner(RunnerBase):
             c.join()
 
 
-class TimerRunner(RunnerBase, threading.Thread):
+class TimerRunner(RunnerBase):
 
     def __init__(self, timeout, **kwargs):
         super(TimerRunner, self).__init__(**kwargs)
         self.timeout = timeout
         self.command = 'Timeout after %f seconds' % self.timeout
 
+    def start(self):
+        super().start()
+        self._thread = threading.Thread(target=self.run)
+        self._thread.start()
+
     def _run(self):
         if not self.kill_event.wait(self.timeout):
             self.debug("Timer expired", extra={'runner': self})
 
 
-class ProcessRunner(RunnerBase, threading.Thread):
+class ProcessRunner(RunnerBase):
     """Default process runner for any process."""
     silent = False
     silent_exit = False
@@ -498,7 +496,9 @@ class ProcessRunner(RunnerBase, threading.Thread):
             return self.killed
 
     def start(self):
-        super(ProcessRunner, self).start()
+        super().start()
+        self._thread = threading.Thread(target=self.run)
+        self._thread.start()
 
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
