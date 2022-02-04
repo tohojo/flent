@@ -217,6 +217,7 @@ def setup_console():
     logging.captureWarnings(True)
     logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))
     logging.getLogger("matplotlib.font_manager").addFilter(FilterAll())
+    logging.raiseExceptions = False
 
 
 def set_console_level(level):
