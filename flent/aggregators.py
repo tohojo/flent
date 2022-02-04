@@ -213,8 +213,7 @@ class Aggregator(object):
                                 "Duplicate key '%s' from child runner" % key)
                         result[key] = v
 
-        except KeyboardInterrupt:
-            logger.debug("Received SIGINT")
+        except BaseException:
             self.kill_runners()
             raise
 
@@ -226,7 +225,7 @@ class Aggregator(object):
 
     def kill_runners(self, graceful=False):
         self.killed = True
-        for t in list(self.threads.values()):
+        for t in self.threads.values():
             t.kill(graceful)
 
     def postprocess(self, result):
