@@ -25,11 +25,12 @@ import logging
 import math
 import pprint
 import signal
+import resource
 
 from collections import OrderedDict
 from datetime import datetime
 from threading import Event
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool, Manager, cpu_count
 
 from flent import runners
 from flent.util import classname
@@ -106,6 +107,35 @@ class Aggregator(object):
 
         self.instances[name] = instance
 
+    def check_rlimit(self):
+        ni = len(self.instances)
+        min_f = ni * 4 + 4
+        min_p = ni + cpu_count()
+
+        try:
+            nf, nf_h = resource.getrlimit(resource.RLIMIT_NOFILE)
+            np, np_h = resource.getrlimit(resource.RLIMIT_NPROC)
+        except OSError as e:
+            logger.debug("Couldn't get rlimit (%s) - may be harmless, so ignoring", e)
+
+        if nf != resource.RLIM_INFINITY and nf < min_f:
+            logger.debug("Raising RLIMIT_NOFILE from %d to required minimum %d",
+                         nf, min_f)
+            try:
+                resource.setrlimit(resource.RLIMIT_NOFILE, (min_f, nf_h))
+            except OSError as e:
+                raise RuntimeError(f"Couldn't raise RLIMIT_NOFILE to required "
+                                   f"{min_f}: {e} - try manually adjusting `ulimit -n`")
+
+        if np != resource.RLIM_INFINITY and np < min_p:
+            logger.debug("Raising RLIMIT_NPROC from %d to required minimum %d",
+                         np, min_p)
+            try:
+                resource.setrlimit(resource.RLIMIT_NPROC, (min_p, np_h))
+            except OSError:
+                raise RuntimeError(f"Couldn't raise RLIMIT_NPROC to required "
+                                   f"{min_p}: {e} - try manually adjusting `ulimit -u`")
+
     def aggregate(self, results):
         raise NotImplementedError()
 
@@ -113,6 +143,7 @@ class Aggregator(object):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
 
+        self.check_rlimit()
         signal.signal(signal.SIGUSR1, handle_usr1)
 
         result = {}
