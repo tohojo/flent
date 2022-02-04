@@ -437,11 +437,12 @@ class ProcessRunner(RunnerBase, threading.Thread):
         pid = os.fork()
 
         if pid == 0:
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            devnull = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull, 1)
             os.dup2(self.stdout.fileno(), 1)
             os.dup2(self.stderr.fileno(), 2)
-            self.stdout.close()
-            self.stderr.close()
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            os.closerange(3, 65535)
 
             try:
                 if self.start_event is not None:
