@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import hashlib
 import hmac
 import math
+import io
 import os
 import re
 import shlex
@@ -48,6 +49,12 @@ try:
     import ujson as json
 except ImportError:
     import json
+
+try:
+    from multiprocessing.reduction import DupFd
+except ImportError:
+    DupFd = None
+
 
 mswindows = (sys.platform == "win32")
 
@@ -141,7 +148,7 @@ class RunnerBase(object):
         self._result = []
         self.command = None
         self.returncode = 0
-        self.out = self.err = ''
+        self.out_buf = self.err_buf = ''
         self.stdout = None
         self.stderr = None
         self._parent = parent
@@ -173,10 +180,25 @@ class RunnerBase(object):
                 state[k] = v
 
         state['_pickled'] = True
-        state['stdout'] = None
-        state['stderr'] = None
+
+        if DupFd is not None:
+            if self.stdout is not None:
+                state['_stdout_fd'] = DupFd(self.stdout.fileno())
+            if self.stderr is not None:
+                state['_stderr_fd'] = DupFd(self.stderr.fileno())
 
         return state
+
+    def __setstate__(self, state):
+        stdout_fd = state.pop("_stdout_fd")
+        if stdout_fd is not None:
+            self.stdout = io.open(stdout_fd.detach(), "w+", encoding=ENCODING)
+
+        stderr_fd = state.pop("_stderr_fd")
+        if stderr_fd is not None:
+            self.stderr = io.open(stderr_fd.detach(), "w+", encoding=ENCODING)
+
+        self.__dict__.update(state)
 
     def __del__(self):
         self.close()
@@ -188,6 +210,20 @@ class RunnerBase(object):
     def debug(self, msg, *args, **kwargs):
         logger.debug("%s: " + msg,
                      self.name, *args, **kwargs)
+
+    @property
+    def out(self):
+        if self.stdout is None:
+            return self.out_buf
+        self.stdout.seek(0)
+        return self.out_buf + self.stdout.read()
+
+    @property
+    def err(self):
+        if self.stderr is None:
+            return self.err_buf
+        self.stderr.seek(0)
+        return self.err_buf + self.stderr.read()
 
     @property
     def cache(self):
@@ -400,10 +436,10 @@ class ProcessRunner(RunnerBase):
         # Use named temporary files to avoid errors on double-delete when
         # running on Windows/cygwin.
         try:
-            self.stdout = tempfile.NamedTemporaryFile(
-                prefix="flent-", delete=False)
-            self.stderr = tempfile.NamedTemporaryFile(
-                prefix="flent-", delete=False)
+            self.stdout = tempfile.TemporaryFile(mode="w+", prefix="flent-",
+                                                 encoding=ENCODING)
+            self.stderr = tempfile.TemporaryFile(mode="w+", prefix="flent-",
+                                                 encoding=ENCODING)
         except OSError as e:
             if e.errno == 24:
                 raise RuntimeError(
@@ -519,27 +555,6 @@ class ProcessRunner(RunnerBase):
         self.finish_event.set()
 
         self.returncode = _handle_exitstatus(sts)
-
-        self.stdout.seek(0)
-        self.out += self.stdout.read().decode(ENCODING)
-        try:
-            # Close and remove the temporary file. This might fail, but we're
-            # going to assume that is okay.
-            filename = self.stdout.name
-            self.stdout.close()
-            os.unlink(filename)
-        except OSError:
-            pass
-
-        self.stderr.seek(0)
-        self.err += self.stderr.read().decode(ENCODING)
-        try:
-            filename = self.stderr.name
-            self.stderr.close()
-            os.unlink(filename)
-        except OSError:
-            pass
-
         if self.returncode and not (self.silent or self.silent_exit):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
@@ -553,9 +568,16 @@ class ProcessRunner(RunnerBase):
         logger.exception("Parse error in %s: %s", self.__class__.__name__, error,
                          exc_info=error.__cause__)
 
+    def parse_output(self):
+        # Wrap parse() so that self.out and self.err are only read in the
+        # subprocess (since we pass around the stdout and stderr fds and only
+        # read them when we need to access the output)
+        return self.parse(self.out, self.err)
+
     def do_parse(self, pool):
-        pool.apply_async(self.parse, (self.out, self.err),
-                         callback=self.recv_result, error_callback=self.parse_error)
+        pool.apply_async(self.parse_output,
+                         callback=self.recv_result,
+                         error_callback=self.parse_error)
         for c in self._child_runners:
             c.do_parse(pool)
 
@@ -684,7 +706,7 @@ class DitgRunner(ProcessRunner):
                         "Unable to request D-ITG test. "
                         "Control server reported an unspecified error.")
             self.test_id = params['test_id']
-            self.out += "Test ID: %s\n" % self.test_id
+            self.out_buf += "Test ID: %s\n" % self.test_id
         except (xmlrpc.Fault, socket.error) as e:
             raise RunnerCheckError(
                 "Error while requesting D-ITG test: '%s'. "
@@ -722,27 +744,27 @@ class DitgRunner(ProcessRunner):
                 res = self.proxy.get_test_results(self.test_id)
                 if res['status'] == 'OK':
                     data = res['data']
-                    self.out += data
+                    self.out_buf += data
                     utc_offset = res['utc_offset']
                     break
                 time.sleep(1)
             if res['status'] != 'OK':
                 if 'message' in res:
-                    self.err += "Error while getting results. " \
-                                "Control server reported error: %s.\n" \
-                                % res['message']
+                    self.err_buf += "Error while getting results. " \
+                                 "Control server reported error: %s.\n" \
+                                 % res['message']
                 else:
-                    self.err += "Error while getting results. " \
-                                "Control server reported unknown error.\n"
+                    self.err_buf += "Error while getting results. " \
+                                 "Control server reported unknown error.\n"
         except xmlrpc.Fault as e:
-            self.err += "Error while getting results: %s.\n" % e
+            self.err_buf += "Error while getting results: %s.\n" % e
 
         # D-ITG *should* output about 50 bytes of data per data point. However,
         # sometimes it runs amok and outputs megabytes of erroneous data. So, if
         # the length of the data is more than ten times the expected value,
         # abort rather than try to process the data.
         if len(data) > (self.length / self.interval) * 500:
-            self.err += "D-ITG output too much data (%d bytes).\n" % len(data)
+            self.err_buf += "D-ITG output too much data (%d bytes).\n" % len(data)
             return results
 
         if 'raw' in res:
