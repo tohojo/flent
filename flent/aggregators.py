@@ -255,9 +255,15 @@ class Aggregator(object):
         return result, metadata, raw_values
 
     def kill_runners(self, graceful=False):
+        if self.killed:
+            return
+
         self.killed = True
         for t in self.threads.values():
-            t.kill(graceful)
+            t.kill()
+        for t in self.threads.values():
+            if t.is_alive():
+                t.join()
 
     def postprocess(self, result):
         logger.debug("Postprocessing data using %d postprocessors", len(self.postprocessors))

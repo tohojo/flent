@@ -166,7 +166,7 @@ class RunnerBase(object):
 
         for k, v in self.__dict__.items():
             if k not in ('start_event', 'kill_event', 'finish_event',
-                         'kill_lock', 'stdout', 'stderr') \
+                         'stdout', 'stderr') \
                     and not k.startswith("_"):
                 state[k] = v
 
@@ -206,8 +206,6 @@ class RunnerBase(object):
         for c in self._child_runners:
             c.start()
 
-        self.start_watchdog()
-
     def join(self, timeout=None):
         if self._thread is not None:
             self._thread.join(timeout)
@@ -223,9 +221,9 @@ class RunnerBase(object):
         alive.extend([c.is_alive() for c in self._child_runners])
         return any(alive)
 
-    def kill(self, graceful=False):
+    def kill(self):
         for c in self._child_runners:
-            c.kill(graceful)
+            c.kill()
         self.kill_event.set()
 
     def run(self):
@@ -233,28 +231,7 @@ class RunnerBase(object):
             self.start_event.wait()
         self._run()
         self.finish_event.set()
-        self.stop_watchdog()
         self.debug("Finished", extra={'runner': self})
-
-    def start_watchdog(self):
-        if self._watchdog or not self.watchdog_timer:
-            return
-
-        self.debug("Starting watchdog with timeout %d", self.watchdog_timer)
-        self._watchdog = TimerRunner(self.watchdog_timer,
-                                     name="Watchdog [%s]" % self.runner_name,
-                                     idx=self.idx,
-                                     settings=self.settings,
-                                     start_event=self.start_event,
-                                     kill_event=self.kill_event,
-                                     parent=self)
-        self.kill_event = self._watchdog.finish_event
-        self._watchdog.start()
-
-    def stop_watchdog(self):
-        if self._watchdog:
-            self._watchdog.kill()
-            self._watchdog.join()
 
     def add_child(self, cls, **kwargs):
         self.debug("Adding child %s", cls.__name__)
@@ -342,23 +319,6 @@ class DelegatingRunner(RunnerBase):
             c.join()
 
 
-class TimerRunner(RunnerBase):
-
-    def __init__(self, timeout, **kwargs):
-        super(TimerRunner, self).__init__(**kwargs)
-        self.timeout = timeout
-        self.command = 'Timeout after %f seconds' % self.timeout
-
-    def start(self):
-        super().start()
-        self._thread = threading.Thread(target=self.run)
-        self._thread.start()
-
-    def _run(self):
-        if not self.kill_event.wait(self.timeout):
-            self.debug("Timer expired", extra={'runner': self})
-
-
 class ProcessRunner(RunnerBase):
     """Default process runner for any process."""
     silent = False
@@ -372,14 +332,14 @@ class ProcessRunner(RunnerBase):
         self.delay = delay
         self.remote_host = normalise_host(remote_host)
         self.units = units
-        self.killed = False
         self.pid = None
+        self.pid_fd = None
         self.returncode = None
-        self.kill_lock = threading.Lock()
         self.test_parameters = {}
         self.stdout = None
         self.stderr = None
         self.command = None
+        self.start_time = None
 
     def check(self):
 
@@ -459,25 +419,7 @@ class ProcessRunner(RunnerBase):
         else:
             self.debug("Forked %s as pid %d", self.args[0], pid)
             self.pid = pid
-
-    def kill(self, graceful=False):
-        super(ProcessRunner, self).kill(graceful)
-        if graceful:
-            # Graceful shutdown is done on a best-effort basis, and may results
-            # in some errors from the test tools. We don't print these, since
-            # they are expected.
-            self.silent = True
-        else:
-            with self.kill_lock:
-                self.killed = True
-            self.cleanup_tmpfiles()
-        if self.pid is not None:
-            sig = signal.SIGINT if graceful else signal.SIGTERM
-            self.debug("Sending signal %d to pid %d.", sig, self.pid)
-            try:
-                os.kill(self.pid, sig)
-            except OSError:
-                pass
+            self.start_time = time.monotonic()
 
     def cleanup_tmpfiles(self):
         for f in self.stdout, self.stderr:
@@ -491,14 +433,48 @@ class ProcessRunner(RunnerBase):
                 except OSError:
                     pass
 
-    def is_killed(self):
-        with self.kill_lock:
-            return self.killed
-
     def start(self):
         super().start()
         self._thread = threading.Thread(target=self.run)
         self._thread.start()
+
+    def kill(self):
+        super().kill()
+        if self._thread is None and self.pid is not None:
+            self._kill_child(immediate=True)
+
+    def _try_kill_child(self, sig):
+        self.debug("Sending %s to pid %d", signal.strsignal(sig), self.pid)
+        try:
+            os.kill(self.pid, sig)
+
+            for _ in range(10):
+                if os.waitpid(self.pid, os.WNOHANG) != (0, 0):
+                    return True
+                time.sleep(0.1)
+        except (OSError, ChildProcessError):
+            pass
+
+        return False
+
+    def _kill_child(self, immediate=False):
+        self.silent_exit = True
+
+        if not immediate:
+            if self._try_kill_child(signal.SIGINT):
+                return
+            if self._try_kill_child(signal.SIGTERM):
+                return
+        try:
+            if os.waitpid(self.pid, os.WNOHANG) == (0, 0):
+                self.debug("Sending SIGKILL to pid %d", self.pid)
+                os.kill(self.pid, signal.SIGKILL)
+
+                # Do a final waitpid() to reap the zombie process
+                os.waitpid(self.pid, 0)
+
+        except (OSError, ChildProcessError):
+            pass
 
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
@@ -512,35 +488,26 @@ class ProcessRunner(RunnerBase):
             except OSError:
                 pass
 
-        if self.kill_event is None:
-            pid, sts = os.waitpid(self.pid, 0)
-        else:
+        timeout = False
+        pid, sts = os.waitpid(self.pid, os.WNOHANG)
+        while (pid, sts) == (0, 0):
+            self.kill_event.wait(1)
+
+            if self.watchdog_timer:
+                runtime = time.monotonic() - self.start_time
+                timeout = runtime > self.watchdog_timer
+
+            if self.kill_event.is_set() or timeout:
+                self.debug("Killed by %s", "timeout" if timeout else "event",
+                           extra={'runner': self})
+                self._kill_child()
+                return
+
             pid, sts = os.waitpid(self.pid, os.WNOHANG)
-            while (pid, sts) == (0, 0):
-                self.kill_event.wait(1)
-                if self.kill_event.is_set():
-                    self.silent_exit = True
-                    self.debug("Killed by kill event", extra={'runner': self})
-                    try:
-                        self.debug("Sending SIGINT to pid %d", self.pid)
-                        os.kill(self.pid, signal.SIGINT)
-                        time.sleep(0.5)
-                        self.debug("Sending SIGTERM to pid %d", self.pid)
-                        os.kill(self.pid, signal.SIGTERM)
-                    except OSError:
-                        pass
-                pid, sts = os.waitpid(self.pid, os.WNOHANG)
 
         self.finish_event.set()
 
         self.returncode = _handle_exitstatus(sts)
-
-        # Even with locking, kill detection is not reliable; sleeping seems to
-        # help. *sigh* -- threading.
-        time.sleep(0.2)
-
-        if self.is_killed():
-            return
 
         self.stdout.seek(0)
         self.out += self.stdout.read().decode(ENCODING)
@@ -566,7 +533,6 @@ class ProcessRunner(RunnerBase):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
 
-        self.stop_watchdog()
         self.debug("Finished", extra={'runner': self})
 
     def parse(self, output, error=""):
