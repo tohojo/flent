@@ -25,6 +25,7 @@ import hashlib
 import hmac
 import math
 import io
+import itertools
 import os
 import re
 import shlex
@@ -561,18 +562,27 @@ class ProcessRunner(RunnerBase):
 
         self.debug("Finished", extra={'runner': self})
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         raise NotImplementedError()
 
     def parse_error(self, error):
         logger.exception("Parse error in %s: %s", self.__class__.__name__, error,
                          exc_info=error.__cause__)
 
+    # Wrap parse() so that we only read from self.stdout and self.stderr in
+    # the subprocess (since we pass around the stdout and stderr fds and
+    # only read them when we need to access the output)
     def parse_output(self):
-        # Wrap parse() so that self.out and self.err are only read in the
-        # subprocess (since we pass around the stdout and stderr fds and only
-        # read them when we need to access the output)
-        return self.parse(self.out, self.err)
+        # Make sure we start from the beginning (we could already have read the
+        # data through self.{out,err})
+        self.stdout.seek(0)
+        self.stderr.seek(0)
+        return self.parse(self.stdout, self.stderr)
+
+    def parse_string(self, string):
+        out = io.StringIO(string)
+        err = io.StringIO()
+        return self.parse(out, err)
 
     def do_parse(self, pool):
         pool.apply_async(self.parse_output,
@@ -639,6 +649,18 @@ class ProcessRunner(RunnerBase):
                 return fmtstr.format(self.marking)
 
         return ""
+
+    def split_stream(self, stream, delim="---"):
+        part = ""
+        for line in stream:
+            if line.strip() == delim:
+                yield part.strip()
+                part = ""
+                continue
+            part += line
+
+        if part:
+            yield part.strip()
 
 
 DefaultRunner = ProcessRunner
@@ -730,7 +752,7 @@ class DitgRunner(ProcessRunner):
 
         super(DitgRunner, self).check()
 
-    def parse(self, output, error=""):
+    def parse_output(self):
         data = ""
         utc_offset = 0
         results = {}
@@ -830,14 +852,13 @@ class NetperfDemoRunner(ProcessRunner):
         self.bytes = bytes
         super(NetperfDemoRunner, self).__init__(**kwargs)
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         """Parses the interim result lines and returns a list of (time,value)
         pairs."""
 
         result = []
         raw_values = []
         metadata = {}
-        lines = output.strip().splitlines()
         avg_dur = None
         alpha = 0.5
         data_dict = {}
@@ -845,7 +866,7 @@ class NetperfDemoRunner(ProcessRunner):
         # We use the -k output option for netperf, so we will get data in
         # KEY=VALUE lines. The interim points will be NETPERF_*[id] lines,
         # end-of-test data points will be straight KEY=VAL lines
-        for line in lines:
+        for line in output:
             line = line.strip()
             try:
                 k, v = line.split("=", 1)
@@ -863,7 +884,7 @@ class NetperfDemoRunner(ProcessRunner):
                 pass
 
         # TCP_INFO values are output to stderr
-        for line in error.strip().splitlines():
+        for line in error:
             line = line.strip()
             if line.startswith("tcpi"):
                 parts = line.split()
@@ -1109,14 +1130,11 @@ class RegexpRunner(ProcessRunner):
     metadata_regexes = []
     transformers = {}
 
-    def parse(self, output, error=None):
+    def parse(self, output, error):
         result = []
         raw_values = []
         metadata = {}
-        lines = output.split("\n")
-        if error:
-            lines.extend(error.split("\n"))
-        for line in lines:
+        for line in itertools.chain(output, error):
             for regexp in self.regexes:
                 match = regexp.match(line)
                 if match:
@@ -1273,7 +1291,7 @@ class PingRunner(RegexpRunner):
                                "permissions (no SUID?). Not using.")
             else:
                 out, err = self.run_simple([fping, '-D', '-c', '1', 'localhost'])
-                res = self.parse(out)
+                res = self.parse_string(out)
                 try:
                     tdiff = abs(res[1][0]['t'] - time.time())
                 except (TypeError, IndexError):
@@ -1304,7 +1322,7 @@ class PingRunner(RegexpRunner):
             # message.
             out, err = self.run_simple([ping, '-D', '-n', '-c', '1',
                                         'localhost'] + pingargs)
-            if not self.parse(out)[0]:
+            if not self.parse_string(out)[0]:
                 raise RunnerCheckError(
                     "Cannot parse output of the system ping binary ({ping}). "
                     "Please install fping v3.5+.".format(ping=ping))
@@ -1468,16 +1486,23 @@ class IperfCsvRunner(ProcessRunner):
         self.marking = marking
         super(IperfCsvRunner, self).__init__(**kwargs)
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         result = []
         raw_values = []
         metadata = {}
-        lines = output.strip().split("\n")
         dest = None
-        for line in lines[:-1]:  # The last line is an average over the whole test
+        last_res = last_rw = None
+        for line in output:
             parts = line.split(",")
             if len(parts) < 9:
                 continue
+
+            # Add the result of the last line to the array; this skips the last
+            # entry, which is an average for the whole test, and is handled
+            # below
+            if last_res is not None:
+                result.append(last_res)
+                raw_values.append(last_rw)
 
             timestamp = parts[0]
             bandwidth = parts[8]
@@ -1494,22 +1519,19 @@ class IperfCsvRunner(ProcessRunner):
                 dt = datetime.strptime(sec, "%Y%m%d%H%M%S")
                 timestamp = time.mktime(dt.timetuple()) + float(mil) / 1000
                 val = transformers.bits_to_mbits(float(bandwidth))
-                result.append([timestamp, val])
-                raw_values.append({'t': timestamp, 'val': val})
+                last_res = [timestamp, val]
+                last_rw = {'t': timestamp, 'val': val}
             except ValueError:
                 pass
 
-        try:
-            parts = lines[-1].split(",")
-            # src and dest should be reversed if this was a reply from the
-            # server. Track this for UDP where it may be missing.
-            if parts[1] == dest or not self.udp:
-                metadata['MEAN_VALUE'] = transformers.bits_to_mbits(
-                    float(parts[8]))
-            else:
-                metadata['MEAN_VALUE'] = None
-        except (ValueError, IndexError):
-            pass
+        # Handle last entry
+        # src and dest should be reversed if this was a reply from the
+        # server. Track this for UDP where it may be missing.
+        if parts[1] == dest or not self.udp:
+            metadata['MEAN_VALUE'] = last_res[1]
+        else:
+            metadata['MEAN_VALUE'] = None
+
         return result, raw_values, metadata
 
     def check(self):
@@ -1591,12 +1613,12 @@ class IrttRunner(ProcessRunner):
     def _to_s(self, value):
         return value / 10**9
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         result = {'rtt': [], 'delay': [], 'jitter': [], 'loss': []}
         raw_values = []
         metadata = {}
         try:
-            data = json.loads(output)
+            data = json.load(output)
         except ValueError as e:
             logger.warning("Unable to parse irtt JSON output: %s", e)
             return
@@ -1927,10 +1949,9 @@ class SsRunner(ProcessRunner):
         if not self.is_dup:
             super().do_parse(pool)
 
-    def parse(self, output, error=""):
-        parts = output.split("\n---\n")
+    def parse(self, output, error):
         parsed_parts = []
-        for part in parts:
+        for part in self.split_stream(output):
             try:
                 parsed_parts.extend(self.parse_part(part))
             except ParseError:
@@ -2118,13 +2139,12 @@ class TcRunner(ProcessRunner):
             except ValueError:
                 return v
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         results = {}
         raw_values = []
         metadata = {}
-        parts = output.split("\n---\n")
         last_vals = {}
-        for part in parts:
+        for part in self.split_stream(output):
             timestamp = self.time_re.search(part)
             if timestamp is None:
                 continue
@@ -2242,12 +2262,11 @@ class CpuStatsRunner(ProcessRunner):
         self.host = normalise_host(host)
         super(CpuStatsRunner, self).__init__(**kwargs)
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         results = {}
         raw_values = []
         metadata = {}
-        parts = output.split("\n---\n")
-        for part in parts:
+        for part in self.split_stream(output):
             # Split out individual qdisc entries (in case there are more than
             # one). If so, discard the root qdisc and sum the rest.
             timestamp = self.time_re.search(part)
@@ -2329,13 +2348,12 @@ class WifiStatsRunner(ProcessRunner):
 
         super(WifiStatsRunner, self).__init__(**kwargs)
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         results = {}
         raw_values = []
         metadata = {}
-        parts = output.split("\n---\n")
         last_airtime = {}
-        for part in parts:
+        for part in self.split_stream(output):
             matches = {}
             timestamp = self.time_re.search(part)
             if timestamp is None:
@@ -2448,12 +2466,11 @@ class NetstatRunner(ProcessRunner):
         self.host = normalise_host(host)
         super(NetstatRunner, self).__init__(**kwargs)
 
-    def parse(self, output, error=""):
+    def parse(self, output, error):
         results = {}
         raw_values = []
         metadata = {}
-        parts = output.split("\n---\n")
-        for part in parts:
+        for part in self.split_stream(output):
             matches = {}
             timestamp = self.time_re.search(part)
             if timestamp is None:

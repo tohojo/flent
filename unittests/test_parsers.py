@@ -466,7 +466,7 @@ class TestParsers(unittest.TestCase):
 
         for data in (CAKE_1TIN, CAKE_4TINS, CAKE_LONG):
             r = self.new_runner("tc")
-            res, raw_values, metadata = r.parse(data)
+            res, raw_values, metadata = r.parse_string(data)
             self.check_res_keys(
                 QDISC_KEYS + ['ecn_mark'], res, raw_keys, raw_values)
             if data == CAKE_LONG:
@@ -476,7 +476,7 @@ class TestParsers(unittest.TestCase):
 
     def test_ingress_parser(self):
         r = self.new_runner("tc")
-        res, raw_values, metadata = r.parse(INGRESS_OUTPUT)
+        res, raw_values, metadata = r.parse_string(INGRESS_OUTPUT)
         self.check_res_keys(QDISC_KEYS, res, [], raw_values)
         self.check_vals(['sent_bytes', 'sent_pkts'], res)
 
