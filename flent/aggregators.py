@@ -53,12 +53,9 @@ def new(settings):
         raise RuntimeError("Error loading %s: %s." % (cname, e))
 
 
-class GracefulShutdown(Exception):
-    pass
-
-
 def handle_usr1(signal, frame):
-    raise GracefulShutdown()
+    raise KeyboardInterrupt()
+
 
 class Aggregator(object):
     """Basic aggregator. Runs all jobs and returns their result."""
@@ -174,24 +171,8 @@ class Aggregator(object):
             for t in self.threads.values():
                 t.start()
 
-            shutting_down = False
             for n, t in list(self.threads.items()):
-                while t.is_alive():
-                    try:
-                        t.join(1)
-                    except GracefulShutdown:
-                        if not shutting_down:
-                            logger.info(
-                                "SIGUSR1 received; initiating graceful shutdown. "
-                                "This may take a while...")
-                            self.kill_runners(graceful=True)
-                            shutting_down = True
-                        else:
-                            logger.info(
-                                "Already initiated graceful shutdown. "
-                                "Patience, please...")
-            if shutting_down:
-                return
+                t.join()
 
             pre_parse = datetime.now()
 
@@ -254,7 +235,7 @@ class Aggregator(object):
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
         return result, metadata, raw_values
 
-    def kill_runners(self, graceful=False):
+    def kill_runners(self):
         if self.killed:
             return
 

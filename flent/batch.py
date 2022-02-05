@@ -241,6 +241,10 @@ class BatchRunner(object):
             self.children.append((proc, command.get('kill', False)))
 
     def kill_children(self, force=False):
+        if not self.children:
+            return
+
+        logger.debug("Killing child processes")
         for proc, kill in self.children:
             if kill or force:
                 proc.terminate()
@@ -513,9 +517,7 @@ class BatchRunner(object):
 
         self.agg = aggregators.new(settings)
         res = self.agg.postprocess(self.agg.aggregate(res))
-        if self.killed:
-            logger.debug("Killed while running, not writing data")
-            return
+
         record_postrun_metadata(res, settings.EXTENDED_METADATA,
                                 settings.REMOTE_METADATA)
         res.dump_dir(output_path)
@@ -618,7 +620,9 @@ class BatchRunner(object):
             return self.run_test(self.settings, self.settings.DATA_DIR, True)
 
     def kill(self, *args):
-        logger.debug("Killing child processes")
+        if self.killed:
+            return
+
         self.killed = True
         self.kill_children(force=True)
         try:
