@@ -1852,10 +1852,6 @@ class SsRunner(ProcessRunner):
             return
 
         self._dup_runner.join()
-        self.debug("Finished", extra={'runner': self})
-
-        self.out = self._dup_runner.out
-        self.err = self._dup_runner.err
 
     def filter_np_parent(self, part):
         parsed_parts = []
@@ -1928,10 +1924,11 @@ class SsRunner(ProcessRunner):
 
         return vals
 
-    def parse(self, output, error=""):
-        if self.is_dup:
-            return [], [], {}
+    def do_parse(self, pool):
+        if not self.is_dup:
+            super().do_parse(pool)
 
+    def parse(self, output, error=""):
         parts = output.split("\n---\n")
         parsed_parts = []
         for part in parts:
@@ -1974,9 +1971,11 @@ class SsRunner(ProcessRunner):
             raw_values.append(rw)
 
         if not results:
-            logger.warning("%s: Found no results for pid %s",
-                           self.__class__.__name__, par_pid,
-                           extra={'runner': self})
+            extra = {'runner': self} if not self.is_dup else None
+            logger.warning("%s%s: Found no results for pid %s",
+                           self.__class__.__name__,
+                           "(dup)" if self.is_dup else "",
+                           par_pid, extra=extra)
         self.result = results
         self.raw_values = raw_values
 
