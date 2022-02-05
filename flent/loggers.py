@@ -181,6 +181,9 @@ class CachingHandler(Handler):
     def write(self, m):
         pass
 
+    def flush(self):
+        self.cache = []
+
 
 def get_logger(name):
     return logging.getLogger(name)
@@ -304,3 +307,8 @@ def set_queue_handler(queue):
 def enable_exceptions():
     if err_handler is not None:
         err_handler.formatter.format_exceptions = True
+
+
+def flush_cache():
+    if cache_handler is not None:
+        cache_handler.flush()

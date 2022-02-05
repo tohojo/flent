@@ -32,11 +32,10 @@ from datetime import datetime
 from threading import Event
 from multiprocessing import Pool, Manager, cpu_count
 
-from flent import runners
+from flent import runners, loggers
 from flent.util import classname
-from flent.loggers import get_logger, set_queue_handler
 
-logger = get_logger(__name__)
+logger = loggers.get_logger(__name__)
 
 
 def new(settings):
@@ -178,7 +177,7 @@ class Aggregator(object):
 
             with Manager() as mngr:
                 queue = mngr.Queue()
-                with Pool(initializer=set_queue_handler, initargs=(queue, )) as parser_pool:
+                with Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
                     for t in self.threads.values():
                         t.do_parse(parser_pool)
 
@@ -225,6 +224,13 @@ class Aggregator(object):
                                 "Duplicate key '%s' from child runner" % key)
                         result[key] = v
 
+            for t in self.threads.values():
+                t.close()
+
+            # logger cache may retain references to runners, so flush it to make
+            # sure they all get freed up
+            loggers.flush_cache()
+
         except BaseException:
             self.kill_runners()
             raise
@@ -243,8 +249,8 @@ class Aggregator(object):
         for t in self.threads.values():
             t.kill()
         for t in self.threads.values():
-            if t.is_alive():
-                t.join()
+            t.join()
+            t.close()
 
     def postprocess(self, result):
         logger.debug("Postprocessing data using %d postprocessors", len(self.postprocessors))

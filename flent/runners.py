@@ -142,6 +142,8 @@ class RunnerBase(object):
         self.command = None
         self.returncode = 0
         self.out = self.err = ''
+        self.stdout = None
+        self.stderr = None
         self._parent = parent
         self.result = None
 
@@ -171,8 +173,13 @@ class RunnerBase(object):
                 state[k] = v
 
         state['_pickled'] = True
+        state['stdout'] = None
+        state['stderr'] = None
 
         return state
+
+    def __del__(self):
+        self.close()
 
     @property
     def name(self):
@@ -225,6 +232,22 @@ class RunnerBase(object):
         for c in self._child_runners:
             c.kill()
         self.kill_event.set()
+
+    def close(self):
+        if getattr(self, "_closed", False):
+            return
+
+        for c in getattr(self, "_child_runners", []):
+            c.close()
+        if self.stdout is not None:
+            self.stdout.close()
+            self.stdout = None
+        if self.stderr is not None:
+            self.stderr.close()
+            self.stderr = None
+
+        self._closed = True
+        self._parent = None # break reference cycle
 
     def run(self):
         if self.start_event is not None:
@@ -336,8 +359,6 @@ class ProcessRunner(RunnerBase):
         self.pid_fd = None
         self.returncode = None
         self.test_parameters = {}
-        self.stdout = None
-        self.stderr = None
         self.command = None
         self.start_time = None
 
@@ -400,6 +421,8 @@ class ProcessRunner(RunnerBase):
             os.dup2(devnull, 1)
             os.dup2(self.stdout.fileno(), 1)
             os.dup2(self.stderr.fileno(), 2)
+            self.stdout.close()
+            self.stderr.close()
             os.closerange(3, 65535)
 
             try:
@@ -420,18 +443,6 @@ class ProcessRunner(RunnerBase):
             self.debug("Forked %s as pid %d", self.args[0], pid)
             self.pid = pid
             self.start_time = time.monotonic()
-
-    def cleanup_tmpfiles(self):
-        for f in self.stdout, self.stderr:
-            if f is not None:
-                try:
-                    f.close()
-                except OSError:
-                    pass
-                try:
-                    os.unlink(f.name)
-                except OSError:
-                    pass
 
     def start(self):
         super().start()

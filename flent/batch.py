@@ -515,8 +515,8 @@ class BatchRunner(object):
         logger.info("Starting %s test. Expected run time: %d seconds.",
                     settings.NAME, settings.TOTAL_LENGTH)
 
-        self.agg = aggregators.new(settings)
-        res = self.agg.postprocess(self.agg.aggregate(res))
+        agg = aggregators.new(settings)
+        res = agg.postprocess(agg.aggregate(res))
 
         record_postrun_metadata(res, settings.EXTENDED_METADATA,
                                 settings.REMOTE_METADATA)
@@ -625,10 +625,6 @@ class BatchRunner(object):
 
         self.killed = True
         self.kill_children(force=True)
-        try:
-            self.agg.kill_runners()
-        except AttributeError:
-            pass
 
     def p(self):
         for t in 'args', 'batches', 'commands':
