@@ -83,8 +83,9 @@ class LevelDemoteFilter(object):
 
 
 class LogFormatter(Formatter):
-    def __init__(self, fmt=None, datefmt=None, output_markers=None):
+    def __init__(self, fmt=None, datefmt=None, output_markers=None, max_lines=None):
         self.format_exceptions = True
+        self.max_lines = max_lines
 
         if output_markers is not None:
             self.start_marker, self.end_marker = output_markers
@@ -102,6 +103,13 @@ class LogFormatter(Formatter):
 
         return super(LogFormatter, self).formatException(ei)
 
+    def limit_lines(self, output):
+        if self.max_lines is not None:
+            lines = output.splitlines()
+            if len(lines) > self.max_lines:
+                output = "\n".join(lines[:self.max_lines]) + "\n[...truncated...]\n"
+        return output
+
     def format(self, record):
         s = super(LogFormatter, self).format(record)
 
@@ -111,8 +119,7 @@ class LogFormatter(Formatter):
         if hasattr(record, 'output'):
             if s[-1:] != "\n":
                 s = s + "\n"
-            output = record.output
-            s = s + self.start_marker + output + self.end_marker
+            s = s + self.start_marker + self.limit_lines(record.output) + self.end_marker
 
         elif hasattr(record, 'runner'):
             if s[-1:] != "\n":
@@ -121,9 +128,9 @@ class LogFormatter(Formatter):
             s = s + "Runner class: %s\n" % record.runner.__class__.__name__
             s = s + "Command: %s\n" % record.runner.command
             s = s + "Return code: %s\n" % record.runner.returncode
-            s = s + "Stdout: " + self.start_marker + record.runner.out + \
+            s = s + "Stdout: " + self.start_marker + self.limit_lines(record.runner.out) + \
                 self.end_marker + "\n"
-            s = s + "Stderr: " + self.start_marker + record.runner.err + \
+            s = s + "Stderr: " + self.start_marker + self.limit_lines(record.runner.err) + \
                 self.end_marker
 
         return s
@@ -200,7 +207,7 @@ def setup_console():
     err_handler = StreamHandler(sys.stderr)
     err_handler.setLevel(logging.WARNING)
     fmt = LogFormatter(fmt="%(levelname)s: %(message)s",
-                       output_markers=("", ""))
+                       output_markers=("", ""), max_lines=100)
     fmt.format_exceptions = False
     err_handler.setFormatter(fmt)
     logger.addHandler(err_handler)
