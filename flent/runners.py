@@ -456,7 +456,10 @@ class ProcessRunner(RunnerBase):
                 raise RuntimeError("Unable to create temporary files: %s" % e)
 
         self.debug("Forking to run command %s", self.command)
-        pid = os.fork()
+        try:
+            pid = os.fork()
+        except OSError as e:
+            raise RuntimeError(f"{self.name}: Error during fork(): {e}")
 
         if pid == 0:
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
