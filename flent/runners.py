@@ -247,8 +247,10 @@ class RunnerBase(object):
         if self._pickled:
             raise RuntimeError("Attempt to run a pickled runner")
 
+        count = 0
         for c in self._child_runners:
-            c.start()
+            count += c.start()
+        return count
 
     def join(self, timeout=None):
         if self._thread is not None:
@@ -371,8 +373,10 @@ class DelegatingRunner(RunnerBase):
     result = property(get_result, set_result)
 
     def fork(self):
+        count = 0
         for c in self._child_runners:
-            c.fork()
+            count += c.fork()
+        return count
 
     def _run(self):
         for c in self._child_runners:
@@ -431,8 +435,10 @@ class ProcessRunner(RunnerBase):
                 "Process management currently doesn't work on Windows, "
                 "so running tests is not possible.")
 
+        count = 0
+
         for c in self._child_runners:
-            c.fork()
+            count += c.fork()
 
         # Use named temporary files to avoid errors on double-delete when
         # running on Windows/cygwin.
@@ -480,11 +486,13 @@ class ProcessRunner(RunnerBase):
             self.debug("Forked %s as pid %d", self.args[0], pid)
             self.pid = pid
             self.start_time = time.monotonic()
+            return count + 1
 
     def start(self):
-        super().start()
+        count = super().start()
         self._thread = threading.Thread(target=self.run)
         self._thread.start()
+        return count + 1
 
     def kill(self):
         super().kill()
@@ -1862,9 +1870,10 @@ class SsRunner(ProcessRunner):
     def fork(self):
         if self._dup_runner is None:
             self.debug("Active runner for dup key %s: forking", self._dup_key)
-            super(SsRunner, self).fork()
+            return super().fork()
         else:
             self.debug("Duplicate for dup key %s. Not forking", self._dup_key)
+            return 0
 
     def run(self):
         if self._dup_runner is None:

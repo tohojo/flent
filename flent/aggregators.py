@@ -25,6 +25,7 @@ import logging
 import math
 import pprint
 import signal
+import time
 import resource
 
 from collections import OrderedDict
@@ -163,17 +164,27 @@ class Aggregator(object):
             # all runners. To prevent fork() from inheriting all the management
             # threads, run a separate loop to fork off all threads before
             # starting the actual supervisor threads afterwards
+            num_forks = 0
+            test_start = time.monotonic()
             for t in self.threads.values():
                 if hasattr(t, "fork"):
-                    t.fork()
+                    num_forks += t.fork()
 
+            fork_end = time.monotonic()
+            logger.debug("Forked %d processes in %f seconds", num_forks, fork_end - test_start)
+
+            num_threads = 0
             for t in self.threads.values():
-                t.start()
+                num_threads += t.start()
+
+            threads_end = time.monotonic()
+            logger.debug("Started %d threads in %f seconds", num_threads, threads_end - fork_end)
 
             for n, t in list(self.threads.items()):
                 t.join()
 
-            pre_parse = datetime.now()
+            run_end = time.monotonic()
+            logger.debug("Ran test in %f seconds", run_end - threads_end)
 
             with Manager() as mngr:
                 queue = mngr.Queue()
@@ -190,7 +201,8 @@ class Aggregator(object):
                 # after parsing has completed
                 t.post_parse()
 
-            logger.debug("Parsing completed in %s", datetime.now() - pre_parse)
+            parse_end = time.monotonic()
+            logger.debug("Parsing completed in %f seconds", parse_end - run_end)
 
             for n, t in self.threads.items():
 
@@ -224,8 +236,14 @@ class Aggregator(object):
                                 "Duplicate key '%s' from child runner" % key)
                         result[key] = v
 
+            compute_end = time.monotonic()
+            logger.debug("Finished post-test computation in %f seconds", compute_end - parse_end)
+
             for t in self.threads.values():
                 t.close()
+
+            test_end = time.monotonic()
+            logger.debug("Ran full test in %f seconds", test_end - test_start)
 
             # logger cache may retain references to runners, so flush it to make
             # sure they all get freed up
