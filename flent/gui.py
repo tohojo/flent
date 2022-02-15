@@ -89,8 +89,8 @@ try:
     from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
         as NavigationToolbar
 
-except ImportError:
-    raise RuntimeError("Unable to find a usable Qt version.")
+except ImportError as e:
+    raise RuntimeError(f"Unable to find a usable Qt version {e}.")
 
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
