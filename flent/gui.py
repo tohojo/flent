@@ -1031,7 +1031,7 @@ class NewTestDialog(QDialog):
         if (p, s) == (0, 0):
             if not self.aborted:
                 elapsed = time.time() - self.start_time
-                self.progressBar.setValue(100 * elapsed / self.total_time)
+                self.progressBar.setValue(int(100 * elapsed / self.total_time))
         else:
             fn = os.path.join(self.settings.DATA_DIR,
                               self.settings.DATA_FILENAME)
