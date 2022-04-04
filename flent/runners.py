@@ -236,7 +236,8 @@ class RunnerBase(object):
         pass
 
     def do_parse(self, pool):
-        pass
+        for c in self._child_runners:
+            c.do_parse(pool)
 
     def post_parse(self):
         for c in self._child_runners:
