@@ -152,6 +152,7 @@ def pool_init_func(settings, queue):
     global USE_ABSOLUTE_TIME
     USE_ABSOLUTE_TIME = settings.ABSOLUTE_TIME
 
+    matplotlib.use("Agg")
     plotters.init_matplotlib("-", settings.USE_MARKERS,
                              settings.LOAD_MATPLOTLIBRC)
     set_queue_handler(queue)
