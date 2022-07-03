@@ -279,13 +279,17 @@ class RunnerBase(object):
 
         for c in getattr(self, "_child_runners", []):
             c.close()
-        if self.stdout is not None:
-            self.stdout.close()
-            self.stdout = None
-        if self.stderr is not None:
-            self.stderr.close()
-            self.stderr = None
 
+        stdout = getattr(self, "stdout", None)
+        if stdout is not None:
+            stdout.close()
+
+        stderr = getattr(self, "stderr", None)
+        if stderr is not None:
+            stderr.close()
+
+        self.stdout = None
+        self.stderr = None
         self._closed = True
         self._parent = None # break reference cycle
 
