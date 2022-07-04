@@ -72,12 +72,15 @@ class Aggregator(object):
         self.postprocessors = []
 
     def read_log_queue(self, queue):
+        print(f"{time.monotonic()}: running log reader")
         while True:
             try:
+                print(f"{time.monotonic()}: getting log msg")
                 msg = queue.get()
                 logging.getLogger().handle(msg)
                 queue.task_done()
             except EOFError:
+                print(f"{time.monotonic()}: EOF on reading log queue, exiting")
                 return
 
     def add_instance(self, name, config):
@@ -191,20 +194,27 @@ class Aggregator(object):
             run_end = time.monotonic()
             logger.debug("Ran test in %f seconds", run_end - threads_end)
 
+            mp.log_to_stderr(logging.DEBUG)
             ctx = mp.get_context("spawn")
             with ctx.Manager() as mngr:
                 queue = mngr.Queue(10)
                 with ctx.Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
+                    print(f"{time.monotonic()}: starting log reader thread")
                     q_thread = threading.Thread(target=self.read_log_queue,
                                                 args=(queue, ), daemon=True)
                     q_thread.start()
 
+                    print(f"{time.monotonic()}: starting parser threads")
                     for t in self.threads.values():
                         t.do_parse(parser_pool)
 
+                    print(f"{time.monotonic()}: closing pool")
                     parser_pool.close()
+                    print(f"{time.monotonic()}: joining pool")
                     parser_pool.join()
+                    print(f"{time.monotonic()}: joining queue")
                     queue.join()
+                    print(f"{time.monotonic()}: done")
 
             for t in self.threads.values():
                 # used by SsRunner to copy over results from duplicate runners

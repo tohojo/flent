@@ -173,6 +173,7 @@ class RunnerBase(object):
 
     def __getstate__(self):
         state = {}
+        print(f"{time.monotonic()}: {os.getpid()}: Pickling {self}")
 
         for k, v in self.__dict__.items():
             if k not in ('start_event', 'kill_event', 'finish_event',
@@ -191,6 +192,7 @@ class RunnerBase(object):
         return state
 
     def __setstate__(self, state):
+        print(f"{time.monotonic()}: {os.getpid()}: Unpickling {self}")
         stdout_fd = state.pop("_stdout_fd")
         if stdout_fd is not None:
             self.stdout = io.open(stdout_fd.detach(), "w+", encoding=ENCODING)
@@ -591,9 +593,12 @@ class ProcessRunner(RunnerBase):
     def parse_output(self):
         # Make sure we start from the beginning (we could already have read the
         # data through self.{out,err})
+        print(f"{time.monotonic()}: {os.getpid()}: Running in parse_output in {self} {self.stdout.fileno()}/{self.stderr.fileno()}")
         self.stdout.seek(0)
         self.stderr.seek(0)
-        return self.parse(self.stdout, self.stderr)
+        ret = self.parse(self.stdout, self.stderr)
+        print(f"{time.monotonic()}: {os.getpid()}: Finished parse_output() in {self}")
+        return ret
 
     def parse_string(self, string):
         out = io.StringIO(string)
@@ -601,6 +606,7 @@ class ProcessRunner(RunnerBase):
         return self.parse(out, err)
 
     def do_parse(self, pool):
+        print(f"{time.monotonic()}: {os.getpid()}: do_parse() in {self}")
         pool.apply_async(self.parse_output,
                          callback=self.recv_result,
                          error_callback=self.parse_error)
@@ -608,6 +614,7 @@ class ProcessRunner(RunnerBase):
             c.do_parse(pool)
 
     def recv_result(self, res):
+        print(f"{time.monotonic()}: {os.getpid()}: recv_result() in {self}")
         result, raw_values, metadata = res
         self.result = result
         self.raw_values = raw_values

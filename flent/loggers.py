@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import sys
+import time, os
 
 from logging import StreamHandler, FileHandler, Formatter
 
@@ -310,6 +311,7 @@ def set_queue_handler(queue):
 
     logging.captureWarnings(True)
     logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))
+    print(f"{time.monotonic()}: {os.getpid()}: Set queue handler")
 
 
 def enable_exceptions():
