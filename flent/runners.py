@@ -238,8 +238,10 @@ class RunnerBase(object):
         pass
 
     def do_parse(self, pool):
+        res = []
         for c in self._child_runners:
-            c.do_parse(pool)
+            res.extend(c.do_parse(pool))
+        return res
 
     def post_parse(self):
         for c in self._child_runners:
@@ -607,11 +609,12 @@ class ProcessRunner(RunnerBase):
 
     def do_parse(self, pool):
         print(f"{time.monotonic()}: {os.getpid()}: do_parse() in {self}")
-        pool.apply_async(self.parse_output,
-                         callback=self.recv_result,
-                         error_callback=self.parse_error)
+        res = [pool.apply_async(self.parse_output,
+                                callback=self.recv_result,
+                                error_callback=self.parse_error)]
         for c in self._child_runners:
-            c.do_parse(pool)
+            res.extend(c.do_parse(pool))
+        return res
 
     def recv_result(self, res):
         print(f"{time.monotonic()}: {os.getpid()}: recv_result() in {self}")
@@ -1972,7 +1975,8 @@ class SsRunner(ProcessRunner):
 
     def do_parse(self, pool):
         if not self.is_dup:
-            super().do_parse(pool)
+            return super().do_parse(pool)
+        return []
 
     def parse(self, output, error):
         parsed_parts = []

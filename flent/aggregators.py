@@ -205,8 +205,11 @@ class Aggregator(object):
                     q_thread.start()
 
                     print(f"{time.monotonic()}: starting parser threads")
+                    res = []
                     for t in self.threads.values():
-                        t.do_parse(parser_pool)
+                        res.extend(t.do_parse(parser_pool))
+                    for r in res:
+                        r.wait()
 
                     print(f"{time.monotonic()}: closing pool")
                     parser_pool.close()
