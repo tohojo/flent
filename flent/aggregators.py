@@ -208,15 +208,16 @@ class Aggregator(object):
                     res = []
                     for t in self.threads.values():
                         res.extend(t.do_parse(parser_pool))
-                    for r in res:
+                    for i, r in enumerate(res):
+                        print(f"{time.monotonic()}: waiting for parsing result {i+1} of {len(res)}")
                         r.wait()
 
+                    print(f"{time.monotonic()}: joining queue")
+                    queue.join()
                     print(f"{time.monotonic()}: closing pool")
                     parser_pool.close()
                     print(f"{time.monotonic()}: joining pool")
                     parser_pool.join()
-                    print(f"{time.monotonic()}: joining queue")
-                    queue.join()
                     print(f"{time.monotonic()}: done")
 
             for t in self.threads.values():
