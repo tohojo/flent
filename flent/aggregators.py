@@ -25,6 +25,7 @@ import logging
 import math
 import pprint
 import signal
+import threading
 import time
 import resource
 
@@ -71,9 +72,13 @@ class Aggregator(object):
         self.postprocessors = []
 
     def read_log_queue(self, queue):
-        while not queue.empty():
-            msg = queue.get_nowait()
-            logging.getLogger().handle(msg)
+        while True:
+            try:
+                msg = queue.get()
+                logging.getLogger().handle(msg)
+                queue.task_done()
+            except EOFError:
+                return
 
     def add_instance(self, name, config):
         instance = dict(config)
@@ -187,14 +192,18 @@ class Aggregator(object):
             logger.debug("Ran test in %f seconds", run_end - threads_end)
 
             with Manager() as mngr:
-                queue = mngr.Queue()
+                queue = mngr.Queue(10)
                 with Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
+                    q_thread = threading.Thread(target=self.read_log_queue,
+                                                args=(queue, ), daemon=True)
+                    q_thread.start()
+
                     for t in self.threads.values():
                         t.do_parse(parser_pool)
 
                     parser_pool.close()
                     parser_pool.join()
-                self.read_log_queue(queue)
+                    queue.join()
 
             for t in self.threads.values():
                 # used by SsRunner to copy over results from duplicate runners
