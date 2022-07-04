@@ -306,6 +306,7 @@ def set_queue_handler(queue):
 
     handler = QueueHandler(queue)
     logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
 
     logging.captureWarnings(True)
     logging.getLogger("py.warnings").addFilter(LevelDemoteFilter(DEBUG))

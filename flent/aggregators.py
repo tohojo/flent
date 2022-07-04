@@ -29,10 +29,10 @@ import threading
 import time
 import resource
 
+import multiprocessing as mp
 from collections import OrderedDict
 from datetime import datetime
 from threading import Event
-from multiprocessing import Pool, Manager, cpu_count
 
 from flent import runners, loggers
 from flent.util import classname
@@ -112,7 +112,7 @@ class Aggregator(object):
     def check_rlimit(self):
         ni = len(self.instances)
         min_f = ni * 4 + 4
-        min_p = ni + cpu_count()
+        min_p = ni + mp.cpu_count()
 
         try:
             nf, nf_h = resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -191,9 +191,10 @@ class Aggregator(object):
             run_end = time.monotonic()
             logger.debug("Ran test in %f seconds", run_end - threads_end)
 
-            with Manager() as mngr:
+            ctx = mp.get_context("spawn")
+            with ctx.Manager() as mngr:
                 queue = mngr.Queue(10)
-                with Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
+                with ctx.Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
                     q_thread = threading.Thread(target=self.read_log_queue,
                                                 args=(queue, ), daemon=True)
                     q_thread.start()
