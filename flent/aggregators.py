@@ -25,6 +25,7 @@ import logging
 import math
 import pprint
 import signal
+import sys
 import time
 import resource
 
@@ -140,6 +141,28 @@ class Aggregator(object):
     def aggregate(self, results):
         raise NotImplementedError()
 
+    def parse_results_parallel(self):
+        with Manager() as mngr:
+            queue = mngr.Queue(10)
+            with Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
+                q_thread = Thread(target=self.read_log_queue, args=(queue, ), daemon=True)
+                q_thread.start()
+
+                res = []
+                for t in self.threads.values():
+                    res.extend(t.do_parse(parser_pool))
+
+                for r in res:
+                    r.wait()
+
+                queue.join()
+                parser_pool.close()
+                parser_pool.join()
+
+    def parse_results_direct(self):
+        for t in self.threads.values():
+            t.do_parse(None)
+
     def collect(self):
         """Create a ProcessRunner thread for each instance and start them. Wait
         for the threads to exit, then collect the results."""
@@ -190,22 +213,12 @@ class Aggregator(object):
             run_end = time.monotonic()
             logger.debug("Ran test in %f seconds", run_end - threads_end)
 
-            with Manager() as mngr:
-                queue = mngr.Queue(10)
-                with Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
-                    q_thread = Thread(target=self.read_log_queue, args=(queue, ), daemon=True)
-                    q_thread.start()
-
-                    res = []
-                    for t in self.threads.values():
-                        res.extend(t.do_parse(parser_pool))
-
-                    for r in res:
-                        r.wait()
-
-                    queue.join()
-                    parser_pool.close()
-                    parser_pool.join()
+            if sys.platform in ('darwin', 'win32'):
+                logger.debug("Parsing results in main thread on %s platform", sys.platform)
+                self.parse_results_direct()
+            else:
+                logger.debug("Parsing results in parallel on %s platform", sys.platform)
+                self.parse_results_parallel()
 
             for t in self.threads.values():
                 # used by SsRunner to copy over results from duplicate runners

@@ -598,7 +598,22 @@ class ProcessRunner(RunnerBase):
         err = io.StringIO()
         return self.parse(out, err)
 
+    def do_parse_direct(self):
+        try:
+            res = self.parse_output()
+            self.recv_result(res)
+        except Exception as e:
+            self.parse_error(e)
+
+        for c in self._child_runners:
+            c.do_parse(None)
+
+        return []
+
     def do_parse(self, pool):
+        if pool is None:
+            return self.do_parse_direct()
+
         res = [pool.apply_async(self.parse_output,
                                 callback=self.recv_result,
                                 error_callback=self.parse_error)]
