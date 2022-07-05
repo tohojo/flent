@@ -236,8 +236,10 @@ class RunnerBase(object):
         pass
 
     def do_parse(self, pool):
+        res = []
         for c in self._child_runners:
-            c.do_parse(pool)
+            res.extend(c.do_parse(pool))
+        return res
 
     def post_parse(self):
         for c in self._child_runners:
@@ -597,11 +599,12 @@ class ProcessRunner(RunnerBase):
         return self.parse(out, err)
 
     def do_parse(self, pool):
-        pool.apply_async(self.parse_output,
-                         callback=self.recv_result,
-                         error_callback=self.parse_error)
+        res = [pool.apply_async(self.parse_output,
+                                callback=self.recv_result,
+                                error_callback=self.parse_error)]
         for c in self._child_runners:
-            c.do_parse(pool)
+            res.extend(c.do_parse(pool))
+        return res
 
     def recv_result(self, res):
         result, raw_values, metadata = res
@@ -1961,7 +1964,8 @@ class SsRunner(ProcessRunner):
 
     def do_parse(self, pool):
         if not self.is_dup:
-            super().do_parse(pool)
+            return super().do_parse(pool)
+        return []
 
     def parse(self, output, error):
         parsed_parts = []

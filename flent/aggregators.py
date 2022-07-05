@@ -30,7 +30,7 @@ import resource
 
 from collections import OrderedDict
 from datetime import datetime
-from threading import Event
+from threading import Event, Thread
 from multiprocessing import Pool, Manager, cpu_count
 
 from flent import runners, loggers
@@ -71,9 +71,13 @@ class Aggregator(object):
         self.postprocessors = []
 
     def read_log_queue(self, queue):
-        while not queue.empty():
-            msg = queue.get_nowait()
-            logging.getLogger().handle(msg)
+        while True:
+            try:
+                msg = queue.get()
+                logging.getLogger().handle(msg)
+                queue.task_done()
+            except (EOFError, OSError):
+                return
 
     def add_instance(self, name, config):
         instance = dict(config)
@@ -187,14 +191,21 @@ class Aggregator(object):
             logger.debug("Ran test in %f seconds", run_end - threads_end)
 
             with Manager() as mngr:
-                queue = mngr.Queue()
+                queue = mngr.Queue(10)
                 with Pool(initializer=loggers.set_queue_handler, initargs=(queue, )) as parser_pool:
-                    for t in self.threads.values():
-                        t.do_parse(parser_pool)
+                    q_thread = Thread(target=self.read_log_queue, args=(queue, ), daemon=True)
+                    q_thread.start()
 
+                    res = []
+                    for t in self.threads.values():
+                        res.extend(t.do_parse(parser_pool))
+
+                    for r in res:
+                        r.wait()
+
+                    queue.join()
                     parser_pool.close()
                     parser_pool.join()
-                self.read_log_queue(queue)
 
             for t in self.threads.values():
                 # used by SsRunner to copy over results from duplicate runners
