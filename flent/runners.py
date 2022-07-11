@@ -1320,7 +1320,9 @@ class PingRunner(RegexpRunner):
                 logger.warning("Found fping, but it appears to be missing "
                                "permissions (no SUID?). Not using.")
             else:
-                out, err = self.run_simple([fping, '-D', '-c', '1', 'localhost'])
+                out, err = self.run_simple([fping, '-D', '-c', '1',
+                                            '-r', '0', '-t', '200',
+                                            'localhost', host, 'one.one.one.one'])
                 res = self.parse_string(out)
                 try:
                     tdiff = abs(res[1][0]['t'] - time.time())
