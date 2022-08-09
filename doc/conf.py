@@ -53,7 +53,7 @@ master_doc = 'contents'
 
 # General information about the project.
 project = 'Flent: The FLExible Network Tester'
-copyright = '2012-2021, Toke Høiland-Jørgensen and contributors. Source code is GPLv3. Documentation is CC-BY-SA. Neither license affects any output produced by Flent'
+copyright = '2012-2022, Toke Høiland-Jørgensen and contributors. Source code is GPLv3. Documentation is CC-BY-SA. Neither license affects any output produced by Flent'
 author = 'Toke Høiland-Jørgensen'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -70,7 +70,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
