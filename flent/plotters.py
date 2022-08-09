@@ -441,9 +441,9 @@ def add_plotting_args(parser):
     parser.add_argument(
         "--filter-regexp",
         action="append", type=str, dest="FILTER_REGEXP", metavar="REGEXP",
-        default=[], help="Filter labels (regex). Filter out supplied regular "
-        "expression from label names. Can be specified multiple times, in which "
-        "case the regular expressions will be filtered in the order specified.")
+        default=[], help="Filter labels (regex). Filter out (remove) text matching "
+        "the supplied regular expression from label names. Can be specified multiple "
+        "times, in which case the filters will be applied in the order specified.")
 
     parser.add_argument(
         "--override-label",

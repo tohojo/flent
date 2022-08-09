@@ -432,9 +432,12 @@ sense combined with :option:`-f` *plot*.
 
 .. option:: --filter-regexp=REGEXP
 
-   Filter the plot legend by the supplied regular expression. Note that for
-   combining several plot results, the regular expression is also applied before
-   the grouping logic, meaning that a too wide filter can mess up the grouping.
+   Filter the plot legend by the supplied regular expression (removing any text
+   from the legend that matches the expression). Can be specified multiple
+   times, in which case the filters will be applied in the order specified. Note
+   that for combining several plot results, the regular expression is also
+   applied before the grouping logic, meaning that a too wide filter can mess up
+   the grouping.
 
 .. option:: --override-label=LABEL
 
