@@ -664,6 +664,10 @@ class Plotter(ArgParam):
 
     def __getstate__(self):
         state = self.__dict__.copy()
+        if 'figure' in state:
+            fig = state['figure']
+            if getattr(fig, "canvas", None) and getattr(fig.canvas, "manager", None):
+                fig.canvas.manager = None
         return state
 
     def init(self, config=None, axis=None):
