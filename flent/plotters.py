@@ -656,7 +656,7 @@ class Plotter(ArgParam):
             self.figure._original_dpi = self.figure.dpi
 
     def __del__(self):
-        if not self.disable_cleanup:
+        if not getattr(self, "disable_cleanup", False):
             try:
                 pyplot.close(self.figure)
             except Exception:
