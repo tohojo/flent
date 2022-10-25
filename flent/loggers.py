@@ -237,8 +237,11 @@ def set_console_level(level):
     logger.setLevel(min(logger.level, level))
 
 
-def setup_null():
+def reset_to_null():
     logger = logging.getLogger()
+    handlers = logger.handlers[:]
+    for h in handlers:
+        logger.removeHandler(h)
     handler = logging.NullHandler()
     logger.addHandler(handler)
 

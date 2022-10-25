@@ -26,7 +26,7 @@ import warnings
 import traceback
 import unittest
 
-from flent import resultset
+from flent import resultset, loggers
 
 try:
     import cPickle as pickle
@@ -46,6 +46,7 @@ def setup_warnings():
     warnings.filterwarnings('ignore',
                             message="Matplotlib is building the font cache")
     warnings.simplefilter('error', append=True)
+    loggers.reset_to_null()
 
 
 def prefork(method):
