@@ -5,6 +5,41 @@ Changes since v2.0.1 include:
 - Add --irtt-sampling-interval parameter to run irtt at a different sampling
   interval than the rest of the test.
 
+- Add 99th percentile data to text-based output formats (like the default
+  summary after running a test).
+
+- Add --test-payload option to support sending custom data files as the TCP
+  payload in netperf tests.
+
+- Add caching of the results of looking up and probing the binaries used by the
+  various runners to speed up test startup especially when using the remote
+  launch feature to run binaries over ssh. By default the cache is only kept in
+  memory (for a single run of 'flent'), but it can be made persistent with the
+  --cache-file argument.
+
+- Rework the process forking used to fork off processes to run the test
+  utilities. This significantly speeds up running tests with many flows, to the
+  point where it's now possible to spawn 1000 runner subprocesses on a
+  moderately powerful laptop.
+
+- Offload runner output parsing to parallel subprocesses, meaning that runner
+  output parsing can take advantage of all available cores. This is only enabled
+  on Linux as the multiprocessing module is a bit flaky, leading to hangs, on
+  OSX.
+
+- Fix several issues with ping and fping when using --local-bind
+
+- Fix some issues with parsing the output of 'ss', and share the parsing output
+  so the output data is only parsed once when getting the output of multiple
+  flows.
+
+- Make sure to pass the right options to force irtt to use the same IP version
+  as the rest of the test utilities.
+
+- Fix parsing of D-ITG output.
+
+- Fix an annoying crash when starting a test from the GUI.
+
 # Flent v2.0.1 #
 Released on 2021-06-24.
 
