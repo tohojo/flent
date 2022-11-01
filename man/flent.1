@@ -1,8 +1,5 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "FLENT" "1" "June 28, 2021" "2.0.1-git" "Flent: The FLExible Network Tester"
-.SH NAME
-flent \- Flent: The FLExible Network Tester
 .
 .nr rst2man-indent-level 0
 .
@@ -30,6 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
+.TH "FLENT" "1" "November 02, 2022" "2.1.0" "Flent: The FLExible Network Tester"
+.SH NAME
+flent \- Flent: The FLExible Network Tester
 .SH INTRODUCTION
 .sp
 Flent is a wrapper around \fInetperf\fP and similar tools to run predefined
@@ -47,7 +47,7 @@ including time\-series plots of the values against each other, as well as
 CDF plots of (e.g.) ping times.
 .sp
 Plots can be output to the formats supported by matplotlib by specifying
-the output filename with \fB\-o\fP \fIoutput.{png,ps,pdf,svg}\fP\&. If no output
+the output filename with \fI\%\-o\fP \fIoutput.{png,ps,pdf,svg}\fP\&. If no output
 file is specified, the plot is displayed using matplotlib’s interactive
 plot browser, which also allows saving of the output (in .png format).
 .SS Requirements
@@ -160,7 +160,7 @@ commands. This option can be specified multiple times and implies
 Run the flent GUI. All other options are used as defaults in the GUI, but can
 be changed once it is running. The GUI can also be started by running the
 \fBflent\-gui\fP binary. For more information on the GUI, see the
-gui section.
+\fI\%The Flent GUI\fP section.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -336,7 +336,7 @@ lower case. The values are stored with the results metadata, and so can be
 used for storing arbitrary information relevant for a particular test run.
 .sp
 In addition to serving as simple metadata, the test parameters can also
-affect the behaviour of some test configurations. See the tests
+affect the behaviour of some test configurations. See the \fI\%Supplied Tests\fP
 section for information on these.
 .sp
 This option can be specified multiple times to set multiple test parameters.
@@ -576,9 +576,12 @@ Replace \(aqsrc\(aq with \(aqdst\(aq in legends. Can be specified multiple times
 .INDENT 0.0
 .TP
 .B \-\-filter\-regexp=REGEXP
-Filter the plot legend by the supplied regular expression. Note that for
-combining several plot results, the regular expression is also applied before
-the grouping logic, meaning that a too wide filter can mess up the grouping.
+Filter the plot legend by the supplied regular expression (removing any text
+from the legend that matches the expression). Can be specified multiple
+times, in which case the filters will be applied in the order specified. Note
+that for combining several plot results, the regular expression is also
+applied before the grouping logic, meaning that a too wide filter can mess up
+the grouping.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -705,7 +708,7 @@ communication over a separate control network so as to not interfere with
 test traffic.
 .sp
 There is also a per\-flow setting for this for tests that connect to multiple
-hosts; see the \fIcontrol_hosts\fP test parameter in tests\&. If both are
+hosts; see the \fIcontrol_hosts\fP test parameter in \fI\%Supplied Tests\fP\&. If both are
 set, the per\-flow setting takes precedence for those tests that use it.
 .UNINDENT
 .INDENT 0.0
@@ -835,12 +838,12 @@ the currently running test; subsequent tests will still be run.
 .sp
 Test are supplied as Python files and can specify commands to run etc.
 For a full list of the tests supported by flent, see the
-\fB\-\-list\-tests\fP option.
+\fI\%\-\-list\-tests\fP option.
 .SS The Realtime Response Under Load (RRUL) test
 .sp
 This test exists in a couple of variants and is a partial implementation of the
 RRUL specification as written by Dave Taht (see
-\fI\%https://github.com/dtaht/deBloat/blob/master/spec/rrule.doc?raw=true\fP). It works
+\fI\%https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/\fP). It works
 by running RTT measurement using ICMP ping and UDP roundtrip time measurement,
 while loading up the link with eight TCP streams (four downloads, four uploads).
 This quite reliably saturates the measured link (wherever the bottleneck might
@@ -857,7 +860,7 @@ test host, while measuring RTT using ICMP ping. It is useful for observing
 latency in the face of a completely unresponsive packet stream.
 .SS Test parameters
 .sp
-Some test parameters (set with \fB\-\-test\-parameter\fP) affect the way tests
+Some test parameters (set with \fI\%\-\-test\-parameter\fP) affect the way tests
 behave. These are:
 .INDENT 0.0
 .TP
@@ -1032,9 +1035,9 @@ number of target hostnames specified for the test.
 .TP
 .B labels
 Flow markings to use for each of the flows in the \fBrtt_fair*\fP tests.
-Comma\-separated values of markings understood by Netperf (such as "CS0").
+Comma\-separated values of markings understood by Netperf (such as \(dqCS0\(dq).
 Only supports setting the same marking on both the upstream and downstream
-packets of each flow (so no "CS0,CS0" setting as can be used for Netperf). If
+packets of each flow (so no \(dqCS0,CS0\(dq setting as can be used for Netperf). If
 not set, defaults to CS0 (best effort). If set, each value corresponds to a
 flow, and any extra flows will be set to CS0. By default each flow will be
 labelled according to its marking; to override these labels, use the
@@ -1054,7 +1057,7 @@ whether or not there is one or two flows going to that host.
 .sp
 Flent comes equipped with a GUI to browse and plot previously captured datasets.
 The GUI requires PyQt4; if this is installed, it can be launched with the
-\fB\-\-gui\fP parameter, or by launching the \fBflent\-gui\fP binary.
+\fI\%\-\-gui\fP parameter, or by launching the \fBflent\-gui\fP binary.
 Additionally, if Flent is launched without parameters and without a controlling
 terminal, the GUI will be launched automatically.
 .sp
@@ -1066,7 +1069,7 @@ can be loaded and added to the plot, similar to what happens when specifying
 multiple input files for plotting on the command line. A checkbox controls
 whether the added data files are added as separate entries to the plot, or
 whether they are used for scaling the output (mirroring the
-\fB\-\-scale\-mode\fP) command line switch.
+\fI\%\-\-scale\-mode\fP) command line switch.
 .sp
 The GUI also incorporates matplotlib’s interactive browsing toolbar, enabling
 panning and zooming of the plot area, dynamic configuration of plot and axis
@@ -1077,7 +1080,7 @@ supported depends on the installed version of matplotlib.
 .sp
 Some of the command line options can be specified in an rc file. By default,
 flent looks for this in \fB~/.flentrc\fP, but an alternative location can be
-specified with the \fB\-\-rcfile\fP command line option.
+specified with the \fI\%\-\-rcfile\fP command line option.
 .sp
 The rc file allows options to be specified globally, an optionally overridden
 for specific tests. For an explanation of the options, refer to the annotated
@@ -1110,7 +1113,7 @@ default installed to \fB/usr/share/doc/flent/batchfile.example\fP\&.
 .sp
 The aggregated test data is saved in a file called
 \fB<test_name>\-<date>.<title>.flent.gz\fP (the title part is omitted if no title is
-specified by the \fB\-t\fP parameter). This file contains the data points
+specified by the \fI\%\-t\fP parameter). This file contains the data points
 generated during the test, as well as some metadata.
 .SS The top\-level object keys
 .INDENT 0.0
@@ -1157,7 +1160,7 @@ The test name.
 .INDENT 0.0
 .TP
 .B TITLE
-Any extra title specified by the \fB\-\-title\-extra\fP parameter
+Any extra title specified by the \fI\%\-\-title\-extra\fP parameter
 when the test was run.
 .UNINDENT
 .INDENT 0.0
@@ -1173,7 +1176,7 @@ The hostname of the machine that ran the test.
 .INDENT 0.0
 .TP
 .B LENGTH
-Test length in seconds, as specified by the \fB\-\-length\fP parameter.
+Test length in seconds, as specified by the \fI\%\-\-length\fP parameter.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -1194,7 +1197,7 @@ ISO timestamp of the time the test was initiated.
 .INDENT 0.0
 .TP
 .B NOTE
-Arbitrary text as entered with the \fB\-\-note\fP switch when the
+Arbitrary text as entered with the \fI\%\-\-note\fP switch when the
 test was run.
 .UNINDENT
 .INDENT 0.0
@@ -1242,16 +1245,16 @@ interface used to reach the test target. This requires that the
 \fBtc\fP binary to be present, and offload information requires
 \fBethtool\fP\&.
 .sp
-If the \fB\-\-remote\-metadata\fP is used, the extended metadata
+If the \fI\%\-\-remote\-metadata\fP is used, the extended metadata
 info is gathered for each of the hostnames specified. This is
 gathered under the \fBREMOTE_METADATA\fP key in the metadata
 object, keyed by the hostname values passed to
-\fB\-\-remote\-metadata\fP\&. Additionally, the
+\fI\%\-\-remote\-metadata\fP\&. Additionally, the
 \fBREMOTE_METADATA\fP object will contain an object called
 \fBINGRESS_INFO\fP which is a duplicate of
 \fI\%EGRESS_INFO\fP, but with the destination IP exchanged for the
 source address of the host running flent. The assumption here is
-that \fB\-\-remote\-metadata\fP is used to capture metadata of a
+that \fI\%\-\-remote\-metadata\fP is used to capture metadata of a
 router known to be in the test path, in which case
 \fBINGRESS_INFO\fP will contain information about the reverse
 path from the router (which is ingress from the point of view of the
@@ -1261,7 +1264,7 @@ probably be the same as that of \fI\%EGRESS_INFO\fP .
 .UNINDENT
 .SS Extended metadata
 .sp
-If the \fB\-\-extended\-metadata\fP switch is turned on, the following
+If the \fI\%\-\-extended\-metadata\fP switch is turned on, the following
 additional values are collected and stored (to the extent they are available
 from the platform):
 .INDENT 0.0
@@ -1286,35 +1289,35 @@ is enabled.
 .SH OUTPUT FORMATS
 .sp
 The following output formats are currently supported by Flent:
-.SS Plot output (\fB\-f plot\fP)
+.SS Plot output (\fI\%\-f plot\fP)
 .sp
 Output test data as one of a series of graphical plots of timeseries data or
 summarised as a CDF plot. Each test supplies a number of different plots; the
-list of plots for a given test is output by the \fB\-\-list\-plots\fP switch
+list of plots for a given test is output by the \fI\%\-\-list\-plots\fP switch
 (which must be supplied along with a test name).
 .sp
 The plots are drawn by matplotlib, and can be displayed on the screen
 interactively (requires a graphical display), or output to a file in svg, pdf,
-ps and png formats. Using the \fB\-o\fP switch turns out file output (the
+ps and png formats. Using the \fI\%\-o\fP switch turns out file output (the
 file format is inferred from the file name), while not supplying the switch
 turns on the interactive plot viewer.
-.SS Tabulated output (\fB\-f csv\fP and \fB\-f org_table\fP)
+.SS Tabulated output (\fI\%\-f csv\fP and \fI\%\-f org_table\fP)
 .sp
 These formats output the numeric data in a tabulated format to be consumed by
 other applications. The \fIcsv\fP output format is a comma\-separated output that can
 be imported into e.g. spreadsheets, while \fIorg_table\fP outputs a tabulated output
 in the table format supported by Emacs org mode. The data is output in text
-format to standard output, or written to a file if invoked with the \fB\-o\fP
+format to standard output, or written to a file if invoked with the \fI\%\-o\fP
 parameter.
-.SS Statistics output (\fB\-f stats\fP)
+.SS Statistics output (\fI\%\-f stats\fP)
 .sp
 This output format outputs various statistics about the test data, such as total
 bandwidth consumed, and various statistical measures (min/max/mean/median/std
 dev/variance) for each data source specified in the relevant test (this can
 include some data sources not includes on plots). The data is output in text
-format to standard output, or written to a file if invoked with the \fB\-o\fP
+format to standard output, or written to a file if invoked with the \fI\%\-o\fP
 parameter.
-.SS Metadata output (\fB\-f metadata\fP)
+.SS Metadata output (\fI\%\-f metadata\fP)
 .sp
 This output format outputs the test metadata as pretty\-printed JSON (also
 suitable for human consumption). It is output as a list of objects, where each
@@ -1363,12 +1366,12 @@ for UDP measurements is a way to alleviate this; Flent will automatically detect
 the availability of irtt and use it if available.
 .sp
 Probably many other bugs. Please report any found to
-\fI\%https://github.com/tohojo/flent/issues\fP and include the output of \fBflent
-\-\-version\fP in the report. A debug log (as obtained with \fBflent
+\fI\%https://github.com/tohojo/flent/issues\fP and include the output of \fI\%flent
+\-\-version\fP in the report. A debug log (as obtained with \fI\%flent
 \-\-log\-file\fP) is also often useful.
 .SH AUTHOR
 Toke Høiland-Jørgensen
 .SH COPYRIGHT
-2012-2021, Toke Høiland-Jørgensen and contributors. Source code is GPLv3. Documentation is CC-BY-SA. Neither license affects any output produced by Flent
+2012-2022, Toke Høiland-Jørgensen and contributors. Source code is GPLv3. Documentation is CC-BY-SA. Neither license affects any output produced by Flent
 .\" Generated by docutils manpage writer.
 .

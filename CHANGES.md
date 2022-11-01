@@ -1,4 +1,10 @@
-# Changes since latest release #
+# Flent v2.1.0 #
+Released on 2022-11-02.
+
+The main changes in this release are some reworking of process forking and
+output parsing to make it scale better, improving performance with tests with
+many runners. Another notable performance improvement is the addition of a cache
+for the lookup of runner binaries.
 
 Changes since v2.0.1 include:
 
