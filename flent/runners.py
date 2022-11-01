@@ -2073,11 +2073,11 @@ class SsRunner(ProcessRunner):
             filt = "{} and dport != {}".format(filt, p)
 
         return "{bash} {script} -I {interval:.2f} " \
-            "-c {count:.0f} -H {host} -t '{target}' -f '{filt}'".format(
+            "-l {length} -H {host} -t '{target}' -f '{filt}'".format(
                 bash=bash,
                 script=script,
                 interval=interval,
-                count=length // interval + 1,
+                length=length,
                 host=host,
                 target=resol_target,
                 filt=filt)
@@ -2274,12 +2274,13 @@ class TcRunner(ProcessRunner):
             interface = 'eth0'
 
         return "{bash} {script} -i {interface} -I {interval:.2f} " \
-            "-c {count:.0f} -H {host}".format(
+            "-c {count:.0f} -l {length} -H {host}".format(
                 bash=bash,
                 script=script,
                 interface=interface,
                 interval=interval,
                 count=length // interval + 1,
+                length=length,
                 host=host)
 
 
