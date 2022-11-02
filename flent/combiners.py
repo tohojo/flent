@@ -606,6 +606,9 @@ class Pct99Reducer(TryReducer):
     raw_key = "pct99"
 
     def _reduce(self, data):
+        if not HAS_NUMPY:
+            return sorted(data)[-(len(data) // 100 + 1)]
+
         return np.percentile(data, 99)
 
 class CumsumReducer(TryReducer):
@@ -740,6 +743,9 @@ class RawMaxReducer(RawReducer):
 class RawPct99Reducer(RawReducer):
 
     def _reduce(self, data):
+        if not HAS_NUMPY:
+            return sorted(data)[-(len(data) // 100 + 1)]
+
         return np.percentile(data, 99)
 
 class RawCumsumReducer(RawReducer):

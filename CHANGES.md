@@ -2,6 +2,8 @@
 
 Changes since v2.1.0 include:
 
+- Fix crash on summary output when numpy is not installed.
+
 # Flent v2.1.0 #
 Released on 2022-11-02.
 
