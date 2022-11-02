@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import unittest
 import os
+import sys
 
 from .test_helpers import ForkingTestCase
 
@@ -39,6 +40,9 @@ class TestGui(ForkingTestCase):
             from qtpy import QtCore
         except ImportError:
             self.skipTest("No usable Qt module found")
+
+        if (sys.platform == 'linux' and not os.getenv("DISPLAY")):
+            self.skipTest("No DISPLAY variable set")
 
     def test_start_gui(self):
         from flent import gui
