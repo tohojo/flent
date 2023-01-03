@@ -46,8 +46,11 @@ from flent.loggers import get_logger, add_log_handler, remove_log_handler, \
 from flent.resultset import ResultSet
 from flent.settings import ListTests, new as new_settings, plot_group
 
-import matplotlib
-matplotlib.use("Agg")
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+except ImportError as e:
+    raise RuntimeError(f"The GUI requires matplotlib, please ensure it's installed ({e}).")
 
 logger = get_logger(__name__)
 
@@ -90,7 +93,7 @@ try:
         as NavigationToolbar
 
 except ImportError as e:
-    raise RuntimeError(f"Unable to find a usable Qt version {e}.")
+    raise RuntimeError(f"Unable to find a usable Qt version, please ensure qtpy is installed ({e}).")
 
 
 # The file selector dialog on OSX is buggy, so switching allowed file extensions
