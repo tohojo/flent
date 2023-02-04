@@ -506,7 +506,7 @@ class ProcessRunner(RunnerBase):
             self._kill_child(immediate=True)
 
     def _try_kill_child(self, sig):
-        self.debug("Sending %s to pid %d", signal.strsignal(sig), self.pid)
+        self.debug("Sending signal %d to pid %d", sig, self.pid)
         try:
             os.kill(self.pid, sig)
 
