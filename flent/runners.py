@@ -393,7 +393,7 @@ class ProcessRunner(RunnerBase):
     supports_remote = True
     _env = {}
 
-    def __init__(self, delay=0, remote_host=None, units=None, **kwargs):
+    def __init__(self, delay=0, remote_host=None, units=None, command=None, **kwargs):
         super(ProcessRunner, self).__init__(**kwargs)
 
         self.delay = delay
@@ -403,7 +403,7 @@ class ProcessRunner(RunnerBase):
         self.pid_fd = None
         self.returncode = None
         self.test_parameters = {}
-        self.command = None
+        self.command = command
         self.start_time = None
 
     def check(self):
