@@ -14,11 +14,11 @@ make test || die "Test failed"
 
 echo ==== Updating source code version numbers to ${VERSION}... ====
 
-sed -i s/VERSION\ =\ \"[0-9\\.]\\+\\\(-git\\\)\\?\"/VERSION\ =\ \"${VERSION}\"/ flent/build_info.py  || die error
-sed -i -e "s/version = '[0-9\\.]\\+\\(-git\\)\\?'/version = '${VERSION}'/" doc/conf.py  || die error
+sed -i s/VERSION\ =\ \"[0-9\\.]\\+\\\(+git\\\)\\?\"/VERSION\ =\ \"${VERSION}\"/ flent/build_info.py  || die error
+sed -i -e "s/version = '[0-9\\.]\\+\\(+git\\)\\?'/version = '${VERSION}'/" doc/conf.py  || die error
 make man || die error
 
-if [[ ! "$VERSION" =~ -git$ ]]; then
+if [[ ! "$VERSION" =~ git$ ]]; then
 
     echo ==== Updating CHANGES.md... ====
     sed -i -e "1 s/Changes since latest release/Flent v${VERSION}/" \
@@ -43,7 +43,7 @@ if [[ ! "$VERSION" =~ -git$ ]]; then
 else
 
     echo ==== Updating CHANGES.md... ====
-    sed -i -e "1 i# Changes since latest release #\n\nChanges since v${VERSION%-git} include:\n" CHANGES.md
+    sed -i -e "1 i# Changes since latest release #\n\nChanges since v${VERSION%+git} include:\n" CHANGES.md
 
 fi
 
@@ -53,4 +53,4 @@ git add flent/build_info.py man/flent.1 doc/conf.py \
     CHANGES.md || die error
 
 echo ==== Done. Review changes and commit \(and tag\). ====
-[[ ! "$VERSION" =~ -git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====
+[[ ! "$VERSION" =~ git$ ]] && echo ==== Upload with \`twine upload dist/flent-${VERSION}*\`. ====

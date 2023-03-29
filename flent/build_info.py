@@ -24,7 +24,7 @@
 import os
 
 # this value works for the source distribution
-VERSION = "2.1.1-git"
+VERSION = "2.1.1+git"
 DATA_DIR = os.path.dirname(__file__)
 
 ENCODING = "UTF-8"
@@ -34,12 +34,12 @@ try:
 except:
     pass
 
-if VERSION.endswith("-git") and os.path.exists(
+if VERSION.endswith("+git") and os.path.exists(
         os.path.realpath(os.path.join(DATA_DIR, '..', '.git'))):
     try:
         import subprocess
         commit = subprocess.check_output(
-            ["git", "log", "--format=%h", "-1"], cwd=DATA_DIR).decode(ENCODING)
-        VERSION += "-%s" % commit.strip()
+            ["git", "log", "--format=%h", "--abbrev=8", "-1"], cwd=DATA_DIR).decode(ENCODING)
+        VERSION += ".%s" % commit.strip()
     except:
         pass
