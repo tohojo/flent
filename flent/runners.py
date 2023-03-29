@@ -700,7 +700,7 @@ class SilentProcessRunner(ProcessRunner):
     silent = True
 
     def parse(self, output, error=""):
-        return None
+        return {}, [], {}
 
 
 class DitgRunner(ProcessRunner):
