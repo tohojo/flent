@@ -1021,13 +1021,13 @@ class NetperfDemoRunner(ProcessRunner):
         args.setdefault('extra_test_args', "")
         args.setdefault('format', "")
         args.setdefault('marking', "")
-        args.setdefault('cong_control',
-                        self.settings.TEST_PARAMETERS.get('tcp_cong_control', ''))
         args.setdefault('socket_timeout', self.settings.SOCKET_TIMEOUT)
         args.setdefault('send_size',
                         self.settings.SEND_SIZE[0]
                         if self.settings.SEND_SIZE else "")
         args.setdefault('test_payload', self.settings.TEST_PAYLOAD)
+
+        args['cong_control'] = self.settings.TEST_PARAMETERS.get('tcp_cong_control', args.get('cong_control', ''))
 
         if self.settings.SWAP_UPDOWN:
             if self.test == 'TCP_STREAM':
@@ -1108,7 +1108,7 @@ class NetperfDemoRunner(ProcessRunner):
             args['marking'] = self.parse_marking(args['marking'], "-Y {}", True)
 
         if args['cong_control']:
-            args['cong_control'] = "-K {0}".format(args['cong_control'])
+            args['cong_control'] = "-K {0},{0}".format(args['cong_control'])
 
         for c in 'local_bind', 'control_local_bind':
             if args[c]:
