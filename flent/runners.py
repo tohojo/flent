@@ -1119,6 +1119,9 @@ class NetperfDemoRunner(ProcessRunner):
         else:
             args['socket_timeout'] = ""
 
+        if args['host']:
+            args['host'] = "-H {}".format(args['host'])
+
         if self.test in ("TCP_STREAM", "TCP_MAERTS"):
             args['format'] = "-f m"
             if args['send_size']:
@@ -1138,12 +1141,13 @@ class NetperfDemoRunner(ProcessRunner):
 
         elif self.test == 'UDP_RR':
             self.units = 'ms'
+            args['host'] = ""
 
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
                        "{marking} -H {control_host} -p {control_port} " \
                        "-t {test} -l {length:d} {buffer} {format} " \
                        "{control_local_bind} {extra_args} -- " \
-                       "{socket_timeout} {send_size} {local_bind} -H {host} -k {output_vars} " \
+                       "{socket_timeout} {send_size} {local_bind} {host} -k {output_vars} " \
                        "{cong_control} {extra_test_args}".format(**args)
 
         super(NetperfDemoRunner, self).check()
