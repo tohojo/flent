@@ -1529,6 +1529,15 @@ class IperfCsvRunner(ProcessRunner):
             if len(parts) < 9:
                 continue
 
+            # Skip the header line in recent versions of iperf2
+            if parts[0] == "time":
+                continue
+
+            # Newer versions of iperf2 have a timezone in front of the timestamp
+            subpart = parts[0].split(":")
+            if len(subpart) > 1:
+                parts[0] = subpart[1]
+
             # Add the result of the last line to the array; this skips the last
             # entry, which is an average for the whole test, and is handled
             # below
@@ -1589,18 +1598,27 @@ class IperfCsvRunner(ProcessRunner):
         if iperf is not None:
             out, err = self.run_simple([iperf, '-h'])
 
-            if "--enhancedreports" in err:
+            # The iperf flag --enhancedreports was deprecated in 2.0.14a and replaced
+            # by --enhanced
+            enhanced = None
+            if "--enhanced" in out or err:
+                enhanced = "--enhanced"
+            elif "--enhancedreports" in err:
+                enhanced = "--enhancedreports"
+
+            if enhanced:
                 if udp:
                     udp_args = "--udp --bandwidth {}".format(bw if bw else "100M")
                     if pktsize:
                         udp_args = "{} --len {}".format(udp_args, pktsize)
                 else:
                     udp_args = ""
-                return "{binary} --enhancedreports --reportstyle C --format m " \
+                return "{binary} {enhanced} --reportstyle C --format m " \
                     "--client {host} --time {length} --interval {interval} " \
                     "{local_bind} {no_delay} {udp} {marking} {ip6}".format(
                         host=host,
                         binary=iperf,
+                        enhanced=enhanced,
                         length=length,
                         interval=interval,
                         # --help output is wrong
@@ -1610,12 +1628,11 @@ class IperfCsvRunner(ProcessRunner):
                         no_delay="--nodelay" if no_delay else "",
                         marking=self.parse_marking(marking, "--tos {}"),
                         udp=udp_args)
-            else:
-                out, err = self.run_simple([iperf, '-v'])
+            out, err = self.run_simple([iperf, '-v'])
 
-                logger.warning(
-                    "Found iperf binary (%s), but it does not have "
-                    "an --enhancedreports option. Not using.", err.strip())
+            logger.warning(
+                "Found iperf binary (%s), but it does not have "
+                "either an --enhanced nor --enhancedreports option. Not using.", err.strip())
 
         raise RunnerCheckError("No suitable Iperf binary found.")
 
