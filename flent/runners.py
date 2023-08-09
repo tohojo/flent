@@ -1135,15 +1135,28 @@ class NetperfDemoRunner(ProcessRunner):
                                length=self.length,
                                target=self.host,
                                ip_version=args['ip_version'])
+            args['host'] = f"-H {args['host']}"
 
         elif self.test == 'UDP_RR':
             self.units = 'ms'
+            if args['control_host'] != args['host'] or \
+               args['control_local_bind'] != args['local_bind']:
+
+                logger.warning("UDP_RR test doesn't support setting separate control host parameters, ignoring")
+                args['control_host'] = args['host']
+                args['control_local_bind'] = args['local_bind']
+
+            args['host'] = ""
+            args['local_bind'] = ""
+        else:
+            raise RunnerCheckError(f"Unknown netperf test type: {self.test}")
+
 
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
                        "{marking} -H {control_host} -p {control_port} " \
                        "-t {test} -l {length:d} {buffer} {format} " \
                        "{control_local_bind} {extra_args} -- " \
-                       "{socket_timeout} {send_size} {local_bind} -H {host} -k {output_vars} " \
+                       "{socket_timeout} {send_size} {local_bind} {host} -k {output_vars} " \
                        "{cong_control} {extra_test_args}".format(**args)
 
         super(NetperfDemoRunner, self).check()
