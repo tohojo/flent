@@ -473,13 +473,16 @@ class ProcessRunner(RunnerBase):
             self.stdout.close()
             self.stderr.close()
             os.closerange(3, 65535)
+            pid = os.getpid()
 
             try:
                 if self.start_event is not None:
+                    os.write(2, f"{time.time()}: PID {pid} waiting for SIGUSR2\n".encode("utf-8"))
                     signal.signal(signal.SIGUSR2, self.handle_usr2)
                     self.start_event.wait()
                     signal.signal(signal.SIGUSR2, signal.SIG_DFL)
 
+                os.write(2, f"{time.time()}: PID {pid} sleeping for {self.delay} seconds\n".encode("utf-8"))
                 time.sleep(self.delay)
             except:
                 os._exit(0)
@@ -487,6 +490,7 @@ class ProcessRunner(RunnerBase):
             env = dict(os.environ)
             env.update(self._env)
             prog = self.args[0]
+            os.write(2, f"{time.time()}: PID {pid} running execvpe({' '.join(self.args)})\n".encode("utf-8"))
             os.execvpe(prog, self.args, env)
         else:
             self.debug("Forked %s as pid %d", self.args[0], pid)
