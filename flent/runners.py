@@ -467,7 +467,7 @@ class ProcessRunner(RunnerBase):
         if pid == 0:
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             devnull = os.open(os.devnull, os.O_RDWR)
-            os.dup2(devnull, 1)
+            os.dup2(devnull, 0)
             os.dup2(self.stdout.fileno(), 1)
             os.dup2(self.stderr.fileno(), 2)
             self.stdout.close()
