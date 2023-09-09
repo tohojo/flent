@@ -1143,15 +1143,18 @@ class NetperfDemoRunner(ProcessRunner):
 
         elif self.test == 'UDP_RR':
             self.units = 'ms'
-            if args['control_host'] != args['host'] or \
-               args['control_local_bind'] != args['local_bind']:
+            if args['ip_version'] == 6:
+                if args['control_host'] != args['host'] or \
+                   args['control_local_bind'] != args['local_bind']:
 
-                logger.warning("UDP_RR test doesn't support setting separate control host parameters, ignoring")
-                args['control_host'] = args['host']
-                args['control_local_bind'] = args['local_bind']
+                    logger.warning("UDP_RR test doesn't support setting separate control host parameters for IPv6, ignoring")
+                    args['control_host'] = args['host']
+                    args['control_local_bind'] = args['local_bind']
 
-            args['host'] = ""
-            args['local_bind'] = ""
+                args['host'] = ""
+                args['local_bind'] = ""
+            else:
+                args['host'] = f"-H {args['host']}"
         else:
             raise RunnerCheckError(f"Unknown netperf test type: {self.test}")
 
