@@ -2090,6 +2090,7 @@ class ResultWidget(QWidget):
         self.plotter = None
         self.canvas = None
         self.needs_resize = False
+        self.was_destroyed = False
 
         self.new_plot.connect(self.get_plotter)
         self.async_fig = None
@@ -2179,6 +2180,7 @@ class ResultWidget(QWidget):
     def disconnect_all(self):
         for s in (self.update_start, self.update_end, self.plot_changed):
             s.disconnect()
+        self.was_destroyed = True
 
     def disable_cleanup(self):
         if self.plotter is not None:
@@ -2336,6 +2338,8 @@ class ResultWidget(QWidget):
         self.setCursor(Qt.WaitCursor)
 
     def recv_plot(self, fig):
+        if self.was_destroyed:
+            return
         self.new_plot.emit()
 
     def get_plotter(self):
