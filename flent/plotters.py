@@ -952,6 +952,24 @@ class Plotter(ArgParam):
         finally:
             pdf.close()
 
+    def _get_renderer(self):
+
+        # Matplotlib 3.6 reorganised the renderer caching logic and introduced
+        # the _get_renderer() method of the figure class, so try that first
+        try:
+            return self.figure._get_renderer()
+        except AttributeError:
+            pass
+
+        # Older versions of matplotlib cached the renderer in the figure itself,
+        # but it may not exist until after figure is drawn
+        renderer = getattr(self.figure, '_cachedRenderer', None)
+        if not renderer:
+            self.figure.canvas.draw()
+            renderer = getattr(self.figure, '_cachedRenderer', None)
+
+        return renderer
+
     def build_tight_layout(self, artists):
         args = None
         if self.fallback_layout:
@@ -959,7 +977,7 @@ class Plotter(ArgParam):
         try:
             self.figure.savefig(io.BytesIO())
 
-            renderer = self.figure._cachedRenderer
+            renderer = self._get_renderer()
             right = x_max = self.figure.get_figwidth() * self.figure.dpi
             top = y_max = self.figure.get_figheight() * self.figure.dpi
             vsp = 0.02 * self.figure.dpi
@@ -1038,15 +1056,9 @@ class Plotter(ArgParam):
            and not self.legend_placement \
            and self.legends:
 
-            # Make sure we have a renderer to get size from
-            renderer = getattr(self.figure, '_cachedRenderer', None)
-            if not renderer:
-                self.figure.canvas.draw()
-                renderer = getattr(self.figure, '_cachedRenderer', None)
-
             try:
                 legend_width = max(
-                    [l.get_window_extent(renderer).width for l in self.legends])
+                    [l.get_window_extent(self._get_renderer()).width for l in self.legends])
             except Exception as e:
                 logger.debug("Error getting legend sizes: %s", e)
                 return
