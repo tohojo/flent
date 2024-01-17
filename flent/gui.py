@@ -278,6 +278,10 @@ class MainWindow(QMainWindow):
         self.viewArea.tabCloseRequested.connect(self.close_tab)
         self.viewArea.currentChanged.connect(self.activate_tab)
 
+        self.openFileButton.clicked.connect(self.on_open)
+        self.runTestButton.clicked.connect(self.run_test)
+        self.update_empty_view()
+
         self.plotDock.visibilityChanged.connect(self.plot_visibility)
         self.metadataDock.visibilityChanged.connect(self.metadata_visibility)
         self.plotSettingsDock.visibilityChanged.connect(self.plot_settings_visibility)
@@ -408,6 +412,14 @@ class MainWindow(QMainWindow):
                 value = value.toByteArray()
             self.openFilesView.horizontalHeader().restoreState(value)
             self.openFilesView.setSortingEnabled(True)
+
+    def update_empty_view(self):
+        if self.viewArea.count():
+            self.viewArea.show()
+            self.emptyWidget.hide()
+        else:
+            self.viewArea.hide()
+            self.emptyWidget.show()
 
     def closeEvent(self, event):
         # Cleaning up matplotlib figures can take a long time; disable it when
@@ -654,6 +666,7 @@ class MainWindow(QMainWindow):
             widget.setParent(None)
             widget.deleteLater()
             self.shorten_tabs()
+        self.update_empty_view()
         self.busy_end()
 
     def close_all(self):
@@ -662,6 +675,7 @@ class MainWindow(QMainWindow):
         for i in range(self.viewArea.count()):
             widgets.append(self.viewArea.widget(i))
         self.viewArea.clear()
+        self.update_empty_view()
         for w in widgets:
             w.setUpdatesEnabled(False)
             w.disconnect_all()
@@ -775,6 +789,7 @@ class MainWindow(QMainWindow):
         if title is None:
             title = widget.title
         idx = self.viewArea.addTab(widget, title)
+        self.update_empty_view()
         if hasattr(widget, "long_title"):
             self.viewArea.setTabToolTip(idx, widget.long_title)
         if focus or self.focus_new:
