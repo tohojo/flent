@@ -913,6 +913,9 @@ class NewTestDialog(QDialog):
         self.pid = None
         self.aborted = False
 
+        if self.settings.NAME is None:
+            self.settings.NAME = "rrul"
+
         tests = ListTests.get_tests(settings)
         max_len = max([len(t[0]) for t in tests])
         for t, desc in tests:
