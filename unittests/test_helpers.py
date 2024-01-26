@@ -58,9 +58,17 @@ def prefork(method):
         pid = os.fork()
         if pid:
             os.close(pipe_w)
-            status = os.waitpid(pid, 0)
-            if not os.WIFEXITED(status[1]):
-                raise RuntimeError("Child exited non-zero")
+            _, status = os.waitpid(pid, 0)
+            if os.WIFSIGNALED(status):
+                raise RuntimeError(f"Child terminated by signal {os.WTERMSIG(status)}")
+            elif os.WIFSTOPPED(status):
+                raise RuntimeError(f"Child stopped by signal {os.WSTOPSIG(status)}")
+            elif not os.WIFEXITED(status):
+                raise RuntimeError("Child did not exit correctly")
+
+            ret = os.WEXITSTATUS(status)
+            if ret != 0:
+                raise RuntimeError(f"Child exited with status {ret}")
 
             res = pickle.loads(os.read(pipe_r, 65535))
             if HAS_TBLIB and isinstance(res, tuple) and isinstance(res[1],
