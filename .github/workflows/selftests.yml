@@ -34,6 +34,11 @@ jobs:
             matplotlib: "3.3"
           - python: "3.12"
             matplotlib: "3.4"
+          - python: "3.11"
+            matplotlib: "3.7"
+            pyqt: "PySide2"
+          - python: "3.12"
+            pyqt: "PySide2"
       fail-fast: false
 
     env:
