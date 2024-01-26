@@ -39,7 +39,6 @@ from argparse import SUPPRESS
 from functools import reduce
 from itertools import cycle, islice, chain
 from collections import OrderedDict
-from distutils.version import LooseVersion
 
 logger = get_logger(__name__)
 
@@ -47,15 +46,14 @@ try:
     import matplotlib
     import numpy as np
     HAS_MATPLOTLIB = True
-    MPL_VER = LooseVersion(matplotlib.__version__)
-    if MPL_VER < LooseVersion("1.5"):
+    mpl_maj, _ = matplotlib.__version__.split(".", 1)
+    if mpl_maj in ('1', '2'):
         logger.warning("Cannot use old matplotlib version %s, please upgrade!",
                        matplotlib.__version__)
         raise ImportError("Matplotlib %s too old" % matplotlib.__version__)
 except ImportError as e:
     logger.debug("Unable to import matplotlib: %s", e)
     HAS_MATPLOTLIB = False
-    MPL_VER = LooseVersion("0")
 
 PLOT_KWARGS = (
     'alpha',
