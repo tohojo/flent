@@ -55,6 +55,7 @@ except ImportError as e:
     logger.debug("Unable to import matplotlib: %s", e)
     HAS_MATPLOTLIB = False
 
+
 PLOT_KWARGS = (
     'alpha',
     'antialiased',
@@ -1238,7 +1239,10 @@ class Plotter(ArgParam):
             axis.set_ylim(0, top_scale)
         else:
             if self.log_base:
-                axis.set_yscale('log', basey=self.log_base)
+                if MPL_VER >= LooseVersion("3.2"):
+                    axis.set_yscale('log', base=self.log_base)
+                else:
+                    axis.set_yscale('log', basey=self.log_base)
                 axis.set_ylim(max(0, btm_scale), top_scale)
             else:
                 axis.set_ylim(btm_scale, top_scale)
@@ -1884,7 +1888,10 @@ class CdfPlotter(Plotter):
             axis.set_xlim(left=min(min_value, axis.get_xlim()[0]))
 
         if self.log_base:
-            axis.set_xscale('log', basex=self.log_base)
+            if MPL_VER >= LooseVersion("3.2"):
+                axis.set_xscale('log', base=self.log_base)
+            else:
+                axis.set_xscale('log', basex=self.log_base)
 
         for a, b in zip(config['axes'], self.bounds_x):
             a.set_xbound(b)
