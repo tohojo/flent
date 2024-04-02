@@ -101,6 +101,9 @@ MISSING_PLOTS = {
         'tcp_rtt_cdf',
     )),
     'test-rrul.flent.gz': set((
+        'cpu_core',
+        'cpu_core_bar',
+        'cpu_core_box',
         'tcp_delivery_rate',
         'tcp_pacing',
         'tcp_rtt_bar_combine',
@@ -127,6 +130,14 @@ MISSING_PLOTS = {
         'tcp_rtt_bar_combine',
         'tcp_rtt_box_combine',
         'tcp_rtt_cdf',
+    )),
+    'test-tcp_1up_noping-cpu_stats.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_cdf',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_bar_combine',
     )),
     'test-voip-1up.flent.gz': set((
         'tcp_cwnd',
