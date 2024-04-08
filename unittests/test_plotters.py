@@ -91,6 +91,14 @@ MISSING_PLOTS = {
         'tcp_rtt_box_combine',
         'tcp_rtt_cdf',
     )),
+    'test-ping-ethtool.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
     'test-rrul-icmp.flent.gz': set((
         'tcp_cwnd',
         'tcp_delivery_rate',
