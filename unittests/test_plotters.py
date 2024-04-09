@@ -68,10 +68,97 @@ MATPLOTLIB_RC_VALUES = {
     'ytick.minor.size': 0,
 }
 
-# Plots that may fail validation
-PLOTS_MAY_FAIL = set(('tcp_cwnd', 'tcp_rtt', 'tcp_rtt_cdf',
-                      'tcp_rtt_box_combine', 'tcp_rtt_bar_combine', 'tcp_pacing',
-                      'all_scaled_delivery', 'tcp_delivery_rate', 'tcp_delivery_with_rtt'))
+# Some flent test files intentionally lack plots. This list contains the empty
+# plots to ensure that they do not fail. The lack of data is either because the
+# test did not run with the required flag or because the file is simply older
+# than the feature.
+MISSING_PLOTS = {
+    'test-http-1up.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-http.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-rrul-icmp.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-rrul.flent.gz': set((
+        'cpu_core',
+        'cpu_core_bar',
+        'cpu_core_box',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-rrul_be-socket_stats.flent.gz': set((
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-rtt-fair.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-tcp_nup.flent.gz': set((
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-tcp_1up_noping-cpu_stats.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_cdf',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_bar_combine',
+    )),
+    'test-voip-1up.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+    'test-voip-rrul.flent.gz': set((
+        'tcp_cwnd',
+        'tcp_delivery_rate',
+        'tcp_pacing',
+        'tcp_rtt',
+        'tcp_rtt_bar_combine',
+        'tcp_rtt_box_combine',
+        'tcp_rtt_cdf',
+    )),
+}
+
 
 class PlottersTestCase(ForkingTestCase):
 
@@ -235,7 +322,11 @@ class TestPlotting(PlottersTestCase):
                 formatter = formatters.new(self.settings)
                 formatter.format([r])
                 res, plen = formatter.verify()
-                if not res and p not in PLOTS_MAY_FAIL:
+                filename = os.path.basename(self.filename)
+                if filename in MISSING_PLOTS and p in MISSING_PLOTS[filename]:
+                    continue
+
+                if not res:
                     raise self.failureException(
                         "Verification of plot '%s' failed: %s" % (p, plen))
             except self.failureException:
@@ -279,7 +370,12 @@ class TestGUIPlotting(PlottersTestCase):
             for p in self.settings.PLOTS.keys():
                 plot = pool.apply(plot_one, (self.settings, p, results))
                 res, plen = plot.verify()
-                if not res and p not in PLOTS_MAY_FAIL:
+
+                filename = os.path.basename(self.filename)
+                if filename in MISSING_PLOTS and p in MISSING_PLOTS[filename]:
+                    continue
+
+                if not res:
                     raise self.failureException(
                         "Verification of plot '%s' failed: %s" % (p, plen))
 

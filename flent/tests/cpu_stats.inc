@@ -14,6 +14,7 @@ for host in CPU_STATS_HOSTS:
 
 if CPU_STATS_HOSTS:
 
+    # Average CPU load
     PLOTS['cpu'] = {'description': 'CPU stats',
                     'type': 'timeseries',
                     'axis_labels': ['Load'],
@@ -26,6 +27,7 @@ if CPU_STATS_HOSTS:
     PLOTS['cpu_box'] = {'description': 'CPU stats (box plot)',
                         'type': 'box',
                         'parent': 'cpu'}
+
     PLOTS['cpu_bar'] = {'description': 'CPU stats (bar plot)',
                         'type': 'bar',
                         'parent': 'cpu'}
@@ -42,3 +44,22 @@ if CPU_STATS_HOSTS:
     PLOTS['cpu_bar_combine'] = {'description': 'CPU stats (bar combine plot)',
                                 'type': 'bar_combine',
                                 'parent': 'cpu_box_combine'}
+
+
+    # Per core CPU load
+    PLOTS['cpu_core'] = {'description': 'Per core CPU stats',
+                    'type': 'timeseries',
+                    'axis_labels': ['Load'],
+                    'series': [
+                        {'data': glob('cpu_stats_*'),
+                         'raw_key': glob('cpu*'),
+                         'label': 'CPU core load'},
+                    ]}
+
+    PLOTS['cpu_core_box'] = {'description': 'Per core CPU stats (box plot)',
+                        'type': 'box',
+                        'parent': 'cpu_core'}
+
+    PLOTS['cpu_core_bar'] = {'description': 'Per core CPU stats (bar plot)',
+                        'type': 'bar',
+                        'parent': 'cpu_core'}

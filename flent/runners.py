@@ -2326,9 +2326,12 @@ class CpuStatsRunner(ProcessRunner):
     separated by '\n---\n and a timestamp to be present in the form 'Time:
     xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
 
+    The first line is the total CPU load, and the following lines are the load of
+    each core.
     """
+
     time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
-    value_re = re.compile(r"^\d+ \d+ (?P<load>\d+\.\d+)$", re.MULTILINE)
+    value_re = re.compile(r"^cpu(?P<core_nr>\d+)?: (?P<load>\d+\.\d+)", re.MULTILINE)
 
     def __init__(self, interval, length, host='localhost', **kwargs):
         self.interval = interval
@@ -2341,8 +2344,6 @@ class CpuStatsRunner(ProcessRunner):
         raw_values = []
         metadata = {}
         for part in self.split_stream(output):
-            # Split out individual qdisc entries (in case there are more than
-            # one). If so, discard the root qdisc and sum the rest.
             timestamp = self.time_re.search(part)
             if timestamp is None:
                 continue
@@ -2351,10 +2352,14 @@ class CpuStatsRunner(ProcessRunner):
 
             if value is None:
                 continue
+
             matches = {}
 
-            for k, v in list(value.groupdict().items()):
-                v = float(v)
+            for m in self.value_re.finditer(part):
+                core_nr = m.group("core_nr")
+                load = m.group("load")
+                k = f'cpu{core_nr}' if core_nr is not None else 'load'
+                v = float(load)
                 if k not in matches:
                     matches[k] = v
                 else:
