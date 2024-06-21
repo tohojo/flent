@@ -244,7 +244,7 @@ def get_link_params(iface):
         output = get_command_output("ifconfig %s" % iface)
 
     if output is not None:
-        m = re.search("(qlen|txqueuelen) (\d+)", output)
+        m = re.search(r"(qlen|txqueuelen) (\d+)", output)
         if m:
             link_params['qlen'] = m.group(2)
         m = re.search("ether ([0-9a-f:]{17})", output)
@@ -256,7 +256,7 @@ def get_link_params(iface):
         m = re.search("Speed: ([0-9]+Mb/s)", output)
         if m:
             link_params['speed'] = m.group(1)
-        m = re.search("Duplex: (\w+)", output)
+        m = re.search(r"Duplex: (\w+)", output)
         if m:
             link_params['duplex'] = m.group(1)
 
