@@ -207,7 +207,7 @@ def get_ip_addrs(iface=None):
             cmd += " %s" % iface
         output = get_command_output(cmd)
 
-    iface_re = re.compile('^([0-9]+: )?([a-z0-9-]+):')
+    iface_re = re.compile(r'^([0-9]+: )?([a-z0-9-]+):')
 
     if output is not None:
         lines = output.splitlines()
@@ -244,19 +244,19 @@ def get_link_params(iface):
         output = get_command_output("ifconfig %s" % iface)
 
     if output is not None:
-        m = re.search("(qlen|txqueuelen) (\d+)", output)
+        m = re.search(r"(qlen|txqueuelen) (\d+)", output)
         if m:
             link_params['qlen'] = m.group(2)
-        m = re.search("ether ([0-9a-f:]{17})", output)
+        m = re.search(r"ether ([0-9a-f:]{17})", output)
         if m:
             link_params['ether'] = m.group(1)
 
     output = get_command_output("ethtool %s" % iface)
     if output is not None:
-        m = re.search("Speed: ([0-9]+Mb/s)", output)
+        m = re.search(r"Speed: ([0-9]+Mb/s)", output)
         if m:
             link_params['speed'] = m.group(1)
-        m = re.search("Duplex: (\w+)", output)
+        m = re.search(r"Duplex: (\w+)", output)
         if m:
             link_params['duplex'] = m.group(1)
 

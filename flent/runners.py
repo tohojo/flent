@@ -1784,7 +1784,7 @@ class IrttRunner(ProcessRunner):
             irtt = util.which('irtt', fail=RunnerCheckError, remote_host=self.remote_host)
 
             out, err = self.run_simple([irtt, 'help', 'client'])
-            if re.search('--[a-z]', out) is None:
+            if re.search(r'--[a-z]', out) is None:
                 raise RunnerCheckError("%s is too old to support gnu style args. "
                                        "Please upgrade to irtt v0.9+." % irtt)
 
