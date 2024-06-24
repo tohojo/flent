@@ -2399,6 +2399,86 @@ class CpuStatsRunner(ProcessRunner):
                 host=host)
 
 
+class EthtoolStatsRunner(ProcessRunner):
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    value_re = re.compile(r"^(?P<ifname>[^:]+):(?P<field>[^:]+): (?P<value>\d+)", re.MULTILINE)
+
+    def __init__(self, interval, length, host='localhost',
+                 devices=None, fields=None, **kwargs):
+        self.interval = interval
+        self.length = length
+        self.host = normalise_host(host)
+        self.devices = devices
+        self.fields = fields
+        super(EthtoolStatsRunner, self).__init__(**kwargs)
+
+    def parse(self, output, error):
+        results = {}
+        raw_values = []
+        metadata = {}
+        for part in self.split_stream(output):
+            timestamp = self.time_re.search(part)
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
+            value = self.value_re.search(part)
+
+            if value is None:
+                continue
+
+            matches = {}
+
+            for m in self.value_re.finditer(part):
+                ifname = m.group("ifname")
+                field = m.group("field")
+                value = m.group("value")
+                k = f'{ifname}-{field}'
+                v = float(value)
+                if k not in matches:
+                    matches[k] = v
+                else:
+                    matches[k] += v
+
+            for k, v in matches.items():
+                if not isinstance(v, float):
+                    continue
+                if k not in results:
+                    results[k] = [[timestamp, v]]
+                else:
+                    results[k].append([timestamp, v])
+            matches['t'] = timestamp
+            raw_values.append(matches)
+        return results, raw_values, metadata
+
+    def check(self):
+        self.command = self.find_binary(self.interval,
+                                        self.length, self.host)
+        super(EthtoolStatsRunner, self).check()
+
+    def find_binary(self, interval, length, host='localhost'):
+        script = os.path.join(DATA_DIR, 'scripts', 'ethtool_iterate.sh')
+        if not os.path.exists(script):
+            raise RunnerCheckError("Cannot find ethtool_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RunnerCheckError("Ethtool stats requires a Bash shell.")
+
+        devices = f"-d {self.devices}" if self.devices else ""
+        fields = f"-f {self.fields}" if self.fields else ""
+
+        return "{bash} {script} -I {interval:.2f} " \
+            "-c {count:.0f} -H {host} " \
+            "{devices} {fields}".format(
+                bash=bash,
+                script=script,
+                interval=interval,
+                count=length // interval + 1,
+                devices=devices,
+                fields=fields,
+                host=host)
+
+
 class WifiStatsRunner(ProcessRunner):
     """Runner for getting WiFi debug stats from /sys/kernel/debug. Expects
     iterations to be separated by '\n---\n and a timestamp to be present in the
