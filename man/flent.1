@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "FLENT" "1" "November 02, 2022" "2.1.1-git" "Flent: The FLExible Network Tester"
+.TH "FLENT" "1" "September 10, 2024" "2.2.0" "Flent: The FLExible Network Tester"
 .SH NAME
 flent \- Flent: The FLExible Network Tester
 .SH INTRODUCTION
@@ -66,14 +66,14 @@ iperf in addition to, or instead of netperf. Both tools must be available in the
 For ICMP ping measurements, the version of ping employed must support output
 timestamping (the \-D parameter to GNU ping). This is not supported by the BSD
 and OSX versions of ping. As an alternative to the regular ping command, the
-\fBfping\fP utility (see \fI\%http://fping.org\fP) can be employed. In that case
+\fBfping\fP utility (see \X'tty: link http://fping.org'\fI\%http://fping.org\fP\X'tty: link') can be employed. In that case
 fping must be version 3.5 or greater. Flent will attempt to detect the presence
 of fping in the \fBPATH\fP and check for support for the \-D parameter. If
 this check is successful, \fBfping\fP will be employed for ping data,
 otherwise the system ping will be used.
 .sp
 The \fBirtt\fP tool is highly recommended for UDP measurements. See
-\fI\%https://github.com/peteheist/irtt\fP\&. Flent will automatically detect if irtt is
+\X'tty: link https://github.com/peteheist/irtt'\fI\%https://github.com/peteheist/irtt\fP\X'tty: link'\&. Flent will automatically detect if irtt is
 available in the \fBPATH\fP and use it if it is detected. Note that the
 server component of irtt needs to be running on the target host(s) as well.
 .SH RUNNING FLENT
@@ -373,8 +373,7 @@ expansions, are:
 .INDENT 7.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 AF11: 0x28    CS0: 0x00
 AF12: 0x30    CS1: 0x20
 AF13: 0x38    CS2: 0x40
@@ -387,8 +386,7 @@ AF33: 0x78    EF:  0xb8
 AF41: 0x88
 AF42: 0x90
 AF43: 0x98
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -739,10 +737,10 @@ Secret for D\-ITG control server authentication. Default: ’’.
 .TP
 .B \-\-http\-getter\-urllist=FILENAME
 When running HTTP tests, the http\-getter tool is used to fetch URLs (see
-\fI\%https://github.com/tohojo/http\-getter\fP). This option specifies the filename
+\X'tty: link https://github.com/tohojo/http-getter'\fI\%https://github.com/tohojo/http\-getter\fP\X'tty: link'). This option specifies the filename
 containing the list of HTTP URLs to get. Can also be a URL, which will then
 be downloaded as part of each test iteration. If not specified, this is set
-to \fI\%http:/\fP/<hostname>/filelist.txt where <hostname> is the first test
+to \X'tty: link http:/'\fI\%http:/\fP\X'tty: link'/<hostname>/filelist.txt where <hostname> is the first test
 hostname.
 .UNINDENT
 .INDENT 0.0
@@ -843,7 +841,7 @@ For a full list of the tests supported by flent, see the
 .sp
 This test exists in a couple of variants and is a partial implementation of the
 RRUL specification as written by Dave Taht (see
-\fI\%https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/\fP). It works
+\X'tty: link https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/'\fI\%https://www.bufferbloat.net/projects/bloat/wiki/RRUL_Spec/\fP\X'tty: link'). It works
 by running RTT measurement using ICMP ping and UDP roundtrip time measurement,
 while loading up the link with eight TCP streams (four downloads, four uploads).
 This quite reliably saturates the measured link (wherever the bottleneck might
@@ -1328,7 +1326,7 @@ metadata of stored data files.
 .sp
 This version of flent has experimental support for running and parsing the
 output of the D\-ITG test tool (see
-\fI\%http://traffic.comics.unina.it/software/ITG/\fP). Flent supports parsing the
+\X'tty: link http://traffic.comics.unina.it/software/ITG/'\fI\%http://traffic.comics.unina.it/software/ITG/\fP\X'tty: link'). Flent supports parsing the
 one\-way delay as measured by D\-ITG. However, in order to do so, the data needs
 to be collected at the receiver end, statistics extracted, and the result passed
 back to flent on the sending side.
@@ -1348,7 +1346,7 @@ this in mind when running a publicly reachable ITGRecv instance (with or without
 the control server). Another security issue with the control server is that the
 Python XML\-RPC library by default is vulnerable to XML entity expansion attacks.
 For this reason, it is highly recommended to install the \fBdefusedxml\fP
-library (available at \fI\%https://pypi.python.org/pypi/defusedxml/\fP) on the host
+library (available at \X'tty: link https://pypi.python.org/pypi/defusedxml/'\fI\%https://pypi.python.org/pypi/defusedxml/\fP\X'tty: link') on the host
 running the control server. The server will try to find the library on startup
 and refuse to run if it is not available, unless explicitly told otherwise.
 .sp
@@ -1366,7 +1364,7 @@ for UDP measurements is a way to alleviate this; Flent will automatically detect
 the availability of irtt and use it if available.
 .sp
 Probably many other bugs. Please report any found to
-\fI\%https://github.com/tohojo/flent/issues\fP and include the output of \fI\%flent
+\X'tty: link https://github.com/tohojo/flent/issues'\fI\%https://github.com/tohojo/flent/issues\fP\X'tty: link' and include the output of \fI\%flent
 \-\-version\fP in the report. A debug log (as obtained with \fI\%flent
 \-\-log\-file\fP) is also often useful.
 .SH AUTHOR
