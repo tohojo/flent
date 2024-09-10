@@ -2,6 +2,22 @@
 
 Changes since v2.1.1 include:
 
+- Support capturing and plotting CPU usage for individual CPUs instead of just a
+  total.
+
+- Don't pass control_host values to IPv6 UDP_RR tests, as netperf doesn't
+  support them.
+
+- Improve the GUI error message if matplotlib is not installed and when no tabs
+  are open.
+
+- Fix compatibility with newer versions of Iperf2.
+
+- Fix a bunch of deprecation warnings and backwards compatibility issues with
+  various Python and Matplotlib versions.
+
+- Fix some crashes in the GUI.
+
 # Flent v2.1.1 #
 Released on 2022-11-02.
 
