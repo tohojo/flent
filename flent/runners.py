@@ -43,7 +43,7 @@ from threading import Event
 
 from flent import util, transformers
 from flent.build_info import DATA_DIR
-from flent.util import classname, ENCODING, Glob, normalise_host
+from flent.util import classname, ENCODING, Glob, normalise_host, utcnow
 from flent.loggers import get_logger
 
 try:
@@ -850,10 +850,10 @@ class DitgRunner(ProcessRunner):
                 h, m, s = t.split(":")
                 # FIXME: This is definitely going to break if a test is run
                 # around midnight
-                dt = datetime.utcnow().replace(hour=int(h),
-                                               minute=int(m),
-                                               second=int(s),
-                                               microsecond=int(microsec))
+                dt = utcnow().replace(hour=int(h),
+                                      minute=int(m),
+                                      second=int(s),
+                                      microsecond=int(microsec))
                 times[v] = float(timegm(dt.timetuple())) + dt.microsecond / 10**6
 
             raw_values.append({

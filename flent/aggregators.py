@@ -30,12 +30,11 @@ import time
 import resource
 
 from collections import OrderedDict
-from datetime import datetime
 from threading import Event, Thread
 from multiprocessing import Pool, Manager, cpu_count
 
 from flent import runners, loggers
-from flent.util import classname
+from flent.util import classname, utcfromtimestamp
 
 logger = loggers.get_logger(__name__)
 
@@ -371,7 +370,7 @@ class TimeseriesAggregator(Aggregator):
         if steps > 10**6:
             raise RuntimeError("Refusing to iterate more than 1 million steps during aggregation (got %d)" % steps)
 
-        results.meta('T0', datetime.utcfromtimestamp(t_0))
+        results.meta('T0', utcfromtimestamp(t_0))
 
         for s in range(steps):
             time_label = self.step * s

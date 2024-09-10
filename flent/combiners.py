@@ -24,7 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import math
 import re
 
-from datetime import datetime
 from bisect import bisect_left, bisect_right
 from collections import OrderedDict
 
@@ -33,7 +32,8 @@ try:
 except ImportError:
     from itertools import zip_longest
 
-from flent.util import classname, long_substr, Glob, format_date, mos_score
+from flent.util import classname, long_substr, Glob, format_date, mos_score, \
+    utcnow
 from flent.resultset import ResultSet
 from flent.loggers import get_logger
 
@@ -112,7 +112,7 @@ class Combiner(object):
         orig_meta = orig_meta.copy()
         del orig_meta['TITLE']
         if self.save_dir:
-            t = datetime.utcnow()
+            t = utcnow()
             series = config['series']
             # Can't serialise 'source' Glob objects
             for s in series:

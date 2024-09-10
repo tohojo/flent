@@ -37,7 +37,7 @@ import subprocess
 
 from copy import copy
 from calendar import timegm
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from math import log10, exp, sqrt
 
 from flent.loggers import get_logger
@@ -67,6 +67,11 @@ def uscore_to_camel(s):
 def classname(s, suffix=''):
     return uscore_to_camel(s) + suffix
 
+def utcnow():
+    return datetime.now(UTC).replace(tzinfo=None)
+
+def utcfromtimestamp(ts):
+    return datetime.fromtimestamp(ts, UTC).replace(tzinfo=None)
 
 def format_date(dt, fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False):
     if utc:
@@ -74,7 +79,7 @@ def format_date(dt, fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False):
     # The datetime object is already UTC, so use gmtime rather than mktime to
     # get the timestamp from which to compute the UTC offset.
     ts = timegm(dt.timetuple()) + dt.microsecond / 1000000.0
-    offset = datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)
+    offset = datetime.fromtimestamp(ts) - utcfromtimestamp(ts)
     return (dt + offset).strftime(fmt)
 
 
@@ -127,7 +132,7 @@ def parse_date(timestring, min_t=None, offset=None):
             else:
                 ts = time.mktime(dt.timetuple())
                 offset = (datetime.fromtimestamp(ts) -
-                          datetime.utcfromtimestamp(ts))
+                          utcfromtimestamp(ts))
                 logger.debug("Computed offset of %s from system timezone",
                              offset)
 

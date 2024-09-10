@@ -32,7 +32,7 @@ import sys
 import time
 import uuid
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from fnmatch import fnmatch
 from collections import OrderedDict
 
@@ -43,7 +43,7 @@ except ImportError:
 
 from flent import aggregators, formatters, resultset, loggers
 from flent.metadata import record_metadata, record_postrun_metadata
-from flent.util import clean_path, format_date, token_split
+from flent.util import clean_path, format_date, token_split, utcnow
 from flent.settings import parser as SETTINGS_PARSER
 from flent.settings import _LOG_DEFER
 
@@ -289,7 +289,7 @@ class BatchRunner(object):
             settings.FORMAT = 'null'
             settings.BATCH_NAME = batch_name
             settings.BATCH_TIME = batch_time
-            settings.TIME = datetime.utcnow()
+            settings.TIME = utcnow()
 
             expand_vars = {'repetition': "%02d" % rep,
                            'batch_time': format_date(settings.BATCH_TIME,
@@ -609,7 +609,7 @@ class BatchRunner(object):
                         raise
                     raise RuntimeError("Error while running batch '%s': %r."
                                        % (b, e))
-            end_time = datetime.utcnow()
+            end_time = utcnow()
             logger.info("Ended batch sequence at %s. %s %d tests in %s.",
                         format_date(end_time, fmt="%Y-%m-%d %H:%M:%S"),
                         "Ran" if not self.settings.BATCH_DRY else 'Would have run',  # noqa: E501

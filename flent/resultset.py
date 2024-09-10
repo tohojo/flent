@@ -35,7 +35,7 @@ from collections import OrderedDict
 
 from flent import transformers
 from flent.loggers import get_logger
-from flent.util import parse_date, format_date
+from flent.util import parse_date, format_date, utcnow
 
 try:
     import ujson as json
@@ -143,7 +143,7 @@ class ResultSet(object):
         self.SUFFIX = SUFFIX
         self._t0 = None
         if 'TIME' not in self.metadata or self.metadata['TIME'] is None:
-            self.metadata['TIME'] = datetime.utcnow()
+            self.metadata['TIME'] = utcnow()
         if 'NAME' not in self.metadata or self.metadata['NAME'] is None:
             raise RuntimeError("Missing name for resultset")
         if 'DATA_FILENAME' not in self.metadata \

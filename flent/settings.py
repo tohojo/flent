@@ -39,7 +39,8 @@ from flent.build_info import VERSION
 from flent.testenv import TestEnvironment, TEST_PATH
 from flent.loggers import get_logger
 from flent.util import FuncAction, Update, AddHost, append_host, keyval, \
-    keyval_int, keyval_transformer, ArgParser, token_split, global_cache
+    keyval_int, keyval_transformer, ArgParser, token_split, global_cache, \
+    utcnow
 from flent.plotters import add_plotting_args
 from flent import loggers, util, resultset, runners
 
@@ -59,7 +60,7 @@ DEFAULT_SETTINGS = {
     'LOCAL_HOST': socket.gethostname(),
     'DESCRIPTION': 'No description',
     'PLOTS': {},
-    'TIME': datetime.utcnow(),
+    'TIME': utcnow(),
     'BATCH_NAME': None,
     'BATCH_UUID': None,
 }
