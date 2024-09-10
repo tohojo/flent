@@ -8,11 +8,11 @@ build: flent/*.py
 
 .PHONY: test
 test:
-	$(PYTHON) setup.py test -r unittests:TestRunner
+	$(PYTHON) -m unittest
 
 .PHONY: test_long
 test_long:
-	$(PYTHON) setup.py test -s unittests.all_tests -r unittests:TestRunner
+	TEST_SUITE=all_tests $(PYTHON) -m unittest
 
 
 .PHONY: install

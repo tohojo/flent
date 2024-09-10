@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import unittest
 from . import test_util
 from . import test_formatters
@@ -29,12 +30,6 @@ from . import test_parsers
 from . import test_plotters
 from . import test_tests
 from . import test_gui
-
-
-class TestRunner(unittest.TextTestRunner):
-    def __init__(self, *args, **kwargs):
-        kwargs['verbosity'] = 2
-        super(TestRunner, self).__init__(*args, **kwargs)
 
 
 test_suite = unittest.TestSuite([test_util.test_suite,
@@ -47,3 +42,12 @@ test_suite = unittest.TestSuite([test_util.test_suite,
                                  ])
 
 all_tests = unittest.TestSuite([test_suite, test_plotters.plot_suite])
+
+def load_tests(loader, standard_tests, pattern):
+    suite = os.getenv("TEST_SUITE", None)
+    if suite == "all_tests":
+        return all_tests
+    return test_suite
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
