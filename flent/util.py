@@ -37,8 +37,13 @@ import subprocess
 
 from copy import copy
 from calendar import timegm
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 from math import log10, exp, sqrt
+
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = None
 
 from flent.loggers import get_logger
 
@@ -68,9 +73,13 @@ def classname(s, suffix=''):
     return uscore_to_camel(s) + suffix
 
 def utcnow():
+    if UTC is None:
+        return datetime.utcnow()
     return datetime.now(UTC).replace(tzinfo=None)
 
 def utcfromtimestamp(ts):
+    if UTC is None:
+        return datetime.utcfromtimestamp(ts)
     return datetime.fromtimestamp(ts, UTC).replace(tzinfo=None)
 
 def format_date(dt, fmt="%Y-%m-%dT%H:%M:%S.%f", utc=False):
