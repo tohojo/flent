@@ -29,7 +29,7 @@ import sys
 from functools import reduce
 
 from flent import plotters, combiners
-from flent.util import classname, format_bytes
+from flent.util import classname, format_bytes, format_date
 from flent.loggers import get_logger
 
 try:
@@ -351,8 +351,8 @@ class SummaryFormatter(CombiningFormatter):
     def format(self, results):
         self.open_output()
         for r in results:
-            self.write("\nSummary of %s test run from %s" % (r.meta('NAME'),
-                                                             r.meta("TIME")))
+            self.write(f"\nSummary of {r.meta('NAME')} test run "
+                       f"from {format_date(r.meta('TIME'),'%Y-%m-%d %H:%M:%S')}")
             if r.meta('TITLE'):
                 self.write("\n  Title: '%s'" % r.meta('TITLE'))
             if self.settings.DATA_CUTOFF:
