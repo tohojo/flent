@@ -30,6 +30,7 @@
 #include <iconv.h>
 #include <fcntl.h>
 #include <math.h>
+#include <float.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/timerfd.h>
@@ -123,6 +124,10 @@ int process_options(int argc, char **argv, args *o)
 		default:  usage(NULL);
 		}
 	}
+
+	if (o->finterval <= 0.0)
+		usage("Interval should be > 0 !\n");
+
 	o->interval.tv_sec = floor(o->finterval);
 	o->interval.tv_nsec = (long long) ((o->finterval - o->interval.tv_sec) * NSEC_PER_SEC);
 	return 0;
