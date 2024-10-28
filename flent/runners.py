@@ -2311,12 +2311,11 @@ class TcRunner(ProcessRunner):
             interface = 'eth0'
 
         return "{bash} {script} -i {interface} -I {interval:.2f} " \
-            "-c {count:.0f} -l {length} -H {host}".format(
+            "-l {length} -H {host}".format(
                 bash=bash,
                 script=script,
                 interface=interface,
                 interval=interval,
-                count=length // interval + 1,
                 length=length,
                 host=host)
 

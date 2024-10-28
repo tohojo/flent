@@ -54,7 +54,7 @@
 #define NSEC_PER_SEC (1000000000.0)
 
 struct arg {
-	int count;
+	int length;
 	struct timespec interval;
 	double finterval;
 	char *interface;
@@ -66,7 +66,7 @@ typedef struct arg args;
 
 static const struct option long_options[] = {
 	{ "interface", required_argument	, NULL , 'i' } ,
-	{ "count"    , required_argument	, NULL , 'c' } ,
+	{ "length"    , required_argument	, NULL , 'l' } ,
 	{ "interval" , required_argument	, NULL , 'I' } ,
 	{ "command"  , required_argument	, NULL , 'C' } ,
 	{ "help"     , no_argument		, NULL , 'h' } ,
@@ -80,7 +80,7 @@ void usage (char *err) {
 		"\t-h --help \n"
 		"\t-b --buffer \n"
 		"\t-i --interface [eth0*,wlan0,etc]\n"
-		"\t-c --count     [number of iterations]\n"
+		"\t-l --length    [duration in seconds]\n"
 		"\t-I --interval  [fractional number of seconds]\n"
 		"\t-C --command   [qdisc]\n");
 	exit(-1);
@@ -90,13 +90,13 @@ static void defaults(args *a) {
 	a->interface = "eth0";
 	a->command = "qdisc";
 	a->finterval=.2;
-	a->count=10;
+	a->length=20;
 	a->interval.tv_nsec = 0;
 	a->interval.tv_sec = 0;
 	a->buffer = 0;
 }
 
-#define QSTRING "i:c:I:C:hb"
+#define QSTRING "i:l:I:C:hb"
 
 int process_options(int argc, char **argv, args *o)
 {
@@ -113,7 +113,7 @@ int process_options(int argc, char **argv, args *o)
 
 		switch (opt)
 		{
-		case 'c': o->count = strtoul(optarg,NULL,10);  break;
+		case 'l': o->length = strtoul(optarg,NULL,10);  break;
 		case 'I': o->finterval = strtod(optarg,NULL); break;
 		case 'C': o->command = optarg; break;
 		case 'i': o->interface = optarg; break;
@@ -193,6 +193,7 @@ int forkit(args *a)
 	sprintf(cmd,"%s show dev %s\n",a->command,a->interface);
 	int csize = strlen(cmd);
 	int ctr = 0;
+	int length_count = a->length/a->finterval;
 	timerfd_settime(timer,0,&new_value,NULL); // relative timer
 
 	do {
@@ -206,7 +207,7 @@ int forkit(args *a)
 			result(out,0,BUFFERSIZE,buffer);
 			perror("reading cmd output");
 		}
-	} while (ctr < a->count);
+	} while (ctr < length_count);
 	close(tool);
 	close(in);
 	if(a->buffer) {
