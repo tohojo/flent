@@ -14,7 +14,7 @@ wifistats_iterate: wifistats_iterate.c
 file_iterate: file_iterate.c
 	$(CC) $(CFLAGS) file_iterate.c -o file_iterate -lm -lrt
 
-install: tc_iterate
+install: all
 	$(STRIP) $(PROGS)
 	install -d -m0755 $(DESTDIR)
 	install -m0755 $(PROGS) $(DESTDIR)
