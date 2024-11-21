@@ -2603,6 +2603,67 @@ class NetstatRunner(ProcessRunner):
                 host=host)
 
 
+class CommandOutputRunner(ProcessRunner):
+    """Runner for executing a user-defined command with an interval. The command
+    should output a single numeric value on a separate line. It will be run by
+    the cmd_iterate.sh script, which adds the same timestamp format and
+    separator as the other scripts. Which means that the parser expects
+    iterations to be separated by '\n---\n and a timestamp to be present in the
+    form 'Time: xxxxxx.xxx' (e.g. the output of `date '+Time: %s.%N'`).
+
+    """
+    time_re = re.compile(r"^Time: (?P<timestamp>\d+\.\d+)", re.MULTILINE)
+    value_re = re.compile(r"^\s*(?P<value>\d+(\.\d+)?)\s*\n",
+                          re.MULTILINE)
+
+    def __init__(self, interval, length, user_command, host='localhost', **kwargs):
+        self.interval = interval
+        self.length = length
+        self.user_command = user_command
+        self.host = normalise_host(host)
+        super().__init__(**kwargs)
+
+    def parse(self, output, error):
+        results = []
+        raw_values = []
+        metadata = {}
+        for part in self.split_stream(output):
+            timestamp = self.time_re.search(part)
+            if timestamp is None:
+                continue
+            timestamp = float(timestamp.group('timestamp'))
+
+            value = self.value_re.search(part)
+            if value is None:
+                continue
+            value = float(value.group("value"))
+
+            raw_values.append({'t': timestamp,
+                               'value': value})
+            results.append([timestamp, value])
+
+        return results, raw_values, metadata
+
+    def check(self):
+        self.command = self.find_binary(self.interval,
+                                        self.length,
+                                        self.user_command,
+                                        self.host)
+        super().check()
+
+    def find_binary(self, interval, length, user_command, host='localhost'):
+        script = os.path.join(DATA_DIR, 'scripts', 'cmd_iterate.sh')
+        if not os.path.exists(script):
+            raise RunnerCheckError("Cannot find cmd_iterate.sh.")
+
+        bash = util.which('bash')
+        if not bash:
+            raise RunnerCheckError("Capturing command output requires a Bash shell.")
+
+        return f"{bash} {script} -I {interval:.2f} -l {length:.2f} " \
+            f"-H {host} -C '{user_command}'"
+
+
 class NullRunner(RunnerBase):
     pass
 
