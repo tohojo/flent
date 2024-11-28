@@ -432,6 +432,9 @@ class ProcessRunner(RunnerBase):
         if self.start_event is not None:
             self.start_event.set()
 
+    def cleanup(self):
+        pass
+
     def fork(self):
         if mswindows:
             raise RuntimeError(
@@ -542,6 +545,8 @@ class ProcessRunner(RunnerBase):
         except (OSError, ChildProcessError):
             pass
 
+        self.cleanup()
+
     def run(self):
         """Runs the configured job. If a delay is set, wait for that many
         seconds, then open the subprocess, wait for it to finish, and collect
@@ -577,6 +582,8 @@ class ProcessRunner(RunnerBase):
         if self.returncode and not (self.silent or self.silent_exit):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
+
+        self.cleanup()
 
         self.debug("Finished", extra={'runner': self})
 
