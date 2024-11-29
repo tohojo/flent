@@ -2671,6 +2671,101 @@ class CommandOutputRunner(ProcessRunner):
             f"-H {host} -C '{user_command}'"
 
 
+class MosquittoSubRunner(ProcessRunner):
+    """Runner for connecting to an MQTT broker using the mosquitto_sub binary
+    from the Eclipse mosquitto software suite. It relies on the '%J' output
+    format to get a timestamp and payload in JSON format, which means that the
+    payload of the subscribed topic also has to be in JSON format.
+    """
+
+    supports_remote = False # can't do the config file trick remotely
+
+    def __init__(self, length, mqtt_topic, mqtt_host, mqtt_port=8883,
+                 mqtt_user=None, mqtt_pass=None, payload_key=None, **kwargs):
+        self.length = length
+        self.mqtt_topic = mqtt_topic
+        self.mqtt_host = normalise_host(mqtt_host)
+        self.mqtt_port = mqtt_port
+        self.mqtt_user = mqtt_user
+        self.mqtt_pass = mqtt_pass
+        self.payload_key = payload_key
+        self._env = {} # separate copy per instance
+        self.config_dir = None
+
+        super().__init__(**kwargs)
+
+    def parse(self, output, error):
+        results = []
+        raw_values = []
+        metadata = {}
+        for line in output:
+
+            try:
+                js = json.loads(line)
+
+                timestamp = datetime.fromisoformat(js['tst']).timestamp()
+                pl = js['payload']
+                if self.payload_key:
+                    value = pl[self.payload_key]
+                else:
+                    value = pl
+
+                raw_values.append({'t': timestamp,
+                                   'value': value})
+                results.append([timestamp, value])
+
+            except json.decoder.JSONDecodeError:
+                continue
+
+        return results, raw_values, metadata
+
+    def cleanup(self):
+        if self.config_dir is not None:
+            self.debug("Cleaning up temporary directory %s", self.config_dir.name)
+            self.config_dir.cleanup()
+            self.config_dir = None
+
+    def check(self):
+        self.command = self.find_binary(self.length,
+                                        self.mqtt_topic,
+                                        self.mqtt_host,
+                                        self.mqtt_port,
+                                        self.mqtt_user)
+
+        if self.mqtt_pass is not None and self.config_dir is None:
+            # We don't want to pass the password on the command line, so create
+            # a confiruration file with the password option
+
+            try:
+                tmpdir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+                fname = os.path.join(tmpdir.name, "mosquitto_sub")
+
+                with open(fname, "w") as fp:
+                    fp.write(f"--pw {self.mqtt_pass}\n")
+
+                self.debug("Wrote mosquitto_sub config file to %s", fname)
+
+                self.config_dir = tmpdir
+                self._env['XDG_CONFIG_HOME'] = tmpdir.name
+            except IOError as e:
+                raise RuntimeError("Couldn't write mosquitto config file: %s", e)
+
+        super().check()
+
+    def find_binary(self, length, mqtt_topic, mqtt_host, mqtt_port, mqtt_user):
+        sub = util.which('mosquitto_sub')
+        if not sub:
+            raise RunnerCheckError("Can't find mosquitto_sub binary.")
+
+        if mqtt_user is not None:
+            mqtt_user = f"-u '{mqtt_user}'"
+        else:
+            mqtt_user = ""
+
+        return f"{sub} -F '%J' -R -W {length} -h {mqtt_host} -p {mqtt_port} "\
+            f"-t '{mqtt_topic}' {mqtt_user}"
+
+
 class NullRunner(RunnerBase):
     pass
 
