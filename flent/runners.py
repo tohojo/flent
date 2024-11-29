@@ -2766,6 +2766,58 @@ class MosquittoSubRunner(ProcessRunner):
             f"-t '{mqtt_topic}' {mqtt_user}"
 
 
+class StressNgRunner(RegexpRunner):
+    """Runner for executing stress-ng as a CPU stressor and capture the number
+    of runners being executed over time.
+
+    """
+
+    regexes = [re.compile(r"stress-ng: (?P<t>([0-9]{2}:){2}[0-9]{2}\.[0-9]{2}).*"
+                          r"\sstatus: (?P<val>\d+) run\s*")]
+    metadata_regexes = [re.compile(r"stress-ng:.*C0\s+(?P<CSTATE_C0>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C1\s+(?P<CSTATE_C1>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C1\s+(?P<CSTATE_C1>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C1E\s+(?P<CSTATE_C1E>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C2\s+(?P<CSTATE_C2>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C3\s+(?P<CSTATE_C3>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C4\s+(?P<CSTATE_C4>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C5\s+(?P<CSTATE_C5>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*C6\s+(?P<CSTATE_C6>\d+\.\d+)%$"),
+                        re.compile(r"stress-ng:.*POLL\s+(?P<CSTATE_POLL>\d+\.\d+)%$")]
+
+    def parse_stressng_timestamp(tstamp):
+        sec, mil = tstamp.split(".")
+        dt = datetime.strptime(sec, "%H:%M:%S")
+        n = datetime.now()
+        dt = dt.replace(year=n.year, month=n.month, day=n.day)
+        timestamp = dt.timestamp() + float("0." + mil)
+        return timestamp
+
+    transformers = {'t': parse_stressng_timestamp}
+
+    def __init__(self, interval, length, n_stressors=1, **kwargs):
+        self.interval = max(1, round(interval))
+        self.length = length
+        self.n_stressors = int(n_stressors)
+        super().__init__(**kwargs)
+
+    def check(self):
+        self.command = self.find_binary(self.interval,
+                                        self.length,
+                                        self.n_stressors)
+        super().check()
+
+    def find_binary(self, interval, length, n_stressors):
+        stress_ng = util.which('stress-ng', fail=RunnerCheckError,
+                               remote_host=self.remote_host)
+
+        if n_stressors < 1:
+            raise RunnerCheckError("Number of CPU stressors must be at least one")
+
+        return f"{stress_ng} -t {length} --status {interval} --timestamp --c-states " \
+            f"--cpu {n_stressors} --taskset 0-{n_stressors-1}"
+
+
 class NullRunner(RunnerBase):
     pass
 
