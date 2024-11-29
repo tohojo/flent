@@ -91,6 +91,7 @@ class TestEnvironment(object):
             'min_host_count': self.require_host_count,
             'set_test_parameter': self.set_test_parameter,
             'get_test_parameter': self.get_test_parameter,
+            'get_env_parameter': self.get_env_parameter,
             'try_test_parameters': self.try_test_parameters,
             'parse_int': self.parse_int,
             'zip_longest': zip_longest,
@@ -148,19 +149,32 @@ class TestEnvironment(object):
     def include_test(self, name, env=None):
         self.execute(os.path.join(TEST_PATH, name))
 
+    def _conv_parameter(self, value, split, cast):
+        if split:
+            value = token_split(value)
+            if cast:
+                value = list(map(cast, value))
+        elif cast:
+            value = cast(value)
+
+        return value
+
+    def get_env_parameter(self, name, default=_no_default, split=False, cast=None):
+        try:
+            return self._conv_parameter(os.environ[name], split, cast)
+        except KeyError:
+            if default is not _no_default:
+                return default
+            if self.informational:
+                return None
+            raise RuntimeError("Missing required environment variable: %s" % name)
+
     def set_test_parameter(self, name, value):
         self.env['TEST_PARAMETERS'][name] = value
 
     def get_test_parameter(self, name, default=_no_default, split=False, cast=None):
         try:
-            ret = self.env['TEST_PARAMETERS'][name]
-            if split:
-                ret = token_split(ret)
-                if cast:
-                    ret = list(map(cast, ret))
-            elif cast:
-                ret = cast(ret)
-            return ret
+            return self._conv_parameter(self.env['TEST_PARAMETERS'][name], split, cast)
         except KeyError:
             if name in GLOBAL_TEST_PARAMS_MAP:
                 ret = self.env[GLOBAL_TEST_PARAMS_MAP[name]]
