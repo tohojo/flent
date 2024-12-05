@@ -3,6 +3,10 @@ Installing Flent
 Installing Flent can be done in several ways, depending on your operating system:
 
 
+- **Arch Linux:**
+
+  Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
+
 - **Debian and Ubuntu:**
 
     .. code-block:: bash
@@ -24,10 +28,6 @@ Installing Flent can be done in several ways, depending on your operating system
 - **Ubuntu pre-18.04:**
 
   Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
-
-- **Arch Linux:**
-
-  Install Flent from `the AUR <https://aur.archlinux.org/packages/flent>`_.
 
 - **Other Linux:**
 
