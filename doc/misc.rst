@@ -1,7 +1,7 @@
 Misc info
 =========
 
-Running Tests With The D-ITG Tool
+Running tests with the D-ITG tool
 ---------------------------------
 
 This version of flent has experimental support for running and parsing the
