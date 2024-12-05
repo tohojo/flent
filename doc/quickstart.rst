@@ -25,6 +25,10 @@ Installing Flent can be done in several ways, depending on your operating system
 
       emerge net-analyzer/flent
 
+- **Nix:**
+
+  Flent is available in nixpkgs through the `flent` attribute.
+
 - **Ubuntu pre-18.04:**
 
   Add the `tohojo/flent PPA <https://launchpad.net/~tohojo/+archive/ubuntu/flent>`_.
