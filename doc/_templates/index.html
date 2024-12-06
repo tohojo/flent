@@ -3,63 +3,85 @@
 {% block body %}
 <h1>Welcome to the home of Flent</h1>
 <div class="screenshot">
-  <img src="_static/flent-screenshot.png" alt="Screenshot of the interactive
-  Flent GUI.">
+  <img src="_static/flent-screenshot.png" alt="Screenshot of the interactive Flent GUI.">
 </div>
 <p>Flent is a network benchmarking tool which allows you to:</p>
 <ul class="front">
-  <li>Easily <strong>run network tests</strong> composing multiple well-known benchmarking tools into
-    aggregate, repeatable test runs.</li>
-  <li><strong>Explore</strong> your test data through the interactive GUI and extensive plotting
-    capabilities.</li>
-  <li><strong>Combine and aggregate</strong> data series and produce publication quality graphs.</li>
-  <li><strong>Capture metadata</strong> from local and remote hosts and store it along with the
-    plot data.</li>
-  <li><strong>Collect secondary data series</strong> such as CPU usage, WiFi, qdisc and TCP socket
-    statistics and plot it with the main dataset.</li>
-  <li>Specify batch experiment runs to <strong>completely automate your
-  testing</strong> regime.</li>
+  <li>Easily
+    <strong>run network tests</strong>
+    composing multiple well-known benchmarking tools into aggregate, repeatable test runs.</li>
+  <li><strong>Explore</strong>
+    your test data through the interactive GUI and extensive plotting capabilities.</li>
+  <li><strong>Combine and aggregate</strong>
+    data series and produce publication quality graphs.</li>
+  <li><strong>Capture metadata</strong>
+    from local and remote hosts and store it along with the plot data.</li>
+  <li><strong>Collect secondary data series</strong>
+    such as CPU usage, WiFi, qdisc and TCP socket statistics and plot it with the main dataset.</li>
+  <li>Specify batch experiment runs to
+    <strong>completely automate your testing</strong>
+    regime.</li>
 </ul>
-
 <div style="clear: both;"></div>
-<p>Flent is written in Python and wraps well-known network benchmarking tools
-  (such as <a href="http://netperf.org">netperf</a>
-  and <a href="https://sourceforge.net/p/iperf2">iperf</a>) into aggregate,
-  repeatable tests, such as a number
-  of <a href="https://www.bufferbloat.net/projects/bloat/wiki/Tests_for_Bufferbloat/">tests
-  for Bufferbloat</a>.</p>
-<p>There's a <a href="flent-the-flexible-network-tester.pdf">short paper
-  (pdf)</a> and
-  a <a href="https://blog.tohojo.dk/2017/04/the-story-of-flent-the-flexible-network-tester.html">blog
-    post</a> describing some of the design goals of Flent.</p>
-
+<p>Flent is written in Python and wraps well-known network benchmarking tools (such as
+  <a href="http://netperf.org">netperf</a>
+  and
+  <a href="https://sourceforge.net/p/iperf2">iperf</a>) into aggregate, repeatable tests, such as a number of
+  <a href="https://www.bufferbloat.net/projects/bloat/wiki/Tests_for_Bufferbloat/">tests for Bufferbloat</a>.</p>
+<p>There's a
+  <a href="flent-the-flexible-network-tester.pdf">short paper (pdf)</a>
+  and a
+  <a href="https://blog.tohojo.dk/2017/04/the-story-of-flent-the-flexible-network-tester.html">blog post</a>
+  describing some of the design goals of Flent.</p>
 <h2>Getting started</h2>
-<p>Install Flent as per the instructions below, then see <a
-href="intro.html#quick-start">the Quick-start section</a> to get going.</p>
-<p>For more information, see <a href="contents.html">the full documentation</a>
-or <a href="search.html">search</a> for specific content.</p>
+<p>Install Flent as per the instructions below, then see
+  <a href="intro.html#quick-start">the Quick-start section</a>
+  to get going.</p>
+<p>For more information, see
+  <a href="contents.html">the full documentation</a>
+  or
+  <a href="search.html">search</a>
+  for specific content.</p>
 <h2>Installing Flent</h2>
 <p>Installing Flent can be done in several ways, depending on your operating system:</p>
 <ul>
-  <li><strong>Arch Linux:</strong> Install Flent from <a href="https://aur.archlinux.org/packages/flent">the AUR</a>.</li>
-  <li><strong>Debian and Ubuntu:</strong> <code class="docutils
-  literal"><span class="pre">apt install flent</span></code>. To install
-  netperf, <a href="https://wiki.debian.org/SourcesList">enable the non-free repository</a>.</li>
-  <li><strong>Fedora:</strong> <code class="docutils literal"><span class="pre">dnf install flent</span></code>.</li>
-  <li><strong>Gentoo:</strong> <code class="docutils literal"><span class="pre">emerge net-analyzer/flent</span></code>.</li>
-  <li><strong>Nix:</strong> Flent is available in nixpkgs through the <code class="docutils literal"><span class="pre">flent</span></code> attribute.</li>
-  <li><strong>Ubuntu pre-18.04:</strong> Add the <a
-  href="https://launchpad.net/~tohojo/+archive/ubuntu/flent">tohojo/flent PPA</a>.</li>
-  <li><strong>Other Linux</strong> Install from the <a href="https://pypi.python.org/pypi/flent">Python
-  Package Index</a>: <code class="docutils literal"><span class="pre">pip install flent</span></code></li>
-  <li><strong>FreeBSD:</strong> <code class="docutils literal"><span class="pre">pkg install flent</span></code> to install the package or <code class="docutils literal"><span class="pre">cd /usr/ports/net/flent</span></code> to install the port.</li>
-  <li><strong>OSX with Macbrew:</strong> See install instructions in the <a href="intro.html#installing-flent">Installing flent</a> section</li>
+  <li><strong>Arch Linux:</strong>
+    Install Flent from
+    <a href="https://aur.archlinux.org/packages/flent">the AUR</a>.</li>
+  <li><strong>Debian and Ubuntu:</strong>
+    <code class="docutils literal"><span class="pre">apt install flent</span></code>. To install netperf,
+    <a href="https://wiki.debian.org/SourcesList">enable the non-free repository</a>.</li>
+  <li><strong>Fedora:</strong>
+    <code class="docutils literal"><span class="pre">dnf install flent</span></code>.</li>
+  <li><strong>Gentoo:</strong>
+    <code class="docutils literal"><span class="pre">emerge net-analyzer/flent</span></code>.</li>
+  <li><strong>Nix:</strong>
+    Flent is available in nixpkgs through the
+    <code class="docutils literal"><span class="pre">flent</span></code>
+    attribute.</li>
+  <li><strong>Ubuntu pre-18.04:</strong>
+    Add the
+    <a href="https://launchpad.net/~tohojo/+archive/ubuntu/flent">tohojo/flent PPA</a>.</li>
+  <li><strong>Other Linux</strong>
+    Install from the
+    <a href="https://pypi.python.org/pypi/flent">Python Package Index</a>:
+    <code class="docutils literal"><span class="pre">pip install flent</span></code></li>
+  <li><strong>FreeBSD:</strong>
+    <code class="docutils literal"><span class="pre">pkg install flent</span></code>
+    to install the package or
+    <code class="docutils literal"><span class="pre">cd /usr/ports/net/flent</span></code>
+    to install the port.</li>
+  <li><strong>OSX with Macbrew:</strong>
+    See install instructions in the
+    <a href="intro.html#installing-flent">Installing flent</a>
+    section</li>
 </ul>
 <h2>Get involved</h2>
 <p>Getting involved is easy:</p>
 <ul>
-  <li>Browse the source code or issue tracker <a
-  href="https://github.com/tohojo/flent">on GitHub</a></li>
-  <li>Subscribe to the <a href="https://lists.flent.org/postorius/lists/">mailing lists</a></li>
+  <li>Browse the source code or issue tracker
+    <a href="https://github.com/tohojo/flent">on GitHub</a></li>
+  <li>Subscribe to the
+    <a href="https://lists.flent.org/postorius/lists/">mailing lists</a></li>
 </ul>
 {% endblock %}
