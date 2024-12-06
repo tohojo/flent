@@ -85,7 +85,10 @@ class BatchRunner(object):
             raise RuntimeError("Unable to read batch file: %s." % filename)
 
         for s in parser.sections():
-            typ, nam = s.split("::")
+            try:
+                typ, nam = s.split("::")
+            except ValueError:
+                raise RuntimeError(f"Missing '::' delimiter in section name '{s}'")
             if typ.lower() == 'arg':
                 self.args[nam.lower()] = OrderedDict(parser.items(s))
             elif typ.lower() == 'batch':
