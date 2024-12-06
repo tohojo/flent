@@ -391,6 +391,7 @@ class ProcessRunner(RunnerBase):
     silent = False
     silent_exit = False
     supports_remote = True
+    success_return = [0]
     _env = {}
 
     def __init__(self, delay=0, remote_host=None, units=None, command=None, **kwargs):
@@ -579,7 +580,7 @@ class ProcessRunner(RunnerBase):
         self.finish_event.set()
 
         self.returncode = _handle_exitstatus(sts)
-        if self.returncode and not (self.silent or self.silent_exit):
+        if self.returncode not in self.success_return and not (self.silent or self.silent_exit):
             logger.warning("Program exited non-zero.",
                            extra={'runner': self})
 
@@ -2679,6 +2680,7 @@ class MosquittoSubRunner(ProcessRunner):
     """
 
     supports_remote = False # can't do the config file trick remotely
+    success_return = [0, 27] # 27 is timeout waiting for message
 
     def __init__(self, length, mqtt_topic, mqtt_host, mqtt_port=8883,
                  mqtt_user=None, mqtt_pass=None, payload_key=None, **kwargs):
