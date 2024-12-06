@@ -1,0 +1,197 @@
+# -*- mode:conf -*-
+
+# The batch file is parsed as an ini file, and can have three types of sections:
+# commands, batches and args. Each section also has a name. Type and name are
+# separated with two colons.
+#
+# Sections of the same type can inherit from each other. Args are used for the
+# loop facility (explained below). All variables are recursively substituted by
+# using the${varname} syntax. These three operations are resolved in this order
+# (inheritance, arg interpolation and variable substitution).
+
+
+
+[Batch::power_usage]
+# These are all Flent parameters that correspond to command line options.
+extended_metadata = no
+debug_error = yes
+debug_log = yes
+step_size = 2
+title = ${batch_title} ncpus:${n_cpus} load:${cpu_load}
+output_path = ${batch_title}-batch-${batch_time}
+length = 120
+test_name = power_usage
+
+test_parameters= mqtt_topic=shellies/shellyplusplugs-b0b21c129e10/status/switch:0;mqtt_host=mqtt.toke.dk;mqtt_user=cli;mqtt_payload_key=apower;ipmi_host=server-monitor;cpu_stats_hosts=${dut_host};n_cpu_runners=${n_cpus};cpu_load=${cpu_load};
+remote_hosts= 0=${dut_host}
+
+
+# This is a special variable that specifies things to *append* to the filename
+# Flent generates (based on time etc). The first part of the filename will be
+# the same for every test in a batch, so the idea is to use this variable to
+# disambiguate subsequent test runs (so putting 'repetition' in there is
+# generally a good idea).
+#
+# The 'repetition' variable is another special variable that will get assigned
+# the current repetition for each run.
+n_cpus_prefix =
+filename_extra = ${n_cpus_prefix}${n_cpus}cpu-load${cpu_load}-${repetition}
+
+# This is a special variable that causes the test in the batch to be repeated
+# this many times (setting the ${repetition} variable for each).
+repetitions = 1
+
+# Special variable - how long to pause after each test run before proceeding to
+# the next one.
+pause = 5
+
+# These are variables that are used for variable expansion in settings above.
+# The idea is that other batches can override these to change part of the
+# configuration.
+batch_title = power_usage
+dut_host=intelserv
+
+# This is the loop mechanism of the batch facility. Each variable that starts
+# with for_ defines a loop (Flent doesn't care about the part after for_, but
+# they matter when inheriting). The batch will then be repeated for each of the
+# values of this variable. Each value must be defined in the batch file as a
+# heading of type [Arg::name]. The variables in each [Arg] section will then be
+# applied on top of the batch containing the loop before the test run
+# corresponding to that arg.
+#
+# When multiple for_ statements are present, the cross product of all of them
+# will be run. Likewise with repetitions (each arg will be repeated as many
+# times as specified).
+#
+# The example here is used to repeat each test run with different qdiscs.
+for_ncpus = 1cpu, 2cpu, 3cpu, 4cpu, 5cpu, 6cpu, 7cpu, 8cpu, 9cpu, 10cpu, 11cpu, 12cpu, 13cpu, 14cpu, 15cpu, 16cpu, 17cpu, 18cpu, 19cpu, 20cpu, 21cpu, 22cpu, 23cpu, 24cpu, 25cpu, 26cpu, 27cpu, 28cpu, 29cpu, 30cpu, 31cpu, 32cpu, 33cpu, 34cpu, 35cpu, 36cpu
+for_load = load25, load50, load75, load100
+
+[Arg::1cpu]
+n_cpus = 1
+n_cpus_prefix = 0
+
+[Arg::2cpu]
+n_cpus = 2
+n_cpus_prefix = 0
+
+[Arg::3cpu]
+n_cpus = 3
+n_cpus_prefix = 0
+
+[Arg::4cpu]
+n_cpus = 4
+n_cpus_prefix = 0
+
+[Arg::5cpu]
+n_cpus = 5
+n_cpus_prefix = 0
+
+[Arg::6cpu]
+n_cpus = 6
+n_cpus_prefix = 0
+
+[Arg::7cpu]
+n_cpus = 7
+n_cpus_prefix = 0
+
+[Arg::8cpu]
+n_cpus = 8
+n_cpus_prefix = 0
+
+[Arg::9cpu]
+n_cpus = 9
+n_cpus_prefix = 0
+
+[Arg::10cpu]
+n_cpus = 10
+
+[Arg::11cpu]
+n_cpus = 11
+
+[Arg::12cpu]
+n_cpus = 12
+
+[Arg::13cpu]
+n_cpus = 13
+
+[Arg::14cpu]
+n_cpus = 14
+
+[Arg::15cpu]
+n_cpus = 15
+
+[Arg::16cpu]
+n_cpus = 16
+
+[Arg::17cpu]
+n_cpus = 17
+
+[Arg::18cpu]
+n_cpus = 18
+
+[Arg::19cpu]
+n_cpus = 19
+
+[Arg::20cpu]
+n_cpus = 20
+
+[Arg::21cpu]
+n_cpus = 21
+
+[Arg::22cpu]
+n_cpus = 22
+
+[Arg::23cpu]
+n_cpus = 23
+
+[Arg::24cpu]
+n_cpus = 24
+
+[Arg::25cpu]
+n_cpus = 25
+
+[Arg::26cpu]
+n_cpus = 26
+
+[Arg::27cpu]
+n_cpus = 27
+
+[Arg::28cpu]
+n_cpus = 28
+
+[Arg::29cpu]
+n_cpus = 29
+
+[Arg::30cpu]
+n_cpus = 30
+
+[Arg::31cpu]
+n_cpus = 31
+
+[Arg::32cpu]
+n_cpus = 32
+
+[Arg::33cpu]
+n_cpus = 33
+
+[Arg::34cpu]
+n_cpus = 34
+
+[Arg::35cpu]
+n_cpus = 35
+
+[Arg::36cpu]
+n_cpus = 36
+
+[Arg::load25]
+cpu_load = 25
+
+[Arg::load50]
+cpu_load = 50
+
+[Arg::load75]
+cpu_load = 75
+
+[Arg::load100]
+cpu_load = 100
