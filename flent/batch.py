@@ -103,7 +103,7 @@ class BatchRunner(object):
                 # Expand inheritance
                 if 'inherits' in vals:
                     for inh in [x.strip() for x in reversed(vals['inherits'].split(','))]:
-                        if not inh in obj:
+                        if inh not in obj:
                             raise RuntimeError(
                                 "%s inherits from non-existent parent %s."
                                 % (name, inh))
