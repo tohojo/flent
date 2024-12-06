@@ -2795,19 +2795,21 @@ class StressNgRunner(RegexpRunner):
 
     transformers = {'t': parse_stressng_timestamp}
 
-    def __init__(self, interval, length, n_stressors=1, **kwargs):
+    def __init__(self, interval, length, n_stressors=1, cpu_load=100, **kwargs):
         self.interval = max(1, round(interval))
         self.length = length
         self.n_stressors = int(n_stressors)
+        self.cpu_load = int(cpu_load)
         super().__init__(**kwargs)
 
     def check(self):
         self.command = self.find_binary(self.interval,
                                         self.length,
-                                        self.n_stressors)
+                                        self.n_stressors,
+                                        self.cpu_load)
         super().check()
 
-    def find_binary(self, interval, length, n_stressors):
+    def find_binary(self, interval, length, n_stressors, cpu_load):
         stress_ng = util.which('stress-ng', fail=RunnerCheckError,
                                remote_host=self.remote_host)
 
@@ -2815,7 +2817,8 @@ class StressNgRunner(RegexpRunner):
             raise RunnerCheckError("Number of CPU stressors must be at least one")
 
         return f"{stress_ng} -t {length} --status {interval} --timestamp --c-states " \
-            f"--cpu {n_stressors} --taskset 0-{n_stressors-1}"
+            f"--cpu {n_stressors} --cpu-load {cpu_load} --cpu-method int64 " \
+            f"--taskset 0-{n_stressors-1}"
 
 
 class NullRunner(RunnerBase):
