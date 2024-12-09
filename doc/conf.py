@@ -53,7 +53,7 @@ master_doc = 'contents'
 
 # General information about the project.
 project = 'Flent: The FLExible Network Tester'
-copyright = '2012-2022, Toke Høiland-Jørgensen and contributors. Source code is GPLv3. Documentation is CC-BY-SA. Neither license affects any output produced by Flent'
+copyright = '2012-2024, Toke Høiland-Jørgensen and contributors. Source code is GPLv3. Documentation is CC-BY-SA. Neither license affects any output produced by Flent'
 author = 'Toke Høiland-Jørgensen'
 
 # The version info for the project you're documenting, acts as replacement for
