@@ -2128,7 +2128,7 @@ class MetaPlotter(Plotter):
         if self.metadata is None:
             self.metadata = results[0].meta()
         for s, ax in self.subplots:
-            s.plot(results, connect_interactive=False)
+            s.plot(results, axis=ax, connect_interactive=False)
             s.legends.extend(s.do_legend())
             self.legends.extend(s.legends)
             self.right_art.extend(s.right_art)
