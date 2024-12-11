@@ -1512,6 +1512,34 @@ class TimeseriesCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
     pass
 
 
+class LineCombinePlotter(CombineManyPlotter, TimeseriesPlotter):
+
+    def _plot(self, results, config=None, axis=None, postfix="",
+              extra_kwargs={}, extra_scale_data=[]):
+        if axis is None:
+            axis = self.figure.gca()
+        if config is None:
+            config = self.config
+
+        data_x = []
+        data_y = []
+        ticklabels = {}
+
+        kwargs = {'label': results.label()}
+        kwargs.update(extra_kwargs)
+
+        for i, s in enumerate(config['series']):
+            data_x.append(i)
+            data_y.append(results.series(s['data'])[0])
+            ticklabels[i] = s['label']
+
+        axis.set_xticklabels([ticklabels.get(int(i), "") for i in axis.get_xticks()])
+        axis.set_xlabel(self.label_x[0] if self.label_x else None)
+
+        self.data_artists.extend(axis.plot(data_x, data_y,
+                                           **kwargs))
+
+
 class BoxPlotter(TimeseriesPlotter):
     # Since labels are printed vertically at the bottom, they tend to break
     # matplotlib's layout logic if they're too long.
