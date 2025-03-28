@@ -63,7 +63,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install dependencies
         run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-shape0 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-shape0 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0 libfreetype-dev
           [[ "$MATPLOTLIB_VERSION" == "3.8" ]] || [[ "$MATPLOTLIB_VERSION" == "3.9" ]] || pip install "numpy<2"
           pip install setuptools QtPy ${PYQT} "matplotlib==${MATPLOTLIB_VERSION}.*"
       - name: Run tests
