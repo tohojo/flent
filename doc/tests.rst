@@ -85,34 +85,40 @@ behave. These are:
 
 .. envvar:: cpu_stats_hosts
 .. envvar:: netstat_hosts
+.. envvar:: ethtool_hosts
 .. envvar:: qdisc_stats_hosts
 .. envvar:: wifi_stats_hosts
 
-   These set hostnames to gather statistics from from during the test. The
-   hostnames are passed to SSH, so can be anything understood by SSH (including
-   using ``username@host`` syntax, or using hosts defined in ``~/.ssh/config``).
-   This will attempt to run remote commands on these hosts to gather the
-   required statistics, so passwordless login has to be enabled for. Multiple
-   hostnames can be specified, separated by commas.
+   These specify the hostnames from which to gather statistics during the test.
+   Flent passes the hostnames to SSH; therefore, the hostnames follow all the
+   traditional SSH hostname declarations, including using the ``username@host``
+   syntax or hosts defined in ``~/.ssh/config``. Flent will attempt to run
+   remote commands on these hosts to gather the required statistics. For this to
+   work, the hosts must have passwordless login enabled. You can specify
+   multiple hostnames by separating them by commas.
 
-   CPU stats and netstat output is global to the machine being connected to. The
-   qdisc and WiFi stats need extra parameters to work. These are
-   ``qdisc_stats_interfaces``, ``wifi_stats_interfaces`` and
-   ``wifi_stats_stations``. The two former specify which interfaces to gather
-   statistics from. These are paired with the hostnames, and so must contain the
-   same number of elements (also comma-separated) as the ``_hosts`` variables.
-   To specify multiple interfaces on the same host, duplicate the hostname. The
-   ``wifi_stats_stations`` parameter specifies MAC addresses of stations to
-   gather statistics for. This list is the same for all hosts, but only stations
-   present in debugfs on each host are actually captured.
-
-   The qdisc stats gather statistics output from ``tc -s``, while the WiFi stats
-   gather statistics from debugfs. These are gathered by looping in a shell
-   script; however, for better performance, the ``tc_iterate`` and
-   ``wifistats_iterate`` programmes available in the ``misc/`` directory of the
-   source code tarball can be installed. On low-powered systems this can be
-   critical to get correct statistics. The helper programmes are packaged for
-   LEDE/OpenWrt in the ``flent-tools`` package.
+   While CPU stats, ethtool, and netstat output are global to the machine being
+   connected to, the qdisc and WiFi stats are more specific and require extra
+   parameters to work effectively. These parameters, namely
+   ``qdisc_stats_interfaces``, ``wifi_stats_interfaces``, and
+   ``wifi_stats_stations``, play a crucial role in specifying which interfaces
+   to gather statistics from and which MAC addresses of stations to gather
+   statistics for. Remember, these parameters are paired with the hostnames, so
+   they must contain the same number of elements as the ``_hosts`` variables. To
+   specify multiple interfaces on the same host, simply duplicate the hostname.
+   The ``wifi_stats_stations`` parameter specifies the MAC addresses of stations
+   for which statistics are to be gathered. This list is the same for all hosts,
+   but only stations present in debugfs on each host are actually captured.
+   The ``ethtool_hosts`` parameter lets you finetune which devices and fields to
+   monitor using the ``ethtool_devices`` and ``ethtool_fields`` parameters. By
+   default, Flent will monitor all network devices from which it can get values.
+   However, the ``ethtool_devices`` parameter lets you filter which devices to
+   monitor. If no fields are specified, Flent will monitor the ``rx_packets``
+   and ``tx_packets`` fields unless you specify other fields in the
+   ``ethtool_fields`` parameter. You can create a comma-separated list of fields
+   to monitor; however, if you prefix the field with a network device name
+   separated by a colon, Flent will only monitor that field for that particular
+   device. Example: ``ethtool_fields=tx_bytes,eth0:rx_packets,eth1:tx_packets``
 
 .. envvar:: ping_hosts
 .. envvar:: ping_local_binds
