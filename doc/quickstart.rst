@@ -19,10 +19,11 @@ Installing Flent can be done in several ways, depending on your operating system
 
       dnf install flent
 
-- **Gentoo:**
+- **Gentoo:** (supported in `pkalin overlay <https://github.com/thinrope/pkalin>`_)
 
     .. code-block:: bash
 
+      eselect repository enable pkalin && eix-sync
       emerge net-analyzer/flent
 
 - **Nix:**
