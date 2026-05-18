@@ -351,8 +351,8 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("Ctrl+Up"),
                   self).activated.connect(self.prev_plot)
 
-        logger.info("GUI loaded. Using Qt through %s v%s.", qtpy.API,
-                    QtCore.__version__)
+        logger.info("GUI loaded. Using Qt-%s via %s.", QtCore.__version__,
+                    qtpy.API)
 
     def read_log_queue(self):
         while not self.log_queue.empty():
