@@ -179,7 +179,7 @@ def init_matplotlib(output, use_markers, load_rc):
         COLOURS = matplotlib.rcParams['axes.color_cycle']
 
     MATPLOTLIB_INIT = True
-    logger.info("Initialised matplotlib v%s on numpy v%s.",
+    logger.info("Initialised matplotlib-%s and numpy-%s.",
                 matplotlib.__version__, np.__version__)
 
 

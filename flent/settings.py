@@ -75,19 +75,19 @@ class _LOG_DEFER:
 class Version(FuncAction):
 
     def __call__(*args):
-        logger.info("Flent v%s.\nRunning on Python %s.",
+        logger.info("Flent v%s.\nRunning on Python-%s.",
                     VERSION, sys.version.replace("\n", " "))
         try:
             import matplotlib
             import numpy
-            logger.info("Using matplotlib version %s on numpy %s.",
+            logger.info("Using matplotlib-%s and numpy-%s.",
                         matplotlib.__version__, numpy.__version__)
         except ImportError:
             logger.info("No matplotlib found. Plots won't be available.")
         try:
             import qtpy
             from qtpy import QtCore
-            logger.info("Using Qt: %s v%s.", qtpy.API, QtCore.__version__)
+            logger.info("Using Qt-%s via %s.", QtCore.__version__, qtpy.API)
         except ImportError:
             logger.info("No usable Qt version found. GUI won't work.")
         sys.exit(0)
