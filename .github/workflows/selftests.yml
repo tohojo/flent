@@ -12,33 +12,10 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        matplotlib: ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "3.9"]
-        pyqt: ["PyQt5", "PySide2"]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        matplotlib: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        pyqt: ["PyQt5", "PySide2", "PyQt6", "PySide6"]
         exclude:
-          - python: "3.8"
-            matplotlib: "3.8"
-          - python: "3.8"
-            matplotlib: "3.9"
-          - python: "3.11"
-            matplotlib: "3.1"
-          - python: "3.11"
-            matplotlib: "3.2"
-          - python: "3.11"
-            matplotlib: "3.3"
-          - python: "3.11"
-            matplotlib: "3.4"
-          - python: "3.12"
-            matplotlib: "3.1"
-          - python: "3.12"
-            matplotlib: "3.2"
-          - python: "3.12"
-            matplotlib: "3.3"
-          - python: "3.12"
-            matplotlib: "3.4"
-          - python: "3.11"
-            matplotlib: "3.5"
-            pyqt: "PySide2"
           - python: "3.11"
             matplotlib: "3.6"
             pyqt: "PySide2"
@@ -47,6 +24,18 @@ jobs:
             pyqt: "PySide2"
           - python: "3.12"
             pyqt: "PySide2"
+          - python: "3.13"
+            pyqt: "PySide2"
+          - python: "3.14"
+            pyqt: "PySide2"
+          - python: "3.14"
+            matplotlib: "3.6"
+          - python: "3.14"
+            matplotlib: "3.7"
+          - python: "3.14"
+            matplotlib: "3.8"
+          - python: "3.14"
+            matplotlib: "3.9"
       fail-fast: false
 
     env:
@@ -56,17 +45,17 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - name: Install dependencies
         run: |
-          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-shape0 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0 libfreetype-dev
-          [[ "$MATPLOTLIB_VERSION" == "3.8" ]] || [[ "$MATPLOTLIB_VERSION" == "3.9" ]] || pip install "numpy<2"
+          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-shape0 libxcb-cursor0 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0 libegl1 libfreetype-dev
+          [[ "$MATPLOTLIB_VERSION" == "3.5" ]] || [[ "$MATPLOTLIB_VERSION" == "3.6" ]] || [[ "$MATPLOTLIB_VERSION" == "3.7" ]] && pip install "numpy<2"
           pip install setuptools QtPy ${PYQT} "matplotlib==${MATPLOTLIB_VERSION}.*"
       - name: Run tests
-        uses: GabrielBB/xvfb-action@v1
+        uses: tohojo/xvfb-action@c4a66ed13f7e1b1e4cce101bd5cc1bb91e734f6a
         with:
           run: make test_long
