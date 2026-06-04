@@ -14,6 +14,10 @@ test:
 test_long:
 	TEST_SUITE=all_tests $(PYTHON) -m unittest
 
+.PHONY: test_gui
+test_gui:
+	TEST_SUITE=gui_tests $(PYTHON) -m unittest
+
 
 .PHONY: install
 install:
