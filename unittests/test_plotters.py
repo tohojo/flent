@@ -383,8 +383,10 @@ class TestGUIPlotting(PlottersTestCase):
 dirname = os.path.join(os.path.dirname(__file__), "test_data")
 output_formats = ['svg', 'pdf', 'png']
 plot_suite = unittest.TestSuite()
+gui_suite = unittest.TestSuite()
 for fname in get_test_data_files():
     plot_suite.addTest(TestGUIPlotting(fname))
+    gui_suite.addTest(TestGUIPlotting(fname))
     for fmt in output_formats:
         plot_suite.addTest(TestPlotting(fname, fmt))
 

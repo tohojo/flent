@@ -43,10 +43,14 @@ test_suite = unittest.TestSuite([test_util.test_suite,
 
 all_tests = unittest.TestSuite([test_suite, test_plotters.plot_suite])
 
+gui_tests = unittest.TestSuite([test_plotters.gui_suite, test_gui.test_suite])
+
 def load_tests(loader, standard_tests, pattern):
     suite = os.getenv("TEST_SUITE", None)
     if suite == "all_tests":
         return all_tests
+    elif suite == "gui_tests":
+        return gui_tests
     return test_suite
 
 if __name__ == "__main__":
