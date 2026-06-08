@@ -413,6 +413,13 @@ class TimeseriesAggregator(Aggregator):
                             result[n] = None
                         else:
                             result[n] = v_next
+                    elif v_prev is None or v_next is None:
+                        # One of the interpolation anchors is itself a gap in
+                        # the data (e.g. sparse netperf output at low rates with
+                        # latency, see issue #265). We can't interpolate across
+                        # a gap, so leave a gap in the synthetic series here too,
+                        # rather than crashing with a TypeError.
+                        result[n] = None
                     else:
                         # We found the previous and next values; interpolate
                         # between them. We assume that the rate of change dv/dt
