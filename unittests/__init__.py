@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import unittest
 from . import test_util
+from . import test_aggregators
 from . import test_formatters
 from . import test_metadata
 from . import test_parsers
@@ -33,6 +34,7 @@ from . import test_gui
 
 
 test_suite = unittest.TestSuite([test_util.test_suite,
+                                 test_aggregators.test_suite,
                                  test_formatters.test_suite,
                                  test_metadata.test_suite,
                                  test_parsers.test_suite,
