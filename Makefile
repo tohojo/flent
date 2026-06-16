@@ -37,4 +37,5 @@ doc:
 .PHONY: man
 man:
 	$(MAKE) -C doc/ man
+	sed -i -e 's/\\%<#[^>]*>//g' -e 's/ \\%<>//' doc/_build/man/flent.1
 	cp doc/_build/man/flent.1 man/
