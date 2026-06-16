@@ -89,6 +89,9 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.appdata.xml
 * Tue Jun 16 2026 Toke Høiland-Jørgensen <toke@toke.dk> 2.3.0-1
 - Upstream release 2.3.0
 
+* Tue Jun 16 2026 Toke Høiland-Jørgensen <toke@toke.dk> 2.3.0-1
+- Upstream release 2.3.0
+
 * Tue Sep 10 2024 Toke Høiland-Jørgensen <toke@toke.dk> 2.2.0-1
 - Upstream release 2.2.0
 
