@@ -1,8 +1,0 @@
-include flent/tests/*.conf flent/tests/*.inc flent/ui/*.ui flent/scripts/*
-include misc/*
-include unittests/*.py unittests/test_data/*.gz
-include doc/*.rst doc/_static/* doc/_templates/*.html doc/conf.py doc/Makefile
-include Makefile BUGS README.rst *.example man/flent.1
-include flent-mime.xml flent.desktop flent-paper.batch
-include debian/*
-recursive-include packaging *
