@@ -137,7 +137,7 @@ setup(name="flent",
       data_files=data_files,
       cmdclass={'build_py': build_py, 'sdist': sdist},
       extras_require={
-          'GUI': ['QtPy', 'PyQt5'],
-          'Plots': ['matplotlib>=1.5'],
+          'GUI': ['QtPy', 'PySide6'],
+          'Plots': ['matplotlib>=3.6'],
       },
       )
