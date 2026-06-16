@@ -1,7 +1,7 @@
 %global srcname flent
 
 Name:             flent
-Version:          2.2.0
+Version:          2.3.0
 Release:          1%{?dist}
 Summary:          FLExible Network Tester for bufferbloat testing and more
 
@@ -11,7 +11,7 @@ Source0:          %{pypi_source}
 
 BuildArch:        noarch
 BuildRequires:    python3-devel python3-sphinx desktop-file-utils libappstream-glib python3-setuptools make
-Recommends:       python3-matplotlib python3-matplotlib-qt5 python3-pyside2 python3-QtPy
+Recommends:       python3-matplotlib python3-matplotlib-qt6 python3-pyside6 python3-QtPy
 
 %description
 The FLExible Network Tester is a Python wrapper to run multiple simultaneous
@@ -79,13 +79,16 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/*.appdata.xml
 %{_datadir}/mime/packages/flent-mime.xml
 %{_metainfodir}/flent.appdata.xml
 %{_mandir}/man1/flent.1.gz
-%doc README.rst CHANGES.md BUGS batchfile.example flentrc.example flent-paper.batch misc/
+%doc README.rst CHANGES.md BUGS flentrc.example batchfile.example flent-paper.batch power-usage.batch misc/
 %license LICENSE
 
 %files doc
 %doc doc/_build/html
 
 %changelog
+* Tue Jun 16 2026 Toke Høiland-Jørgensen <toke@toke.dk> 2.3.0-1
+- Upstream release 2.3.0
+
 * Tue Sep 10 2024 Toke Høiland-Jørgensen <toke@toke.dk> 2.2.0-1
 - Upstream release 2.2.0
 
