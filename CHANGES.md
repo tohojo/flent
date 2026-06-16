@@ -2,6 +2,23 @@
 
 Changes since v2.2.0 include:
 
+- Support Qt6 in the GUI and as a matplotlib backend.
+
+- Bump the minimum supported dependency versions to Python 3.10 and Matplotlib
+  3.6.
+
+- Add new runners for capturing MQTT output and for running stress-ng as a CPU
+  stressor.
+
+- Add a power_usage test that captures power usage data while running stress-ng
+  to load the CPU.
+
+- Add Jain's fairness index computation to the tcp_n{up,down} tests.
+
+- Fix a crash when aggregating data with gaps in it.
+
+- Fix a few inconsistencies in the docs.
+
 # Flent v2.2.0 #
 Released on 2024-09-10.
 
