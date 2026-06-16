@@ -1,3 +1,7 @@
+# Changes since latest release #
+
+Changes since v2.3.0 include:
+
 # Flent v2.3.0 #
 Released on 2026-06-16.
 
