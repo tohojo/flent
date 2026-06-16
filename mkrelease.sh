@@ -34,7 +34,7 @@ if [[ ! "$VERSION" =~ git$ ]]; then
     echo ==== Creating and signing release tarball... ====
     python setup.py sdist bdist_wheel  || die error
     gpg --detach-sign --armor dist/flent-${VERSION}.tar.gz  || die error
-    gpg --detach-sign --armor dist/flent-${VERSION}-py2.py3-none-any.whl  || die error
+    gpg --detach-sign --armor dist/flent-${VERSION}-py3-none-any.whl  || die error
 
     echo ==== Updating Arch PKGBUILD sha256sum... ====
     SHA=$(sha256sum dist/flent-${VERSION}.tar.gz | awk '{print $1}')
