@@ -7,20 +7,25 @@ pkgdesc='The FLExible Network Tester.'
 arch=('any')
 url='https://flent.org'
 license=('GPL')
-depends=('python' 'netperf' 'python-setuptools')
+depends=('python' 'netperf')
+makedepends=(python-build python-installer python-wheel)
 conflicts=('netperf-wrapper')
 replaces=('netperf-wrapper')
 optdepends=(
     'python-matplotlib: for outputting graphs'
     'python-qtpy: for the GUI'
 )
-source=(https://files.pythonhosted.org/packages/source/f/flent/flent-${pkgver}.tar.gz{,.asc})
-sha256sums=('ab2f81bcca410c1b41a8410cf72124a3f19bda9bacc45fcbaa2bad48a952d9e1'
-            'SKIP')
-validpgpkeys=('DE6162B5616BA9C9CAAC03074A55C497F744F705')
+source=(https://files.pythonhosted.org/packages/source/f/flent/flent-${pkgver}.tar.gz)
+sha256sums=('ab2f81bcca410c1b41a8410cf72124a3f19bda9bacc45fcbaa2bad48a952d9e1')
+
+build() {
+	cd "$srcdir/${pkgname}-${pkgver}"
+
+        python -m build --wheel --no-isolation
+}
 
 package() {
-  cd "${srcdir}/${pkgname}-${pkgver}"
+	cd "$srcdir/${pkgname}-${pkgver}"
 
-  python setup.py install --single-version-externally-managed --root="$pkgdir" --optimize=1
+	python -m installer --destdir="$pkgdir" dist/*.whl
 }
