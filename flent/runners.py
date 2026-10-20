@@ -191,13 +191,17 @@ class RunnerBase(object):
         return state
 
     def __setstate__(self, state):
-        stdout_fd = state.pop("_stdout_fd")
+        stdout_fd = state.pop("_stdout_fd", None)
         if stdout_fd is not None:
             self.stdout = io.open(stdout_fd.detach(), "w+", encoding=ENCODING)
+        else:
+            self.stdout = None
 
-        stderr_fd = state.pop("_stderr_fd")
+        stderr_fd = state.pop("_stderr_fd", None)
         if stderr_fd is not None:
             self.stderr = io.open(stderr_fd.detach(), "w+", encoding=ENCODING)
+        else:
+            self.stderr = None
 
         self.__dict__.update(state)
 
@@ -599,6 +603,9 @@ class ProcessRunner(RunnerBase):
     # the subprocess (since we pass around the stdout and stderr fds and
     # only read them when we need to access the output)
     def parse_output(self):
+        if self.stdout is None or self.stderr is None:
+            return
+
         # Make sure we start from the beginning (we could already have read the
         # data through self.{out,err})
         self.stdout.seek(0)
@@ -634,6 +641,9 @@ class ProcessRunner(RunnerBase):
         return res
 
     def recv_result(self, res):
+        if res is None:
+            return
+
         result, raw_values, metadata = res
         self.result = result
         self.raw_values = raw_values
