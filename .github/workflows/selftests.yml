@@ -12,8 +12,8 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        matplotlib: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        matplotlib: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
         pyqt: ["PyQt5", "PySide2", "PyQt6", "PySide6"]
         exclude:
           - python: "3.11"
@@ -24,8 +24,12 @@ jobs:
             pyqt: "PySide2"
           - python: "3.12"
             pyqt: "PySide2"
+          - python: "3.12"
+            matplotlib: "3.6"
           - python: "3.13"
             pyqt: "PySide2"
+          - python: "3.13"
+            matplotlib: "3.6"
           - python: "3.14"
             pyqt: "PySide2"
           - python: "3.14"
@@ -35,6 +39,16 @@ jobs:
           - python: "3.14"
             matplotlib: "3.8"
           - python: "3.14"
+            matplotlib: "3.9"
+          - python: "3.15"
+            pyqt: "PySide2"
+          - python: "3.15"
+            matplotlib: "3.6"
+          - python: "3.15"
+            matplotlib: "3.7"
+          - python: "3.15"
+            matplotlib: "3.8"
+          - python: "3.15"
             matplotlib: "3.9"
       fail-fast: false
 
@@ -53,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-shape0 libxcb-cursor0 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0 libegl1 libfreetype-dev
-          [[ "$MATPLOTLIB_VERSION" == "3.5" ]] || [[ "$MATPLOTLIB_VERSION" == "3.6" ]] || [[ "$MATPLOTLIB_VERSION" == "3.7" ]] && pip install "numpy<2"
+          [[ "$MATPLOTLIB_VERSION" == "3.6" ]] || [[ "$MATPLOTLIB_VERSION" == "3.7" ]] && pip install "numpy<2"
           pip install setuptools QtPy ${PYQT} "matplotlib==${MATPLOTLIB_VERSION}.*"
       - name: Run tests
         uses: tohojo/xvfb-action@c4a66ed13f7e1b1e4cce101bd5cc1bb91e734f6a
