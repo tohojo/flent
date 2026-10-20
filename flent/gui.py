@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import base64
 import logging
+import multiprocessing
 import os
 import signal
 import sys
@@ -36,7 +37,6 @@ except ImportError:
 
 from argparse import SUPPRESS
 from itertools import chain
-from multiprocessing import Pool, Queue
 
 from flent import util, batch, loggers, resultset, plotters
 from flent.build_info import DATA_DIR, VERSION
@@ -52,6 +52,7 @@ except ImportError as e:
     raise RuntimeError(f"The GUI requires matplotlib, please ensure it's installed ({e}).")
 
 logger = get_logger(__name__)
+mp_ctx = multiprocessing.get_context("fork")
 
 mswindows = (sys.platform == "win32")
 
@@ -323,7 +324,7 @@ class MainWindow(QMainWindow):
                                            statusbar=self.statusBar())
         add_log_handler(self.logEntries)
         self.logEntriesDock.setWidget(self.logEntries.widget)
-        self.log_queue = Queue()
+        self.log_queue = mp_ctx.Queue()
         self.log_timer = QTimer(self)
         self.log_timer.timeout.connect(self.read_log_queue)
         self.log_timer.setInterval(100)
@@ -339,8 +340,8 @@ class MainWindow(QMainWindow):
         self.read_settings()
         self.update_checkboxes()
 
-        self.worker_pool = Pool(initializer=pool_init_func,
-                                initargs=(self.settings, self.log_queue))
+        self.worker_pool = mp_ctx.Pool(initializer=pool_init_func,
+                                       initargs=(self.settings, self.log_queue))
 
         QShortcut(QKeySequence("Ctrl+Right"),
                   self).activated.connect(self.next_tab)
