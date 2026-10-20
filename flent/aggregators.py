@@ -209,6 +209,9 @@ class Aggregator(object):
             for n, t in list(self.threads.items()):
                 t.join()
 
+            if self.killed:
+                return (None,None,None)
+
             run_end = time.monotonic()
             logger.debug("Ran test in %f seconds", run_end - threads_end)
 
@@ -294,6 +297,9 @@ class Aggregator(object):
             t.close()
 
     def postprocess(self, result):
+        if self.killed:
+            return
+
         logger.debug("Postprocessing data using %d postprocessors", len(self.postprocessors))
         for p in self.postprocessors:
             result = p(result)
