@@ -74,6 +74,7 @@ class BatchRunner(object):
         self.children = []
         self.logfile = self.logfile_debug = None
         self.tests_run = 0
+        self.agg = None
 
         for f in settings.BATCH_FILES:
             self.read(f)
@@ -518,8 +519,12 @@ class BatchRunner(object):
         logger.info("Starting %s test. Expected run time: %d seconds.",
                     settings.NAME, settings.TOTAL_LENGTH)
 
-        agg = aggregators.new(settings)
-        res = agg.postprocess(agg.aggregate(res))
+        self.agg = aggregators.new(settings)
+        res = self.agg.postprocess(self.agg.aggregate(res))
+        self.agg = None
+
+        if self.killed:
+            return
 
         record_postrun_metadata(res, settings.EXTENDED_METADATA,
                                 settings.REMOTE_METADATA)
@@ -626,6 +631,9 @@ class BatchRunner(object):
         if self.killed:
             return
 
+        logger.debug("Received kill signal")
+        if self.agg:
+            self.agg.kill_runners()
         self.killed = True
         self.kill_children(force=True)
 
